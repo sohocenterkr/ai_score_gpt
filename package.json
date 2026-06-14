@@ -1,0 +1,51 @@
+{
+  "name": "site-ai-score",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AEO diagnosis and URL-based verification platform",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "tsx server/index.ts",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build:client": "vite build",
+    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/server.js",
+    "build": "npm run check && npm run test && npm run build:client && npm run build:server",
+    "start": "NODE_ENV=production node dist/server.js",
+    "db:generate": "prisma generate",
+    "db:validate": "prisma validate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.8.2",
+    "compression": "^1.8.0",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-router-dom": "^6.30.1",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.7.5",
+    "@types/express": "^5.0.2",
+    "@types/node": "^20.17.30",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@types/supertest": "^6.0.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "esbuild": "0.28.1",
+    "prisma": "^6.8.2",
+    "supertest": "^7.1.1",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "vite": "8.0.16",
+    "vitest": "4.1.8"
+  }
+}
