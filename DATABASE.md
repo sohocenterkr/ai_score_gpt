@@ -15,7 +15,7 @@
 | DB 이름 | `heliumdb` | 확인 필요 |
 | 마스킹 호스트 | `he**um` | 확인 필요 |
 | Secret 이름 | `DATABASE_URL` | `DATABASE_URL` |
-| 마이그레이션 상태 | 1개 적용 완료 | 미실행 |
+| 마이그레이션 상태 | 2개 적용 완료 | 미실행 |
 | 확인일(KST) | 2026-06-14 | 미확인 |
 
 ## Development 확인 기록
@@ -23,13 +23,20 @@
 - `DATABASE_URL` Replit Secret 설정 확인
 - PostgreSQL 연결 성공
 - 최초 마이그레이션: `20260614055344_init_app_metadata`
-- 생성 테이블: `_prisma_migrations`, `app_metadata`
+- 인증 마이그레이션: `20260614062302_add_local_auth`
+- 생성 테이블: `_prisma_migrations`, `app_metadata`, `users`, `auth_accounts`, `sessions`
+- 사용자 역할·상태·인증 공급자 enum 적용
 - `prisma migrate status`: Database schema is up to date
 - 확인 시각 기준: 2026-06-14 KST
 
-## 초기 Prisma 모델
+## 현재 Prisma 모델
 
-`AppMetadata` 모델만 포함한다. 인증·사이트·검사·작업지시서 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
+- `AppMetadata`
+- `User`
+- `AuthAccount`
+- `Session`
+
+사이트·검사·작업지시서 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
 
 ## DB 설정 후 확인
 

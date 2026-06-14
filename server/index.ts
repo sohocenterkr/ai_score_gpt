@@ -2,7 +2,7 @@ import express from "express";
 import path from "node:path";
 import { createApp } from "./app";
 import { env } from "./config/env";
-import { disconnectDatabase } from "./services/database-health";
+import { disconnectDatabase } from "./db";
 
 const app = createApp();
 

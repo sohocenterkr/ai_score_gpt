@@ -1,12 +1,24 @@
 import compression from "compression";
 import express from "express";
 import helmet from "helmet";
+import { createRequireAuth } from "./auth/auth-middleware";
+import { createAuthRouter } from "./auth/auth-router";
+import {
+  createPrismaAuthService,
+  type AuthService,
+} from "./auth/auth-service";
 import { env } from "./config/env";
 import { getDatabaseHealth } from "./services/database-health";
 import { getNowKST } from "../shared/kst";
 
-export function createApp() {
+interface CreateAppOptions {
+  authService?: AuthService;
+}
+
+export function createApp(options: CreateAppOptions = {}) {
   const app = express();
+  const authService = options.authService ?? createPrismaAuthService();
+  const requireAuth = createRequireAuth(authService);
 
   app.disable("x-powered-by");
   app.use(
@@ -29,6 +41,12 @@ export function createApp() {
       timestampKST: getNowKST(),
       database,
     });
+  });
+
+  app.use("/api/auth", createAuthRouter(authService));
+
+  app.get("/api/me", requireAuth, (_request, response) => {
+    response.json({ user: response.locals.authUser });
   });
 
   app.use("/api", (_request, response) => {

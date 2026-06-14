@@ -4,18 +4,23 @@
 
 ## 현재 단계
 
-1단계 프로젝트 기반 골격입니다.
+2단계 인증 기반 중 2-1차 이메일 인증 구현까지 완료된 상태입니다.
 
 - TypeScript
 - React + Vite
 - Express
-- Prisma/PostgreSQL 준비
+- Prisma/PostgreSQL
 - URL locale 라우팅
 - 모바일 우선 Edge-to-edge UI
 - KST 공통 모듈과 단위테스트
 - 서버·DB 상태 확인 API
+- 이메일 기반 회원가입·로그인·로그아웃
+- Argon2id 비밀번호 해시
+- 해시 기반 서버 세션과 HttpOnly 쿠키
+- 로그인 횟수·최종 로그인 기록
+- 인증 보호 대시보드
 
-실제 회원가입, 외부 로그인, 검사 엔진, Cloudinary와 Resend 호출은 아직 구현하지 않았습니다.
+Google 로그인, 비밀번호 재설정·Resend, 계정 설정·회원탈퇴, 검사 엔진과 Cloudinary 연동은 아직 구현하지 않았습니다.
 
 ## 프로젝트 루트
 
@@ -61,10 +66,15 @@ npm run db:validate
 ## 주요 경로
 
 ```text
-/              → /ko 이동
-/ko            → 공개 메인 화면
-/ko/system     → 서버·KST·DB 상태 확인
-/api/health    → JSON 상태 API
+/                  → /ko 이동
+/ko                → 공개 메인 화면
+/ko/signup         → 이메일 회원가입
+/ko/login          → 이메일 로그인
+/ko/dashboard      → 인증 회원 대시보드
+/ko/system         → 서버·KST·DB 상태 확인
+/api/health        → JSON 상태 API
+/api/auth/session  → 현재 로그인 세션 확인
+/api/me            → 인증 회원 정보
 ```
 
 ## 문서

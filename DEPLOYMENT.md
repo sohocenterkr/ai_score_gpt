@@ -9,7 +9,10 @@
 - 공식 도메인: `siteaiscore.com`
 - GitHub origin: 아직 연결되지 않음
 - 개발 DB: Replit 제공 PostgreSQL `heliumdb` 연결 확인
-- 개발 DB 마이그레이션: `20260614055344_init_app_metadata`
+- 개발 DB 마이그레이션:
+  - `20260614055344_init_app_metadata`
+  - `20260614062302_add_local_auth`
+- `SESSION_SECRET`: Replit 환경에 32자 이상 설정 확인
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-14 KST
 

@@ -17,6 +17,14 @@
 - 최초 Prisma 마이그레이션 `20260614055344_init_app_metadata`
 - 개발 DB의 `app_metadata`, `_prisma_migrations` 테이블
 - Replit Preview 도메인의 환경변수 기반 Vite 허용 호스트 설정
+- 이메일 회원가입·로그인·로그아웃 API와 화면
+- Argon2id 비밀번호 해시
+- 해시된 서버 세션 토큰과 HttpOnly 쿠키
+- 현재 세션 확인 및 인증 보호 API
+- 회원 대시보드와 보호 라우팅
+- 사용자·인증계정·세션 Prisma 모델
+- 인증 마이그레이션 `20260614062302_add_local_auth`
+- 인증 API 테스트와 실제 DB 통합 테스트
 
 ### Changed
 
@@ -27,7 +35,9 @@
 
 ### Not yet implemented
 
-- 인증과 회원탈퇴
+- 비밀번호 재설정·Resend
+- Google 로그인과 동일 이메일 계정 연결
+- 계정 설정과 즉시 회원탈퇴
 - 총관리자·공지·Cloudinary
 - 사이트 등록·검사 엔진
 - 점수·작업지시서·에이전시 자동검수

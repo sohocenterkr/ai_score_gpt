@@ -1,9 +1,11 @@
 import { Link, Outlet, useParams } from "react-router-dom";
 import { isSupportedLocale } from "../../../shared/locales";
+import { useAuth } from "../auth/AuthContext";
 import { NotFoundPage } from "../pages/NotFoundPage";
 
 export function LocaleLayout() {
   const { locale } = useParams();
+  const { state } = useAuth();
 
   if (!isSupportedLocale(locale)) {
     return <NotFoundPage />;
@@ -19,6 +21,11 @@ export function LocaleLayout() {
           </Link>
           <nav className="header-nav" aria-label="주요 메뉴">
             <Link to={`/${locale}/system`}>시스템 확인</Link>
+            {state.status === "authenticated" ? (
+              <Link to={`/${locale}/dashboard`}>대시보드</Link>
+            ) : (
+              <Link to={`/${locale}/login`}>로그인</Link>
+            )}
           </nav>
         </div>
       </header>

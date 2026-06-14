@@ -7,6 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  USER
+  AGENCY
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  SECRET_ADMIN
+}
+
 model AppMetadata {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -15,4 +32,53 @@ model AppMetadata {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("app_metadata")
+}
+
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  name              String
+  passwordHash      String?       @map("password_hash")
+  role              UserRole      @default(USER)
+  status            UserStatus    @default(ACTIVE)
+  emailVerifiedAt   DateTime?     @map("email_verified_at")
+  termsAcceptedAt   DateTime      @map("terms_accepted_at")
+  privacyAcceptedAt DateTime      @map("privacy_accepted_at")
+  loginCount        Int           @default(0) @map("login_count")
+  lastLoginAt       DateTime?     @map("last_login_at")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+  authAccounts      AuthAccount[]
+  sessions          Session[]
+
+  @@index([status])
+  @@map("users")
+}
+
+model AuthAccount {
+  id                String       @id @default(cuid())
+  userId            String       @map("user_id")
+  provider          AuthProvider
+  providerAccountId String       @map("provider_account_id")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("auth_accounts")
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  userId           String    @map("user_id")
+  sessionTokenHash String    @unique @map("session_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
 }
