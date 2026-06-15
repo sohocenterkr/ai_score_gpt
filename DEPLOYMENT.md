@@ -23,6 +23,10 @@
 - 외부 공개 URL HTTP 수집과 DNS·리디렉션 SSRF 재검증 확인
 - HTTP 수집 제한: 요청 15초, 최대 리디렉션 5회, 응답 본문 2MB
 - 수동 검사 작업 실행 명령: `npm run scan:once`
+- 현재 점수 규칙 버전: `2026.06-core-v2`
+- 검사 결과 화면: `/ko/sites/:siteId/scans/:scanId`
+- 결과 API: `/api/scan-results/:scanId`
+- 비짓제주 실제 v2 검사에서 71점·B등급·진단 25건 확인
 - 자동 백그라운드 검사 실행기는 아직 구성하지 않음
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-15 KST

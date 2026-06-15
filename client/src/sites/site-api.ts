@@ -164,3 +164,106 @@ export async function listSiteScansRequest(
   const data = await readJson<{ scans: SiteScan[] }>(response);
   return data.scans;
 }
+
+export type ScanFindingStatus = "PASS" | "FAIL" | "BLOCKED" | "NA";
+export type ScanFindingSeverity =
+  | "INFO"
+  | "LOW"
+  | "MEDIUM"
+  | "HIGH"
+  | "CRITICAL";
+
+export interface ScanResultFinding {
+  id: string;
+  ruleCode: string;
+  category: string;
+  severity: ScanFindingSeverity;
+  status: ScanFindingStatus;
+  title: string;
+  description: string;
+  evidence: unknown;
+  recommendation: string | null;
+  scoreDelta: number;
+  weight: number;
+}
+
+export interface ScanCategoryScore {
+  category: string;
+  score: number;
+  maxScore: number;
+  percentage: number;
+}
+
+export interface ScanScoreSummary {
+  score: number;
+  rawScore: number;
+  grade: string;
+  cap: number | null;
+  coverage: number;
+  lostPoints: number;
+  expectedImprovementMin: number;
+  expectedImprovementMax: number;
+  categories: ScanCategoryScore[];
+}
+
+export interface ScanResultResponse {
+  site: {
+    id: string;
+    name: string;
+    baseUrl: string;
+    finalUrl: string | null;
+    siteType: string | null;
+    country: string;
+    region: string | null;
+    primaryLocale: string;
+  };
+  scan: {
+    id: string;
+    type: string;
+    status: string;
+    rulesVersion: string;
+    score: number | null;
+    grade: string | null;
+    startedAt: string | null;
+    completedAt: string | null;
+    errorCode: string | null;
+    createdAt: string;
+  };
+  scoreSummary: ScanScoreSummary | null;
+  understandingSummary: string;
+  foundInformation: Array<{
+    label: string;
+    value: string;
+  }>;
+  missingInformation: Array<{
+    ruleCode: string;
+    title: string;
+  }>;
+  primaryIssues: ScanResultFinding[];
+  pages: Array<{
+    id: string;
+    url: string;
+    statusCode: number | null;
+    finalUrl: string | null;
+    contentType: string | null;
+    rawHtmlHash: string | null;
+    initialTextLength: number | null;
+    iframeCount: number | null;
+  }>;
+  findings: ScanResultFinding[];
+}
+
+export async function getScanResultRequest(
+  scanId: string,
+): Promise<ScanResultResponse> {
+  const response = await fetch(
+    `/api/scan-results/${encodeURIComponent(scanId)}`,
+    {
+      credentials: "same-origin",
+    },
+  );
+  const data = await readJson<{ result: ScanResultResponse }>(
+    response,
+  );
+  return data.result;
+}

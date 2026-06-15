@@ -10,6 +10,7 @@ import {
   type SafeHttpFetcher,
 } from "./http-fetcher";
 import { collectSiteScan } from "./scan-engine";
+import { applyScoreToFindings } from "./scoring";
 
 export interface ScanRunSummary {
   scanId: string;
@@ -19,6 +20,8 @@ export interface ScanRunSummary {
   finalUrl: string | null;
   pageId: string | null;
   findingsCount: number;
+  score: number | null;
+  grade: string | null;
   errorCode: string | null;
 }
 
@@ -83,6 +86,7 @@ async function persistSuccessfulScan(
   result: Awaited<ReturnType<typeof collectSiteScan>>,
 ): Promise<ScanRunSummary> {
   const prisma = getDatabase();
+  const scored = applyScoreToFindings(result.findings);
 
   return prisma.$transaction(async (transaction) => {
     const scan = await transaction.scan.findUniqueOrThrow({
@@ -117,7 +121,7 @@ async function persistSuccessfulScan(
       },
     });
 
-    for (const item of result.findings) {
+    for (const item of scored.findings) {
       await transaction.finding.create({
         data: {
           scanId,
@@ -147,6 +151,8 @@ async function persistSuccessfulScan(
       where: { id: scanId },
       data: {
         status: result.status,
+        score: scored.summary.score,
+        grade: scored.summary.grade,
         completedAt: new Date(),
         errorCode: null,
       },
@@ -159,7 +165,9 @@ async function persistSuccessfulScan(
       status: completed.status,
       finalUrl: result.finalUrl,
       pageId: page.id,
-      findingsCount: result.findings.length,
+      findingsCount: scored.findings.length,
+      score: completed.score,
+      grade: completed.grade,
       errorCode: null,
     };
   });
@@ -176,6 +184,8 @@ async function persistFailedScan(
     where: { id: scanId },
     data: {
       status: "FAILED",
+      score: null,
+      grade: null,
       completedAt: new Date(),
       errorCode,
     },
@@ -198,6 +208,8 @@ async function persistFailedScan(
     finalUrl: scan.site.finalUrl,
     pageId: null,
     findingsCount: 0,
+    score: null,
+    grade: null,
     errorCode,
   };
 }

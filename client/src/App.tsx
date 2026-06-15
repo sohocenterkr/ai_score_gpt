@@ -9,6 +9,7 @@ import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { ScanResultPage } from "./pages/ScanResultPage";
 import { SignupPage } from "./pages/SignupPage";
 import { SitesPage } from "./pages/SitesPage";
 import { SystemPage } from "./pages/SystemPage";
@@ -36,6 +37,14 @@ export function App() {
           element={
             <RequireAuth>
               <SitesPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="sites/:siteId/scans/:scanId"
+          element={
+            <RequireAuth>
+              <ScanResultPage />
             </RequireAuth>
           }
         />

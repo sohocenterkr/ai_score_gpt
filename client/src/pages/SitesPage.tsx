@@ -248,9 +248,9 @@ export function SitesPage() {
         </div>
 
         <div className="sites-notice" role="note">
-          공개 URL의 실제 HTTP 응답과 초기 HTML 증거를 수집합니다.
-          점수 계산·검사 결과 화면·작업지시서 생성은 다음 단계에서
-          현재 진단 데이터에 연결됩니다.
+          공개 URL의 실제 HTTP 응답과 초기 HTML 증거를 수집하고
+          규칙 기반 점수와 검사 결과를 제공합니다. 작업지시서 생성은
+          다음 단계에서 실패 항목에 연결됩니다.
         </div>
 
         {message ? (
@@ -403,8 +403,14 @@ export function SitesPage() {
                             {site.latestScan ? (
                               <span>
                                 {scanStatusLabels[site.latestScan.status]} ·{" "}
-                                {site.latestScan.type} ·{" "}
-                                {formatKST(site.latestScan.createdAt)}
+                                {site.latestScan.type}
+                                {site.latestScan.score !== null ? (
+                                  <>
+                                    {" "}· {Math.round(site.latestScan.score)}점{" "}
+                                    {site.latestScan.grade}
+                                  </>
+                                ) : null}
+                                {" "}· {formatKST(site.latestScan.createdAt)}
                               </span>
                             ) : (
                               <span>등록된 검사 작업 없음</span>
@@ -424,6 +430,16 @@ export function SitesPage() {
                                   ? "처리 중..."
                                   : "간편검사 작업 만들기"}
                             </button>
+                            {site.latestScan &&
+                            (site.latestScan.status === "COMPLETED" ||
+                              site.latestScan.status === "PARTIAL") ? (
+                              <Link
+                                className="site-secondary-button"
+                                to={`/${locale}/sites/${site.id}/scans/${site.latestScan.id}`}
+                              >
+                                결과 보기
+                              </Link>
+                            ) : null}
                             <button
                               className="site-secondary-button"
                               type="button"

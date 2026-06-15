@@ -18,6 +18,11 @@ import {
 } from "./email/password-reset-mailer";
 import { env } from "./config/env";
 import { getDatabaseHealth } from "./services/database-health";
+import { createScanResultRouter } from "./scans/scan-result-router";
+import {
+  createPrismaScanResultService,
+  type ScanResultService,
+} from "./scans/scan-result-service";
 import { createSiteRouter } from "./sites/site-router";
 import {
   createPrismaSiteService,
@@ -30,6 +35,7 @@ interface CreateAppOptions {
   passwordService?: PasswordService;
   passwordResetMailer?: PasswordResetMailer;
   siteService?: SiteService;
+  scanResultService?: ScanResultService;
 }
 
 export function createApp(options: CreateAppOptions = {}) {
@@ -40,6 +46,8 @@ export function createApp(options: CreateAppOptions = {}) {
   const passwordResetMailer =
     options.passwordResetMailer ?? createResendPasswordResetMailer();
   const siteService = options.siteService ?? createPrismaSiteService();
+  const scanResultService =
+    options.scanResultService ?? createPrismaScanResultService();
   const requireAuth = createRequireAuth(authService);
 
   app.disable("x-powered-by");
@@ -78,6 +86,13 @@ export function createApp(options: CreateAppOptions = {}) {
     "/api/sites",
     createSiteRouter({
       siteService,
+      requireAuth,
+    }),
+  );
+  app.use(
+    "/api/scan-results",
+    createScanResultRouter({
+      scanResultService,
       requireAuth,
     }),
   );

@@ -1,5 +1,4 @@
 import {
-  HttpFetchError,
   selectEvidenceHeaders,
   type SafeHttpFetcher,
   type SafeHttpResponse,
@@ -8,6 +7,12 @@ import {
   analyzeHtml,
   type HtmlAnalysis,
 } from "./html-analyzer";
+import {
+  evaluateRobotsPolicy,
+  parseRobotsPolicy,
+  type ParsedRobotsPolicy,
+  type RobotsDecision,
+} from "./robots-policy";
 
 export type CollectedFindingStatus =
   | "PASS"
@@ -56,6 +61,56 @@ interface OptionalResource {
   errorMessage: string | null;
 }
 
+interface SitemapAttempt {
+  url: string;
+  statusCode: number | null;
+  finalUrl: string | null;
+  contentType: string | null;
+  validXml: boolean;
+  errorCode: string | null;
+  errorMessage: string | null;
+}
+
+interface SitemapCollection {
+  selected: SafeHttpResponse | null;
+  attempts: SitemapAttempt[];
+}
+
+interface BotDefinition {
+  ruleCode: string;
+  token: string;
+  label: string;
+  userAgent: string;
+  kind: "SEARCH" | "USER" | "TRAINING";
+}
+
+const botDefinitions: readonly BotDefinition[] = [
+  {
+    ruleCode: "ACCESS-OAI-SEARCHBOT-001",
+    token: "OAI-SearchBot",
+    label: "OAI-SearchBot 검색 접근",
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36; compatible; OAI-SearchBot/1.3; +https://openai.com/searchbot",
+    kind: "SEARCH",
+  },
+  {
+    ruleCode: "ACCESS-CHATGPT-USER-001",
+    token: "ChatGPT-User",
+    label: "ChatGPT-User 사용자 요청 접근",
+    userAgent:
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot",
+    kind: "USER",
+  },
+  {
+    ruleCode: "ACCESS-GPTBOT-001",
+    token: "GPTBot",
+    label: "GPTBot 학습 접근 정책",
+    userAgent:
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.3; +https://openai.com/gptbot",
+    kind: "TRAINING",
+  },
+];
+
 function finding(
   input: Omit<CollectedFinding, "scoreDelta">,
 ): CollectedFinding {
@@ -101,13 +156,30 @@ function statusSeverity(
   return "INFO";
 }
 
+function errorCode(error: unknown): string {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "string"
+  ) {
+    return error.code;
+  }
+
+  return "HTTP_REQUEST_FAILED";
+}
+
 async function fetchOptionalResource(
   fetcher: SafeHttpFetcher,
   url: string,
   accept: string,
+  userAgent?: string,
 ): Promise<OptionalResource> {
   try {
-    const response = await fetcher.fetch(url, { accept });
+    const response = await fetcher.fetch(url, {
+      accept,
+      userAgent,
+    });
 
     return {
       url,
@@ -119,10 +191,7 @@ async function fetchOptionalResource(
     return {
       url,
       response: null,
-      errorCode:
-        error instanceof HttpFetchError
-          ? error.code
-          : "HTTP_REQUEST_FAILED",
+      errorCode: errorCode(error),
       errorMessage:
         error instanceof Error
           ? error.message
@@ -131,18 +200,76 @@ async function fetchOptionalResource(
   }
 }
 
-function robotsSitemaps(text: string): string[] {
-  const values = new Set<string>();
+function isXmlSitemap(response: SafeHttpResponse): boolean {
+  const contentType = response.contentType?.toLowerCase() ?? "";
+  const sample = response.body
+    .subarray(0, 4_096)
+    .toString("utf8")
+    .toLowerCase();
 
-  for (const line of text.split(/\r?\n/)) {
-    const match = line.match(/^\s*sitemap\s*:\s*(.+?)\s*$/i);
+  return (
+    contentType.includes("xml") ||
+    sample.includes("<urlset") ||
+    sample.includes("<sitemapindex")
+  );
+}
 
-    if (match?.[1]) {
-      values.add(match[1]);
+async function collectSitemap(
+  fetcher: SafeHttpFetcher,
+  declaredSitemaps: readonly string[],
+  defaultSitemapUrl: string,
+): Promise<SitemapCollection> {
+  const candidates = [
+    ...new Set([...declaredSitemaps, defaultSitemapUrl]),
+  ].slice(0, 5);
+  const attempts: SitemapAttempt[] = [];
+
+  for (const url of candidates) {
+    const resource = await fetchOptionalResource(
+      fetcher,
+      url,
+      "application/xml,text/xml,*/*;q=0.5",
+    );
+
+    if (!resource.response) {
+      attempts.push({
+        url,
+        statusCode: null,
+        finalUrl: null,
+        contentType: null,
+        validXml: false,
+        errorCode: resource.errorCode,
+        errorMessage: resource.errorMessage,
+      });
+      continue;
+    }
+
+    const validXml =
+      isSuccessful(resource.response.statusCode) &&
+      isXmlSitemap(resource.response);
+
+    attempts.push({
+      url,
+      statusCode: resource.response.statusCode,
+      finalUrl: resource.response.finalUrl,
+      contentType: resource.response.contentType,
+      validXml,
+      errorCode: null,
+      errorMessage: null,
+    });
+
+    if (validXml) {
+      return {
+        selected: resource.response,
+        attempts,
+      };
     }
   }
 
-  return [...values].slice(0, 20);
+  return {
+    selected: null,
+    attempts,
+  };
 }
 
 function resourceFinding(
@@ -194,18 +321,87 @@ function resourceFinding(
   });
 }
 
+function sitemapFinding(
+  collection: SitemapCollection,
+  declaredSitemaps: readonly string[],
+  defaultSitemapUrl: string,
+): CollectedFinding {
+  const hasHttpResponse = collection.attempts.some(
+    (attempt) => attempt.statusCode !== null,
+  );
+
+  return finding({
+    ruleCode: "ACCESS-SITEMAP-001",
+    category: "접근 및 수집 정책",
+    severity: collection.selected ? "INFO" : "MEDIUM",
+    status: collection.selected
+      ? "PASS"
+      : hasHttpResponse
+        ? "FAIL"
+        : "BLOCKED",
+    title: "sitemap",
+    description: collection.selected
+      ? "robots.txt 선언 또는 사이트 루트에서 유효한 sitemap을 확인했습니다."
+      : "확인한 sitemap 후보에서 유효한 XML sitemap을 찾지 못했습니다.",
+    evidence: {
+      declaredSitemaps,
+      defaultSitemapUrl,
+      selectedUrl: collection.selected?.finalUrl ?? null,
+      attempts: collection.attempts,
+    },
+    recommendation: collection.selected
+      ? null
+      : "robots.txt에 실제 sitemap URL을 선언하고 해당 주소가 2xx XML 응답을 반환하도록 설정하세요.",
+  });
+}
+
+function containsNoindex(value: string | null): boolean {
+  return Boolean(value?.toLowerCase().includes("noindex"));
+}
+
 function metadataFindings(
   analysis: HtmlAnalysis,
+  main: SafeHttpResponse,
 ): CollectedFinding[] {
   const hasTitle = Boolean(analysis.title);
   const hasDescription = Boolean(analysis.metaDescription);
   const hasCanonical = Boolean(analysis.canonicalUrl);
   const hasH1 = analysis.headings.h1.length > 0;
+  const hasHeadingStructure =
+    hasH1 && analysis.headings.h2.length > 0;
   const hasLang = Boolean(analysis.htmlLang);
+  const hasOpenGraph = Boolean(
+    analysis.openGraph.title &&
+      analysis.openGraph.description,
+  );
   const hasValidJsonLd = analysis.jsonLd.validCount > 0;
+  const hasJsonLdTypes = analysis.jsonLd.types.length > 0;
   const readableText = analysis.textLength >= 200;
+  const answerableText = analysis.textLength >= 800;
+  const navigable = analysis.links.internal >= 1;
+  const iframeIndependent =
+    analysis.iframeCount === 0 || analysis.textLength >= 500;
+  const xRobotsTag =
+    selectEvidenceHeaders(main.headers)["x-robots-tag"];
+  const indexable =
+    !containsNoindex(analysis.robotsMeta) &&
+    !containsNoindex(xRobotsTag);
 
   return [
+    finding({
+      ruleCode: "CONTENT-HTML-001",
+      category: "콘텐츠 읽기 용이성",
+      severity: "INFO",
+      status: "PASS",
+      title: "HTML 콘텐츠",
+      description: "대표 페이지에서 HTML 문서를 확인했습니다.",
+      evidence: {
+        contentType: main.contentType,
+        bodyBytes: analysis.bodyBytes,
+        rawHtmlHash: analysis.rawHtmlHash,
+      },
+      recommendation: null,
+    }),
     finding({
       ruleCode: "META-TITLE-001",
       category: "정보 구조와 의미 전달",
@@ -255,6 +451,22 @@ function metadataFindings(
         : "중복 URL 판단을 돕도록 대표 URL을 가리키는 canonical 링크를 추가하세요.",
     }),
     finding({
+      ruleCode: "META-OG-001",
+      category: "정보 구조와 의미 전달",
+      severity: hasOpenGraph ? "INFO" : "LOW",
+      status: hasOpenGraph ? "PASS" : "FAIL",
+      title: "Open Graph 핵심 메타데이터",
+      description: hasOpenGraph
+        ? "og:title과 og:description을 확인했습니다."
+        : "og:title 또는 og:description이 누락되었습니다.",
+      evidence: {
+        ...analysis.openGraph,
+      },
+      recommendation: hasOpenGraph
+        ? null
+        : "공유·요약 문맥을 돕도록 og:title과 og:description을 초기 HTML에 추가하세요.",
+    }),
+    finding({
       ruleCode: "STRUCT-H1-001",
       category: "콘텐츠 읽기 용이성",
       severity: hasH1 ? "INFO" : "MEDIUM",
@@ -272,6 +484,24 @@ function metadataFindings(
       recommendation: hasH1
         ? null
         : "페이지의 핵심 주제를 나타내는 H1 제목을 초기 HTML에 추가하세요.",
+    }),
+    finding({
+      ruleCode: "CONTENT-HEADINGS-001",
+      category: "콘텐츠 이해 및 답변 가능성",
+      severity: hasHeadingStructure ? "INFO" : "LOW",
+      status: hasHeadingStructure ? "PASS" : "FAIL",
+      title: "제목 계층 구조",
+      description: hasHeadingStructure
+        ? "H1과 H2를 사용한 기본 제목 계층을 확인했습니다."
+        : "H1과 H2를 함께 사용한 기본 제목 계층이 부족합니다.",
+      evidence: {
+        h1: analysis.headings.h1,
+        h2: analysis.headings.h2,
+        h3Count: analysis.headings.h3Count,
+      },
+      recommendation: hasHeadingStructure
+        ? null
+        : "페이지 주제와 하위 내용을 H1·H2 계층으로 명확히 구분하세요.",
     }),
     finding({
       ruleCode: "STRUCT-LANG-001",
@@ -306,6 +536,23 @@ function metadataFindings(
         : "사이트의 업종과 핵심정보에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.",
     }),
     finding({
+      ruleCode: "STRUCT-JSONLD-TYPES-001",
+      category: "핵심정보 인식 정확도",
+      severity: hasJsonLdTypes ? "INFO" : "MEDIUM",
+      status: hasJsonLdTypes ? "PASS" : "FAIL",
+      title: "JSON-LD 유형 식별",
+      description: hasJsonLdTypes
+        ? "JSON-LD에서 Schema.org 유형을 식별했습니다."
+        : "식별 가능한 JSON-LD @type이 없습니다.",
+      evidence: {
+        scriptCount: analysis.jsonLd.scriptCount,
+        types: analysis.jsonLd.types,
+      },
+      recommendation: hasJsonLdTypes
+        ? null
+        : "WebSite, Organization, LocalBusiness 등 사이트에 맞는 @type을 명시하세요.",
+    }),
+    finding({
       ruleCode: "CONTENT-INITIAL-001",
       category: "콘텐츠 읽기 용이성",
       severity: readableText ? "INFO" : "MEDIUM",
@@ -323,30 +570,224 @@ function metadataFindings(
         : "핵심 설명과 주요 정보를 JavaScript 실행 전 초기 HTML에서도 읽을 수 있게 제공하세요.",
     }),
     finding({
+      ruleCode: "CONTENT-ANSWERABILITY-001",
+      category: "콘텐츠 이해 및 답변 가능성",
+      severity: answerableText ? "INFO" : "MEDIUM",
+      status: answerableText ? "PASS" : "FAIL",
+      title: "초기 콘텐츠 답변 기반",
+      description: answerableText
+        ? "초기 HTML에 기초 질문 답변에 사용할 수 있는 본문량이 있습니다."
+        : "초기 HTML 본문량이 적어 사이트 기반 답변 생성이 제한될 수 있습니다.",
+      evidence: {
+        textLength: analysis.textLength,
+        threshold: 800,
+      },
+      recommendation: answerableText
+        ? null
+        : "서비스·장소·이용방법 등 주요 질문에 답할 수 있는 설명을 초기 HTML에 보강하세요.",
+    }),
+    finding({
       ruleCode: "STRUCT-LINKS-001",
       category: "AI 에이전트 사용 가능성",
-      severity: "INFO",
-      status: "PASS",
+      severity: navigable ? "INFO" : "MEDIUM",
+      status: navigable ? "PASS" : "FAIL",
       title: "페이지 링크 구조",
-      description: "초기 HTML의 탐색 가능한 링크를 수집했습니다.",
+      description: navigable
+        ? "초기 HTML에서 탐색 가능한 내부 링크를 확인했습니다."
+        : "초기 HTML에서 탐색 가능한 내부 링크를 찾지 못했습니다.",
       evidence: {
         ...analysis.links,
       },
-      recommendation: null,
+      recommendation: navigable
+        ? null
+        : "주요 페이지로 이동할 수 있는 표준 a 링크를 초기 HTML에 제공하세요.",
+    }),
+    finding({
+      ruleCode: "CONTENT-NAVIGATION-001",
+      category: "콘텐츠 이해 및 답변 가능성",
+      severity: navigable ? "INFO" : "LOW",
+      status: navigable ? "PASS" : "FAIL",
+      title: "관련 콘텐츠 탐색 단서",
+      description: navigable
+        ? "초기 HTML의 내부 링크가 관련 콘텐츠 탐색 단서를 제공합니다."
+        : "관련 콘텐츠로 이어지는 내부 링크 단서가 부족합니다.",
+      evidence: {
+        internalLinks: analysis.links.internal,
+        externalLinks: analysis.links.external,
+        sample: analysis.links.sample,
+      },
+      recommendation: navigable
+        ? null
+        : "핵심 주제와 관련 페이지를 설명적인 링크 텍스트로 연결하세요.",
     }),
     finding({
       ruleCode: "STRUCT-IFRAME-001",
       category: "콘텐츠 읽기 용이성",
-      severity: "INFO",
-      status: "PASS",
-      title: "iframe 사용 현황",
-      description: "초기 HTML의 iframe 개수를 수집했습니다.",
+      severity: iframeIndependent ? "INFO" : "MEDIUM",
+      status: iframeIndependent ? "PASS" : "FAIL",
+      title: "초기 HTML의 iframe 비의존성",
+      description: iframeIndependent
+        ? "초기 HTML만으로도 충분한 본문을 읽을 수 있습니다."
+        : "iframe이 존재하고 초기 HTML 본문이 적어 핵심정보 의존 가능성이 있습니다.",
       evidence: {
         iframeCount: analysis.iframeCount,
+        textLength: analysis.textLength,
       },
-      recommendation: null,
+      recommendation: iframeIndependent
+        ? null
+        : "iframe 내부에만 있는 핵심정보를 상위 페이지 초기 HTML에도 제공하세요.",
+    }),
+    finding({
+      ruleCode: "ACCESS-INDEXABILITY-001",
+      category: "AI 에이전트 사용 가능성",
+      severity: indexable ? "INFO" : "HIGH",
+      status: indexable ? "PASS" : "FAIL",
+      title: "색인 허용 상태",
+      description: indexable
+        ? "robots meta와 X-Robots-Tag에서 noindex를 확인하지 못했습니다."
+        : "robots meta 또는 X-Robots-Tag에 noindex가 있습니다.",
+      evidence: {
+        robotsMeta: analysis.robotsMeta,
+        xRobotsTag,
+      },
+      recommendation: indexable
+        ? null
+        : "검색·답변 노출이 필요한 페이지에서는 noindex 지시를 제거하세요.",
     }),
   ];
+}
+
+async function botFinding(
+  fetcher: SafeHttpFetcher,
+  targetUrl: string,
+  pathname: string,
+  policy: ParsedRobotsPolicy,
+  definition: BotDefinition,
+): Promise<CollectedFinding> {
+  const robotsDecision = evaluateRobotsPolicy(
+    policy,
+    definition.token,
+    pathname,
+  );
+  const resource = await fetchOptionalResource(
+    fetcher,
+    targetUrl,
+    "text/html,application/xhtml+xml,*/*;q=0.5",
+    definition.userAgent,
+  );
+  const actualAccessible = Boolean(
+    resource.response &&
+      isSuccessful(resource.response.statusCode),
+  );
+  const mismatch =
+    robotsDecision === "BLOCKED" && actualAccessible;
+
+  if (definition.kind === "TRAINING") {
+    return finding({
+      ruleCode: definition.ruleCode,
+      category: "접근 및 수집 정책",
+      severity: "INFO",
+      status:
+        robotsDecision === "BLOCKED"
+          ? "NA"
+          : actualAccessible
+            ? "PASS"
+            : "BLOCKED",
+      title: definition.label,
+      description:
+        robotsDecision === "BLOCKED"
+          ? "학습용 GPTBot은 robots.txt에서 차단되어 있습니다. 이 선택은 자동 감점하지 않습니다."
+          : actualAccessible
+            ? "학습용 GPTBot User-Agent 요청이 실제로 응답했습니다."
+            : "학습용 GPTBot User-Agent의 실제 응답을 확인하지 못했습니다.",
+      evidence: {
+        kind: definition.kind,
+        robotsDecision,
+        actualAccessible,
+        mismatch,
+        statusCode: resource.response?.statusCode ?? null,
+        finalUrl: resource.response?.finalUrl ?? null,
+        errorCode: resource.errorCode,
+        errorMessage: resource.errorMessage,
+        officialSource:
+          "https://developers.openai.com/api/docs/bots",
+      },
+      recommendation: null,
+    });
+  }
+
+  if (definition.kind === "USER") {
+    return finding({
+      ruleCode: definition.ruleCode,
+      category: "AI 에이전트 사용 가능성",
+      severity: actualAccessible ? "INFO" : "HIGH",
+      status: actualAccessible
+        ? "PASS"
+        : resource.response
+          ? "FAIL"
+          : "BLOCKED",
+      title: definition.label,
+      description: actualAccessible
+        ? "사용자 요청형 ChatGPT-User User-Agent가 실제 페이지에 접근했습니다."
+        : "사용자 요청형 ChatGPT-User User-Agent의 실제 접근을 확인하지 못했습니다.",
+      evidence: {
+        kind: definition.kind,
+        robotsDecision,
+        robotsPolicyNote:
+          "ChatGPT-User는 사용자 요청으로 동작하므로 robots.txt 규칙이 적용되지 않을 수 있습니다.",
+        actualAccessible,
+        statusCode: resource.response?.statusCode ?? null,
+        finalUrl: resource.response?.finalUrl ?? null,
+        redirects: resource.response?.redirects ?? [],
+        errorCode: resource.errorCode,
+        errorMessage: resource.errorMessage,
+        officialSource:
+          "https://developers.openai.com/api/docs/bots",
+      },
+      recommendation: actualAccessible
+        ? null
+        : "사용자 요청에 따른 페이지 확인이 필요하면 WAF·CDN·봇 방어 설정에서 ChatGPT-User의 실제 요청을 허용하세요.",
+    });
+  }
+
+  const passed =
+    robotsDecision !== "BLOCKED" && actualAccessible;
+  const blockedByPolicy = robotsDecision === "BLOCKED";
+
+  return finding({
+    ruleCode: definition.ruleCode,
+    category: "접근 및 수집 정책",
+    severity: passed ? "INFO" : "HIGH",
+    status: passed
+      ? "PASS"
+      : blockedByPolicy
+        ? "FAIL"
+        : resource.response
+          ? "FAIL"
+          : "BLOCKED",
+    title: definition.label,
+    description: passed
+      ? "robots.txt 정책과 실제 User-Agent 요청에서 접근 가능함을 확인했습니다."
+      : blockedByPolicy
+        ? "robots.txt 정책에서 해당 검색 봇의 접근을 차단합니다."
+        : "robots.txt는 차단하지 않지만 실제 검색 봇 User-Agent 요청이 정상 응답하지 않았습니다.",
+    evidence: {
+      kind: definition.kind,
+      robotsDecision,
+      actualAccessible,
+      mismatch,
+      statusCode: resource.response?.statusCode ?? null,
+      finalUrl: resource.response?.finalUrl ?? null,
+      redirects: resource.response?.redirects ?? [],
+      errorCode: resource.errorCode,
+      errorMessage: resource.errorMessage,
+      officialSource:
+        "https://developers.openai.com/api/docs/bots",
+    },
+    recommendation: passed
+      ? null
+      : "AI 검색 노출이 필요하면 OAI-SearchBot을 robots.txt와 WAF·CDN 모두에서 허용하세요.",
+  });
 }
 
 export async function collectSiteScan(
@@ -358,22 +799,40 @@ export async function collectSiteScan(
   const analysis = htmlContent
     ? analyzeHtml(main.body, main.finalUrl)
     : null;
-  const finalOrigin = new URL(main.finalUrl).origin;
+  const finalUrl = new URL(main.finalUrl);
+  const finalOrigin = finalUrl.origin;
   const robotsUrl = new URL("/robots.txt", finalOrigin).toString();
-  const sitemapUrl = new URL("/sitemap.xml", finalOrigin).toString();
-
-  const [robots, sitemap] = await Promise.all([
-    fetchOptionalResource(
-      fetcher,
-      robotsUrl,
-      "text/plain,*/*;q=0.5",
+  const defaultSitemapUrl = new URL(
+    "/sitemap.xml",
+    finalOrigin,
+  ).toString();
+  const robots = await fetchOptionalResource(
+    fetcher,
+    robotsUrl,
+    "text/plain,*/*;q=0.5",
+  );
+  const robotsText =
+    robots.response &&
+    isSuccessful(robots.response.statusCode)
+      ? robots.response.body.toString("utf8")
+      : "";
+  const robotsPolicy = parseRobotsPolicy(robotsText);
+  const sitemap = await collectSitemap(
+    fetcher,
+    robotsPolicy.sitemaps,
+    defaultSitemapUrl,
+  );
+  const botFindings = await Promise.all(
+    botDefinitions.map((definition) =>
+      botFinding(
+        fetcher,
+        main.finalUrl,
+        finalUrl.pathname || "/",
+        robotsPolicy,
+        definition,
+      ),
     ),
-    fetchOptionalResource(
-      fetcher,
-      sitemapUrl,
-      "application/xml,text/xml,*/*;q=0.5",
-    ),
-  ]);
+  );
 
   const findings: CollectedFinding[] = [];
   const httpPassed = isSuccessful(main.statusCode);
@@ -405,7 +864,7 @@ export async function collectSiteScan(
     }),
   );
 
-  const usesHttps = new URL(main.finalUrl).protocol === "https:";
+  const usesHttps = finalUrl.protocol === "https:";
 
   findings.push(
     finding({
@@ -436,15 +895,6 @@ export async function collectSiteScan(
     ),
   );
 
-  const robotsText =
-    robots.response &&
-    isSuccessful(robots.response.statusCode)
-      ? robots.response.body.toString("utf8")
-      : "";
-  const declaredSitemaps = robotsText
-    ? robotsSitemaps(robotsText)
-    : [];
-
   findings.push(
     finding({
       ruleCode: "ACCESS-ROBOTS-EVIDENCE",
@@ -453,28 +903,27 @@ export async function collectSiteScan(
       status: robots.response ? "PASS" : "BLOCKED",
       title: "robots.txt 기초 증거",
       description:
-        "robots.txt의 sitemap 선언과 응답 일부를 수집했습니다.",
+        "robots.txt의 sitemap 선언과 봇별 정책 분석을 위한 기초 증거를 수집했습니다.",
       evidence: {
         url: robotsUrl,
-        declaredSitemaps,
-        textSample: robotsText.slice(0, 2_000),
+        declaredSitemaps: robotsPolicy.sitemaps,
+        textSample: robotsText.slice(0, 4_000),
       },
       recommendation: null,
     }),
   );
 
   findings.push(
-    resourceFinding(
-      "ACCESS-SITEMAP-001",
-      "sitemap.xml",
-      "정보 구조와 의미 전달",
+    sitemapFinding(
       sitemap,
-      "사이트 루트에 접근 가능한 sitemap.xml을 제공하거나 robots.txt에 실제 sitemap URL을 선언하세요.",
+      robotsPolicy.sitemaps,
+      defaultSitemapUrl,
     ),
   );
+  findings.push(...botFindings);
 
   if (analysis) {
-    findings.push(...metadataFindings(analysis));
+    findings.push(...metadataFindings(analysis, main));
   } else {
     findings.push(
       finding({
@@ -494,6 +943,26 @@ export async function collectSiteScan(
       }),
     );
   }
+
+  findings.push(
+    finding({
+      ruleCode: "ENV-MEASUREMENT-001",
+      category: "최신성 및 측정 환경",
+      severity: "INFO",
+      status: "PASS",
+      title: "실제 공개 URL 측정 환경",
+      description:
+        "검사 시점의 공개 URL에서 DNS·리디렉션·HTTP 응답을 새로 수집했습니다.",
+      evidence: {
+        measuredAt: new Date().toISOString(),
+        requestedUrl: main.requestedUrl,
+        finalUrl: main.finalUrl,
+        statusCode: main.statusCode,
+        rulesScope: "QUICK_INITIAL_HTML",
+      },
+      recommendation: null,
+    }),
+  );
 
   return {
     status:

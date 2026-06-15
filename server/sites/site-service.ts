@@ -6,13 +6,12 @@ import {
 } from "@prisma/client";
 import type { PublicUser } from "../auth/auth-service";
 import { getDatabase } from "../db";
+import { CURRENT_RULES_VERSION } from "../scans/scoring";
 import {
   SiteUrlError,
   validatePublicSiteUrl,
   type DnsResolver,
 } from "./url-safety";
-
-const CURRENT_RULES_VERSION = "2026.06-core-v1";
 
 export interface CreateSiteInput {
   name: string;
