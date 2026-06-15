@@ -37,6 +37,10 @@
 - PDFKit `0.19.1`, Noto Sans KR `5.2.9`, `@types/pdfkit` `0.17.6` 사용
 - Noto Sans KR WOFF2 500 단일 글꼴을 PDF에 내장하고 한글 검색·복사를 지원
 - 비짓제주 실제 작업지시서 PDF: A4 10페이지, 생성 약 1.07초, 6,388,229바이트 확인
+- 진단 보고서 PDF API: `/api/scan-results/:scanId/export.pdf`
+- 진단 보고서는 Noto Sans KR WOFF 500 단일 글꼴을 내장하여 Replit·브라우저 PDF 뷰어에서 한글 표시와 검색·복사를 지원
+- 비짓제주 실제 진단 보고서 PDF: A4 16페이지, 62,298바이트, 주요 문제 5건·전체 진단 25건·수집 페이지 1건 확인
+- WOFF 글꼴의 최초 PDF 생성은 테스트 환경에서 약 20초 수준이므로 반복 다운로드 캐시와 생성 성능 최적화가 후속 과제
 - 자동 백그라운드 검사 실행기는 아직 구성하지 않음
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-15 KST

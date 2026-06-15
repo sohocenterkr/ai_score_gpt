@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getScanResultRequest,
+  scanResultPdfUrl,
   SiteApiError,
   type ScanResultFinding,
   type ScanResultResponse,
@@ -511,9 +512,12 @@ export function ScanResultPage() {
             >
               작업지시서 목록
             </Link>
-            <button type="button" disabled>
-              PDF 보고서 · 다음 단계
-            </button>
+            <a
+              className="scan-report-link"
+              href={scanResultPdfUrl(result.scan.id)}
+            >
+              PDF 보고서 저장
+            </a>
           </div>
         </section>
 

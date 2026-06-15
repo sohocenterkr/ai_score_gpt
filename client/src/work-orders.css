@@ -188,7 +188,8 @@
 .work-order-toolbar button,
 .work-order-toolbar a,
 .scan-result-actions .work-order-create-button,
-.scan-result-actions .work-order-list-link {
+.scan-result-actions .work-order-list-link,
+.scan-result-actions .scan-report-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;

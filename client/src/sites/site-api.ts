@@ -267,3 +267,9 @@ export async function getScanResultRequest(
   );
   return data.result;
 }
+
+export function scanResultPdfUrl(scanId: string): string {
+  return `/api/scan-results/${encodeURIComponent(
+    scanId,
+  )}/export.pdf`;
+}
