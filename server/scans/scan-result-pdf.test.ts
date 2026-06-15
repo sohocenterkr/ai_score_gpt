@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   renderScanResultPdf,
+  sanitizeEvidenceValue,
   scanResultPdfFilename,
+  scanResultPdfFontHash,
 } from "./scan-result-pdf";
 import type { PublicScanResult } from "./scan-result-service";
 
@@ -162,5 +164,28 @@ describe("scan result PDF", () => {
     expect(scanResultPdfFilename(sampleResult)).toBe(
       "site-ai-score-scan-1.pdf",
     );
+  });
+
+  it("객체 키와 문자열 안의 인증정보를 숨긴다", () => {
+    const sanitized = sanitizeEvidenceValue({
+      authorization: "Bearer key-secret-value",
+      note: "Authorization: Bearer inline-secret-value",
+      cookieLine: "Cookie: session=very-secret-cookie",
+      url: "https://example.com/?token=query-secret-value",
+      safe: "status=200",
+    });
+    const text = JSON.stringify(sanitized);
+
+    expect(text).not.toContain("key-secret-value");
+    expect(text).not.toContain("inline-secret-value");
+    expect(text).not.toContain("very-secret-cookie");
+    expect(text).not.toContain("query-secret-value");
+    expect(text).toContain("[보안상 숨김]");
+    expect(text).toContain("status=200");
+  });
+
+  it("사용 글꼴 SHA-256을 안정적으로 계산한다", () => {
+    expect(scanResultPdfFontHash()).toMatch(/^[a-f0-9]{64}$/);
+    expect(scanResultPdfFontHash()).toBe(scanResultPdfFontHash());
   });
 });

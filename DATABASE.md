@@ -15,7 +15,7 @@
 | DB 이름 | `heliumdb` | 확인 필요 |
 | 마스킹 호스트 | `he**um` | 확인 필요 |
 | Secret 이름 | `DATABASE_URL` | `DATABASE_URL` |
-| 마이그레이션 상태 | 5개 적용 완료 | 미실행 |
+| 마이그레이션 상태 | 6개 적용 완료 | 미실행 |
 | 확인일(KST) | 2026-06-15 | 미확인 |
 
 ## Development 확인 기록
@@ -27,7 +27,8 @@
 - 비밀번호 재설정 마이그레이션: `20260614070105_add_password_reset_tokens`
 - 사이트·검사 기반 마이그레이션: `20260615042821_add_sites_scan_foundation`
 - 작업지시서 마이그레이션: `20260615072844_add_work_orders`
-- 생성 테이블: `_prisma_migrations`, `app_metadata`, `users`, `auth_accounts`, `sessions`, `password_reset_tokens`, `organizations`, `organization_members`, `sites`, `site_facts`, `scans`, `scan_pages`, `findings`, `work_orders`, `work_order_items`
+- 진단 보고서 캐시 마이그레이션: `20260615121000_add_scan_report_cache`
+- 생성 테이블: `_prisma_migrations`, `app_metadata`, `users`, `auth_accounts`, `sessions`, `password_reset_tokens`, `organizations`, `organization_members`, `sites`, `site_facts`, `scans`, `scan_pages`, `findings`, `work_orders`, `work_order_items`, `scan_report_caches`
 - 사용자 역할·상태·인증 공급자 enum 적용
 - 비밀번호 재설정 토큰은 원문이 아닌 HMAC-SHA256 해시만 저장
 - 재설정 토큰은 30분 유효하며 사용·만료 여부를 기록
@@ -40,11 +41,16 @@
 - 작업지시서 번호·버전은 `(order_number, version)` 복합 유일키로 보호
 - 작업 항목은 최초 진단, 대상 URL, 요구사항, 개발자 문구, 완료 기준 JSON과 배점을 저장
 - 3-4B 작업지시서 PDF 출력은 실시간 생성 방식이며 별도 DB 모델·마이그레이션을 추가하지 않음
-- 3-4C 진단 보고서 PDF도 기존 `Scan`, `ScanPage`, `Finding` 자료를 실시간 변환하며 별도 DB 모델·마이그레이션을 추가하지 않음
-- 진단 보고서 PDF 검증 후에도 비짓제주 v2 검사 71점·B등급·페이지 1건·진단 25건과 작업지시서 항목 5건이 그대로 유지됨
-- PDF 기능 검증 후에도 비짓제주 발급 작업지시서 1건과 작업 항목 5건이 그대로 유지됨
+- 3-4C 진단 보고서 PDF는 기존 `Scan`, `ScanPage`, `Finding` 자료를 실시간 변환함
+- 3-4D에서 완성된 PDF의 반복 다운로드를 위해 `ScanReportCache` 모델과 `scan_report_caches` 테이블을 추가함
+- 캐시에는 검사별 보고서 종류, 결과 해시, 렌더러 버전, 글꼴 해시, 생성 상태, PDF `BYTEA`, PDF SHA-256, 파일 크기, 생성 토큰과 잠금 만료 시각을 저장함
+- 검사 ID와 보고서 종류는 복합 유일키로 보호하며 검사 삭제 시 관련 캐시는 연쇄 삭제함
+- 개발 단계에서는 공유 오브젝트 스토리지가 없어 약 48~62KB의 PDF를 PostgreSQL에 제한적으로 저장함
+- Production Cloudinary 비공개 자산 저장이 구성되면 PDF 바이너리를 외부 저장소로 이전하고 DB에는 메타데이터만 남길 수 있도록 캐시 서비스를 분리함
+- 마이그레이션 전후 사이트 1건, 검사 3건, 페이지 2건, 진단 39건, 작업지시서 1건, 작업 항목 5건이 그대로 유지됨
+- 실제 v1·v2 진단 보고서 캐시 2건이 `READY` 상태로 저장되고 PDF 크기와 SHA-256 일치 확인
 - `prisma migrate status`: Database schema is up to date
-- 확인 시각 기준: 2026-06-15 KST
+- 확인 시각 기준: 2026-06-16 KST
 
 ## 현재 Prisma 모델
 
@@ -62,8 +68,9 @@
 - `Finding`
 - `WorkOrder`
 - `WorkOrderItem`
+- `ScanReportCache`
 
-보고서·배포 제출·자동검수·전후 비교 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
+배포 제출·자동검수·전후 비교 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
 
 ## DB 설정 후 확인
 

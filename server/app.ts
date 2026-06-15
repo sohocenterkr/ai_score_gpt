@@ -23,6 +23,10 @@ import {
   createPrismaScanResultService,
   type ScanResultService,
 } from "./scans/scan-result-service";
+import {
+  createPrismaScanReportCacheService,
+  type ScanReportCacheService,
+} from "./scans/scan-report-cache";
 import { createWorkOrderRouter } from "./work-orders/work-order-router";
 import {
   createPrismaWorkOrderService,
@@ -41,6 +45,7 @@ interface CreateAppOptions {
   passwordResetMailer?: PasswordResetMailer;
   siteService?: SiteService;
   scanResultService?: ScanResultService;
+  scanReportCacheService?: ScanReportCacheService;
   workOrderService?: WorkOrderService;
 }
 
@@ -54,6 +59,9 @@ export function createApp(options: CreateAppOptions = {}) {
   const siteService = options.siteService ?? createPrismaSiteService();
   const scanResultService =
     options.scanResultService ?? createPrismaScanResultService();
+  const scanReportCacheService =
+    options.scanReportCacheService ??
+    createPrismaScanReportCacheService();
   const workOrderService =
     options.workOrderService ?? createPrismaWorkOrderService();
   const requireAuth = createRequireAuth(authService);
@@ -101,6 +109,7 @@ export function createApp(options: CreateAppOptions = {}) {
     "/api/scan-results",
     createScanResultRouter({
       scanResultService,
+      scanReportCacheService,
       requireAuth,
     }),
   );

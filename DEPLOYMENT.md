@@ -15,6 +15,7 @@
   - `20260614070105_add_password_reset_tokens`
   - `20260615042821_add_sites_scan_foundation`
   - `20260615072844_add_work_orders`
+  - `20260615121000_add_scan_report_cache`
 - `SESSION_SECRET`: Replit 환경에 32자 이상 설정 확인
 - `APP_BASE_URL`: Replit Preview 공개 origin 설정 확인
 - Resend API Key 설정 확인
@@ -39,11 +40,18 @@
 - 비짓제주 실제 작업지시서 PDF: A4 10페이지, 생성 약 1.07초, 6,388,229바이트 확인
 - 진단 보고서 PDF API: `/api/scan-results/:scanId/export.pdf`
 - 진단 보고서는 Noto Sans KR WOFF 500 단일 글꼴을 내장하여 Replit·브라우저 PDF 뷰어에서 한글 표시와 검색·복사를 지원
-- 비짓제주 실제 진단 보고서 PDF: A4 16페이지, 62,298바이트, 주요 문제 5건·전체 진단 25건·수집 페이지 1건 확인
-- WOFF 글꼴의 최초 PDF 생성은 테스트 환경에서 약 20초 수준이므로 반복 다운로드 캐시와 생성 성능 최적화가 후속 과제
+- 비짓제주 실제 진단 보고서 PDF: A4 16페이지, 약 62KB, 주요 문제 5건·전체 진단 25건·수집 페이지 1건 확인
+- 진단 보고서는 PostgreSQL 공유 캐시에 저장하며 검사 결과·규칙 버전·완료 시각·렌더러·글꼴 변경 시 자동 무효화
+- 실제 v1 보고서 최초 생성 26.59초 `MISS`, 반복 다운로드 9.57ms `HIT`, PDF SHA-256 일치 확인
+- 실제 v2 보고서 반복 다운로드 약 8~13ms, DB 저장 PDF와 SHA-256 일치 확인
+- 캐시 적중 시 저장 PDF의 크기와 SHA-256을 검증하고 손상된 저장본은 다시 생성
+- 동일 보고서 동시 요청은 DB 생성 잠금으로 중복 생성을 방지함
+- 브라우저 응답은 `Cache-Control: private, no-store`를 유지하며 기존 회원·조직·검사 소유권 검사를 먼저 수행함
+- 현재 PostgreSQL PDF 저장은 공유 오브젝트 스토리지가 없는 개발 단계의 제한적 방식이며, Production에서는 Cloudinary 비공개 자산 저장으로 이전 예정
+- WOFF 글꼴의 최초 PDF 생성은 테스트 환경에서 약 20~29초이므로 최초 생성 성능 최적화는 후속 과제
 - 자동 백그라운드 검사 실행기는 아직 구성하지 않음
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
-- 확인일: 2026-06-15 KST
+- 확인일: 2026-06-16 KST
 
 ## 현재 개발 환경 Secrets
 

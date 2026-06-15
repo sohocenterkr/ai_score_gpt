@@ -95,6 +95,12 @@ enum WorkOrderItemStatus {
   NOT_APPLICABLE
 }
 
+enum ScanReportCacheStatus {
+  GENERATING
+  READY
+  FAILED
+}
+
 model AppMetadata {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -258,6 +264,7 @@ model Scan {
   pages             ScanPage[]
   findings          Finding[]
   initialWorkOrders WorkOrder[]
+  reportCaches      ScanReportCache[]
 
   @@index([siteId, createdAt])
   @@index([status, createdAt])
@@ -366,4 +373,30 @@ model WorkOrderItem {
   @@index([workOrderId, status])
   @@index([findingId])
   @@map("work_order_items")
+}
+
+model ScanReportCache {
+  id                String                @id @default(cuid())
+  scanId            String                @map("scan_id")
+  reportType        String                @default("DIAGNOSTIC") @map("report_type")
+  cacheKey          String                @map("cache_key")
+  sourceHash        String                @map("source_hash")
+  rendererVersion   String                @map("renderer_version")
+  fontHash          String                @map("font_hash")
+  status            ScanReportCacheStatus @default(GENERATING)
+  pdfBytes          Bytes?                @map("pdf_bytes")
+  pdfSha256         String?               @map("pdf_sha256")
+  sizeBytes         Int?                  @map("size_bytes")
+  generationToken   String?               @map("generation_token")
+  lockExpiresAt     DateTime?             @map("lock_expires_at")
+  generatedAt       DateTime?             @map("generated_at")
+  lastAccessedAt    DateTime?             @map("last_accessed_at")
+  errorMessage      String?               @map("error_message")
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  scan              Scan                  @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@unique([scanId, reportType])
+  @@index([status, lockExpiresAt])
+  @@map("scan_report_caches")
 }

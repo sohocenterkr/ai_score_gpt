@@ -5,10 +5,11 @@ import {
   type Response,
 } from "express";
 import type { AuthenticatedResponseLocals } from "../auth/auth-middleware";
+import { scanResultPdfFilename } from "./scan-result-pdf";
 import {
-  renderScanResultPdf,
-  scanResultPdfFilename,
-} from "./scan-result-pdf";
+  ScanReportCacheError,
+  type ScanReportCacheService,
+} from "./scan-report-cache";
 import {
   ScanResultServiceError,
   type ScanResultService,
@@ -16,6 +17,7 @@ import {
 
 interface CreateScanResultRouterOptions {
   scanResultService: ScanResultService;
+  scanReportCacheService: ScanReportCacheService;
   requireAuth: (
     request: Request,
     response: Response<unknown, AuthenticatedResponseLocals>,
@@ -37,7 +39,11 @@ export function createScanResultRouter(
   options: CreateScanResultRouterOptions,
 ) {
   const router = Router();
-  const { scanResultService, requireAuth } = options;
+  const {
+    scanResultService,
+    scanReportCacheService,
+    requireAuth,
+  } = options;
 
   router.get(
     "/:scanId/export.pdf",
@@ -48,7 +54,9 @@ export function createScanResultRouter(
           response.locals.authUser,
           readRouteParam(request.params.scanId),
         );
-        const pdf = await renderScanResultPdf(result);
+        const cached =
+          await scanReportCacheService.getOrCreate(result);
+        const pdf = cached.pdf;
 
         response
           .status(200)
@@ -58,11 +66,20 @@ export function createScanResultRouter(
             "Content-Disposition": `attachment; filename="${scanResultPdfFilename(
               result,
             )}"`,
-            "Content-Length": String(pdf.length),
+              "Content-Length": String(pdf.length),
+              "X-Site-AI-Report-Cache": cached.cacheStatus,
           })
           .send(pdf);
       } catch (error) {
         if (error instanceof ScanResultServiceError) {
+          response.status(error.status).json({
+            code: error.code,
+            message: error.message,
+          });
+          return;
+        }
+
+        if (error instanceof ScanReportCacheError) {
           response.status(error.status).json({
             code: error.code,
             message: error.message,

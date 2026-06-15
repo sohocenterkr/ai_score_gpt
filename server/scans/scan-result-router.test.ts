@@ -2,6 +2,7 @@ import express from "express";
 import request from "supertest";
 import { describe, expect, it, vi } from "vitest";
 import type { PublicUser } from "../auth/auth-service";
+import type { ScanReportCacheService } from "./scan-report-cache";
 import { createScanResultRouter } from "./scan-result-router";
 import {
   ScanResultServiceError,
@@ -53,12 +54,21 @@ const sampleResult: PublicScanResult = {
   findings: [],
 };
 
-function createApp(service: ScanResultService) {
+function createApp(
+  service: ScanResultService,
+  cacheService: ScanReportCacheService = {
+    getOrCreate: vi.fn().mockResolvedValue({
+      pdf: Buffer.from("%PDF-1.4\n%%EOF"),
+      cacheStatus: "HIT",
+    }),
+  },
+) {
   const app = express();
   app.use(
     "/api/scan-results",
     createScanResultRouter({
       scanResultService: service,
+      scanReportCacheService: cacheService,
       requireAuth: async (_request, response, next) => {
         response.locals.authUser = sampleUser;
         next();
@@ -83,28 +93,30 @@ describe("scan result router", () => {
     );
   });
 
-  it(
-    "인증 회원의 진단 보고서 PDF를 반환한다",
-    async () => {
-      const getScanResult = vi.fn().mockResolvedValue(sampleResult);
-      const response = await request(
-        createApp({ getScanResult }),
-      ).get("/api/scan-results/scan-1/export.pdf");
+  it("인증 회원의 캐시된 진단 보고서 PDF를 반환한다", async () => {
+    const getScanResult = vi.fn().mockResolvedValue(sampleResult);
+    const getOrCreate = vi.fn().mockResolvedValue({
+      pdf: Buffer.from("%PDF-1.4\ncached\n%%EOF"),
+      cacheStatus: "HIT",
+    });
+    const response = await request(
+      createApp({ getScanResult }, { getOrCreate }),
+    ).get("/api/scan-results/scan-1/export.pdf");
 
-      expect(response.status).toBe(200);
-      expect(response.headers["content-type"]).toContain(
-        "application/pdf",
-      );
-      expect(response.headers["content-disposition"]).toContain(
-        "site-ai-score-scan-1.pdf",
-      );
-      expect(Buffer.isBuffer(response.body)).toBe(true);
-      expect(response.body.subarray(0, 5).toString("ascii")).toBe(
-        "%PDF-",
-      );
-    },
-    45_000,
-  );
+    expect(response.status).toBe(200);
+    expect(response.headers["content-type"]).toContain(
+      "application/pdf",
+    );
+    expect(response.headers["content-disposition"]).toContain(
+      "site-ai-score-scan-1.pdf",
+    );
+    expect(response.headers["x-site-ai-report-cache"]).toBe("HIT");
+    expect(Buffer.isBuffer(response.body)).toBe(true);
+    expect(response.body.subarray(0, 5).toString("ascii")).toBe(
+      "%PDF-",
+    );
+    expect(getOrCreate).toHaveBeenCalledWith(sampleResult);
+  });
 
   it("접근할 수 없는 검사 결과를 404로 반환한다", async () => {
     const getScanResult = vi.fn().mockRejectedValue(

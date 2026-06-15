@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import PDFDocument from "pdfkit";
 import type {
@@ -7,6 +8,10 @@ import type {
 } from "./scan-result-service";
 
 const FONT_NAME = "SiteAiScoreNotoMedium";
+export const SCAN_RESULT_PDF_RENDERER_VERSION =
+  "2026.06-scan-report-v2";
+
+let cachedFontHash: string | undefined;
 
 const COLORS = {
   primary: "#3157E5",
@@ -300,18 +305,41 @@ function pointImpact(finding: PublicScanResultFinding): string {
     : `배점 ${finding.weight}점 미반영`;
 }
 
-function sanitizeEvidenceValue(
+function sanitizeSensitiveString(value: string): string {
+  return value
+    .replace(
+      /\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/gi,
+      "Bearer [보안상 숨김]",
+    )
+    .replace(
+      /(\b(?:authorization|proxy-authorization)\s*[:=]\s*)[^\r\n,;]+/gi,
+      "$1[보안상 숨김]",
+    )
+    .replace(
+      /(\b(?:cookie|set-cookie)\s*[:=]\s*)[^\r\n]+/gi,
+      "$1[보안상 숨김]",
+    )
+    .replace(
+      /(\b(?:password|passwd|pwd|secret|token|access[_-]?token|refresh[_-]?token|api[_-]?key)\b\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s,;&]+)/gi,
+      "$1[보안상 숨김]",
+    );
+}
+
+export function sanitizeEvidenceValue(
   value: unknown,
   seen = new WeakSet<object>(),
 ): unknown {
   if (
     value === null ||
     value === undefined ||
-    typeof value === "string" ||
     typeof value === "number" ||
     typeof value === "boolean"
   ) {
     return value;
+  }
+
+  if (typeof value === "string") {
+    return sanitizeSensitiveString(value);
   }
 
   if (Array.isArray(value)) {
@@ -344,6 +372,23 @@ function sanitizeEvidenceValue(
   }
 
   return cleanText(value);
+}
+
+export function sanitizeScanResultForPdf(
+  result: PublicScanResult,
+): PublicScanResult {
+  const sanitizeFinding = (
+    finding: PublicScanResultFinding,
+  ): PublicScanResultFinding => ({
+    ...finding,
+    evidence: sanitizeEvidenceValue(finding.evidence),
+  });
+
+  return {
+    ...result,
+    primaryIssues: result.primaryIssues.map(sanitizeFinding),
+    findings: result.findings.map(sanitizeFinding),
+  };
 }
 
 function evidenceText(value: unknown): string {
@@ -1116,6 +1161,13 @@ function addFooters(
   }
 }
 
+export function scanResultPdfFontHash(): string {
+  cachedFontHash ??= createHash("sha256")
+    .update(readFileSync(requireFontPath()))
+    .digest("hex");
+  return cachedFontHash;
+}
+
 export function scanResultPdfFilename(
   result: Pick<PublicScanResult, "scan">,
 ): string {
@@ -1128,6 +1180,10 @@ export function scanResultPdfFilename(
 export async function renderScanResultPdf(
   result: PublicScanResult,
 ): Promise<Buffer> {
+  const safeResult = sanitizeScanResultForPdf(result);
+  const creationDate = new Date(
+    safeResult.scan.completedAt ?? safeResult.scan.createdAt,
+  );
   const document = new PDFDocument({
     size: "A4",
     bufferPages: true,
@@ -1138,13 +1194,13 @@ export async function renderScanResultPdf(
       left: 46,
     },
     info: {
-      Title: `${cleanText(result.site.name)} 진단 보고서`,
+      Title: `${cleanText(safeResult.site.name)} 진단 보고서`,
       Author: "Site AI Score",
-      Subject: `${cleanText(result.scan.id)} / ${cleanText(
-        result.scan.rulesVersion,
+      Subject: `${cleanText(safeResult.scan.id)} / ${cleanText(
+        safeResult.scan.rulesVersion,
       )}`,
       Keywords: "Site AI Score, AEO, 진단 보고서",
-      CreationDate: new Date(),
+      CreationDate: creationDate,
     },
   });
 
@@ -1161,14 +1217,14 @@ export async function renderScanResultPdf(
     document.on("error", reject);
   });
 
-  writeCover(document, result);
-  writeCategoryScores(document, result);
-  writeUnderstanding(document, result);
-  writePrimaryIssues(document, result);
-  writeAllFindings(document, result);
-  writeCollectedPages(document, result);
-  writeMethodology(document, result);
-  addFooters(document, result);
+  writeCover(document, safeResult);
+  writeCategoryScores(document, safeResult);
+  writeUnderstanding(document, safeResult);
+  writePrimaryIssues(document, safeResult);
+  writeAllFindings(document, safeResult);
+  writeCollectedPages(document, safeResult);
+  writeMethodology(document, safeResult);
+  addFooters(document, safeResult);
 
   document.end();
   return completed;
