@@ -4,7 +4,7 @@
 
 ## 현재 단계
 
-핵심 서비스 3-4A 작업지시서 생성·버전 관리·JSON/CSV 출력까지 완료된 상태입니다.
+핵심 서비스 3-4B 작업지시서 PDF 출력까지 완료된 상태입니다.
 
 - TypeScript
 - React + Vite
@@ -45,9 +45,13 @@
 - 문제별 대상 URL·수정 요구사항·개발자 전달 문구·완료 판정 기준
 - 현재 점수와 규칙 배점 기준 예상 개선 범위
 - 작업지시서 JSON·UTF-8 BOM CSV 파일 출력
+- A4 작업지시서 PDF 파일 출력
+- PDF에 Noto Sans KR WOFF2 500 단일 글꼴을 내장하여 한글 검색·복사 지원
+- 현재 점수·예상 점수 범위·항목별 요구사항·완료 기준·최초 검사 증거·면책·페이지 번호 표시
+- 비짓제주 실제 작업지시서 PDF 10페이지, 생성 약 1.07초, 파일 약 6.09MB 확인
 - 비짓제주 발급 작업지시서 1건과 작업 항목 5건 저장 확인
 
-PDF 출력, 자동 백그라운드 실행, Playwright 렌더링 검사, 에이전시 배정·배포 URL 제출·자동검수는 아직 구현하지 않았습니다. Google 로그인과 계정 설정·회원탈퇴도 후속 단계입니다.
+진단 보고서 PDF 출력, 자동 백그라운드 실행, Playwright 렌더링 검사, 에이전시 배정·배포 URL 제출·자동검수는 아직 구현하지 않았습니다. Google 로그인과 계정 설정·회원탈퇴도 후속 단계입니다.
 
 ## 프로젝트 루트
 
@@ -133,6 +137,7 @@ RESEND_FROM_NAME
 /api/work-orders/:workOrderId/revise → 작업지시서 새 버전 생성
 /api/work-orders/:workOrderId/export.json → JSON 저장
 /api/work-orders/:workOrderId/export.csv  → CSV 저장
+/api/work-orders/:workOrderId/export.pdf  → PDF 저장
 ```
 
 ## 문서

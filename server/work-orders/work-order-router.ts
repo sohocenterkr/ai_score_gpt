@@ -7,6 +7,10 @@ import {
 import { z } from "zod";
 import type { AuthenticatedResponseLocals } from "../auth/auth-middleware";
 import {
+  renderWorkOrderPdf,
+  workOrderPdfFilename,
+} from "./work-order-pdf";
+import {
   WorkOrderServiceError,
   type WorkOrderService,
 } from "./work-order-service";
@@ -180,6 +184,34 @@ export function createWorkOrderRouter(
             )}"`,
           )
           .send(JSON.stringify(exported, null, 2));
+      } catch (error) {
+        handleError(response, error);
+      }
+    },
+  );
+
+  router.get(
+    "/:workOrderId/export.pdf",
+    requireAuth,
+    async (request, response) => {
+      try {
+        const workOrder = await workOrderService.getWorkOrder(
+          response.locals.authUser,
+          readRouteParam(request.params.workOrderId),
+        );
+        const pdf = await renderWorkOrderPdf(workOrder);
+
+        response
+          .status(200)
+          .type("application/pdf")
+          .set({
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": `attachment; filename="${workOrderPdfFilename(
+              workOrder,
+            )}"`,
+            "Content-Length": String(pdf.length),
+          })
+          .send(pdf);
       } catch (error) {
         handleError(response, error);
       }

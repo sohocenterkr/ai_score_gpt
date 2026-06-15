@@ -294,9 +294,12 @@ export function WorkOrderPage() {
           >
             CSV 저장
           </a>
-          <button className="secondary" type="button" disabled>
-            PDF · 다음 단계
-          </button>
+          <a
+            className="secondary"
+            href={workOrderExportUrl(workOrder.id, "pdf")}
+          >
+            PDF 저장
+          </a>
         </div>
 
         <section className="work-order-items-section">

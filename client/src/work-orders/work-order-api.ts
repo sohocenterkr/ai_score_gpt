@@ -211,7 +211,7 @@ export async function cancelWorkOrderRequest(
 
 export function workOrderExportUrl(
   workOrderId: string,
-  format: "json" | "csv",
+  format: "json" | "csv" | "pdf",
 ): string {
   return `/api/work-orders/${encodeURIComponent(
     workOrderId,

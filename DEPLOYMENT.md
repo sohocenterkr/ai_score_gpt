@@ -31,9 +31,13 @@
 - 작업지시서 목록: `/ko/work-orders`
 - 작업지시서 상세: `/ko/work-orders/:workOrderId`
 - 작업지시서 API: `/api/work-orders`
-- JSON·UTF-8 BOM CSV 자료 출력 지원
+- JSON·UTF-8 BOM CSV·PDF 자료 출력 지원
 - 개발 DB에 비짓제주 발급 작업지시서 1건과 작업 항목 5건 유지
-- PDF 출력과 자동 백그라운드 검사 실행기는 아직 구성하지 않음
+- 작업지시서 PDF API: `/api/work-orders/:workOrderId/export.pdf`
+- PDFKit `0.19.1`, Noto Sans KR `5.2.9`, `@types/pdfkit` `0.17.6` 사용
+- Noto Sans KR WOFF2 500 단일 글꼴을 PDF에 내장하고 한글 검색·복사를 지원
+- 비짓제주 실제 작업지시서 PDF: A4 10페이지, 생성 약 1.07초, 6,388,229바이트 확인
+- 자동 백그라운드 검사 실행기는 아직 구성하지 않음
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-15 KST
 
