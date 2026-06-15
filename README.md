@@ -4,7 +4,7 @@
 
 ## 현재 단계
 
-2단계 인증 기반 중 2-1차 이메일 인증 구현까지 완료된 상태입니다.
+2단계 인증 기반 중 2-2차 비밀번호 변경·재설정 및 Resend 메일 발송까지 완료된 상태입니다.
 
 - TypeScript
 - React + Vite
@@ -19,8 +19,14 @@
 - 해시 기반 서버 세션과 HttpOnly 쿠키
 - 로그인 횟수·최종 로그인 기록
 - 인증 보호 대시보드
+- 로그인 회원 비밀번호 변경
+- 변경·재설정 후 기존 세션 전체 폐기
+- 30분 유효 일회용 비밀번호 재설정 링크
+- 재설정 토큰 원문을 저장하지 않는 해시 보관
+- 사용·만료된 재설정 링크 접속 즉시 차단
+- Resend와 검증된 `auth.siteaiscore.com` 발신 도메인 연동
 
-Google 로그인, 비밀번호 재설정·Resend, 계정 설정·회원탈퇴, 검사 엔진과 Cloudinary 연동은 아직 구현하지 않았습니다.
+Google 로그인과 동일 이메일 계정 연결, 계정 설정·회원탈퇴, 검사 엔진과 Cloudinary 연동은 아직 구현하지 않았습니다.
 
 ## 프로젝트 루트
 
@@ -59,6 +65,15 @@ npm run db:generate
 npm run db:validate
 ```
 
+비밀번호 재설정 메일 발송에는 다음 환경변수가 필요합니다.
+
+```text
+APP_BASE_URL
+RESEND_API_KEY
+RESEND_FROM_EMAIL
+RESEND_FROM_NAME
+```
+
 ## 초기 locale
 
 다국어 구조는 구현했지만, 공개 언어 목록이 확정되기 전까지 활성 locale은 `ko` 하나입니다. 언어 목록 확정 후 `shared/locales.ts`와 번역 리소스를 확장합니다.
@@ -66,15 +81,22 @@ npm run db:validate
 ## 주요 경로
 
 ```text
-/                  → /ko 이동
-/ko                → 공개 메인 화면
-/ko/signup         → 이메일 회원가입
-/ko/login          → 이메일 로그인
-/ko/dashboard      → 인증 회원 대시보드
-/ko/system         → 서버·KST·DB 상태 확인
-/api/health        → JSON 상태 API
-/api/auth/session  → 현재 로그인 세션 확인
-/api/me            → 인증 회원 정보
+/                              → /ko 이동
+/ko                            → 공개 메인 화면
+/ko/signup                     → 이메일 회원가입
+/ko/login                      → 이메일 로그인
+/ko/forgot-password            → 비밀번호 재설정 메일 요청
+/ko/reset-password             → 일회용 링크의 새 비밀번호 설정
+/ko/change-password            → 로그인 회원 비밀번호 변경
+/ko/dashboard                  → 인증 회원 대시보드
+/ko/system                     → 서버·KST·DB 상태 확인
+/api/health                    → JSON 상태 API
+/api/auth/session              → 현재 로그인 세션 확인
+/api/auth/forgot-password      → 재설정 메일 요청
+/api/auth/validate-reset-token → 재설정 링크 사전 검증
+/api/auth/reset-password       → 새 비밀번호 저장
+/api/auth/change-password      → 로그인 회원 비밀번호 변경
+/api/me                        → 인증 회원 정보
 ```
 
 ## 문서

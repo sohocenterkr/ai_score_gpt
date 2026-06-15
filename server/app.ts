@@ -7,17 +7,32 @@ import {
   createPrismaAuthService,
   type AuthService,
 } from "./auth/auth-service";
+import { createPasswordRouter } from "./auth/password-router";
+import {
+  createPrismaPasswordService,
+  type PasswordService,
+} from "./auth/password-service";
+import {
+  createResendPasswordResetMailer,
+  type PasswordResetMailer,
+} from "./email/password-reset-mailer";
 import { env } from "./config/env";
 import { getDatabaseHealth } from "./services/database-health";
 import { getNowKST } from "../shared/kst";
 
 interface CreateAppOptions {
   authService?: AuthService;
+  passwordService?: PasswordService;
+  passwordResetMailer?: PasswordResetMailer;
 }
 
 export function createApp(options: CreateAppOptions = {}) {
   const app = express();
   const authService = options.authService ?? createPrismaAuthService();
+  const passwordService =
+    options.passwordService ?? createPrismaPasswordService();
+  const passwordResetMailer =
+    options.passwordResetMailer ?? createResendPasswordResetMailer();
   const requireAuth = createRequireAuth(authService);
 
   app.disable("x-powered-by");
@@ -44,6 +59,14 @@ export function createApp(options: CreateAppOptions = {}) {
   });
 
   app.use("/api/auth", createAuthRouter(authService));
+  app.use(
+    "/api/auth",
+    createPasswordRouter({
+      passwordService,
+      passwordResetMailer,
+      requireAuth,
+    }),
+  );
 
   app.get("/api/me", requireAuth, (_request, response) => {
     response.json({ user: response.locals.authUser });

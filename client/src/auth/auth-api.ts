@@ -19,6 +19,14 @@ interface SessionResponse {
   user: AuthUser | null;
 }
 
+interface MessageResponse {
+  message: string;
+}
+
+interface ResetTokenValidationResponse {
+  valid: boolean;
+}
+
 async function readResponse<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => null)) as
     | (T & { code?: string; message?: string })
@@ -95,6 +103,70 @@ export async function logoutRequest(): Promise<void> {
     throw new AuthApiError(
       body?.code ?? "LOGOUT_FAILED",
       body?.message ?? "로그아웃하지 못했습니다.",
+    );
+  }
+}
+
+export async function forgotPasswordRequest(
+  email: string,
+): Promise<MessageResponse> {
+  const response = await fetch("/api/auth/forgot-password", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  return readResponse<MessageResponse>(response);
+}
+
+export async function validateResetTokenRequest(
+  token: string,
+): Promise<ResetTokenValidationResponse> {
+  const response = await fetch("/api/auth/validate-reset-token", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+
+  return readResponse<ResetTokenValidationResponse>(response);
+}
+
+export async function resetPasswordRequest(input: {
+  token: string;
+  newPassword: string;
+}): Promise<MessageResponse> {
+  const response = await fetch("/api/auth/reset-password", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  return readResponse<MessageResponse>(response);
+}
+
+export async function changePasswordRequest(input: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  const response = await fetch("/api/auth/change-password", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as {
+      code?: string;
+      message?: string;
+    } | null;
+
+    throw new AuthApiError(
+      body?.code ?? "CHANGE_PASSWORD_FAILED",
+      body?.message ?? "비밀번호를 변경하지 못했습니다.",
     );
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 function formatKST(value: string | null): string {
@@ -73,14 +73,19 @@ export function DashboardPage() {
           </p>
         ) : null}
 
-        <button
-          className="secondary-action"
-          type="button"
-          onClick={handleLogout}
-          disabled={submitting}
-        >
-          {submitting ? "로그아웃 중..." : "로그아웃"}
-        </button>
+        <div className="dashboard-actions">
+          <Link className="secondary-action" to={`/${locale}/change-password`}>
+            비밀번호 변경
+          </Link>
+          <button
+            className="secondary-action"
+            type="button"
+            onClick={handleLogout}
+            disabled={submitting}
+          >
+            {submitting ? "로그아웃 중..." : "로그아웃"}
+          </button>
+        </div>
       </div>
     </section>
   );

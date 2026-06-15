@@ -11,6 +11,7 @@ import { useAuth } from "../auth/AuthContext";
 
 interface LoginLocationState {
   from?: string;
+  notice?: string;
 }
 
 export function LoginPage() {
@@ -22,6 +23,7 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const notice = (location.state as LoginLocationState | null)?.notice;
 
   if (state.status === "loading") {
     return (
@@ -69,6 +71,12 @@ export function LoginPage() {
         </div>
 
         <form className="auth-form surface" onSubmit={handleSubmit} noValidate>
+          {notice ? (
+            <p className="auth-message auth-success" role="status">
+              {notice}
+            </p>
+          ) : null}
+
           <label htmlFor="login-email">이메일</label>
           <input
             id="login-email"
@@ -91,6 +99,12 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
             required
           />
+
+          <div className="auth-inline-link">
+            <Link to={`/${locale}/forgot-password`}>
+              비밀번호를 잊으셨나요?
+            </Link>
+          </div>
 
           {message ? (
             <p className="auth-message auth-error" role="alert">
