@@ -1,0 +1,461 @@
+.work-orders-section {
+  padding: 0 0 64px;
+  background: #f5f7fb;
+}
+
+.work-orders-content,
+.work-order-detail-content {
+  padding-top: 42px;
+}
+
+.work-orders-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.work-orders-heading h1 {
+  margin: 8px 0 10px;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.12;
+}
+
+.work-orders-heading p {
+  max-width: 720px;
+  margin: 0;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.work-order-back,
+.work-order-summary-footer a,
+.work-order-empty a {
+  color: #3157e5;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.work-order-message {
+  margin: 0 0 18px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.work-order-success {
+  background: #ecfdf5;
+  color: #166534;
+}
+
+.work-order-error {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.work-order-empty {
+  padding: 30px;
+  text-align: center;
+}
+
+.work-order-list {
+  display: grid;
+  gap: 16px;
+}
+
+.work-order-summary-card {
+  padding: 24px;
+}
+
+.work-order-summary-top,
+.work-order-summary-footer,
+.work-order-item-card header,
+.work-order-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.work-order-summary-top span,
+.work-order-item-card header > div > span {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.work-order-summary-top h2,
+.work-order-item-card h3 {
+  margin: 6px 0 0;
+}
+
+.work-order-summary-top > strong {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.82rem;
+}
+
+.work-order-summary-card dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 22px 0;
+}
+
+.work-order-summary-card dl div,
+.work-order-overview dl div,
+.work-order-item-meta div {
+  min-width: 0;
+}
+
+.work-order-summary-card dt,
+.work-order-overview dt,
+.work-order-item-meta dt {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.work-order-summary-card dd,
+.work-order-overview dd,
+.work-order-item-meta dd {
+  margin: 5px 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.work-order-summary-footer {
+  align-items: center;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.work-order-overview {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.65fr) auto minmax(220px, 1fr) minmax(260px, 1.2fr);
+  align-items: center;
+  gap: 24px;
+  padding: 28px;
+}
+
+.work-order-score-range {
+  display: grid;
+  gap: 4px;
+}
+
+.work-order-score-range span {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.work-order-score-range strong {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.work-order-score-range small {
+  color: #64748b;
+}
+
+.work-order-score-range.expected strong {
+  color: #3157e5;
+}
+
+.work-order-arrow {
+  color: #94a3b8;
+  font-size: 1.8rem;
+}
+
+.work-order-overview dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.work-order-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0 32px;
+}
+
+.work-order-toolbar button,
+.work-order-toolbar a,
+.scan-result-actions .work-order-create-button,
+.scan-result-actions .work-order-list-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #3157e5;
+  color: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.work-order-toolbar .secondary,
+.scan-result-actions .work-order-list-link {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.work-order-toolbar button:disabled,
+.scan-result-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.work-order-section-heading {
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.work-order-section-heading h2 {
+  margin: 0 0 6px;
+}
+
+.work-order-section-heading p {
+  margin: 0;
+  color: #64748b;
+}
+
+.work-order-section-heading > span {
+  color: #3157e5;
+  font-weight: 800;
+}
+
+.work-order-items {
+  display: grid;
+  gap: 18px;
+}
+
+.work-order-item-card {
+  padding: 26px;
+}
+
+.work-order-item-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.work-order-item-badges span {
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.work-order-item-meta {
+  display: grid;
+  grid-template-columns: 2fr 0.7fr 0.7fr;
+  gap: 14px;
+  margin: 22px 0;
+  padding: 15px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.work-order-requirement,
+.work-order-developer-message,
+.work-order-criteria {
+  margin-top: 18px;
+}
+
+.work-order-requirement > strong,
+.work-order-developer-message > strong,
+.work-order-criteria > strong {
+  color: #172033;
+}
+
+.work-order-requirement p,
+.work-order-developer-message p {
+  margin: 7px 0 0;
+  color: #475569;
+  line-height: 1.7;
+}
+
+.work-order-developer-message {
+  padding: 16px;
+  border-left: 4px solid #3157e5;
+  background: #f5f7ff;
+}
+
+.work-order-criteria ul {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.work-order-criteria li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.work-order-criteria li span {
+  color: #3157e5;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.work-order-criteria li p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.work-order-criteria li em {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.work-order-item-card details {
+  margin-top: 18px;
+}
+
+.work-order-item-card summary {
+  cursor: pointer;
+  color: #3157e5;
+  font-weight: 800;
+}
+
+.work-order-item-card pre {
+  max-height: 320px;
+  overflow: auto;
+  padding: 14px;
+  border-radius: 10px;
+  background: #111827;
+  color: #e5e7eb;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.work-order-disclaimer {
+  margin: 20px 0 0;
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+
+.work-order-selection {
+  margin: 18px 0 0;
+  padding: 15px 16px;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  background: #eef2ff;
+}
+
+.work-order-selection strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #3730a3;
+}
+
+.work-order-selection p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.work-order-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 0;
+  color: #3157e5;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.work-order-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: #3157e5;
+}
+
+@media (max-width: 768px) {
+  .work-orders-content,
+  .work-order-detail-content {
+    padding-top: 28px;
+  }
+
+  .work-orders-heading {
+    flex-direction: column;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .work-order-summary-card,
+  .work-order-overview,
+  .work-order-item-card,
+  .work-order-empty {
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .work-order-summary-card dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .work-order-overview {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .work-order-arrow {
+    transform: rotate(90deg);
+  }
+
+  .work-order-toolbar {
+    padding: 0 16px;
+  }
+
+  .work-order-toolbar button,
+  .work-order-toolbar a {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .work-order-item-card header,
+  .work-order-section-heading {
+    flex-direction: column;
+  }
+
+  .work-order-section-heading {
+    padding: 0 16px;
+  }
+
+  .work-order-item-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .work-order-criteria li {
+    grid-template-columns: 1fr;
+  }
+
+  .work-order-disclaimer {
+    padding: 0 16px;
+  }
+}

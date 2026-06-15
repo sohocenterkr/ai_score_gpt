@@ -76,6 +76,25 @@ enum FindingSeverity {
   CRITICAL
 }
 
+enum WorkOrderStatus {
+  DRAFT
+  ISSUED
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  VERIFYING
+  REWORK_REQUIRED
+  PASSED
+  CANCELLED
+}
+
+enum WorkOrderItemStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  NOT_APPLICABLE
+}
+
 model AppMetadata {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -105,6 +124,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   organizationMembers OrganizationMember[]
   scansCreated        Scan[]               @relation("ScanCreator")
+  workOrdersCreated   WorkOrder[]          @relation("WorkOrderCreator")
 
   @@index([status])
   @@map("users")
@@ -158,8 +178,10 @@ model Organization {
   type      OrganizationType @default(CUSTOMER)
   createdAt DateTime         @default(now()) @map("created_at")
   updatedAt DateTime         @updatedAt @map("updated_at")
-  members   OrganizationMember[]
-  sites     Site[]
+  members            OrganizationMember[]
+  sites              Site[]
+  customerWorkOrders WorkOrder[] @relation("CustomerWorkOrders")
+  agencyWorkOrders   WorkOrder[] @relation("AgencyWorkOrders")
 
   @@index([type])
   @@map("organizations")
@@ -195,6 +217,7 @@ model Site {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   facts          SiteFact[]
   scans          Scan[]
+  workOrders     WorkOrder[]
 
   @@unique([organizationId, baseUrl])
   @@index([organizationId, status])
@@ -232,8 +255,9 @@ model Scan {
   updatedAt    DateTime   @updatedAt @map("updated_at")
   site         Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
   creator      User?      @relation("ScanCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  pages        ScanPage[]
-  findings     Finding[]
+  pages             ScanPage[]
+  findings          Finding[]
+  initialWorkOrders WorkOrder[]
 
   @@index([siteId, createdAt])
   @@index([status, createdAt])
@@ -278,9 +302,68 @@ model Finding {
   createdAt     DateTime        @default(now()) @map("created_at")
   scan          Scan            @relation(fields: [scanId], references: [id], onDelete: Cascade)
   scanPage      ScanPage?       @relation(fields: [scanPageId], references: [id], onDelete: SetNull)
+  workOrderItems WorkOrderItem[]
 
   @@index([scanId, status])
   @@index([scanPageId])
   @@index([ruleCode])
   @@map("findings")
+}
+
+model WorkOrder {
+  id                     String          @id @default(cuid())
+  orderNumber            String          @map("order_number")
+  siteId                 String          @map("site_id")
+  initialScanId          String          @map("initial_scan_id")
+  customerOrganizationId String          @map("customer_organization_id")
+  agencyOrganizationId   String?         @map("agency_organization_id")
+  version                Int             @default(1)
+  status                 WorkOrderStatus @default(DRAFT)
+  rulesVersion           String          @map("rules_version")
+  scoreBefore            Float?          @map("score_before")
+  gradeBefore            String?         @map("grade_before")
+  expectedScoreMin       Int             @map("expected_score_min")
+  expectedScoreMax       Int             @map("expected_score_max")
+  issuedAt               DateTime?       @map("issued_at")
+  createdBy              String?         @map("created_by")
+  createdAt              DateTime        @default(now()) @map("created_at")
+  updatedAt              DateTime        @updatedAt @map("updated_at")
+  site                   Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  initialScan            Scan            @relation(fields: [initialScanId], references: [id], onDelete: Cascade)
+  customerOrganization   Organization    @relation("CustomerWorkOrders", fields: [customerOrganizationId], references: [id], onDelete: Cascade)
+  agencyOrganization     Organization?   @relation("AgencyWorkOrders", fields: [agencyOrganizationId], references: [id], onDelete: SetNull)
+  creator                User?           @relation("WorkOrderCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  items                  WorkOrderItem[]
+
+  @@unique([orderNumber, version])
+  @@index([siteId, createdAt])
+  @@index([initialScanId])
+  @@index([customerOrganizationId, status])
+  @@index([agencyOrganizationId])
+  @@index([createdBy])
+  @@map("work_orders")
+}
+
+model WorkOrderItem {
+  id                     String              @id @default(cuid())
+  workOrderId            String              @map("work_order_id")
+  findingId              String?             @map("finding_id")
+  itemCode               String              @map("item_code")
+  targetUrl              String              @map("target_url")
+  title                  String
+  requirement            String
+  developerMessage       String              @map("developer_message")
+  acceptanceCriteriaJson Json                @map("acceptance_criteria_json")
+  isRequired             Boolean             @default(true) @map("is_required")
+  weight                 Int
+  status                 WorkOrderItemStatus @default(PENDING)
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
+  workOrder              WorkOrder           @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  finding                Finding?            @relation(fields: [findingId], references: [id], onDelete: SetNull)
+
+  @@unique([workOrderId, findingId])
+  @@index([workOrderId, status])
+  @@index([findingId])
+  @@map("work_order_items")
 }

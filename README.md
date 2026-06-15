@@ -4,7 +4,7 @@
 
 ## 현재 단계
 
-핵심 서비스 3-3차 규칙 기반 점수·등급 계산과 검사 결과 상세 화면까지 완료된 상태입니다.
+핵심 서비스 3-4A 작업지시서 생성·버전 관리·JSON/CSV 출력까지 완료된 상태입니다.
 
 - TypeScript
 - React + Vite
@@ -39,8 +39,15 @@
 - 검사 결과 상세 화면, 주요 문제, 검사 증거, 수정 권장사항 표시
 - 진단 배지의 판정·중요도·배점·감점 의미 안내
 - 비짓제주 실제 v2 검사에서 71점·B등급, 페이지 1건, 진단 25건 확인
+- 검사 결과의 주요 문제 선택 기반 수정 작업지시서 생성
+- `WO-YYYYMMDD-#####` 번호와 버전별 원본 보존
+- 작업지시서 초안·발급·취소와 새 버전 생성
+- 문제별 대상 URL·수정 요구사항·개발자 전달 문구·완료 판정 기준
+- 현재 점수와 규칙 배점 기준 예상 개선 범위
+- 작업지시서 JSON·UTF-8 BOM CSV 파일 출력
+- 비짓제주 발급 작업지시서 1건과 작업 항목 5건 저장 확인
 
-작업지시서·JSON/CSV/PDF 출력, 자동 백그라운드 실행, Playwright 렌더링 검사는 아직 구현하지 않았습니다. Google 로그인과 계정 설정·회원탈퇴도 후속 단계입니다.
+PDF 출력, 자동 백그라운드 실행, Playwright 렌더링 검사, 에이전시 배정·배포 URL 제출·자동검수는 아직 구현하지 않았습니다. Google 로그인과 계정 설정·회원탈퇴도 후속 단계입니다.
 
 ## 프로젝트 루트
 
@@ -106,6 +113,8 @@ RESEND_FROM_NAME
 /ko/dashboard                  → 인증 회원 대시보드
 /ko/sites                      → 사이트 등록·수정·검사 작업 관리
 /ko/sites/:siteId/scans/:scanId → 점수·영역별 결과·문제·증거 상세
+/ko/work-orders                → 작업지시서 목록
+/ko/work-orders/:workOrderId   → 작업지시서 상세·발급·버전·자료 저장
 /ko/system                     → 서버·KST·DB 상태 확인
 /api/health                    → JSON 상태 API
 /api/auth/session              → 현재 로그인 세션 확인
@@ -118,6 +127,12 @@ RESEND_FROM_NAME
 /api/sites/:siteId             → 사이트 상세·수정·보관
 /api/sites/:siteId/scans       → 검사 이력·검사 작업 생성
 /api/scan-results/:scanId      → 검사 점수·진단 결과 상세 조회
+/api/work-orders               → 작업지시서 목록·생성
+/api/work-orders/:workOrderId  → 작업지시서 상세·초안 취소
+/api/work-orders/:workOrderId/issue  → 작업지시서 발급
+/api/work-orders/:workOrderId/revise → 작업지시서 새 버전 생성
+/api/work-orders/:workOrderId/export.json → JSON 저장
+/api/work-orders/:workOrderId/export.csv  → CSV 저장
 ```
 
 ## 문서

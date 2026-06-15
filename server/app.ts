@@ -23,6 +23,11 @@ import {
   createPrismaScanResultService,
   type ScanResultService,
 } from "./scans/scan-result-service";
+import { createWorkOrderRouter } from "./work-orders/work-order-router";
+import {
+  createPrismaWorkOrderService,
+  type WorkOrderService,
+} from "./work-orders/work-order-service";
 import { createSiteRouter } from "./sites/site-router";
 import {
   createPrismaSiteService,
@@ -36,6 +41,7 @@ interface CreateAppOptions {
   passwordResetMailer?: PasswordResetMailer;
   siteService?: SiteService;
   scanResultService?: ScanResultService;
+  workOrderService?: WorkOrderService;
 }
 
 export function createApp(options: CreateAppOptions = {}) {
@@ -48,6 +54,8 @@ export function createApp(options: CreateAppOptions = {}) {
   const siteService = options.siteService ?? createPrismaSiteService();
   const scanResultService =
     options.scanResultService ?? createPrismaScanResultService();
+  const workOrderService =
+    options.workOrderService ?? createPrismaWorkOrderService();
   const requireAuth = createRequireAuth(authService);
 
   app.disable("x-powered-by");
@@ -93,6 +101,13 @@ export function createApp(options: CreateAppOptions = {}) {
     "/api/scan-results",
     createScanResultRouter({
       scanResultService,
+      requireAuth,
+    }),
+  );
+  app.use(
+    "/api/work-orders",
+    createWorkOrderRouter({
+      workOrderService,
       requireAuth,
     }),
   );

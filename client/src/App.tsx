@@ -13,6 +13,8 @@ import { ScanResultPage } from "./pages/ScanResultPage";
 import { SignupPage } from "./pages/SignupPage";
 import { SitesPage } from "./pages/SitesPage";
 import { SystemPage } from "./pages/SystemPage";
+import { WorkOrderPage } from "./pages/WorkOrderPage";
+import { WorkOrdersPage } from "./pages/WorkOrdersPage";
 
 export function App() {
   return (
@@ -45,6 +47,22 @@ export function App() {
           element={
             <RequireAuth>
               <ScanResultPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="work-orders"
+          element={
+            <RequireAuth>
+              <WorkOrdersPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="work-orders/:workOrderId"
+          element={
+            <RequireAuth>
+              <WorkOrderPage />
             </RequireAuth>
           }
         />

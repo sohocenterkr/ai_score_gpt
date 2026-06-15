@@ -15,7 +15,7 @@
 | DB 이름 | `heliumdb` | 확인 필요 |
 | 마스킹 호스트 | `he**um` | 확인 필요 |
 | Secret 이름 | `DATABASE_URL` | `DATABASE_URL` |
-| 마이그레이션 상태 | 4개 적용 완료 | 미실행 |
+| 마이그레이션 상태 | 5개 적용 완료 | 미실행 |
 | 확인일(KST) | 2026-06-15 | 미확인 |
 
 ## Development 확인 기록
@@ -26,7 +26,8 @@
 - 인증 마이그레이션: `20260614062302_add_local_auth`
 - 비밀번호 재설정 마이그레이션: `20260614070105_add_password_reset_tokens`
 - 사이트·검사 기반 마이그레이션: `20260615042821_add_sites_scan_foundation`
-- 생성 테이블: `_prisma_migrations`, `app_metadata`, `users`, `auth_accounts`, `sessions`, `password_reset_tokens`, `organizations`, `organization_members`, `sites`, `site_facts`, `scans`, `scan_pages`, `findings`
+- 작업지시서 마이그레이션: `20260615072844_add_work_orders`
+- 생성 테이블: `_prisma_migrations`, `app_metadata`, `users`, `auth_accounts`, `sessions`, `password_reset_tokens`, `organizations`, `organization_members`, `sites`, `site_facts`, `scans`, `scan_pages`, `findings`, `work_orders`, `work_order_items`
 - 사용자 역할·상태·인증 공급자 enum 적용
 - 비밀번호 재설정 토큰은 원문이 아닌 HMAC-SHA256 해시만 저장
 - 재설정 토큰은 30분 유효하며 사용·만료 여부를 기록
@@ -35,6 +36,9 @@
 - 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 증거만 저장
 - 비짓제주 v1 초기 수집에서 `COMPLETED`, 페이지 1건, 진단 14건 저장 확인
 - 비짓제주 v2 점수 검사에서 `2026.06-core-v2`, 71점, B등급, 페이지 1건, 진단 25건 저장 확인
+- 비짓제주 발급 작업지시서 1건과 작업 항목 5건 저장 확인
+- 작업지시서 번호·버전은 `(order_number, version)` 복합 유일키로 보호
+- 작업 항목은 최초 진단, 대상 URL, 요구사항, 개발자 문구, 완료 기준 JSON과 배점을 저장
 - `prisma migrate status`: Database schema is up to date
 - 확인 시각 기준: 2026-06-15 KST
 
@@ -52,8 +56,10 @@
 - `Scan`
 - `ScanPage`
 - `Finding`
+- `WorkOrder`
+- `WorkOrderItem`
 
-작업지시서·보고서·자동검수 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
+보고서·배포 제출·자동검수·전후 비교 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
 
 ## DB 설정 후 확인
 

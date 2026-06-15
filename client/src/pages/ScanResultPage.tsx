@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   getScanResultRequest,
   SiteApiError,
@@ -7,6 +7,11 @@ import {
   type ScanResultResponse,
 } from "../sites/site-api";
 import "../scan-results.css";
+import {
+  createWorkOrderRequest,
+  WorkOrderApiError,
+} from "../work-orders/work-order-api";
+import "../work-orders.css";
 
 const statusLabels: Record<ScanResultFinding["status"], string> = {
   PASS: "통과",
@@ -101,10 +106,17 @@ export function ScanResultPage() {
     siteId = "",
     scanId = "",
   } = useParams();
+  const navigate = useNavigate();
   const [result, setResult] =
     useState<ScanResultResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [workOrderError, setWorkOrderError] = useState("");
+  const [creatingWorkOrder, setCreatingWorkOrder] =
+    useState(false);
+  const [selectedFindingIds, setSelectedFindingIds] = useState<
+    string[]
+  >([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,6 +139,11 @@ export function ScanResultPage() {
         }
 
         setResult(response);
+        setSelectedFindingIds(
+          response.primaryIssues
+            .filter((finding) => finding.weight > 0)
+            .map((finding) => finding.id),
+        );
       })
       .catch((error) => {
         if (!cancelled) {
@@ -143,6 +160,45 @@ export function ScanResultPage() {
       cancelled = true;
     };
   }, [scanId, siteId]);
+
+  async function handleCreateWorkOrder() {
+    if (!result || selectedFindingIds.length === 0) {
+      setWorkOrderError(
+        "작업지시서에 포함할 주요 문제를 1개 이상 선택해 주세요.",
+      );
+      return;
+    }
+
+    setCreatingWorkOrder(true);
+    setWorkOrderError("");
+
+    try {
+      const workOrder = await createWorkOrderRequest({
+        scanId: result.scan.id,
+        findingIds: selectedFindingIds,
+      });
+      navigate(`/${locale}/work-orders/${workOrder.id}`);
+    } catch (error) {
+      setWorkOrderError(
+        error instanceof WorkOrderApiError
+          ? error.message
+          : "작업지시서를 만들지 못했습니다.",
+      );
+    } finally {
+      setCreatingWorkOrder(false);
+    }
+  }
+
+  function toggleWorkOrderFinding(
+    findingId: string,
+    checked: boolean,
+  ) {
+    setSelectedFindingIds((current) =>
+      checked
+        ? [...new Set([...current, findingId])]
+        : current.filter((id) => id !== findingId),
+    );
+  }
 
   const groupedFindings = useMemo(() => {
     const groups = new Map<string, ScanResultFinding[]>();
@@ -403,6 +459,9 @@ export function ScanResultPage() {
                   finding={finding}
                   key={finding.id}
                   primary
+                  selectable={finding.weight > 0}
+                  selected={selectedFindingIds.includes(finding.id)}
+                  onToggle={toggleWorkOrderFinding}
                 />
               ))}
             </div>
@@ -418,10 +477,40 @@ export function ScanResultPage() {
             확인합니다.
           </p>
 
+          <div className="work-order-selection" role="note">
+            <strong>작업지시서 대상 선택</strong>
+            <p>
+              주요 문제 카드에서 포함할 항목을 선택했습니다. 현재{" "}
+              {selectedFindingIds.length}개 항목이 선택되어 있습니다.
+            </p>
+          </div>
+
+          {workOrderError ? (
+            <p className="work-order-message work-order-error" role="alert">
+              {workOrderError}
+            </p>
+          ) : null}
+
           <div className="scan-result-actions">
-            <button type="button" disabled>
-              작업지시서 만들기 · 다음 단계
+            <button
+              className="work-order-create-button"
+              type="button"
+              onClick={handleCreateWorkOrder}
+              disabled={
+                creatingWorkOrder ||
+                selectedFindingIds.length === 0
+              }
+            >
+              {creatingWorkOrder
+                ? "작업지시서 생성 중..."
+                : `작업지시서 만들기 · ${selectedFindingIds.length}개`}
             </button>
+            <Link
+              className="work-order-list-link"
+              to={`/${locale}/work-orders`}
+            >
+              작업지시서 목록
+            </Link>
             <button type="button" disabled>
               PDF 보고서 · 다음 단계
             </button>
@@ -504,9 +593,15 @@ export function ScanResultPage() {
 function FindingCard({
   finding,
   primary = false,
+  selectable = false,
+  selected = false,
+  onToggle,
 }: {
   finding: ScanResultFinding;
   primary?: boolean;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggle?: (findingId: string, checked: boolean) => void;
 }) {
   return (
     <article
@@ -550,6 +645,19 @@ function FindingCard({
           </span>
         </div>
       </div>
+
+      {selectable ? (
+        <label className="work-order-checkbox">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={(event) =>
+              onToggle?.(finding.id, event.target.checked)
+            }
+          />
+          작업지시서에 포함
+        </label>
+      ) : null}
 
       <p>{finding.description}</p>
 

@@ -14,6 +14,7 @@
   - `20260614062302_add_local_auth`
   - `20260614070105_add_password_reset_tokens`
   - `20260615042821_add_sites_scan_foundation`
+  - `20260615072844_add_work_orders`
 - `SESSION_SECRET`: Replit 환경에 32자 이상 설정 확인
 - `APP_BASE_URL`: Replit Preview 공개 origin 설정 확인
 - Resend API Key 설정 확인
@@ -27,7 +28,12 @@
 - 검사 결과 화면: `/ko/sites/:siteId/scans/:scanId`
 - 결과 API: `/api/scan-results/:scanId`
 - 비짓제주 실제 v2 검사에서 71점·B등급·진단 25건 확인
-- 자동 백그라운드 검사 실행기는 아직 구성하지 않음
+- 작업지시서 목록: `/ko/work-orders`
+- 작업지시서 상세: `/ko/work-orders/:workOrderId`
+- 작업지시서 API: `/api/work-orders`
+- JSON·UTF-8 BOM CSV 자료 출력 지원
+- 개발 DB에 비짓제주 발급 작업지시서 1건과 작업 항목 5건 유지
+- PDF 출력과 자동 백그라운드 검사 실행기는 아직 구성하지 않음
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-15 KST
 
