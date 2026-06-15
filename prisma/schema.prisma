@@ -24,6 +24,58 @@ enum AuthProvider {
   SECRET_ADMIN
 }
 
+enum OrganizationType {
+  CUSTOMER
+  AGENCY
+}
+
+enum OrganizationMemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum SiteStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum SiteFactSource {
+  USER
+  IMPORTED
+}
+
+enum ScanType {
+  QUICK
+  DEEP
+  VERIFICATION
+  MONITORING
+}
+
+enum ScanStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+enum FindingStatus {
+  PASS
+  FAIL
+  BLOCKED
+  NA
+}
+
+enum FindingSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
 model AppMetadata {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -35,22 +87,24 @@ model AppMetadata {
 }
 
 model User {
-  id                String               @id @default(cuid())
-  email             String               @unique
-  name              String
-  passwordHash      String?              @map("password_hash")
-  role              UserRole             @default(USER)
-  status            UserStatus           @default(ACTIVE)
-  emailVerifiedAt   DateTime?            @map("email_verified_at")
-  termsAcceptedAt   DateTime             @map("terms_accepted_at")
-  privacyAcceptedAt DateTime             @map("privacy_accepted_at")
-  loginCount        Int                  @default(0) @map("login_count")
-  lastLoginAt       DateTime?            @map("last_login_at")
-  createdAt         DateTime             @default(now()) @map("created_at")
-  updatedAt         DateTime             @updatedAt @map("updated_at")
-  authAccounts      AuthAccount[]
-  sessions          Session[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  name                String
+  passwordHash        String?              @map("password_hash")
+  role                UserRole             @default(USER)
+  status              UserStatus           @default(ACTIVE)
+  emailVerifiedAt     DateTime?            @map("email_verified_at")
+  termsAcceptedAt     DateTime             @map("terms_accepted_at")
+  privacyAcceptedAt   DateTime             @map("privacy_accepted_at")
+  loginCount          Int                  @default(0) @map("login_count")
+  lastLoginAt         DateTime?            @map("last_login_at")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  authAccounts        AuthAccount[]
+  sessions            Session[]
   passwordResetTokens PasswordResetToken[]
+  organizationMembers OrganizationMember[]
+  scansCreated        Scan[]               @relation("ScanCreator")
 
   @@index([status])
   @@map("users")
@@ -96,4 +150,137 @@ model PasswordResetToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("password_reset_tokens")
+}
+
+model Organization {
+  id        String           @id @default(cuid())
+  name      String
+  type      OrganizationType @default(CUSTOMER)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  members   OrganizationMember[]
+  sites     Site[]
+
+  @@index([type])
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String                 @id @default(cuid())
+  organizationId String                 @map("organization_id")
+  userId         String                 @map("user_id")
+  role           OrganizationMemberRole @default(MEMBER)
+  createdAt      DateTime               @default(now()) @map("created_at")
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@map("organization_members")
+}
+
+model Site {
+  id             String       @id @default(cuid())
+  organizationId String       @map("organization_id")
+  name           String
+  baseUrl        String       @map("base_url")
+  finalUrl       String?      @map("final_url")
+  siteType       String?      @map("site_type")
+  country        String       @default("KR")
+  region         String?
+  primaryLocale  String       @default("ko") @map("primary_locale")
+  status         SiteStatus   @default(ACTIVE)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  facts          SiteFact[]
+  scans          Scan[]
+
+  @@unique([organizationId, baseUrl])
+  @@index([organizationId, status])
+  @@map("sites")
+}
+
+model SiteFact {
+  id            String         @id @default(cuid())
+  siteId        String         @map("site_id")
+  factKey       String         @map("fact_key")
+  expectedValue Json           @map("expected_value")
+  source        SiteFactSource @default(USER)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  site          Site           @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, factKey])
+  @@index([siteId])
+  @@map("site_facts")
+}
+
+model Scan {
+  id           String     @id @default(cuid())
+  siteId       String     @map("site_id")
+  type         ScanType
+  status       ScanStatus @default(QUEUED)
+  rulesVersion String     @map("rules_version")
+  score        Float?
+  grade        String?
+  startedAt    DateTime?  @map("started_at")
+  completedAt  DateTime?  @map("completed_at")
+  errorCode    String?    @map("error_code")
+  createdBy    String?    @map("created_by")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  site         Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  creator      User?      @relation("ScanCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  pages        ScanPage[]
+  findings     Finding[]
+
+  @@index([siteId, createdAt])
+  @@index([status, createdAt])
+  @@index([createdBy])
+  @@map("scans")
+}
+
+model ScanPage {
+  id                 String    @id @default(cuid())
+  scanId             String    @map("scan_id")
+  url                String
+  statusCode         Int?      @map("status_code")
+  finalUrl           String?   @map("final_url")
+  contentType        String?   @map("content_type")
+  rawHtmlHash        String?   @map("raw_html_hash")
+  renderedHtmlHash   String?   @map("rendered_html_hash")
+  initialTextLength  Int?      @map("initial_text_length")
+  renderedTextLength Int?      @map("rendered_text_length")
+  iframeCount        Int?      @map("iframe_count")
+  screenshotAssetId  String?   @map("screenshot_asset_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  scan               Scan      @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  findings           Finding[]
+
+  @@index([scanId])
+  @@map("scan_pages")
+}
+
+model Finding {
+  id            String          @id @default(cuid())
+  scanId        String          @map("scan_id")
+  scanPageId    String?         @map("scan_page_id")
+  ruleCode      String          @map("rule_code")
+  category      String
+  severity      FindingSeverity
+  status        FindingStatus
+  title         String
+  description   String
+  evidenceJson  Json?           @map("evidence_json")
+  recommendation String?
+  scoreDelta    Float           @default(0) @map("score_delta")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  scan          Scan            @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  scanPage      ScanPage?       @relation(fields: [scanPageId], references: [id], onDelete: SetNull)
+
+  @@index([scanId, status])
+  @@index([scanPageId])
+  @@index([ruleCode])
+  @@map("findings")
 }

@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { SignupPage } from "./pages/SignupPage";
+import { SitesPage } from "./pages/SitesPage";
 import { SystemPage } from "./pages/SystemPage";
 
 export function App() {
@@ -27,6 +28,14 @@ export function App() {
           element={
             <RequireAuth>
               <DashboardPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="sites"
+          element={
+            <RequireAuth>
+              <SitesPage />
             </RequireAuth>
           }
         />

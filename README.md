@@ -4,7 +4,7 @@
 
 ## 현재 단계
 
-2단계 인증 기반 중 2-2차 비밀번호 변경·재설정 및 Resend 메일 발송까지 완료된 상태입니다.
+핵심 서비스 3-2차 사이트 등록·실제 HTTP 수집·초기 HTML 진단 증거 저장까지 완료된 상태입니다.
 
 - TypeScript
 - React + Vite
@@ -25,8 +25,17 @@
 - 재설정 토큰 원문을 저장하지 않는 해시 보관
 - 사용·만료된 재설정 링크 접속 즉시 차단
 - Resend와 검증된 `auth.siteaiscore.com` 발신 도메인 연동
+- 로그인 회원의 사이트 등록·수정·보관 처리
+- URL 정규화와 회원별 중복 등록 차단
+- localhost·사설 IP·내부망·클라우드 메타데이터 SSRF 차단
+- DNS 결과와 리디렉션 단계별 공개 IP 재검증
+- 검사 작업 대기열과 규칙 버전 기록
+- 실제 HTTP 응답·리디렉션·robots.txt·sitemap.xml 기초 수집
+- title·meta description·canonical·HTML 언어·heading·링크·iframe·JSON-LD 분석
+- 원본 HTML 대신 SHA-256 해시와 구조화된 증거 저장
+- 비짓제주 실제 공개 URL 검사 완료
 
-Google 로그인과 동일 이메일 계정 연결, 계정 설정·회원탈퇴, 검사 엔진과 Cloudinary 연동은 아직 구현하지 않았습니다.
+점수 계산·등급, 검사 결과 전용 화면, 작업지시서·JSON/CSV/PDF 출력, 자동 백그라운드 실행, Playwright 렌더링 검사는 아직 구현하지 않았습니다. Google 로그인과 계정 설정·회원탈퇴도 후속 단계입니다.
 
 ## 프로젝트 루트
 
@@ -52,6 +61,7 @@ Replit 개발 포트는 `5000`입니다.
 npm run check
 npm test
 npm run build
+npm run scan:once
 ```
 
 ## 환경변수
@@ -89,6 +99,7 @@ RESEND_FROM_NAME
 /ko/reset-password             → 일회용 링크의 새 비밀번호 설정
 /ko/change-password            → 로그인 회원 비밀번호 변경
 /ko/dashboard                  → 인증 회원 대시보드
+/ko/sites                      → 사이트 등록·수정·검사 작업 관리
 /ko/system                     → 서버·KST·DB 상태 확인
 /api/health                    → JSON 상태 API
 /api/auth/session              → 현재 로그인 세션 확인
@@ -97,6 +108,9 @@ RESEND_FROM_NAME
 /api/auth/reset-password       → 새 비밀번호 저장
 /api/auth/change-password      → 로그인 회원 비밀번호 변경
 /api/me                        → 인증 회원 정보
+/api/sites                     → 사이트 목록·등록
+/api/sites/:siteId             → 사이트 상세·수정·보관
+/api/sites/:siteId/scans       → 검사 이력·검사 작업 생성
 ```
 
 ## 문서

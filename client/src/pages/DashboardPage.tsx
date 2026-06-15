@@ -45,7 +45,10 @@ export function DashboardPage() {
         <div className="section-heading">
           <p className="eyebrow">DASHBOARD</p>
           <h1>{state.user.name}님, 반갑습니다.</h1>
-          <p>인증 기반이 정상적으로 연결된 초기 대시보드입니다.</p>
+          <p>
+            검사할 사이트를 등록하고, 진단·점수·작업지시서로 이어지는
+            핵심 서비스 작업을 시작할 수 있습니다.
+          </p>
         </div>
 
         <dl className="surface account-summary">
@@ -74,6 +77,9 @@ export function DashboardPage() {
         ) : null}
 
         <div className="dashboard-actions">
+          <Link className="secondary-action" to={`/${locale}/sites`}>
+            사이트 관리
+          </Link>
           <Link className="secondary-action" to={`/${locale}/change-password`}>
             비밀번호 변경
           </Link>

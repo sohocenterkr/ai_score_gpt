@@ -19,11 +19,13 @@
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "scan:once": "tsx server/scans/run-once.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.8.2",
     "argon2": "^0.44.0",
+    "cheerio": "1.2.0",
     "compression": "^1.8.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",

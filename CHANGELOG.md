@@ -6,6 +6,19 @@
 
 ### Added
 
+- 로그인 회원의 사이트 등록·목록·상세·수정·보관 처리
+- 고객 조직과 OWNER 구성원 자동 생성
+- 사이트 URL 정규화와 회원별 중복 등록 차단
+- localhost·사설 IP·내부망·클라우드 메타데이터 SSRF 차단
+- DNS 결과와 리디렉션 단계별 공개 IP 재검증
+- `Site`, `SiteFact`, `Scan`, `ScanPage`, `Finding` Prisma 모델
+- 마이그레이션 `20260615042821_add_sites_scan_foundation`
+- `/ko/sites` 모바일 우선 사이트 관리 화면
+- 검사 작업 대기열과 `npm run scan:once` 수동 실행기
+- 실제 HTTP 응답·리디렉션·robots.txt·sitemap.xml 기초 수집
+- title·meta description·canonical·HTML 언어·heading·링크·iframe·JSON-LD 분석
+- 원본 HTML SHA-256 해시와 구조화된 진단 증거 저장
+- 비짓제주 실제 공개 URL 검사 완료
 - 로그인 회원의 현재 비밀번호 검증 후 비밀번호 변경 기능
 - `/ko/forgot-password`, `/ko/reset-password`, `/ko/change-password` 화면
 - 비밀번호 찾기·재설정·변경 API
@@ -29,6 +42,18 @@
 - npm 운영·전체 의존성 보안감사 취약점 0건
 - 단위·API 테스트 21개 통과
 - 실제 DB 비밀번호 기능 통합 테스트 18개 통과
+- 사이트·검사 실제 DB 통합 테스트 16개 통과
+- 전체 단위·API 테스트 49개 통과
+- 고정 IP lookup 콜백 회귀 테스트 추가
+- 비짓제주 실제 검사: 최종 URL `/kr`, 페이지 1건, 진단 14건 저장
+
+### Not yet implemented
+
+- 점수·등급과 영역별 배점
+- 검사 결과 전용 화면과 문제 상세
+- 작업지시서·JSON/CSV/PDF 출력
+- 자동 백그라운드 검사 실행기
+- Playwright 렌더링 DOM·모바일/데스크톱 비교
 
 ## 2026-06-14
 

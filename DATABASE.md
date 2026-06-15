@@ -15,7 +15,7 @@
 | DB 이름 | `heliumdb` | 확인 필요 |
 | 마스킹 호스트 | `he**um` | 확인 필요 |
 | Secret 이름 | `DATABASE_URL` | `DATABASE_URL` |
-| 마이그레이션 상태 | 3개 적용 완료 | 미실행 |
+| 마이그레이션 상태 | 4개 적용 완료 | 미실행 |
 | 확인일(KST) | 2026-06-15 | 미확인 |
 
 ## Development 확인 기록
@@ -25,10 +25,14 @@
 - 최초 마이그레이션: `20260614055344_init_app_metadata`
 - 인증 마이그레이션: `20260614062302_add_local_auth`
 - 비밀번호 재설정 마이그레이션: `20260614070105_add_password_reset_tokens`
-- 생성 테이블: `_prisma_migrations`, `app_metadata`, `users`, `auth_accounts`, `sessions`, `password_reset_tokens`
+- 사이트·검사 기반 마이그레이션: `20260615042821_add_sites_scan_foundation`
+- 생성 테이블: `_prisma_migrations`, `app_metadata`, `users`, `auth_accounts`, `sessions`, `password_reset_tokens`, `organizations`, `organization_members`, `sites`, `site_facts`, `scans`, `scan_pages`, `findings`
 - 사용자 역할·상태·인증 공급자 enum 적용
 - 비밀번호 재설정 토큰은 원문이 아닌 HMAC-SHA256 해시만 저장
 - 재설정 토큰은 30분 유효하며 사용·만료 여부를 기록
+- 사이트·검사·페이지·규칙별 진단 증거와 검사 규칙 버전을 저장
+- 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 증거만 저장
+- 비짓제주 실제 검사에서 `COMPLETED`, 페이지 1건, 진단 14건 저장 확인
 - `prisma migrate status`: Database schema is up to date
 - 확인 시각 기준: 2026-06-15 KST
 
@@ -39,8 +43,15 @@
 - `AuthAccount`
 - `Session`
 - `PasswordResetToken`
+- `Organization`
+- `OrganizationMember`
+- `Site`
+- `SiteFact`
+- `Scan`
+- `ScanPage`
+- `Finding`
 
-사이트·검사·작업지시서 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
+점수 세부내역·작업지시서·보고서·자동검수 모델은 각 개발 단계에서 마이그레이션으로 추가한다.
 
 ## DB 설정 후 확인
 

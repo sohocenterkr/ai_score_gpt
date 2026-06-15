@@ -18,12 +18,18 @@ import {
 } from "./email/password-reset-mailer";
 import { env } from "./config/env";
 import { getDatabaseHealth } from "./services/database-health";
+import { createSiteRouter } from "./sites/site-router";
+import {
+  createPrismaSiteService,
+  type SiteService,
+} from "./sites/site-service";
 import { getNowKST } from "../shared/kst";
 
 interface CreateAppOptions {
   authService?: AuthService;
   passwordService?: PasswordService;
   passwordResetMailer?: PasswordResetMailer;
+  siteService?: SiteService;
 }
 
 export function createApp(options: CreateAppOptions = {}) {
@@ -33,6 +39,7 @@ export function createApp(options: CreateAppOptions = {}) {
     options.passwordService ?? createPrismaPasswordService();
   const passwordResetMailer =
     options.passwordResetMailer ?? createResendPasswordResetMailer();
+  const siteService = options.siteService ?? createPrismaSiteService();
   const requireAuth = createRequireAuth(authService);
 
   app.disable("x-powered-by");
@@ -64,6 +71,13 @@ export function createApp(options: CreateAppOptions = {}) {
     createPasswordRouter({
       passwordService,
       passwordResetMailer,
+      requireAuth,
+    }),
+  );
+  app.use(
+    "/api/sites",
+    createSiteRouter({
+      siteService,
       requireAuth,
     }),
   );
