@@ -35,20 +35,19 @@
 - JSON·UTF-8 BOM CSV·PDF 자료 출력 지원
 - 개발 DB에 비짓제주 발급 작업지시서 1건과 작업 항목 5건 유지
 - 작업지시서 PDF API: `/api/work-orders/:workOrderId/export.pdf`
-- PDFKit `0.19.1`, Noto Sans KR `5.2.9`, `@types/pdfkit` `0.17.6` 사용
+- PDFKit `0.19.1`, 작업지시서용 Noto Sans KR `5.2.9`, 진단 보고서용 둥근모꼴+ Fixedsys TTF, `@types/pdfkit` `0.17.6` 사용
 - Noto Sans KR WOFF2 500 단일 글꼴을 PDF에 내장하고 한글 검색·복사를 지원
 - 비짓제주 실제 작업지시서 PDF: A4 10페이지, 생성 약 1.07초, 6,388,229바이트 확인
 - 진단 보고서 PDF API: `/api/scan-results/:scanId/export.pdf`
-- 진단 보고서는 Noto Sans KR WOFF 500 단일 글꼴을 내장하여 Replit·브라우저 PDF 뷰어에서 한글 표시와 검색·복사를 지원
-- 비짓제주 실제 진단 보고서 PDF: A4 16페이지, 약 62KB, 주요 문제 5건·전체 진단 25건·수집 페이지 1건 확인
+- 진단 보고서는 퍼블릭 도메인 둥근모꼴+ Fixedsys TTF 단일 글꼴을 내장하며, 빌드 시 `dist/assets/fonts`로 복사하여 개발·프로덕션 환경에서 한글 표시·검색·복사를 지원
+- 비짓제주 실제 v3 진단 보고서 PDF: A4 15페이지, 66,049바이트, 주요 문제 5건·전체 진단 25건·수집 페이지 1건 확인
 - 진단 보고서는 PostgreSQL 공유 캐시에 저장하며 검사 결과·규칙 버전·완료 시각·렌더러·글꼴 변경 시 자동 무효화
-- 실제 v1 보고서 최초 생성 26.59초 `MISS`, 반복 다운로드 9.57ms `HIT`, PDF SHA-256 일치 확인
-- 실제 v2 보고서 반복 다운로드 약 8~13ms, DB 저장 PDF와 SHA-256 일치 확인
+- 실제 v3 보고서 최초 생성 922.99ms `MISS`, 반복 다운로드 10.24ms `HIT`, 다운로드본·DB 저장본 PDF SHA-256 일치 확인
+- 렌더러 버전 `2026.06-scan-report-v3`와 글꼴 해시 변경으로 기존 v2 캐시가 자동 무효화·재생성됨을 확인
 - 캐시 적중 시 저장 PDF의 크기와 SHA-256을 검증하고 손상된 저장본은 다시 생성
 - 동일 보고서 동시 요청은 DB 생성 잠금으로 중복 생성을 방지함
 - 브라우저 응답은 `Cache-Control: private, no-store`를 유지하며 기존 회원·조직·검사 소유권 검사를 먼저 수행함
 - 현재 PostgreSQL PDF 저장은 공유 오브젝트 스토리지가 없는 개발 단계의 제한적 방식이며, Production에서는 Cloudinary 비공개 자산 저장으로 이전 예정
-- WOFF 글꼴의 최초 PDF 생성은 테스트 환경에서 약 20~29초이므로 최초 생성 성능 최적화는 후속 과제
 - 자동 백그라운드 검사 실행기는 아직 구성하지 않음
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-16 KST

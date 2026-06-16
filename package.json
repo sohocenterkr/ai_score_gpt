@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:client": "vite build",
-    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/server.js",
+    "build:server": "esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/server.js && mkdir -p dist/assets/fonts && cp server/assets/fonts/DungGeunMo.ttf dist/assets/fonts/DungGeunMo.ttf",
     "build": "npm run check && npm run test && npm run build:client && npm run build:server",
     "start": "NODE_ENV=production node dist/server.js",
     "db:generate": "prisma generate",

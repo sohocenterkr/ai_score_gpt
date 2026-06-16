@@ -7,9 +7,9 @@ import type {
   PublicScanResultFinding,
 } from "./scan-result-service";
 
-const FONT_NAME = "SiteAiScoreNotoMedium";
+const FONT_NAME = "SiteAiScoreReportFont";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.06-scan-report-v2";
+  "2026.06-scan-report-v3";
 
 let cachedFontHash: string | undefined;
 
@@ -50,22 +50,33 @@ const SEVERITY_LABELS: Record<
   CRITICAL: "매우 높음",
 };
 
-function fontPath(): string {
-  return join(
-    process.cwd(),
-    "node_modules",
-    "@fontsource",
-    "noto-sans-kr",
-    "files",
-    "noto-sans-kr-korean-500-normal.woff",
-  );
+function fontPaths(): string[] {
+  return [
+    join(
+      process.cwd(),
+      "dist",
+      "assets",
+      "fonts",
+      "DungGeunMo.ttf",
+    ),
+    join(
+      process.cwd(),
+      "server",
+      "assets",
+      "fonts",
+      "DungGeunMo.ttf",
+    ),
+  ];
 }
 
 function requireFontPath(): string {
-  const value = fontPath();
+  const candidates = fontPaths();
+  const value = candidates.find((candidate) => existsSync(candidate));
 
-  if (!existsSync(value)) {
-    throw new Error(`PDF 한글 글꼴을 찾을 수 없습니다: ${value}`);
+  if (!value) {
+    throw new Error(
+      `PDF 한글 글꼴을 찾을 수 없습니다: ${candidates.join(", ")}`,
+    );
   }
 
   return value;
