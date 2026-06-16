@@ -49,6 +49,10 @@
 - 브라우저 응답은 `Cache-Control: private, no-store`를 유지하며 기존 회원·조직·검사 소유권 검사를 먼저 수행함
 - 현재 PostgreSQL PDF 저장은 공유 오브젝트 스토리지가 없는 개발 단계의 제한적 방식이며, Production에서는 Cloudinary 비공개 자산 저장으로 이전 예정
 - 서버 시작 시 자동 검사 워커를 활성화하며, 기본 1초 간격으로 `QUEUED` 검사를 선점해 한 번에 한 건씩 순차 처리함 (`SCAN_WORKER_ENABLED`, `SCAN_WORKER_POLL_INTERVAL_MS`로 설정 가능)
+- `playwright-core 1.55.0`과 Replit Nix의 Chromium을 사용해 JavaScript 실행 후 DOM을 비감점 비교 증거로 수집함
+- 렌더링은 `RENDERED_DOM_ENABLED`, `CHROMIUM_PATH`, `RENDERED_DOM_TIMEOUT_MS`, `RENDERED_DOM_SETTLE_MS`로 제어하며 Chromium 부재·시간 초과·렌더링 오류가 QUICK 검사 전체를 실패시키지 않음
+- 브라우저 요청은 공개 HTTP(S) 주소만 허용하고 사설·내부 주소, 비GET·HEAD 요청, 실시간 연결과 비필수 대용량 자원을 차단함
+- 등록 사이트 화면은 대기·검사 중 상태에서만 자동 갱신하고 완료 후 폴링을 중지함
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-16 KST
 
@@ -61,6 +65,12 @@ APP_BASE_URL
 RESEND_API_KEY
 RESEND_FROM_EMAIL
 RESEND_FROM_NAME
+SCAN_WORKER_ENABLED
+SCAN_WORKER_POLL_INTERVAL_MS
+RENDERED_DOM_ENABLED
+CHROMIUM_PATH
+RENDERED_DOM_TIMEOUT_MS
+RENDERED_DOM_SETTLE_MS
 ```
 
 `NODE_ENV`가 설정되지 않으면 애플리케이션 기본값인 `development`를 사용한다.

@@ -7,6 +7,10 @@ import {
   analyzeHtml,
   type HtmlAnalysis,
 } from "./html-analyzer";
+import type {
+  RenderedDomCollector,
+  RenderedDomResult,
+} from "./rendered-dom";
 import {
   evaluateRobotsPolicy,
   parseRobotsPolicy,
@@ -37,6 +41,10 @@ export interface CollectedFinding {
   evidence: Record<string, unknown>;
   recommendation: string | null;
   scoreDelta: number;
+}
+
+export interface ScanCollectionOptions {
+  renderedDomCollector?: RenderedDomCollector;
 }
 
 export interface ScanCollectionResult {
@@ -357,6 +365,80 @@ function sitemapFinding(
 
 function containsNoindex(value: string | null): boolean {
   return Boolean(value?.toLowerCase().includes("noindex"));
+}
+
+function renderedAnalysisSummary(analysis: HtmlAnalysis) {
+  return {
+    rawHtmlHash: analysis.rawHtmlHash,
+    textLength: analysis.textLength,
+    title: analysis.title,
+    metaDescription: analysis.metaDescription,
+    canonicalUrl: analysis.canonicalUrl,
+    htmlLang: analysis.htmlLang,
+    openGraph: analysis.openGraph,
+    headings: {
+      h1: analysis.headings.h1,
+      h2Count: analysis.headings.h2.length,
+      h3Count: analysis.headings.h3Count,
+    },
+    links: {
+      total: analysis.links.total,
+      internal: analysis.links.internal,
+      external: analysis.links.external,
+    },
+    jsonLd: {
+      scriptCount: analysis.jsonLd.scriptCount,
+      validCount: analysis.jsonLd.validCount,
+      invalidCount: analysis.jsonLd.invalidCount,
+      types: analysis.jsonLd.types,
+    },
+    iframeCount: analysis.iframeCount,
+  };
+}
+
+function renderedDomEvidence(
+  initial: HtmlAnalysis | null,
+  result: RenderedDomResult,
+) {
+  if (result.status !== "SUCCESS" || !initial) {
+    return result;
+  }
+
+  return {
+    status: result.status,
+    browserVersion: result.browserVersion,
+    durationMs: result.durationMs,
+    statusCode: result.statusCode,
+    finalUrl: result.finalUrl,
+    allowedRequests: result.allowedRequests,
+    blockedRequests: result.blockedRequests,
+    pageErrorCount: result.pageErrorCount,
+    pageErrorNames: result.pageErrorNames,
+    initialHtml: renderedAnalysisSummary(initial),
+    renderedDom: renderedAnalysisSummary(result.analysis),
+    comparison: {
+      textLengthDelta:
+        result.analysis.textLength - initial.textLength,
+      internalLinksDelta:
+        result.analysis.links.internal - initial.links.internal,
+      externalLinksDelta:
+        result.analysis.links.external - initial.links.external,
+      h1CountDelta:
+        result.analysis.headings.h1.length -
+        initial.headings.h1.length,
+      h2CountDelta:
+        result.analysis.headings.h2.length -
+        initial.headings.h2.length,
+      jsonLdValidCountDelta:
+        result.analysis.jsonLd.validCount -
+        initial.jsonLd.validCount,
+      canonicalChanged:
+        result.analysis.canonicalUrl !== initial.canonicalUrl,
+      openGraphChanged:
+        JSON.stringify(result.analysis.openGraph) !==
+        JSON.stringify(initial.openGraph),
+    },
+  };
 }
 
 function metadataFindings(
@@ -793,12 +875,24 @@ async function botFinding(
 export async function collectSiteScan(
   baseUrl: string,
   fetcher: SafeHttpFetcher,
+  options: ScanCollectionOptions = {},
 ): Promise<ScanCollectionResult> {
   const main = await fetcher.fetch(baseUrl);
   const htmlContent = isHtmlContentType(main.contentType);
   const analysis = htmlContent
     ? analyzeHtml(main.body, main.finalUrl)
     : null;
+  const httpPassed = isSuccessful(main.statusCode);
+  const renderedDomPromise =
+    httpPassed && analysis && options.renderedDomCollector
+      ? options.renderedDomCollector.collect(main.finalUrl)
+      : Promise.resolve<RenderedDomResult>({
+          status: "NOT_RUN",
+          reason:
+            options.renderedDomCollector
+              ? "대표 페이지가 정상 HTML 응답이 아닙니다."
+              : "렌더링 수집기가 비활성화되어 있습니다.",
+        });
   const finalUrl = new URL(main.finalUrl);
   const finalOrigin = finalUrl.origin;
   const robotsUrl = new URL("/robots.txt", finalOrigin).toString();
@@ -835,7 +929,6 @@ export async function collectSiteScan(
   );
 
   const findings: CollectedFinding[] = [];
-  const httpPassed = isSuccessful(main.statusCode);
 
   findings.push(
     finding({
@@ -944,6 +1037,8 @@ export async function collectSiteScan(
     );
   }
 
+  const renderedDom = await renderedDomPromise;
+
   findings.push(
     finding({
       ruleCode: "ENV-MEASUREMENT-001",
@@ -952,13 +1047,19 @@ export async function collectSiteScan(
       status: "PASS",
       title: "실제 공개 URL 측정 환경",
       description:
-        "검사 시점의 공개 URL에서 DNS·리디렉션·HTTP 응답을 새로 수집했습니다.",
+        renderedDom.status === "SUCCESS"
+          ? "검사 시점의 공개 URL에서 초기 HTML과 JavaScript 실행 후 DOM을 함께 비교했습니다."
+          : "검사 시점의 공개 URL에서 DNS·리디렉션·HTTP 응답과 초기 HTML을 새로 수집했습니다.",
       evidence: {
         measuredAt: new Date().toISOString(),
         requestedUrl: main.requestedUrl,
         finalUrl: main.finalUrl,
         statusCode: main.statusCode,
-        rulesScope: "QUICK_INITIAL_HTML",
+        rulesScope:
+          renderedDom.status === "SUCCESS"
+            ? "QUICK_INITIAL_HTML_WITH_RENDERED_DOM_EVIDENCE"
+            : "QUICK_INITIAL_HTML",
+        renderedDom: renderedDomEvidence(analysis, renderedDom),
       },
       recommendation: null,
     }),

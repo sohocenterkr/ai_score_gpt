@@ -62,6 +62,23 @@ const environmentSchema = z.object({
     .min(250)
     .max(60_000)
     .default(1_000),
+  RENDERED_DOM_ENABLED: z.preprocess(
+    stringToBoolean,
+    z.boolean().default(true),
+  ),
+  CHROMIUM_PATH: optionalString,
+  RENDERED_DOM_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(5_000)
+    .max(60_000)
+    .default(30_000),
+  RENDERED_DOM_SETTLE_MS: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(10_000)
+    .default(3_000),
 });
 
 const parsed = environmentSchema.safeParse(process.env);

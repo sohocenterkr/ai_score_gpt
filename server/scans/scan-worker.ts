@@ -2,6 +2,7 @@ import {
   Prisma,
   type ScanStatus,
 } from "@prisma/client";
+import { env } from "../config/env";
 import { getDatabase } from "../db";
 import { SiteUrlError } from "../sites/url-safety";
 import {
@@ -10,6 +11,10 @@ import {
   type SafeHttpFetcher,
 } from "./http-fetcher";
 import { collectSiteScan } from "./scan-engine";
+import {
+  createPlaywrightRenderedDomCollector,
+  type RenderedDomCollector,
+} from "./rendered-dom";
 import { applyScoreToFindings } from "./scoring";
 
 export interface ScanRunSummary {
@@ -23,6 +28,23 @@ export interface ScanRunSummary {
   score: number | null;
   grade: string | null;
   errorCode: string | null;
+}
+
+function configuredRenderedDomCollector():
+  | RenderedDomCollector
+  | undefined {
+  if (
+    env.NODE_ENV === "test" ||
+    !env.RENDERED_DOM_ENABLED
+  ) {
+    return undefined;
+  }
+
+  return createPlaywrightRenderedDomCollector({
+    executablePath: env.CHROMIUM_PATH,
+    navigationTimeoutMs: env.RENDERED_DOM_TIMEOUT_MS,
+    settleMs: env.RENDERED_DOM_SETTLE_MS,
+  });
 }
 
 function errorCodeFrom(error: unknown): string {
@@ -217,6 +239,9 @@ async function persistFailedScan(
 export async function runClaimedScan(
   scanId: string,
   fetcher: SafeHttpFetcher = createSafeHttpFetcher(),
+  renderedDomCollector:
+    | RenderedDomCollector
+    | undefined = configuredRenderedDomCollector(),
 ): Promise<ScanRunSummary> {
   const prisma = getDatabase();
   const scan = await prisma.scan.findUnique({
@@ -240,6 +265,9 @@ export async function runClaimedScan(
     const result = await collectSiteScan(
       scan.site.baseUrl,
       fetcher,
+      {
+        renderedDomCollector,
+      },
     );
     return await persistSuccessfulScan(scanId, result);
   } catch (error) {
@@ -249,6 +277,9 @@ export async function runClaimedScan(
 
 export async function runNextQueuedScan(
   fetcher: SafeHttpFetcher = createSafeHttpFetcher(),
+  renderedDomCollector:
+    | RenderedDomCollector
+    | undefined = configuredRenderedDomCollector(),
 ): Promise<ScanRunSummary | null> {
   const scanId = await claimNextQueuedScan();
 
@@ -256,5 +287,9 @@ export async function runNextQueuedScan(
     return null;
   }
 
-  return runClaimedScan(scanId, fetcher);
+  return runClaimedScan(
+    scanId,
+    fetcher,
+    renderedDomCollector,
+  );
 }

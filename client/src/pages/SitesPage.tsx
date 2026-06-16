@@ -112,6 +112,57 @@ export function SitesPage() {
     };
   }, []);
 
+  const hasPendingScan = sites.some(
+    (site) =>
+      site.latestScan?.status === "QUEUED" ||
+      site.latestScan?.status === "RUNNING",
+  );
+
+  useEffect(() => {
+    if (!hasPendingScan) {
+      return;
+    }
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const refreshPendingScans = async () => {
+      try {
+        const result = await listSitesRequest();
+
+        if (cancelled) {
+          return;
+        }
+
+        setSites(result);
+
+        const stillPending = result.some(
+          (site) =>
+            site.latestScan?.status === "QUEUED" ||
+            site.latestScan?.status === "RUNNING",
+        );
+
+        if (stillPending) {
+          timer = setTimeout(refreshPendingScans, 2_000);
+        }
+      } catch {
+        if (!cancelled) {
+          timer = setTimeout(refreshPendingScans, 5_000);
+        }
+      }
+    };
+
+    timer = setTimeout(refreshPendingScans, 1_000);
+
+    return () => {
+      cancelled = true;
+
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [hasPendingScan]);
+
   function updateForm(
     key: keyof SiteFormState,
     value: string,

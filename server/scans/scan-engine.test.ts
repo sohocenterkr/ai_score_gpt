@@ -8,6 +8,10 @@ import {
   type SafeHttpFetcher,
   type SafeHttpResponse,
 } from "./http-fetcher";
+import type {
+  RenderedDomCollector,
+  RenderedDomResult,
+} from "./rendered-dom";
 
 function response(
   url: string,
@@ -41,6 +45,57 @@ function findingByCode(
   }
 
   return value;
+}
+
+function renderedSuccess(
+  finalUrl = "https://example.com/",
+): RenderedDomResult {
+  return {
+    status: "SUCCESS",
+    browserVersion: "test-browser",
+    durationMs: 123,
+    statusCode: 200,
+    finalUrl,
+    allowedRequests: 5,
+    blockedRequests: 2,
+    pageErrorCount: 0,
+    pageErrorNames: [],
+    analysis: {
+      rawHtmlHash:
+        "a".repeat(64),
+      bodyBytes: 2_000,
+      textLength: 1_500,
+      title: "렌더링 제목",
+      metaDescription: "렌더링 설명",
+      canonicalUrl: finalUrl,
+      robotsMeta: null,
+      htmlLang: "ko",
+      openGraph: {
+        title: "렌더링 OG",
+        description: "렌더링 OG 설명",
+        image: null,
+      },
+      headings: {
+        h1: ["렌더링 H1"],
+        h2: ["렌더링 H2"],
+        h3Count: 0,
+      },
+      links: {
+        total: 10,
+        internal: 8,
+        external: 2,
+        sample: [],
+      },
+      jsonLd: {
+        scriptCount: 1,
+        validCount: 1,
+        invalidCount: 0,
+        types: ["WebSite"],
+        errors: [],
+      },
+      iframeCount: 0,
+    },
+  };
 }
 
 describe("HTTP scan engine", () => {
@@ -150,6 +205,100 @@ describe("HTTP scan engine", () => {
         "ACCESS-SITEMAP-001",
       ).status,
     ).toBe("FAIL");
+  });
+
+  it("렌더링 DOM 비교 증거를 점수 항목 수 변경 없이 기록한다", async () => {
+    const fetcher: SafeHttpFetcher = {
+      fetch: vi.fn(async (url) => {
+        if (
+          url.endsWith("/robots.txt") ||
+          url.endsWith("/sitemap.xml")
+        ) {
+          return response(url, 404, "text/plain", "");
+        }
+
+        return response(
+          url,
+          200,
+          "text/html",
+          `<html lang="ko"><head><title>초기 제목</title></head><body><h1>초기 H1</h1>${"본문 ".repeat(100)}</body></html>`,
+        );
+      }),
+    };
+    const renderedDomCollector: RenderedDomCollector = {
+      collect: vi.fn().mockResolvedValue(renderedSuccess()),
+    };
+
+    const result = await collectSiteScan(
+      "https://example.com/",
+      fetcher,
+      { renderedDomCollector },
+    );
+    const environment = findingByCode(
+      result.findings,
+      "ENV-MEASUREMENT-001",
+    );
+
+    expect(result.findings).toHaveLength(25);
+    expect(environment.status).toBe("PASS");
+    expect(environment.evidence).toMatchObject({
+      rulesScope:
+        "QUICK_INITIAL_HTML_WITH_RENDERED_DOM_EVIDENCE",
+      renderedDom: {
+        status: "SUCCESS",
+        comparison: {
+          textLengthDelta: expect.any(Number),
+          jsonLdValidCountDelta: 1,
+        },
+      },
+    });
+  });
+
+  it("렌더링 실패가 QUICK 검사 완료를 막지 않는다", async () => {
+    const fetcher: SafeHttpFetcher = {
+      fetch: vi.fn(async (url) => {
+        if (
+          url.endsWith("/robots.txt") ||
+          url.endsWith("/sitemap.xml")
+        ) {
+          return response(url, 404, "text/plain", "");
+        }
+
+        return response(
+          url,
+          200,
+          "text/html",
+          `<html><body><h1>예제</h1>${"본문 ".repeat(100)}</body></html>`,
+        );
+      }),
+    };
+    const renderedDomCollector: RenderedDomCollector = {
+      collect: vi.fn().mockResolvedValue({
+        status: "FAILED",
+        errorCode: "RENDERED_DOM_TIMEOUT",
+        message: "렌더링 제한 시간을 초과했습니다.",
+      }),
+    };
+
+    const result = await collectSiteScan(
+      "https://example.com/",
+      fetcher,
+      { renderedDomCollector },
+    );
+    const environment = findingByCode(
+      result.findings,
+      "ENV-MEASUREMENT-001",
+    );
+
+    expect(result.status).toBe("COMPLETED");
+    expect(result.findings).toHaveLength(25);
+    expect(environment.evidence).toMatchObject({
+      rulesScope: "QUICK_INITIAL_HTML",
+      renderedDom: {
+        status: "FAILED",
+        errorCode: "RENDERED_DOM_TIMEOUT",
+      },
+    });
   });
 
   it("비HTML 대표 응답은 PARTIAL로 기록한다", async () => {

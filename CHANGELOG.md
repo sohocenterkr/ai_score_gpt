@@ -20,6 +20,10 @@
 - 서버 시작 시 대기 검사를 자동 처리하는 `scan-background-worker`
 - 자동 워커 활성화·대기 간격 설정용 `SCAN_WORKER_ENABLED`, `SCAN_WORKER_POLL_INTERVAL_MS`
 - 자동 워커 순차 처리·중복 방지·오류 복구·안전 종료 테스트 4개
+- Playwright 기반 JavaScript 렌더링 DOM 수집기
+- Replit Chromium 실행 환경용 `replit.nix`
+- 렌더링 활성화·Chromium 경로·제한시간 설정용 `RENDERED_DOM_ENABLED`, `CHROMIUM_PATH`, `RENDERED_DOM_TIMEOUT_MS`, `RENDERED_DOM_SETTLE_MS`
+- 등록 사이트 목록의 `QUEUED`·`RUNNING` 검사 상태 자동 갱신
 
 ### Changed
 
@@ -33,6 +37,10 @@
 - 진단 보고서 내부 글꼴 식별자를 `SiteAiScoreReportFont`로 정리
 - 검사 신청 후 별도 Shell 명령 없이 `QUEUED → RUNNING → COMPLETED`를 자동 처리하도록 서버 시작·종료 흐름에 워커 연결
 - 자동 워커는 한 번에 한 검사만 순차 처리하며, 대기열이 비면 기본 1초 간격으로 다시 확인
+- 기존 25개 점수 규칙은 유지하고 렌더링 DOM 결과를 `ENV-MEASUREMENT-001`의 비감점 비교 증거로 저장
+- 초기 HTML과 렌더링 DOM의 본문 길이·제목·링크·JSON-LD·Open Graph 차이를 기록
+- 렌더링 실패나 Chromium 부재가 QUICK 검사 전체 완료를 막지 않도록 격리
+- 사이트 목록은 대기·검사 중인 작업이 있을 때만 상태를 주기적으로 갱신하고 완료 후 자동 중지
 
 ### Security
 
@@ -40,8 +48,11 @@
 - 브라우저 응답의 `Cache-Control: private, no-store` 유지
 - 캐시 PDF 저장 전 검사 증거의 쿠키·토큰·비밀번호·인증정보 정제
 - 저장 PDF의 크기와 SHA-256을 캐시 적중 시 재검증
+- 렌더링 최초 URL·최종 URL·하위 HTTP 요청의 공개 주소 검증
+- 사설·로컬·메타데이터 주소, GET·HEAD 외 요청, WebSocket·EventSource·Service Worker와 이미지·동영상·글꼴 요청 차단
+- 렌더링 HTML 원문은 DB에 저장하지 않고 정제된 분석값과 오류 이름만 저장
 - npm 운영·전체 의존성 보안감사 취약점 0건
-- 전체 단위·API 테스트 88개 통과
+- 전체 단위·API 테스트 92개 통과
 
 ### Verified
 
@@ -58,12 +69,16 @@
 - PDF 관련 타입검사와 캐시·PDF·라우터 테스트 13개 통과
 - 실제 사이트 검사 신청에서 Shell 실행 없이 대기·검사 중·완료 상태가 연속 자동 처리되는 통합 동작 확인
 - 자동 워커 테스트 4개와 기존 검사 회귀 테스트 17개 통과
+- Playwright 렌더링·검사 엔진·자동 워커 관련 테스트 11개 통과
+- 비짓제주 신규 검사에서 자동 실행·화면 상태 갱신·렌더링 비교 증거 저장 확인
+- 비짓제주 초기 HTML 2,529자에서 렌더링 DOM 8,224자로 증가하고 내부 링크 34개에서 130개로 증가한 증거 저장
+- 렌더링 성공 상태, Chromium `92.0.4515.159`, 기존 71점·B등급·진단 25건 유지 확인
 
 ### Not yet implemented
 
 - Production Cloudinary 비공개 오브젝트 스토리지 이전
 - 에이전시 배정·배포 URL 제출·자동검수
-- Playwright 렌더링 DOM·모바일/데스크톱 비교
+- Playwright 모바일·데스크톱 별도 렌더링 비교
 
 ## 2026-06-15
 
