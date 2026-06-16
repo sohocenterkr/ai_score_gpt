@@ -131,6 +131,7 @@ export async function listWorkOrdersRequest(): Promise<
 export async function createWorkOrderRequest(input: {
   scanId: string;
   findingIds: string[];
+  renderedImprovementCodes: string[];
 }): Promise<WorkOrderDetail> {
   const response = await fetch("/api/work-orders", {
     method: "POST",

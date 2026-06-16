@@ -305,7 +305,7 @@ export function WorkOrderPage() {
         <section className="work-order-items-section">
           <div className="work-order-section-heading">
             <div>
-              <h2>문제별 수정 요구사항</h2>
+              <h2>선택한 수정 요구사항</h2>
               <p>
                 소스코드가 아니라 배포된 공개 URL에서 완료 여부를
                 확인합니다.
@@ -326,8 +326,18 @@ export function WorkOrderPage() {
                     <h3>{item.title}</h3>
                   </div>
                   <div className="work-order-item-badges">
-                    <span>{item.isRequired ? "필수" : "일반"}</span>
-                    <span>예상 {item.weight}점</span>
+                    <span>
+                      {item.finding
+                        ? item.isRequired
+                          ? "필수"
+                          : "일반"
+                        : "권장 개선"}
+                    </span>
+                    <span>
+                      {item.weight > 0
+                        ? `예상 ${item.weight}점`
+                        : "점수 외 개선"}
+                    </span>
                   </div>
                 </header>
 
@@ -338,11 +348,15 @@ export function WorkOrderPage() {
                   </div>
                   <div>
                     <dt>현재 판정</dt>
-                    <dd>{item.finding?.status ?? "원본 없음"}</dd>
+                    <dd>
+                      {item.finding?.status ?? "추가 개선 권장"}
+                    </dd>
                   </div>
                   <div>
                     <dt>중요도</dt>
-                    <dd>{item.finding?.severity ?? "미확인"}</dd>
+                    <dd>
+                      {item.finding?.severity ?? "AI 수집 안정성"}
+                    </dd>
                   </div>
                 </dl>
 
@@ -383,9 +397,10 @@ export function WorkOrderPage() {
         </section>
 
         <p className="work-order-disclaimer">
-          예상 점수 범위는 선택한 규칙의 배점을 기준으로 계산한
-          참고값입니다. 동일 규칙 버전과 검사 조건으로 재검사하더라도
-          실제 상승 폭이나 AI 검색 노출은 보장되지 않습니다.
+          예상 점수 범위는 선택한 점수 규칙의 배점만을 기준으로
+          계산한 참고값입니다. 점수 외 AI 수집 개선안은 예상 점수에
+          포함되지 않으며 실제 상승 폭이나 AI 검색 노출은 보장되지
+          않습니다.
         </p>
       </div>
     </section>

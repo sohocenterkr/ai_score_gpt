@@ -114,6 +114,7 @@ describe("work order router", () => {
       .send({
         scanId: "scan-1",
         findingIds: ["finding-1"],
+        renderedImprovementCodes: [],
       });
 
     expect(response.status).toBe(201);
@@ -122,12 +123,35 @@ describe("work order router", () => {
     );
   });
 
-  it("문제가 선택되지 않으면 생성하지 않는다", async () => {
+  it("AI 수집 개선안만 선택해도 생성한다", async () => {
+    const service = createService();
+    const response = await request(createTestApp(service))
+      .post("/api/work-orders")
+      .send({
+        scanId: "scan-1",
+        findingIds: [],
+        renderedImprovementCodes: [
+          "RENDERED-ADDED-CONTENT",
+        ],
+      });
+
+    expect(response.status).toBe(201);
+    expect(service.createWorkOrder).toHaveBeenCalledWith(user, {
+      scanId: "scan-1",
+      findingIds: [],
+      renderedImprovementCodes: [
+        "RENDERED-ADDED-CONTENT",
+      ],
+    });
+  });
+
+  it("문제와 개선안이 모두 선택되지 않으면 생성하지 않는다", async () => {
     const response = await request(createTestApp(createService()))
       .post("/api/work-orders")
       .send({
         scanId: "scan-1",
         findingIds: [],
+        renderedImprovementCodes: [],
       });
 
     expect(response.status).toBe(400);

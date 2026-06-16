@@ -6,7 +6,7 @@ import type {
   PublicWorkOrderItem,
 } from "./work-order-service";
 
-const FONT_MAIN_NAME = "SiteAiScoreNotoMedium";
+const FONT_MAIN_NAME = "SiteAiScoreWorkOrderFont";
 const FONT_REGULAR_NAME = FONT_MAIN_NAME;
 const FONT_BOLD_NAME = FONT_MAIN_NAME;
 
@@ -50,23 +50,34 @@ const SEVERITY_LABELS: Record<string, string> = {
   CRITICAL: "매우 높음",
 };
 
-function fontPath(weight: 400 | 500 | 700): string {
-  return join(
-    process.cwd(),
-    "node_modules",
-    "@fontsource",
-    "noto-sans-kr",
-    "files",
-    `noto-sans-kr-korean-${weight}-normal.woff2`,
-  );
+function fontPaths(): string[] {
+  return [
+    join(
+      process.cwd(),
+      "dist",
+      "assets",
+      "fonts",
+      "DungGeunMo.ttf",
+    ),
+    join(
+      process.cwd(),
+      "server",
+      "assets",
+      "fonts",
+      "DungGeunMo.ttf",
+    ),
+  ];
 }
 
-function requireFontPath(weight: 400 | 500 | 700): string {
-  const value = fontPath(weight);
+function requireFontPath(): string {
+  const candidates = fontPaths();
+  const value = candidates.find((candidate) =>
+    existsSync(candidate),
+  );
 
-  if (!existsSync(value)) {
+  if (!value) {
     throw new Error(
-      `PDF 한글 글꼴을 찾을 수 없습니다: ${value}`,
+      `PDF 한글 글꼴을 찾을 수 없습니다: ${candidates.join(", ")}`,
     );
   }
 
@@ -79,6 +90,22 @@ function cleanText(value: unknown): string {
     .replace(/[\u2012\u2013\u2014\u2212]/g, "-")
     .replace(/\r\n?/g, "\n")
     .trim();
+}
+
+function pdfCriterionCode(value: string): string {
+  return cleanText(value)
+    .replace(
+      /^RENDERED-ADDED-CONTENT-(\d+)$/,
+      "JS-CONTENT-$1",
+    )
+    .replace(
+      /^RENDERED-INCONSISTENT-(?:INFORMATION|INFORM)-(\d+)$/,
+      "JS-CONSISTENCY-$1",
+    )
+    .replace(
+      /^INITIAL-HTML-MISSING-CORE-(\d+)$/,
+      "INITIAL-HTML-$1",
+    );
 }
 
 function formatKST(value: string | null): string {
@@ -146,20 +173,30 @@ function writeSectionTitle(
   title: string,
 ): void {
   ensureSpace(document, 30);
-  setBold(document, 12, COLORS.text).text(cleanText(title), {
-    width: contentWidth(document),
-  });
+  const x = document.page.margins.left;
+
+  document.x = x;
+  setBold(document, 12, COLORS.text).text(
+    cleanText(title),
+    x,
+    document.y,
+    {
+      width: contentWidth(document),
+    },
+  );
   document
     .moveDown(0.35)
     .strokeColor(COLORS.border)
     .lineWidth(0.7)
-    .moveTo(document.page.margins.left, document.y)
+    .moveTo(x, document.y)
     .lineTo(
       document.page.width - document.page.margins.right,
       document.y,
     )
     .stroke()
     .moveDown(0.65);
+
+  document.x = x;
 }
 
 function writeLabelValue(
@@ -289,7 +326,7 @@ function writeCriteria(
       .fillAndStroke(COLORS.white, COLORS.border);
 
     setBold(document, 7.7, COLORS.primary).text(
-      cleanText(criterion.code),
+      pdfCriterionCode(criterion.code),
       x + padding,
       y + padding,
       {
@@ -343,7 +380,9 @@ function writeEvidence(
   document: PDFKit.PDFDocument,
   item: PublicWorkOrderItem,
 ): void {
-  const text = evidenceText(item.finding?.evidence);
+  const text = item.finding
+    ? evidenceText(item.finding.evidence)
+    : "이 항목은 같은 검사의 초기 HTML과 JavaScript 렌더링 비교 결과에서 자동 생성되었습니다. 원본 비교 수치는 진단 보고서에서 확인하세요.";
   const width = contentWidth(document);
 
   setRegular(document, 7.4, COLORS.muted);
@@ -367,10 +406,17 @@ function writeEvidence(
 
   writeSectionTitle(document, "최초 검사 증거");
 
-  setRegular(document, 7.4, COLORS.muted).text(text, {
-    width,
-    lineGap: 2,
-  });
+  const x = document.page.margins.left;
+  document.x = x;
+  setRegular(document, 7.4, COLORS.muted).text(
+    text,
+    x,
+    document.y,
+    {
+      width,
+      lineGap: 2,
+    },
+  );
   document.moveDown(0.8);
 }
 
@@ -528,7 +574,7 @@ function writeCover(
       },
     );
     setBold(document, 8.1, COLORS.primaryDark).text(
-      `${item.weight}점`,
+      item.weight > 0 ? `${item.weight}점` : "점수 외",
       x + width - 66,
       y,
       {
@@ -541,7 +587,7 @@ function writeCover(
 
   document.moveDown(0.5);
   setRegular(document, 7.8, COLORS.muted).text(
-    "예상 점수 범위는 선택된 규칙 배점을 기준으로 계산한 참고값이며 실제 점수 상승이나 AI 검색 노출을 보장하지 않습니다.",
+    "예상 점수 범위는 선택된 점수 규칙 배점만으로 계산합니다. 점수 외 AI 수집 개선안은 예상 점수에 포함되지 않으며 실제 점수 상승이나 AI 검색 노출을 보장하지 않습니다.",
     {
       width,
       lineGap: 2,
@@ -576,8 +622,14 @@ function writeItemPage(
 
   setRegular(document, 8.3, COLORS.muted).text(
     `${cleanText(item.itemCode)} / ${
-      item.isRequired ? "필수 항목" : "일반 항목"
-    } / 예상 ${item.weight}점`,
+      item.finding
+        ? item.isRequired
+          ? "필수 항목"
+          : "일반 항목"
+        : "권장 개선"
+    } / ${
+      item.weight > 0 ? `예상 ${item.weight}점` : "점수 외 개선"
+    }`,
     {
       width,
     },
@@ -613,11 +665,11 @@ function writeItemPage(
   const findingStatus = item.finding?.status
     ? FINDING_STATUS_LABELS[item.finding.status] ??
       cleanText(item.finding.status)
-    : "원본 없음";
+    : "추가 개선 권장";
   const findingSeverity = item.finding?.severity
     ? SEVERITY_LABELS[item.finding.severity] ??
       cleanText(item.finding.severity)
-    : "미확인";
+    : "AI 수집 안정성";
 
   setRegular(document, 8.2, COLORS.text).text(
     `${findingStatus} / ${findingSeverity}`,
@@ -721,7 +773,7 @@ export function workOrderPdfFilename(
 export async function renderWorkOrderPdf(
   workOrder: PublicWorkOrder,
 ): Promise<Buffer> {
-  const mainFontPath = requireFontPath(500);
+  const mainFontPath = requireFontPath();
 
   const document = new PDFDocument({
     size: "A4",

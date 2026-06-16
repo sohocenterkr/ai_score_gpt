@@ -33,11 +33,11 @@
 - 작업지시서 상세: `/ko/work-orders/:workOrderId`
 - 작업지시서 API: `/api/work-orders`
 - JSON·UTF-8 BOM CSV·PDF 자료 출력 지원
-- 개발 DB에 비짓제주 발급 작업지시서 1건과 작업 항목 5건 유지
+- 개발 DB에서 기존 점수 항목과 AI 수집 개선안을 함께 포함한 비짓제주 작업지시서 7개 항목 생성 확인
 - 작업지시서 PDF API: `/api/work-orders/:workOrderId/export.pdf`
-- PDFKit `0.19.1`, 작업지시서용 Noto Sans KR `5.2.9`, 진단 보고서용 둥근모꼴+ Fixedsys TTF, `@types/pdfkit` `0.17.6` 사용
-- Noto Sans KR WOFF2 500 단일 글꼴을 PDF에 내장하고 한글 검색·복사를 지원
-- 비짓제주 실제 작업지시서 PDF: A4 10페이지, 생성 약 1.07초, 6,388,229바이트 확인
+- PDFKit `0.19.1`, 작업지시서·진단 보고서용 둥근모꼴+ Fixedsys TTF, `@types/pdfkit` `0.17.6` 사용
+- 작업지시서와 진단 보고서 PDF에 둥근모꼴+ Fixedsys TTF를 내장하고 한글 표시·검색·복사를 지원
+- 비짓제주 실제 작업지시서 PDF: A4 10페이지, 점수 항목 5건·점수 외 AI 수집 개선안 2건·예상 점수 86~100점 확인
 - 진단 보고서 PDF API: `/api/scan-results/:scanId/export.pdf`
 - 진단 보고서는 퍼블릭 도메인 둥근모꼴+ Fixedsys TTF 단일 글꼴을 내장하며, 빌드 시 `dist/assets/fonts`로 복사하여 개발·프로덕션 환경에서 한글 표시·검색·복사를 지원
 - 비짓제주 실제 v3 진단 보고서 PDF: A4 15페이지, 66,049바이트, 주요 문제 5건·전체 진단 25건·수집 페이지 1건 확인
@@ -53,6 +53,9 @@
 - 서버 시작 시 자동 검사 워커를 활성화하며, 기본 1초 간격으로 `QUEUED` 검사를 선점해 한 번에 한 건씩 순차 처리함 (`SCAN_WORKER_ENABLED`, `SCAN_WORKER_POLL_INTERVAL_MS`로 설정 가능)
 - `playwright-core 1.55.0`과 Replit Nix의 Chromium을 사용해 JavaScript 실행 후 DOM을 수집하고 초기 HTML과 비교함
 - 렌더링 차이는 점수에 직접 반영하지 않고 비개발자 설명·개발자 작업 지시·완료 확인 기준이 포함된 AI 수집 개선안 생성에 활용함
+- 사용자는 기존 점수 문제와 AI 수집 개선안을 함께 선택해 작업지시서를 생성할 수 있음
+- 서버는 전달받은 개선안 코드를 실제 검사 증거와 대조하며 클라이언트 임의 작업 문구는 저장하지 않음
+- 점수 외 AI 수집 개선안은 작업지시서 예상 점수 범위 계산에서 제외함
 - 렌더링은 `RENDERED_DOM_ENABLED`, `CHROMIUM_PATH`, `RENDERED_DOM_TIMEOUT_MS`, `RENDERED_DOM_SETTLE_MS`로 제어하며 Chromium 부재·시간 초과·렌더링 오류가 QUICK 검사 전체를 실패시키지 않음
 - 브라우저 요청은 공개 HTTP(S) 주소만 허용하고 사설·내부 주소, 비GET·HEAD 요청, 실시간 연결과 비필수 대용량 자원을 차단함
 - 등록 사이트 화면은 대기·검사 중 상태에서만 자동 갱신하고 완료 후 폴링을 중지함

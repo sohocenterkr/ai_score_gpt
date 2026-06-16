@@ -21,6 +21,15 @@ interface FindingTemplateInput {
   severity: FindingSeverity;
 }
 
+interface RenderedImprovementTemplateInput {
+  code: string;
+  currentState: string;
+  meaning: string;
+  change: string;
+  developerInstructions: string[];
+  acceptanceCriteria: string[];
+}
+
 const templates: Record<string, WorkOrderTemplate> = {
   "ACCESS-SITEMAP-001": {
     requirement:
@@ -184,6 +193,38 @@ function genericCriteria(ruleCode: string): AcceptanceCriterion[] {
       required: true,
     },
   ];
+}
+
+export function buildRenderedImprovementWorkOrderTemplate(
+  plan: RenderedImprovementTemplateInput,
+): WorkOrderTemplate {
+  const prefixByCode: Record<string, string> = {
+    "RENDERED-ADDED-CONTENT": "JS-CONTENT",
+    "RENDERED-INCONSISTENT-INFORMATION": "JS-CONSISTENCY",
+    "INITIAL-HTML-MISSING-CORE": "INITIAL-HTML",
+  };
+  const prefix =
+    prefixByCode[plan.code] ??
+    plan.code.replace(/[^A-Z0-9]+/g, "-").slice(0, 16);
+
+  return {
+    requirement: [
+      `현재 상태: ${plan.currentState}`,
+      `무슨 뜻인가요: ${plan.meaning}`,
+      `무엇을 바꾸나요: ${plan.change}`,
+    ].join("\n\n"),
+    developerMessage: plan.developerInstructions
+      .map((instruction) => `- ${instruction}`)
+      .join("\n"),
+    acceptanceCriteria: plan.acceptanceCriteria.map(
+      (label, index) => ({
+        code: `${prefix}-${String(index + 1).padStart(2, "0")}`,
+        label,
+        required: true,
+      }),
+    ),
+    isRequired: false,
+  };
 }
 
 export function buildWorkOrderTemplate(

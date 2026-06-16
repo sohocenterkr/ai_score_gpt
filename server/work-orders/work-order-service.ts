@@ -7,8 +7,13 @@ import {
 } from "@prisma/client";
 import type { PublicUser } from "../auth/auth-service";
 import { getDatabase } from "../db";
+import {
+  buildRenderedDomImprovementPlans,
+  scanResultRenderedDomComparison,
+} from "../scans/scan-result-pdf";
 import { getRuleDefinition } from "../scans/scoring";
 import {
+  buildRenderedImprovementWorkOrderTemplate,
   buildWorkOrderTemplate,
   type AcceptanceCriterion,
 } from "./work-order-templates";
@@ -115,6 +120,7 @@ export interface PublicWorkOrderSummary {
 export interface CreateWorkOrderInput {
   scanId: string;
   findingIds: string[];
+  renderedImprovementCodes: string[];
 }
 
 export interface WorkOrderExport {
@@ -457,11 +463,20 @@ export function createPrismaWorkOrderService(): WorkOrderService {
     async createWorkOrder(user, input) {
       const prisma = getDatabase();
       const findingIds = [...new Set(input.findingIds)];
+      const renderedImprovementCodes = [
+        ...new Set(input.renderedImprovementCodes),
+      ];
+      const selectedCount =
+        findingIds.length + renderedImprovementCodes.length;
 
-      if (findingIds.length === 0 || findingIds.length > 50) {
+      if (
+        selectedCount === 0 ||
+        selectedCount > 50 ||
+        renderedImprovementCodes.length > 3
+      ) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_FINDINGS",
-          "작업지시서에 포함할 문제를 1개 이상 선택해 주세요.",
+          "작업지시서에 포함할 항목을 1개 이상 선택해 주세요.",
           400,
         );
       }
@@ -486,11 +501,6 @@ export function createPrismaWorkOrderService(): WorkOrderService {
         include: {
           site: true,
           findings: {
-            where: {
-              id: {
-                in: findingIds,
-              },
-            },
             include: {
               scanPage: true,
             },
@@ -506,7 +516,11 @@ export function createPrismaWorkOrderService(): WorkOrderService {
         );
       }
 
-      if (scan.findings.length !== findingIds.length) {
+      const selectedFindings = scan.findings.filter((finding) =>
+        findingIds.includes(finding.id),
+      );
+
+      if (selectedFindings.length !== findingIds.length) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_FINDINGS",
           "선택한 문제 중 현재 검사에 속하지 않는 항목이 있습니다.",
@@ -514,7 +528,33 @@ export function createPrismaWorkOrderService(): WorkOrderService {
         );
       }
 
-      const itemInputs = scan.findings.map((finding) => {
+      const comparison = scanResultRenderedDomComparison({
+        findings: scan.findings.map((finding) => ({
+          ruleCode: finding.ruleCode,
+          evidence: finding.evidenceJson,
+        })),
+      });
+      const availablePlans = new Map(
+        buildRenderedDomImprovementPlans(comparison).map((plan) => [
+          plan.code,
+          plan,
+        ]),
+      );
+      const selectedPlans = renderedImprovementCodes.map((code) => {
+        const plan = availablePlans.get(code);
+
+        if (!plan) {
+          throw new WorkOrderServiceError(
+            "WORK_ORDER_INVALID_FINDINGS",
+            "선택한 AI 수집 개선안이 현재 검사 결과와 일치하지 않습니다.",
+            400,
+          );
+        }
+
+        return plan;
+      });
+
+      const findingItemInputs = selectedFindings.map((finding) => {
         const definition = getRuleDefinition(finding.ruleCode);
 
         if (
@@ -550,6 +590,29 @@ export function createPrismaWorkOrderService(): WorkOrderService {
           weight: definition.weight,
         };
       });
+
+      const renderedItemInputs = selectedPlans.map((plan) => {
+        const template =
+          buildRenderedImprovementWorkOrderTemplate(plan);
+
+        return {
+          findingId: null,
+          itemCode: plan.code,
+          targetUrl:
+            scan.site.finalUrl ?? scan.site.baseUrl,
+          title: plan.title,
+          requirement: template.requirement,
+          developerMessage: template.developerMessage,
+          acceptanceCriteriaJson:
+            template.acceptanceCriteria as unknown as Prisma.InputJsonValue,
+          isRequired: template.isRequired,
+          weight: 0,
+        };
+      });
+      const itemInputs = [
+        ...findingItemInputs,
+        ...renderedItemInputs,
+      ];
 
       const totalWeight = itemInputs.reduce(
         (total, item) => total + item.weight,

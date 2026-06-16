@@ -529,7 +529,12 @@ function objectStringArray(
 }
 
 export function scanResultRenderedDomComparison(
-  result: Pick<PublicScanResult, "findings">,
+  result: {
+    findings: readonly {
+      ruleCode: string;
+      evidence: unknown;
+    }[];
+  },
 ): ScanResultRenderedDomComparison | null {
   const finding = result.findings.find(
     (item) => item.ruleCode === "ENV-MEASUREMENT-001",

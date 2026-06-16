@@ -288,6 +288,8 @@
   margin: 7px 0 0;
   color: #475569;
   line-height: 1.7;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
 }
 
 .work-order-developer-message {

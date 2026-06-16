@@ -516,6 +516,10 @@ export function ScanResultPage() {
   const [selectedFindingIds, setSelectedFindingIds] = useState<
     string[]
   >([]);
+  const [
+    selectedRenderedImprovementCodes,
+    setSelectedRenderedImprovementCodes,
+  ] = useState<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -543,6 +547,13 @@ export function ScanResultPage() {
             .filter((finding) => finding.weight > 0)
             .map((finding) => finding.id),
         );
+        setSelectedRenderedImprovementCodes(
+          buildRenderedImprovementPlans(
+            renderedDomComparisonFromFindings(
+              response.findings,
+            ),
+          ).map((plan) => plan.code),
+        );
       })
       .catch((error) => {
         if (!cancelled) {
@@ -561,9 +572,13 @@ export function ScanResultPage() {
   }, [scanId, siteId]);
 
   async function handleCreateWorkOrder() {
-    if (!result || selectedFindingIds.length === 0) {
+    const selectedCount =
+      selectedFindingIds.length +
+      selectedRenderedImprovementCodes.length;
+
+    if (!result || selectedCount === 0) {
       setWorkOrderError(
-        "작업지시서에 포함할 주요 문제를 1개 이상 선택해 주세요.",
+        "작업지시서에 포함할 문제나 개선안을 1개 이상 선택해 주세요.",
       );
       return;
     }
@@ -575,6 +590,8 @@ export function ScanResultPage() {
       const workOrder = await createWorkOrderRequest({
         scanId: result.scan.id,
         findingIds: selectedFindingIds,
+        renderedImprovementCodes:
+          selectedRenderedImprovementCodes,
       });
       navigate(`/${locale}/work-orders/${workOrder.id}`);
     } catch (error) {
@@ -596,6 +613,17 @@ export function ScanResultPage() {
       checked
         ? [...new Set([...current, findingId])]
         : current.filter((id) => id !== findingId),
+    );
+  }
+
+  function toggleRenderedImprovement(
+    planCode: string,
+    checked: boolean,
+  ) {
+    setSelectedRenderedImprovementCodes((current) =>
+      checked
+        ? [...new Set([...current, planCode])]
+        : current.filter((code) => code !== planCode),
     );
   }
 
@@ -622,6 +650,9 @@ export function ScanResultPage() {
     () => buildRenderedImprovementPlans(renderedDomComparison),
     [renderedDomComparison],
   );
+  const selectedWorkOrderItemCount =
+    selectedFindingIds.length +
+    selectedRenderedImprovementCodes.length;
 
   if (loading) {
     return (
@@ -664,8 +695,8 @@ export function ScanResultPage() {
             <h1>{result.site.name} 간편진단 결과</h1>
             <p>
               공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로
-              점수를 계산하고, JavaScript 렌더링 결과는 참고
-              증거로 함께 표시합니다.
+              점수를 계산하고, JavaScript 렌더링 결과는 AI 수집
+              개선안을 만드는 데 활용합니다.
             </p>
           </div>
           <Link className="scan-result-back" to={`/${locale}/sites`}>
@@ -675,9 +706,9 @@ export function ScanResultPage() {
 
         <div className="scan-result-scope" role="note">
           현재 점수는 QUICK 초기 HTML 기준 25개 규칙으로 계산합니다.
-          JavaScript 실행 후 DOM은 비감점 비교 증거로 제공하며,
-          모바일·PC 별도 비교·업종별 기준정보·질문 정답률은
-          정밀진단 단계에서 추가됩니다.
+          JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고
+          AI 수집 개선안에 활용하며, 모바일·PC 별도 비교·업종별
+          기준정보·질문 정답률은 정밀진단 단계에서 추가됩니다.
         </div>
 
         <section className="surface scan-score-hero">
@@ -954,10 +985,33 @@ export function ScanResultPage() {
                     <div className="scan-rendered-improvement-list">
                       {renderedImprovementPlans.map((plan) => (
                         <article
-                          className="scan-rendered-improvement-card"
+                          className={`scan-rendered-improvement-card${
+                            selectedRenderedImprovementCodes.includes(
+                              plan.code,
+                            )
+                              ? " scan-rendered-improvement-selected"
+                              : ""
+                          }`}
                           key={plan.code}
                         >
-                          <h4>{plan.title}</h4>
+                          <div className="scan-rendered-improvement-header">
+                            <h4>{plan.title}</h4>
+                            <label className="scan-rendered-improvement-select">
+                              <input
+                                type="checkbox"
+                                checked={selectedRenderedImprovementCodes.includes(
+                                  plan.code,
+                                )}
+                                onChange={(event) =>
+                                  toggleRenderedImprovement(
+                                    plan.code,
+                                    event.target.checked,
+                                  )
+                                }
+                              />
+                              <span>작업지시서에 포함</span>
+                            </label>
+                          </div>
 
                           <div className="scan-rendered-explanation">
                             <section>
@@ -1109,9 +1163,9 @@ export function ScanResultPage() {
             <strong>작업지시서는 선택 기능입니다</strong>
             <p>
               PDF 보고서 저장과는 별개입니다. 사이트 수정을 맡기거나
-              진행 상황을 관리할 때 주요 문제를 선택해 작업지시서
-              1건으로 만들 수 있습니다. 현재{" "}
-              {selectedFindingIds.length}개 항목이 선택되어 있습니다.
+              진행 상황을 관리할 때 주요 문제와 AI 수집 개선안을
+              선택해 작업지시서 1건으로 만들 수 있습니다. 현재{" "}
+              {selectedWorkOrderItemCount}개 항목이 선택되어 있습니다.
             </p>
           </div>
 
@@ -1128,13 +1182,13 @@ export function ScanResultPage() {
               onClick={handleCreateWorkOrder}
               disabled={
                 creatingWorkOrder ||
-                selectedFindingIds.length === 0
+                selectedWorkOrderItemCount === 0
               }
             >
               {creatingWorkOrder
                 ? "작업지시서 1건 생성 중..."
-                : selectedFindingIds.length > 0
-                  ? `선택한 ${selectedFindingIds.length}개 항목으로 작업지시서 1건 만들기`
+                : selectedWorkOrderItemCount > 0
+                  ? `선택한 ${selectedWorkOrderItemCount}개 항목으로 작업지시서 1건 만들기`
                   : "작업지시서로 만들 항목을 선택하세요"}
             </button>
             <Link

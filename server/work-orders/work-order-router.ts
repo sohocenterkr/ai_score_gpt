@@ -15,13 +15,43 @@ import {
   type WorkOrderService,
 } from "./work-order-service";
 
-const createSchema = z.object({
-  scanId: z.string().trim().min(1).max(100),
-  findingIds: z
-    .array(z.string().trim().min(1).max(100))
-    .min(1)
-    .max(50),
-});
+const renderedImprovementCodeSchema = z.enum([
+  "RENDERED-ADDED-CONTENT",
+  "RENDERED-INCONSISTENT-INFORMATION",
+  "INITIAL-HTML-MISSING-CORE",
+]);
+
+const createSchema = z
+  .object({
+    scanId: z.string().trim().min(1).max(100),
+    findingIds: z
+      .array(z.string().trim().min(1).max(100))
+      .max(50)
+      .default([]),
+    renderedImprovementCodes: z
+      .array(renderedImprovementCodeSchema)
+      .max(3)
+      .default([]),
+  })
+  .superRefine((value, context) => {
+    const total =
+      value.findingIds.length +
+      value.renderedImprovementCodes.length;
+
+    if (total < 1) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "작업지시서 대상 항목을 1개 이상 선택해 주세요.",
+      });
+    }
+
+    if (total > 50) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "작업지시서 대상 항목은 최대 50개입니다.",
+      });
+    }
+  });
 
 interface CreateWorkOrderRouterOptions {
   workOrderService: WorkOrderService;
@@ -87,7 +117,7 @@ export function createWorkOrderRouter(
     if (!parsed.success) {
       response.status(400).json({
         code: "VALIDATION_ERROR",
-        message: "검사와 작업지시서 대상 문제를 확인해 주세요.",
+        message: "검사와 작업지시서 대상 항목을 확인해 주세요.",
       });
       return;
     }

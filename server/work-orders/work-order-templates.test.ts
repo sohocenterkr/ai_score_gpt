@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildWorkOrderTemplate } from "./work-order-templates";
+import {
+  buildRenderedImprovementWorkOrderTemplate,
+  buildWorkOrderTemplate,
+} from "./work-order-templates";
 
 describe("work order templates", () => {
   it("JSON-LD 문제에 구체적인 완료 기준을 만든다", () => {
@@ -15,6 +18,35 @@ describe("work order templates", () => {
     expect(template.acceptanceCriteria).toHaveLength(4);
     expect(template.acceptanceCriteria[0]?.code).toBe("JSONLD-01");
     expect(template.requirement).toContain("Schema.org");
+  });
+
+  it("AI 수집 개선안을 비개발자 설명과 개발자 지시로 만든다", () => {
+    const template =
+      buildRenderedImprovementWorkOrderTemplate({
+        code: "RENDERED-ADDED-CONTENT",
+        currentState: "본문과 링크가 화면 완성 후 증가했습니다.",
+        meaning:
+          "일부 AI 검색 봇은 나중에 추가된 정보를 놓칠 수 있습니다.",
+        change:
+          "핵심 정보와 링크를 처음 전달되는 페이지에도 포함합니다.",
+        developerInstructions: [
+          "핵심 본문을 초기 HTML에 출력해 주세요.",
+          "기존 화면 기능을 유지해 주세요.",
+        ],
+        acceptanceCriteria: [
+          "초기 HTML에서 핵심 본문이 확인됩니다.",
+          "기존 화면 기능이 정상 동작합니다.",
+        ],
+      });
+
+    expect(template.isRequired).toBe(false);
+    expect(template.requirement).toContain("현재 상태");
+    expect(template.requirement).toContain("무엇을 바꾸나요");
+    expect(template.developerMessage).toContain("초기 HTML");
+    expect(template.acceptanceCriteria).toHaveLength(2);
+    expect(template.acceptanceCriteria[0]?.code).toBe(
+      "JS-CONTENT-01",
+    );
   });
 
   it("알 수 없는 규칙에도 일반 완료 기준을 만든다", () => {
