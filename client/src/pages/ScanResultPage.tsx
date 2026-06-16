@@ -479,9 +479,11 @@ export function ScanResultPage() {
           </p>
 
           <div className="work-order-selection" role="note">
-            <strong>작업지시서 대상 선택</strong>
+            <strong>작업지시서는 선택 기능입니다</strong>
             <p>
-              주요 문제 카드에서 포함할 항목을 선택했습니다. 현재{" "}
+              PDF 보고서 저장과는 별개입니다. 사이트 수정을 맡기거나
+              진행 상황을 관리할 때 주요 문제를 선택해 작업지시서
+              1건으로 만들 수 있습니다. 현재{" "}
               {selectedFindingIds.length}개 항목이 선택되어 있습니다.
             </p>
           </div>
@@ -503,8 +505,10 @@ export function ScanResultPage() {
               }
             >
               {creatingWorkOrder
-                ? "작업지시서 생성 중..."
-                : `작업지시서 만들기 · ${selectedFindingIds.length}개`}
+                ? "작업지시서 1건 생성 중..."
+                : selectedFindingIds.length > 0
+                  ? `선택한 ${selectedFindingIds.length}개 항목으로 작업지시서 1건 만들기`
+                  : "작업지시서로 만들 항목을 선택하세요"}
             </button>
             <Link
               className="work-order-list-link"
