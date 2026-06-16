@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildRenderedDomImprovementPlans,
   renderScanResultPdf,
   sanitizeEvidenceValue,
   scanResultPdfFilename,
   scanResultPdfFontHash,
+  scanResultRenderedDomComparison,
+  SCAN_RESULT_PDF_RENDERER_VERSION,
 } from "./scan-result-pdf";
 import type { PublicScanResult } from "./scan-result-service";
 
@@ -141,6 +144,55 @@ const sampleResult: PublicScanResult = {
       scoreDelta: 0,
       weight: 6,
     },
+    {
+      id: "finding-3",
+      ruleCode: "ENV-MEASUREMENT-001",
+      category: "최신성 및 측정 환경",
+      severity: "INFO",
+      status: "PASS",
+      title: "실제 공개 URL 측정 환경",
+      description:
+        "초기 HTML과 JavaScript 실행 후 DOM을 함께 비교했습니다.",
+      evidence: {
+        rulesScope:
+          "QUICK_INITIAL_HTML_WITH_RENDERED_DOM_EVIDENCE",
+        renderedDom: {
+          status: "SUCCESS",
+          browserVersion: "Chromium 92.0.4515.159",
+          durationMs: 12_340,
+          pageErrorCount: 2,
+          initialHtml: {
+            textLength: 1_200,
+            links: {
+              internal: 12,
+            },
+            headings: {
+              h1: ["예제 사이트"],
+              h2Count: 1,
+            },
+            jsonLd: {
+              validCount: 0,
+            },
+          },
+          renderedDom: {
+            textLength: 2_400,
+            links: {
+              internal: 28,
+            },
+            headings: {
+              h1: ["예제 사이트"],
+              h2Count: 4,
+            },
+            jsonLd: {
+              validCount: 1,
+            },
+          },
+        },
+      },
+      recommendation: null,
+      scoreDelta: 0,
+      weight: 5,
+    },
   ],
 };
 
@@ -155,10 +207,49 @@ describe("scan result PDF", () => {
 
       expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
       expect(result.length).toBeGreaterThan(10_000);
-      expect(pageCount).toBeGreaterThanOrEqual(7);
+      expect(pageCount).toBeGreaterThanOrEqual(8);
     },
     45_000,
   );
+
+  it("렌더링 DOM 비교 증거를 구조화한다", () => {
+    const comparison =
+      scanResultRenderedDomComparison(sampleResult);
+
+    expect(comparison).toMatchObject({
+      status: "SUCCESS",
+      browserVersion: "Chromium 92.0.4515.159",
+      durationMs: 12_340,
+      metrics: {
+        textLength: {
+          initial: 1_200,
+          rendered: 2_400,
+        },
+        internalLinks: {
+          initial: 12,
+          rendered: 28,
+        },
+        jsonLdValidCount: {
+          initial: 0,
+          rendered: 1,
+        },
+      },
+    });
+    const plans = buildRenderedDomImprovementPlans(comparison);
+
+    expect(plans[0]).toMatchObject({
+      code: "RENDERED-ADDED-CONTENT",
+      title:
+        "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
+    });
+    expect(plans[0]?.developerInstructions[0]).toContain(
+      "초기 HTML",
+    );
+    expect(plans[0]?.acceptanceCriteria).toHaveLength(4);
+    expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
+      "2026.06-scan-report-v6",
+    );
+  });
 
   it("안전한 진단 보고서 파일명을 만든다", () => {
     expect(scanResultPdfFilename(sampleResult)).toBe(

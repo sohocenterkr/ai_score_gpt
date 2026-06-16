@@ -41,6 +41,8 @@
 - 진단 보고서 PDF API: `/api/scan-results/:scanId/export.pdf`
 - 진단 보고서는 퍼블릭 도메인 둥근모꼴+ Fixedsys TTF 단일 글꼴을 내장하며, 빌드 시 `dist/assets/fonts`로 복사하여 개발·프로덕션 환경에서 한글 표시·검색·복사를 지원
 - 비짓제주 실제 v3 진단 보고서 PDF: A4 15페이지, 66,049바이트, 주요 문제 5건·전체 진단 25건·수집 페이지 1건 확인
+- 현재 진단 보고서 렌더러 버전은 `2026.06-scan-report-v6`이며 렌더러 변경 시 기존 PostgreSQL PDF 캐시를 자동 무효화
+- 비짓제주 실제 렌더링 개선안 보고서: A4 17페이지, 렌더링 비교·AI 수집 개선안 2건·개발자 작업 지시·완료 확인 기준 확인
 - 진단 보고서는 PostgreSQL 공유 캐시에 저장하며 검사 결과·규칙 버전·완료 시각·렌더러·글꼴 변경 시 자동 무효화
 - 실제 v3 보고서 최초 생성 922.99ms `MISS`, 반복 다운로드 10.24ms `HIT`, 다운로드본·DB 저장본 PDF SHA-256 일치 확인
 - 렌더러 버전 `2026.06-scan-report-v3`와 글꼴 해시 변경으로 기존 v2 캐시가 자동 무효화·재생성됨을 확인
@@ -49,7 +51,8 @@
 - 브라우저 응답은 `Cache-Control: private, no-store`를 유지하며 기존 회원·조직·검사 소유권 검사를 먼저 수행함
 - 현재 PostgreSQL PDF 저장은 공유 오브젝트 스토리지가 없는 개발 단계의 제한적 방식이며, Production에서는 Cloudinary 비공개 자산 저장으로 이전 예정
 - 서버 시작 시 자동 검사 워커를 활성화하며, 기본 1초 간격으로 `QUEUED` 검사를 선점해 한 번에 한 건씩 순차 처리함 (`SCAN_WORKER_ENABLED`, `SCAN_WORKER_POLL_INTERVAL_MS`로 설정 가능)
-- `playwright-core 1.55.0`과 Replit Nix의 Chromium을 사용해 JavaScript 실행 후 DOM을 비감점 비교 증거로 수집함
+- `playwright-core 1.55.0`과 Replit Nix의 Chromium을 사용해 JavaScript 실행 후 DOM을 수집하고 초기 HTML과 비교함
+- 렌더링 차이는 점수에 직접 반영하지 않고 비개발자 설명·개발자 작업 지시·완료 확인 기준이 포함된 AI 수집 개선안 생성에 활용함
 - 렌더링은 `RENDERED_DOM_ENABLED`, `CHROMIUM_PATH`, `RENDERED_DOM_TIMEOUT_MS`, `RENDERED_DOM_SETTLE_MS`로 제어하며 Chromium 부재·시간 초과·렌더링 오류가 QUICK 검사 전체를 실패시키지 않음
 - 브라우저 요청은 공개 HTTP(S) 주소만 허용하고 사설·내부 주소, 비GET·HEAD 요청, 실시간 연결과 비필수 대용량 자원을 차단함
 - 등록 사이트 화면은 대기·검사 중 상태에서만 자동 갱신하고 완료 후 폴링을 중지함

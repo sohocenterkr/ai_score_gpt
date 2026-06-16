@@ -101,6 +101,404 @@ function findingAnchor(ruleCode: string): string {
   return `finding-${ruleCode.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 }
 
+type EvidenceRecord = Record<string, unknown>;
+
+interface RenderedDomMetric {
+  initial: number | null;
+  rendered: number | null;
+  delta: number | null;
+}
+
+interface RenderedDomComparisonView {
+  status: string;
+  browserVersion: string | null;
+  durationMs: number | null;
+  pageErrorCount: number | null;
+  errorCode: string | null;
+  message: string | null;
+  textLength: RenderedDomMetric;
+  internalLinks: RenderedDomMetric;
+  h1Count: RenderedDomMetric;
+  h2Count: RenderedDomMetric;
+  jsonLdValidCount: RenderedDomMetric;
+  initialTitle: string | null;
+  renderedTitle: string | null;
+  initialDescription: string | null;
+  renderedDescription: string | null;
+  initialH1: string[];
+  renderedH1: string[];
+  initialJsonLdTypes: string[];
+  renderedJsonLdTypes: string[];
+}
+
+interface RenderedImprovementPlan {
+  code: string;
+  title: string;
+  currentState: string;
+  meaning: string;
+  change: string;
+  developerInstructions: string[];
+  acceptanceCriteria: string[];
+}
+
+function evidenceRecord(value: unknown): EvidenceRecord | null {
+  return value &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+    ? (value as EvidenceRecord)
+    : null;
+}
+
+function recordNumber(
+  record: EvidenceRecord | null,
+  key: string,
+): number | null {
+  const value = record?.[key];
+
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : null;
+}
+
+function recordString(
+  record: EvidenceRecord | null,
+  key: string,
+): string | null {
+  const value = record?.[key];
+
+  return typeof value === "string" && value.trim()
+    ? value.trim()
+    : null;
+}
+
+function nestedRecord(
+  record: EvidenceRecord | null,
+  key: string,
+): EvidenceRecord | null {
+  return evidenceRecord(record?.[key]);
+}
+
+function recordArrayLength(
+  record: EvidenceRecord | null,
+  key: string,
+): number | null {
+  const value = record?.[key];
+  return Array.isArray(value) ? value.length : null;
+}
+
+function recordStringArray(
+  record: EvidenceRecord | null,
+  key: string,
+): string[] {
+  const value = record?.[key];
+
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (item): item is string =>
+      typeof item === "string" && Boolean(item.trim()),
+  );
+}
+
+function renderedMetric(
+  initial: number | null,
+  rendered: number | null,
+): RenderedDomMetric {
+  return {
+    initial,
+    rendered,
+    delta:
+      initial === null || rendered === null
+        ? null
+        : rendered - initial,
+  };
+}
+
+function renderedDomComparisonFromFindings(
+  findings: ScanResultFinding[],
+): RenderedDomComparisonView | null {
+  const environment = findings.find(
+    (finding) => finding.ruleCode === "ENV-MEASUREMENT-001",
+  );
+  const evidence = evidenceRecord(environment?.evidence);
+  const renderedEvidence = nestedRecord(evidence, "renderedDom");
+
+  if (!renderedEvidence) {
+    return null;
+  }
+
+  const status =
+    recordString(renderedEvidence, "status") ?? "UNKNOWN";
+  const initial = nestedRecord(renderedEvidence, "initialHtml");
+  const rendered = nestedRecord(renderedEvidence, "renderedDom");
+  const initialLinks = nestedRecord(initial, "links");
+  const renderedLinks = nestedRecord(rendered, "links");
+  const initialHeadings = nestedRecord(initial, "headings");
+  const renderedHeadings = nestedRecord(rendered, "headings");
+  const initialJsonLd = nestedRecord(initial, "jsonLd");
+  const renderedJsonLd = nestedRecord(rendered, "jsonLd");
+
+  return {
+    status,
+    browserVersion: recordString(
+      renderedEvidence,
+      "browserVersion",
+    ),
+    durationMs: recordNumber(renderedEvidence, "durationMs"),
+    pageErrorCount: recordNumber(
+      renderedEvidence,
+      "pageErrorCount",
+    ),
+    errorCode: recordString(renderedEvidence, "errorCode"),
+    message: recordString(renderedEvidence, "message"),
+    textLength: renderedMetric(
+      recordNumber(initial, "textLength"),
+      recordNumber(rendered, "textLength"),
+    ),
+    internalLinks: renderedMetric(
+      recordNumber(initialLinks, "internal"),
+      recordNumber(renderedLinks, "internal"),
+    ),
+    h1Count: renderedMetric(
+      recordArrayLength(initialHeadings, "h1"),
+      recordArrayLength(renderedHeadings, "h1"),
+    ),
+    h2Count: renderedMetric(
+      recordNumber(initialHeadings, "h2Count"),
+      recordNumber(renderedHeadings, "h2Count"),
+    ),
+    jsonLdValidCount: renderedMetric(
+      recordNumber(initialJsonLd, "validCount"),
+      recordNumber(renderedJsonLd, "validCount"),
+    ),
+    initialTitle: recordString(initial, "title"),
+    renderedTitle: recordString(rendered, "title"),
+    initialDescription: recordString(
+      initial,
+      "metaDescription",
+    ),
+    renderedDescription: recordString(
+      rendered,
+      "metaDescription",
+    ),
+    initialH1: recordStringArray(initialHeadings, "h1"),
+    renderedH1: recordStringArray(renderedHeadings, "h1"),
+    initialJsonLdTypes: recordStringArray(
+      initialJsonLd,
+      "types",
+    ),
+    renderedJsonLdTypes: recordStringArray(
+      renderedJsonLd,
+      "types",
+    ),
+  };
+}
+
+function normalizedText(value: string | null): string {
+  return (value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+function normalizedList(values: string[]): string {
+  return [...values]
+    .map((value) => normalizedText(value))
+    .filter(Boolean)
+    .sort()
+    .join("|");
+}
+
+function buildRenderedImprovementPlans(
+  comparison: RenderedDomComparisonView | null,
+): RenderedImprovementPlan[] {
+  if (!comparison || comparison.status !== "SUCCESS") {
+    return [];
+  }
+
+  const plans: RenderedImprovementPlan[] = [];
+  const textDelta = comparison.textLength.delta ?? 0;
+  const linkDelta = comparison.internalLinks.delta ?? 0;
+  const textInitial = comparison.textLength.initial ?? 0;
+  const textGrowthRate =
+    textInitial > 0 ? textDelta / textInitial : textDelta > 0 ? 1 : 0;
+  const hasLargeAddedContent =
+    textDelta >= 500 || textGrowthRate >= 0.25 || linkDelta >= 10;
+
+  if (hasLargeAddedContent) {
+    const stateParts = [
+      comparison.textLength.initial !== null &&
+      comparison.textLength.rendered !== null
+        ? `본문 글자 수가 ${metricValue(
+            comparison.textLength.initial,
+            "자",
+          )}에서 ${metricValue(
+            comparison.textLength.rendered,
+            "자",
+          )}로 늘었습니다.`
+        : null,
+      comparison.internalLinks.initial !== null &&
+      comparison.internalLinks.rendered !== null
+        ? `내부 링크가 ${metricValue(
+            comparison.internalLinks.initial,
+            "개",
+          )}에서 ${metricValue(
+            comparison.internalLinks.rendered,
+            "개",
+          )}로 늘었습니다.`
+        : null,
+    ].filter((value): value is string => Boolean(value));
+
+    plans.push({
+      code: "RENDERED-ADDED-CONTENT",
+      title:
+        "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
+      currentState:
+        stateParts.join(" ") ||
+        "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다.",
+      meaning:
+        "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.",
+      change:
+        "모든 화면 기능을 바꿀 필요는 없습니다. 사이트 소개, 주요 서비스, 핵심 정보와 중요한 이동 링크처럼 AI가 사이트를 이해하는 데 필요한 내용만 처음 전달되는 페이지에도 포함되도록 수정합니다.",
+      developerInstructions: [
+        "핵심 본문과 주요 내부 링크를 초기 HTML에도 출력해 주세요.",
+        "필요하면 서버 렌더링(SSR), 정적 생성(SSG) 또는 사전 렌더링을 적용해 주세요.",
+        "슬라이더·지도·애니메이션·개인화 기능처럼 부가적인 화면 기능은 기존 JavaScript 방식을 유지할 수 있습니다.",
+        "기존 디자인과 사용자 기능을 제거하거나 비활성화하지 마세요.",
+      ],
+      acceptanceCriteria: [
+        "JavaScript 실행 전 HTML에서도 사이트의 핵심 소개와 주요 정보가 확인됩니다.",
+        "중요한 내부 페이지로 이동하는 일반 링크가 초기 HTML에 존재합니다.",
+        "기존 화면 디자인과 사용자 기능이 정상적으로 동작합니다.",
+        "재검사에서 초기 HTML과 렌더링 DOM의 본문·링크 격차가 줄어듭니다.",
+      ],
+    });
+  }
+
+  const mismatchedFields: string[] = [];
+
+  if (
+    normalizedText(comparison.initialTitle) !==
+    normalizedText(comparison.renderedTitle)
+  ) {
+    mismatchedFields.push("페이지 제목");
+  }
+
+  if (
+    normalizedText(comparison.initialDescription) !==
+    normalizedText(comparison.renderedDescription)
+  ) {
+    mismatchedFields.push("페이지 설명");
+  }
+
+  if (
+    normalizedList(comparison.initialH1) !==
+    normalizedList(comparison.renderedH1)
+  ) {
+    mismatchedFields.push("대표 제목(H1)");
+  }
+
+  if (
+    normalizedList(comparison.initialJsonLdTypes) !==
+    normalizedList(comparison.renderedJsonLdTypes)
+  ) {
+    mismatchedFields.push("구조화 정보(JSON-LD)");
+  }
+
+  if (mismatchedFields.length > 0) {
+    plans.push({
+      code: "RENDERED-INCONSISTENT-INFORMATION",
+      title:
+        "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다",
+      currentState: `${mismatchedFields.join(
+        ", ",
+      )} 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다.`,
+      meaning:
+        "AI 검색 시스템에 따라 처음 받은 정보를 사용하기도 하고 화면 완성 후의 정보를 사용하기도 합니다. 값이 다르면 같은 페이지를 서로 다르게 이해할 수 있습니다.",
+      change:
+        "글자 하나까지 완전히 같을 필요는 없지만 페이지 주제, 상호명, 서비스명, 주소, 가격, 운영시간처럼 중요한 사실과 의미는 처음과 나중이 일치하도록 맞춥니다.",
+      developerInstructions: [
+        "초기 HTML과 렌더링 DOM의 title, meta description, H1, JSON-LD 값을 비교해 주세요.",
+        "클라이언트 실행 후 올바른 초기 값을 오래되거나 다른 값으로 덮어쓰는 코드를 수정해 주세요.",
+        "JSON-LD의 이름·URL·주소·운영시간이 실제 화면 정보와 일치하도록 유지해 주세요.",
+        "중복되거나 충돌하는 메타데이터 선언은 하나의 정확한 값으로 정리해 주세요.",
+      ],
+      acceptanceCriteria: [
+        "초기 HTML과 화면 완성 후의 페이지 제목과 설명이 같은 주제와 의미를 전달합니다.",
+        "대표 제목과 구조화 정보의 핵심 사실이 실제 화면 내용과 일치합니다.",
+        "서로 충돌하거나 오래된 메타데이터가 남아 있지 않습니다.",
+        "재검사에서 렌더링 전후 핵심정보 불일치가 사라집니다.",
+      ],
+    });
+  }
+
+  const missingInitial: string[] = [];
+
+  if (!comparison.initialTitle) {
+    missingInitial.push("페이지 제목");
+  }
+
+  if (!comparison.initialDescription) {
+    missingInitial.push("페이지 설명");
+  }
+
+  if (comparison.h1Count.initial === 0) {
+    missingInitial.push("대표 제목(H1)");
+  }
+
+  if ((comparison.textLength.initial ?? 0) < 300) {
+    missingInitial.push("핵심 본문");
+  }
+
+  if (missingInitial.length > 0) {
+    plans.push({
+      code: "INITIAL-HTML-MISSING-CORE",
+      title: "AI가 처음 받는 페이지에 핵심 정보가 부족합니다",
+      currentState: `${missingInitial.join(
+        ", ",
+      )} 항목을 초기 HTML에서 충분히 확인하지 못했습니다.`,
+      meaning:
+        "사람은 화면을 둘러보며 내용을 이해할 수 있지만, 일부 AI 검색 봇은 처음 전달된 제목·설명·본문을 중심으로 사이트의 주제를 판단합니다.",
+      change:
+        "페이지를 처음 불러왔을 때도 사이트가 누구를 위한 곳이며 무엇을 제공하는지 알 수 있도록 핵심 소개와 주요 정보를 보완합니다.",
+      developerInstructions: [
+        "페이지별로 고유하고 구체적인 title과 meta description을 초기 HTML에 제공해 주세요.",
+        "페이지의 주제를 설명하는 명확한 H1과 핵심 본문을 초기 HTML에 포함해 주세요.",
+        "중요한 콘텐츠 페이지로 이동하는 일반 HTML 링크를 제공해 주세요.",
+        "화면에 없는 내용을 검색 노출만을 위해 숨겨 넣지 말고 실제 사용자에게 보이는 정보와 일치시켜 주세요.",
+      ],
+      acceptanceCriteria: [
+        "초기 HTML만 확인해도 페이지의 주제와 주요 서비스가 이해됩니다.",
+        "title, meta description, H1과 핵심 본문의 의미가 서로 일관됩니다.",
+        "사용자에게 보이는 내용과 AI에 제공되는 핵심 정보가 일치합니다.",
+        "재검사에서 누락된 초기 HTML 핵심 항목이 확인됩니다.",
+      ],
+    });
+  }
+
+  return plans;
+}
+
+function metricValue(
+  value: number | null,
+  suffix: string,
+): string {
+  return value === null
+    ? "미확인"
+    : `${value.toLocaleString("ko-KR")}${suffix}`;
+}
+
+function metricDelta(
+  value: number | null,
+  suffix: string,
+): string {
+  if (value === null) {
+    return "변화 미확인";
+  }
+
+  const sign = value > 0 ? "+" : "";
+  return `변화 ${sign}${value.toLocaleString("ko-KR")}${suffix}`;
+}
+
 export function ScanResultPage() {
   const {
     locale = "ko",
@@ -213,6 +611,18 @@ export function ScanResultPage() {
     return [...groups.entries()];
   }, [result]);
 
+  const renderedDomComparison = useMemo(
+    () =>
+      renderedDomComparisonFromFindings(
+        result?.findings ?? [],
+      ),
+    [result],
+  );
+  const renderedImprovementPlans = useMemo(
+    () => buildRenderedImprovementPlans(renderedDomComparison),
+    [renderedDomComparison],
+  );
+
   if (loading) {
     return (
       <section className="full-bleed-section scan-result-section">
@@ -254,7 +664,8 @@ export function ScanResultPage() {
             <h1>{result.site.name} 간편진단 결과</h1>
             <p>
               공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로
-              계산한 규칙 기반 점수입니다.
+              점수를 계산하고, JavaScript 렌더링 결과는 참고
+              증거로 함께 표시합니다.
             </p>
           </div>
           <Link className="scan-result-back" to={`/${locale}/sites`}>
@@ -263,9 +674,10 @@ export function ScanResultPage() {
         </header>
 
         <div className="scan-result-scope" role="note">
-          현재 점수는 QUICK 초기 HTML 진단 범위입니다. JavaScript 실행
-          후 DOM·모바일/PC 비교·업종별 기준정보·질문 정답률은 정밀진단
-          단계에서 추가됩니다.
+          현재 점수는 QUICK 초기 HTML 기준 25개 규칙으로 계산합니다.
+          JavaScript 실행 후 DOM은 비감점 비교 증거로 제공하며,
+          모바일·PC 별도 비교·업종별 기준정보·질문 정답률은
+          정밀진단 단계에서 추가됩니다.
         </div>
 
         <section className="surface scan-score-hero">
@@ -364,7 +776,10 @@ export function ScanResultPage() {
           <div className="scan-section-heading">
             <div>
               <h2>AI가 읽은 사이트</h2>
-              <p>LLM의 추측이 아니라 저장된 HTML 증거를 요약했습니다.</p>
+              <p>
+                LLM의 추측이 아니라 저장된 초기 HTML 증거를
+                요약했습니다.
+              </p>
             </div>
           </div>
           <p className="scan-understanding-text">
@@ -406,6 +821,218 @@ export function ScanResultPage() {
             </div>
           </div>
         </section>
+
+        {renderedDomComparison ? (
+          <section className="surface scan-rendered-section">
+            <div className="scan-section-heading">
+              <div>
+                <h2>초기 HTML vs JavaScript 렌더링</h2>
+                <p>
+                  브라우저에서 JavaScript를 실행한 뒤 실제 DOM이
+                  얼마나 확장되는지 비교했습니다.
+                </p>
+              </div>
+              <span
+                className={`scan-rendered-status scan-rendered-status-${renderedDomComparison.status.toLowerCase()}`}
+              >
+                {renderedDomComparison.status === "SUCCESS"
+                  ? "렌더링 성공"
+                  : renderedDomComparison.status === "FAILED"
+                    ? "렌더링 실패"
+                    : "렌더링 미실행"}
+              </span>
+            </div>
+
+            {renderedDomComparison.status === "SUCCESS" ? (
+              <>
+                <div className="scan-rendered-grid">
+                  {[
+                    {
+                      label: "본문 글자 수",
+                      metric: renderedDomComparison.textLength,
+                      suffix: "자",
+                    },
+                    {
+                      label: "내부 링크",
+                      metric: renderedDomComparison.internalLinks,
+                      suffix: "개",
+                    },
+                    {
+                      label: "H1",
+                      metric: renderedDomComparison.h1Count,
+                      suffix: "개",
+                    },
+                    {
+                      label: "H2",
+                      metric: renderedDomComparison.h2Count,
+                      suffix: "개",
+                    },
+                    {
+                      label: "유효 JSON-LD",
+                      metric:
+                        renderedDomComparison.jsonLdValidCount,
+                      suffix: "개",
+                    },
+                  ].map((item) => (
+                    <article
+                      className="scan-rendered-card"
+                      key={item.label}
+                    >
+                      <h3>{item.label}</h3>
+                      <div className="scan-rendered-values">
+                        <div>
+                          <span>초기 HTML</span>
+                          <strong>
+                            {metricValue(
+                              item.metric.initial,
+                              item.suffix,
+                            )}
+                          </strong>
+                        </div>
+                        <b aria-hidden="true">→</b>
+                        <div>
+                          <span>렌더링 DOM</span>
+                          <strong>
+                            {metricValue(
+                              item.metric.rendered,
+                              item.suffix,
+                            )}
+                          </strong>
+                        </div>
+                      </div>
+                      <p>
+                        {metricDelta(
+                          item.metric.delta,
+                          item.suffix,
+                        )}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+
+                <dl className="scan-rendered-meta">
+                  <div>
+                    <dt>브라우저</dt>
+                    <dd>
+                      {renderedDomComparison.browserVersion ??
+                        "미확인"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>렌더링 시간</dt>
+                    <dd>
+                      {renderedDomComparison.durationMs === null
+                        ? "미확인"
+                        : `${(
+                            renderedDomComparison.durationMs /
+                            1_000
+                          ).toFixed(1)}초`}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>페이지 JavaScript 오류</dt>
+                    <dd>
+                      {metricValue(
+                        renderedDomComparison.pageErrorCount,
+                        "건",
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+
+                <div className="scan-rendered-improvements">
+                  <div>
+                    <p className="eyebrow">IMPROVEMENT PLAN</p>
+                    <h3>AI 수집 개선안</h3>
+                    <p>
+                      비개발자도 작업 목적을 이해하고 개발자는
+                      바로 수정할 수 있도록 함께 설명합니다.
+                    </p>
+                  </div>
+
+                  {renderedImprovementPlans.length > 0 ? (
+                    <div className="scan-rendered-improvement-list">
+                      {renderedImprovementPlans.map((plan) => (
+                        <article
+                          className="scan-rendered-improvement-card"
+                          key={plan.code}
+                        >
+                          <h4>{plan.title}</h4>
+
+                          <div className="scan-rendered-explanation">
+                            <section>
+                              <strong>현재 어떤 상태인가요?</strong>
+                              <p>{plan.currentState}</p>
+                            </section>
+                            <section>
+                              <strong>무슨 뜻인가요?</strong>
+                              <p>{plan.meaning}</p>
+                            </section>
+                            <section>
+                              <strong>무엇을 바꾸나요?</strong>
+                              <p>{plan.change}</p>
+                            </section>
+                          </div>
+
+                          <div className="scan-rendered-action-grid">
+                            <section>
+                              <h5>개발자 작업 지시</h5>
+                              <ul>
+                                {plan.developerInstructions.map(
+                                  (instruction) => (
+                                    <li key={instruction}>
+                                      {instruction}
+                                    </li>
+                                  ),
+                                )}
+                              </ul>
+                            </section>
+                            <section>
+                              <h5>완료 확인 기준</h5>
+                              <ul>
+                                {plan.acceptanceCriteria.map(
+                                  (criterion) => (
+                                    <li key={criterion}>
+                                      {criterion}
+                                    </li>
+                                  ),
+                                )}
+                              </ul>
+                            </section>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="scan-rendered-no-improvement">
+                      초기 HTML과 화면 완성 후의 핵심 구조가
+                      비교적 비슷합니다. 현재 비교 결과에서 별도
+                      개선안이 생성되지 않았습니다.
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="scan-rendered-failure" role="status">
+                <strong>
+                  {renderedDomComparison.errorCode ??
+                    renderedDomComparison.status}
+                </strong>
+                <p>
+                  {renderedDomComparison.message ??
+                    "JavaScript 렌더링 비교 증거를 생성하지 못했습니다."}
+                </p>
+              </div>
+            )}
+
+            <p className="scan-rendered-note">
+              Site AI Score는 처음 전달되는 초기 HTML을
+              기준으로 점수를 계산합니다. JavaScript 렌더링
+              결과는 추가 콘텐츠를 읽을 수 있는 AI 환경까지
+              고려해 위 개선안을 만드는 데 활용합니다.
+            </p>
+          </section>
+        ) : null}
 
         <section className="surface scan-issues-section">
           <div className="scan-section-heading">
