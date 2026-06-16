@@ -48,7 +48,7 @@
 - 동일 보고서 동시 요청은 DB 생성 잠금으로 중복 생성을 방지함
 - 브라우저 응답은 `Cache-Control: private, no-store`를 유지하며 기존 회원·조직·검사 소유권 검사를 먼저 수행함
 - 현재 PostgreSQL PDF 저장은 공유 오브젝트 스토리지가 없는 개발 단계의 제한적 방식이며, Production에서는 Cloudinary 비공개 자산 저장으로 이전 예정
-- 자동 백그라운드 검사 실행기는 아직 구성하지 않음
+- 서버 시작 시 자동 검사 워커를 활성화하며, 기본 1초 간격으로 `QUEUED` 검사를 선점해 한 번에 한 건씩 순차 처리함 (`SCAN_WORKER_ENABLED`, `SCAN_WORKER_POLL_INTERVAL_MS`로 설정 가능)
 - Replit Preview: `REPLIT_DEV_DOMAIN`, `REPLIT_DOMAINS` 기반 허용 호스트 적용
 - 확인일: 2026-06-16 KST
 

@@ -5,6 +5,28 @@ function emptyStringToUndefined(value: unknown): unknown {
   return typeof value === "string" && value.trim() === "" ? undefined : value;
 }
 
+function stringToBoolean(value: unknown): unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "") {
+    return undefined;
+  }
+
+  if (["true", "1", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+
+  if (["false", "0", "no", "off"].includes(normalized)) {
+    return false;
+  }
+
+  return value;
+}
+
 const optionalString = z.preprocess(
   emptyStringToUndefined,
   z.string().trim().min(1).optional(),
@@ -30,6 +52,16 @@ const environmentSchema = z.object({
     emptyStringToUndefined,
     z.string().trim().min(1).max(100).default("Site AI Score"),
   ),
+  SCAN_WORKER_ENABLED: z.preprocess(
+    stringToBoolean,
+    z.boolean().default(true),
+  ),
+  SCAN_WORKER_POLL_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(250)
+    .max(60_000)
+    .default(1_000),
 });
 
 const parsed = environmentSchema.safeParse(process.env);
