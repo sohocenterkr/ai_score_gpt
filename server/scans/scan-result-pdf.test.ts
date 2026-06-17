@@ -57,6 +57,36 @@ const sampleResult: PublicScanResult = {
       },
     ],
   },
+  contentReadiness: {
+    status: "PARTIAL",
+    label: "일부 보완 필요",
+    summary: "예제 사이트의 콘텐츠 일부를 확인했습니다.",
+    confirmedSignals: [
+      "초기 HTML 본문: 1,200자",
+      "문서 제목: 예제 사이트",
+    ],
+    topics: [
+      {
+        code: "CONTENT-TOPIC-SERVICE-DEFINITION",
+        title: "서비스 정의와 핵심 가치",
+        status: "PARTIAL",
+        reason: "서비스 개요 일부를 확인했습니다.",
+        questions: ["예제 사이트는 무엇인가요?"],
+        suggestedSections: ["예제 사이트란?"],
+        contentWriterInstruction:
+          "실제 제공 사실만 사용해 작성하세요.",
+        developerInstruction:
+          "사용자 화면과 초기 HTML에 함께 제공하세요.",
+        acceptanceCriteria: [
+          "서비스 정의를 페이지 내용으로 설명할 수 있다.",
+        ],
+      },
+    ],
+    benchmarkNote:
+      "800자는 Site AI Score 내부 참고 기준입니다.",
+    disclaimer:
+      "운영자가 사실관계를 확인해야 합니다.",
+  },
   understandingSummary:
     '"예제 사이트" 페이지는 ko 문서로 확인되었고 초기 HTML에서 약 1,200자의 본문을 읽었습니다.',
   foundInformation: [
@@ -247,7 +277,7 @@ describe("scan result PDF", () => {
     );
     expect(plans[0]?.acceptanceCriteria).toHaveLength(4);
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.06-scan-report-v6",
+      "2026.06-scan-report-v10",
     );
   });
 

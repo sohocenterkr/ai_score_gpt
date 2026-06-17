@@ -206,6 +206,33 @@ export interface ScanScoreSummary {
   categories: ScanCategoryScore[];
 }
 
+export type ContentReadinessStatus =
+  | "NEEDS_WORK"
+  | "PARTIAL"
+  | "BASIC_READY";
+
+export interface ContentReadinessTopic {
+  code: string;
+  title: string;
+  status: "PARTIAL" | "REVIEW_REQUIRED";
+  reason: string;
+  questions: string[];
+  suggestedSections: string[];
+  contentWriterInstruction: string;
+  developerInstruction: string;
+  acceptanceCriteria: string[];
+}
+
+export interface ContentReadinessAssessment {
+  status: ContentReadinessStatus;
+  label: string;
+  summary: string;
+  confirmedSignals: string[];
+  topics: ContentReadinessTopic[];
+  benchmarkNote: string;
+  disclaimer: string;
+}
+
 export interface ScanResultResponse {
   site: {
     id: string;
@@ -230,6 +257,7 @@ export interface ScanResultResponse {
     createdAt: string;
   };
   scoreSummary: ScanScoreSummary | null;
+  contentReadiness?: ContentReadinessAssessment;
   understandingSummary: string;
   foundInformation: Array<{
     label: string;

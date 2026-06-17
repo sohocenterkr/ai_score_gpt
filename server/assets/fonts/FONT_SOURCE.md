@@ -9,3 +9,13 @@
 
 원 배포처와 눈누의 안내에 따라 재배포, 수정 및 영리 목적 사용이
 허용되는 퍼블릭 도메인 글꼴입니다.
+
+## Pretendard
+
+- 사용 파일:
+  - `pretendard/Pretendard-Regular.ttf`
+  - `pretendard/Pretendard-SemiBold.ttf`
+- 공식 프로젝트: Pretendard
+- 라이선스: SIL Open Font License 1.1
+- 라이선스 원문: `pretendard/LICENSE.txt`
+- 용도: 진단 보고서와 작업지시서 PDF의 본문·제목 글꼴

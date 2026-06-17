@@ -7,9 +7,10 @@ import type {
   PublicScanResultFinding,
 } from "./scan-result-service";
 
-const FONT_NAME = "SiteAiScoreReportFont";
+const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
+const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.06-scan-report-v6";
+  "2026.06-scan-report-v10";
 
 let cachedFontHash: string | undefined;
 
@@ -50,28 +51,32 @@ const SEVERITY_LABELS: Record<
   CRITICAL: "매우 높음",
 };
 
-function fontPaths(): string[] {
+function fontPaths(filename: string): string[] {
   return [
     join(
       process.cwd(),
       "dist",
       "assets",
       "fonts",
-      "DungGeunMo.ttf",
+      "pretendard",
+      filename,
     ),
     join(
       process.cwd(),
       "server",
       "assets",
       "fonts",
-      "DungGeunMo.ttf",
+      "pretendard",
+      filename,
     ),
   ];
 }
 
-function requireFontPath(): string {
-  const candidates = fontPaths();
-  const value = candidates.find((candidate) => existsSync(candidate));
+function requireFontPath(filename: string): string {
+  const candidates = fontPaths(filename);
+  const value = candidates.find((candidate) =>
+    existsSync(candidate),
+  );
 
   if (!value) {
     throw new Error(
@@ -133,7 +138,21 @@ function setText(
   size = 9.2,
   color = COLORS.text,
 ): PDFKit.PDFDocument {
-  return document.font(FONT_NAME).fontSize(size).fillColor(color);
+  return document
+    .font(FONT_REGULAR_NAME)
+    .fontSize(size)
+    .fillColor(color);
+}
+
+function setBold(
+  document: PDFKit.PDFDocument,
+  size = 9.2,
+  color = COLORS.text,
+): PDFKit.PDFDocument {
+  return document
+    .font(FONT_BOLD_NAME)
+    .fontSize(size)
+    .fillColor(color);
 }
 
 function writeSectionTitle(
@@ -142,7 +161,7 @@ function writeSectionTitle(
   subtitle?: string,
 ): void {
   ensureSpace(document, subtitle ? 48 : 34);
-  setText(document, 14, COLORS.text).text(cleanText(title), {
+  setBold(document, 14, COLORS.text).text(cleanText(title), {
     width: contentWidth(document),
   });
 
@@ -642,14 +661,24 @@ export function buildRenderedDomImprovementPlans(
   const linkRendered = comparison.metrics.internalLinks.rendered ?? 0;
   const textDelta = textRendered - textInitial;
   const linkDelta = linkRendered - linkInitial;
-  const textGrowthRate =
-    textInitial > 0 ? textDelta / textInitial : textDelta > 0 ? 1 : 0;
+  const textCoverage =
+    textRendered > 0
+      ? Math.min(textInitial / textRendered, 1)
+      : textInitial > 0
+        ? 1
+        : 0;
+  const linkCoverage =
+    linkRendered > 0
+      ? Math.min(linkInitial / linkRendered, 1)
+      : 1;
+  const textGapNeedsWork =
+    textInitial < 200 || textCoverage < 0.75;
+  const linkGapNeedsWork =
+    linkRendered > 0 &&
+    (linkInitial < 1 ||
+      (linkCoverage < 0.75 && Math.abs(linkDelta) > 2));
 
-  if (
-    textDelta >= 500 ||
-    textGrowthRate >= 0.25 ||
-    linkDelta >= 10
-  ) {
+  if (textGapNeedsWork || linkGapNeedsWork) {
     const stateParts = [
       comparison.metrics.textLength.initial !== null &&
       comparison.metrics.textLength.rendered !== null
@@ -671,6 +700,16 @@ export function buildRenderedDomImprovementPlans(
             "개",
           )}로 늘었습니다.`
         : null,
+      textRendered > 0
+        ? `초기 HTML 본문 포함 비율은 ${(
+            textCoverage * 100
+          ).toFixed(1)}%입니다.`
+        : null,
+      linkRendered > 0
+        ? `초기 HTML 내부 링크 포함 비율은 ${(
+            linkCoverage * 100
+          ).toFixed(1)}%입니다.`
+        : null,
     ].filter((value): value is string => Boolean(value));
 
     plans.push({
@@ -686,20 +725,24 @@ export function buildRenderedDomImprovementPlans(
         "모든 화면 기능을 바꿀 필요는 없습니다. 사이트 소개, 주요 서비스, 핵심 정보와 중요한 이동 링크처럼 AI가 사이트를 이해하는 데 필요한 내용만 처음 전달되는 페이지에도 포함되도록 수정합니다.",
       developerInstructions: [
         "핵심 본문과 주요 내부 링크를 초기 HTML에도 출력해 주세요.",
+        "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하도록 핵심 설명을 앞단에 제공해 주세요.",
+        "초기 HTML 본문은 최소 200자 이상이어야 하며, 별도 답변 기반 규칙은 800자를 참고 기준으로 사용합니다.",
+        "주요 내부 링크는 렌더링 DOM 링크의 75% 이상을 포함하거나 차이가 2개 이하가 되도록 제공해 주세요.",
         "필요하면 서버 렌더링(SSR), 정적 생성(SSG) 또는 사전 렌더링을 적용해 주세요.",
-        "슬라이더·지도·애니메이션·개인화 기능처럼 부가적인 화면 기능은 기존 JavaScript 방식을 유지할 수 있습니다.",
         "기존 디자인과 사용자 기능을 제거하거나 비활성화하지 마세요.",
       ],
       acceptanceCriteria: [
-        "JavaScript 실행 전 HTML에서도 사이트의 핵심 소개와 주요 정보가 확인됩니다.",
-        "중요한 내부 페이지로 이동하는 일반 링크가 초기 HTML에 존재합니다.",
-        "기존 화면 디자인과 사용자 기능이 정상적으로 동작합니다.",
-        "재검사에서 초기 HTML과 렌더링 DOM의 본문·링크 격차가 줄어듭니다.",
+        "초기 HTML 본문이 200자 이상이며 렌더링 DOM 본문의 75% 이상을 포함합니다.",
+        "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
+        "기존 화면 디자인과 주요 사용자 기능은 브라우저 스모크 테스트 또는 수동 확인으로 검증합니다.",
+        "재검사에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.",
       ],
     });
   }
 
   const mismatchedFields: string[] = [];
+  const renderedH1Duplicate =
+    comparison.renderedH1.length > 1;
 
   if (
     normalizedComparisonText(comparison.initialTitle) !==
@@ -736,7 +779,13 @@ export function buildRenderedDomImprovementPlans(
         "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다",
       currentState: `${mismatchedFields.join(
         ", ",
-      )} 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다.`,
+      )} 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다.${
+        renderedH1Duplicate
+          ? ` 렌더링 DOM에는 H1이 ${comparison.renderedH1.length}개(${comparison.renderedH1.join(
+              " / ",
+            )}) 있어 대표 H1 하나로 정리가 필요합니다.`
+          : ""
+      }`,
       meaning:
         "AI 검색 시스템에 따라 처음 받은 정보를 사용하기도 하고 화면 완성 후의 정보를 사용하기도 합니다. 값이 다르면 같은 페이지를 서로 다르게 이해할 수 있습니다.",
       change:
@@ -746,9 +795,11 @@ export function buildRenderedDomImprovementPlans(
         "클라이언트 실행 후 올바른 초기 값을 오래되거나 다른 값으로 덮어쓰는 코드를 수정해 주세요.",
         "JSON-LD의 이름·URL·주소·운영시간이 실제 화면 정보와 일치하도록 유지해 주세요.",
         "중복되거나 충돌하는 메타데이터 선언은 하나의 정확한 값으로 정리해 주세요.",
+        "렌더링 DOM에 H1이 2개 이상이면 페이지 대표 제목 하나만 H1으로 유지하고 나머지는 일반 텍스트나 H2로 변경해 주세요.",
       ],
       acceptanceCriteria: [
         "초기 HTML과 화면 완성 후의 페이지 제목과 설명이 같은 주제와 의미를 전달합니다.",
+        "대표 제목(H1)은 렌더링 DOM에 정확히 1개이며 초기 HTML과 같은 핵심 주제를 전달합니다.",
         "대표 제목과 구조화 정보의 핵심 사실이 실제 화면 내용과 일치합니다.",
         "서로 충돌하거나 오래된 메타데이터가 남아 있지 않습니다.",
         "재검사에서 렌더링 전후 핵심정보 불일치가 사라집니다.",
@@ -1160,6 +1211,103 @@ function writeUnderstanding(
   }
 }
 
+function writeContentReadiness(
+  document: PDFKit.PDFDocument,
+  result: PublicScanResult,
+): void {
+  const assessment = result.contentReadiness;
+
+  if (!assessment) {
+    return;
+  }
+
+  document.addPage();
+  writeSectionTitle(
+    document,
+    "AI 답변용 콘텐츠 보완 제안",
+    "현재 저장된 QUICK 증거를 바탕으로 추가 확인할 콘텐츠 주제를 안내합니다. 실제로 없다고 단정하지 않으며 운영자의 사실 확인이 필요합니다.",
+  );
+
+  writeTextBox(
+    document,
+    `현재 판단 · ${assessment.label}`,
+    assessment.summary,
+    {
+      background: COLORS.primarySoft,
+      border: "#C7D2FE",
+      accent: COLORS.primary,
+    },
+  );
+
+  writeTextBox(
+    document,
+    "판정 기준 안내",
+    [assessment.benchmarkNote, assessment.disclaimer].join(
+      "\n\n",
+    ),
+    {
+      background: "#FFFBEB",
+      border: "#FDE68A",
+      accent: COLORS.blocked,
+    },
+  );
+
+  writeSectionTitle(
+    document,
+    "현재 저장 증거에서 확인한 항목",
+  );
+  setText(document, 8.8, COLORS.text).text(
+    assessment.confirmedSignals
+      .map((signal) => `- ${cleanText(signal)}`)
+      .join("\n"),
+    {
+      width: contentWidth(document),
+      lineGap: 3,
+    },
+  );
+
+  document.moveDown(0.8);
+  writeSectionTitle(
+    document,
+    "추가로 확인하고 보완할 콘텐츠",
+  );
+
+  assessment.topics.forEach((topic, index) => {
+    const statusLabel =
+      topic.status === "PARTIAL"
+        ? "일부 확인"
+        : "운영자 확인 필요";
+
+    writeTextBox(
+      document,
+      `${index + 1}. ${topic.title} · ${statusLabel}`,
+      [
+        `현재 판단: ${topic.reason}`,
+        `AI가 답하기 어려울 수 있는 질문: ${topic.questions.join(
+          " / ",
+        )}`,
+        `추가 권장 섹션: ${topic.suggestedSections.join(
+          " · ",
+        )}`,
+        `콘텐츠 작성자: ${topic.contentWriterInstruction}`,
+        `개발자 반영: ${topic.developerInstruction}`,
+        `완료 확인 기준: ${topic.acceptanceCriteria.join(
+          " / ",
+        )}`,
+      ].join("\n\n"),
+      {
+        background: COLORS.white,
+        border: COLORS.border,
+        accent:
+          topic.status === "PARTIAL"
+            ? COLORS.primary
+            : COLORS.blocked,
+        fontSize: 8.4,
+      },
+    );
+  });
+}
+
 function writeRenderedDomComparison(
   document: PDFKit.PDFDocument,
   result: PublicScanResult,
@@ -1303,16 +1451,6 @@ function writeRenderedDomComparison(
     }
   }
 
-  writeTextBox(
-    document,
-    "점수 반영 안내",
-    "Site AI Score는 처음 전달되는 초기 HTML을 기준으로 점수를 계산합니다. JavaScript 렌더링 결과는 추가 콘텐츠를 읽을 수 있는 AI 환경까지 고려해 위 개선안을 만드는 데 활용합니다.",
-    {
-      background: COLORS.surface,
-      border: COLORS.border,
-      accent: COLORS.neutral,
-    },
-  );
 }
 
 function writeFindingDetail(
@@ -1744,7 +1882,16 @@ function addFooters(
 
 export function scanResultPdfFontHash(): string {
   cachedFontHash ??= createHash("sha256")
-    .update(readFileSync(requireFontPath()))
+    .update(
+      readFileSync(
+        requireFontPath("Pretendard-Regular.ttf"),
+      ),
+    )
+    .update(
+      readFileSync(
+        requireFontPath("Pretendard-SemiBold.ttf"),
+      ),
+    )
     .digest("hex");
   return cachedFontHash;
 }
@@ -1785,7 +1932,14 @@ export async function renderScanResultPdf(
     },
   });
 
-  document.registerFont(FONT_NAME, requireFontPath());
+  document.registerFont(
+    FONT_REGULAR_NAME,
+    requireFontPath("Pretendard-Regular.ttf"),
+  );
+  document.registerFont(
+    FONT_BOLD_NAME,
+    requireFontPath("Pretendard-SemiBold.ttf"),
+  );
 
   const chunks: Buffer[] = [];
   const completed = new Promise<Buffer>((resolve, reject) => {
@@ -1801,6 +1955,7 @@ export async function renderScanResultPdf(
   writeCover(document, safeResult);
   writeCategoryScores(document, safeResult);
   writeUnderstanding(document, safeResult);
+  writeContentReadiness(document, safeResult);
   writeRenderedDomComparison(document, safeResult);
   writePrimaryIssues(document, safeResult);
   writeAllFindings(document, safeResult);

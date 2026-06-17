@@ -56,6 +56,7 @@ const workOrder = {
   },
   agencyOrganization: null,
   items: [],
+  verificationAttempts: [],
 } satisfies PublicWorkOrder;
 
 function auth(
@@ -76,6 +77,36 @@ function createService(): WorkOrderService {
     issueWorkOrder: vi.fn().mockResolvedValue({
       ...workOrder,
       status: "ISSUED",
+    }),
+    submitVerification: vi.fn().mockResolvedValue({
+      ...workOrder,
+      status: "VERIFYING",
+      verificationAttempts: [
+        {
+          id: "verification-1",
+          attemptNumber: 1,
+          submittedUrl: "https://deploy.example.com/",
+          status: "QUEUED",
+          scoreAfter: null,
+          gradeAfter: null,
+          startedAt: null,
+          completedAt: null,
+          errorCode: null,
+          createdAt: new Date().toISOString(),
+          scan: {
+            id: "scan-verification-1",
+            type: "VERIFICATION",
+            status: "QUEUED",
+            targetUrl: "https://deploy.example.com/",
+            score: null,
+            grade: null,
+            startedAt: null,
+            completedAt: null,
+            errorCode: null,
+          },
+          itemResults: [],
+        },
+      ],
     }),
     reviseWorkOrder: vi.fn().mockResolvedValue({
       ...workOrder,
@@ -165,6 +196,40 @@ describe("work order router", () => {
 
     expect(response.status).toBe(200);
     expect(response.body.workOrder.status).toBe("ISSUED");
+  });
+
+  it("수정된 공개 URL을 검수 대기열에 등록한다", async () => {
+    const service = createService();
+    const response = await request(createTestApp(service))
+      .post("/api/work-orders/wo-1/verifications")
+      .send({
+        submittedUrl: "https://deploy.example.com/",
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.workOrder.status).toBe("VERIFYING");
+    expect(
+      response.body.workOrder.verificationAttempts[0]
+        .submittedUrl,
+    ).toBe("https://deploy.example.com/");
+    expect(service.submitVerification).toHaveBeenCalledWith(
+      user,
+      "wo-1",
+      {
+        submittedUrl: "https://deploy.example.com/",
+      },
+    );
+  });
+
+  it("검수 URL이 비어 있으면 등록하지 않는다", async () => {
+    const response = await request(createTestApp(createService()))
+      .post("/api/work-orders/wo-1/verifications")
+      .send({
+        submittedUrl: "",
+      });
+
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe("VALIDATION_ERROR");
   });
 
   it("새 버전을 생성한다", async () => {

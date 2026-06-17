@@ -853,6 +853,99 @@ export function ScanResultPage() {
           </div>
         </section>
 
+        {result.contentReadiness ? (
+          <section className="surface scan-content-readiness-section">
+            <div className="scan-section-heading">
+              <div>
+                <h2>AI 답변용 콘텐츠 보완 제안</h2>
+                <p>
+                  현재 저장된 QUICK 증거를 바탕으로 추가 확인할
+                  콘텐츠 주제를 안내합니다.
+                </p>
+              </div>
+              <span
+                className={`scan-content-readiness-status scan-content-readiness-status-${result.contentReadiness.status.toLowerCase()}`}
+              >
+                {result.contentReadiness.label}
+              </span>
+            </div>
+
+            <p className="scan-content-readiness-summary">
+              {result.contentReadiness.summary}
+            </p>
+
+            <div className="scan-content-readiness-guide" role="note">
+              <strong>판정 기준 안내</strong>
+              <p>{result.contentReadiness.benchmarkNote}</p>
+              <p>{result.contentReadiness.disclaimer}</p>
+            </div>
+
+            <div className="scan-content-readiness-signals">
+              <h3>현재 저장 증거에서 확인한 항목</h3>
+              <ul>
+                {result.contentReadiness.confirmedSignals.map(
+                  (signal) => (
+                    <li key={signal}>{signal}</li>
+                  ),
+                )}
+              </ul>
+            </div>
+
+            <div className="scan-content-topic-grid">
+              {result.contentReadiness.topics.map((topic, index) => (
+                <article className="scan-content-topic" key={topic.code}>
+                  <div className="scan-content-topic-header">
+                    <div>
+                      <span>보완 주제 {index + 1}</span>
+                      <h3>{topic.title}</h3>
+                    </div>
+                    <b>
+                      {topic.status === "PARTIAL"
+                        ? "일부 확인"
+                        : "운영자 확인 필요"}
+                    </b>
+                  </div>
+                  <p>{topic.reason}</p>
+
+                  <div className="scan-content-topic-detail">
+                    <strong>AI가 답하기 어려울 수 있는 질문</strong>
+                    <ul>
+                      {topic.questions.map((question) => (
+                        <li key={question}>{question}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="scan-content-topic-detail">
+                    <strong>추가 권장 섹션</strong>
+                    <p>{topic.suggestedSections.join(" · ")}</p>
+                  </div>
+
+                  <div className="scan-content-topic-instructions">
+                    <div>
+                      <strong>콘텐츠 작성자</strong>
+                      <p>{topic.contentWriterInstruction}</p>
+                    </div>
+                    <div>
+                      <strong>개발자 반영</strong>
+                      <p>{topic.developerInstruction}</p>
+                    </div>
+                  </div>
+
+                  <details>
+                    <summary>완료 확인 기준</summary>
+                    <ul>
+                      {topic.acceptanceCriteria.map((criterion) => (
+                        <li key={criterion}>{criterion}</li>
+                      ))}
+                    </ul>
+                  </details>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {renderedDomComparison ? (
           <section className="surface scan-rendered-section">
             <div className="scan-section-heading">

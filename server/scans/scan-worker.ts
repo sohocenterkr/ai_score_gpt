@@ -1,6 +1,7 @@
 import {
   Prisma,
   type ScanStatus,
+  type ScanType,
 } from "@prisma/client";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
@@ -16,6 +17,7 @@ import {
   type RenderedDomCollector,
 } from "./rendered-dom";
 import { applyScoreToFindings } from "./scoring";
+import { evaluateVerification } from "../work-orders/verification-evaluator";
 
 export interface ScanRunSummary {
   scanId: string;
@@ -28,6 +30,19 @@ export interface ScanRunSummary {
   score: number | null;
   grade: string | null;
   errorCode: string | null;
+}
+
+export function scanExecutionUrl(scan: {
+  targetUrl: string | null;
+  site: {
+    baseUrl: string;
+  };
+}): string {
+  return scan.targetUrl ?? scan.site.baseUrl;
+}
+
+export function shouldUpdateSiteFinalUrl(type: ScanType): boolean {
+  return type !== "VERIFICATION";
 }
 
 function configuredRenderedDomCollector():
@@ -82,6 +97,7 @@ async function claimNextQueuedScan(): Promise<string | null> {
       return null;
     }
 
+    const claimedAt = new Date();
     const claimed = await prisma.scan.updateMany({
       where: {
         id: candidate.id,
@@ -89,13 +105,24 @@ async function claimNextQueuedScan(): Promise<string | null> {
       },
       data: {
         status: "RUNNING",
-        startedAt: new Date(),
+        startedAt: claimedAt,
         completedAt: null,
         errorCode: null,
       },
     });
 
     if (claimed.count === 1) {
+      await prisma.verificationAttempt.updateMany({
+        where: {
+          scanId: candidate.id,
+          status: "QUEUED",
+        },
+        data: {
+          status: "RUNNING",
+          startedAt: claimedAt,
+          errorCode: null,
+        },
+      });
       return candidate.id;
     }
   }
@@ -162,23 +189,135 @@ async function persistSuccessfulScan(
       });
     }
 
-    await transaction.site.update({
-      where: { id: scan.site.id },
-      data: {
-        finalUrl: result.finalUrl,
-      },
-    });
+    if (shouldUpdateSiteFinalUrl(scan.type)) {
+      await transaction.site.update({
+        where: { id: scan.site.id },
+        data: {
+          finalUrl: result.finalUrl,
+        },
+      });
+    }
 
+    const completedAt = new Date();
     const completed = await transaction.scan.update({
       where: { id: scanId },
       data: {
         status: result.status,
         score: scored.summary.score,
         grade: scored.summary.grade,
-        completedAt: new Date(),
+        completedAt,
         errorCode: null,
       },
     });
+
+    if (scan.type === "VERIFICATION") {
+      const attempt =
+        await transaction.verificationAttempt.findUnique({
+          where: {
+            scanId,
+          },
+          include: {
+            workOrder: {
+              include: {
+                items: {
+                  include: {
+                    finding: {
+                      select: {
+                        ruleCode: true,
+                      },
+                    },
+                  },
+                  orderBy: {
+                    createdAt: "asc",
+                  },
+                },
+                initialScan: {
+                  include: {
+                    findings: {
+                      select: {
+                        ruleCode: true,
+                        status: true,
+                        evidenceJson: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+      if (attempt) {
+        const evaluation = evaluateVerification({
+          items: attempt.workOrder.items.map((item) => ({
+            id: item.id,
+            itemCode: item.itemCode,
+            isRequired: item.isRequired,
+            acceptanceCriteriaJson:
+              item.acceptanceCriteriaJson,
+            finding: item.finding,
+          })),
+          initialFindings:
+            attempt.workOrder.initialScan.findings,
+          verificationFindings: scored.findings,
+          submittedUrl: attempt.submittedUrl,
+          scanTargetUrl: scan.targetUrl,
+        });
+
+        await transaction.verificationItemResult.deleteMany({
+          where: {
+            verificationAttemptId: attempt.id,
+          },
+        });
+
+        for (const itemResult of evaluation.itemResults) {
+          await transaction.verificationItemResult.create({
+            data: {
+              verificationAttemptId: attempt.id,
+              workOrderItemId:
+                itemResult.workOrderItemId,
+              status: itemResult.status,
+              criteriaResultsJson:
+                itemResult.criteriaResults as unknown as Prisma.InputJsonValue,
+              evidenceJson:
+                itemResult.evidence as Prisma.InputJsonValue,
+              message: itemResult.message,
+            },
+          });
+
+          await transaction.workOrderItem.update({
+            where: {
+              id: itemResult.workOrderItemId,
+            },
+            data: {
+              status: itemResult.nextItemStatus,
+            },
+          });
+        }
+
+        await transaction.verificationAttempt.update({
+          where: {
+            id: attempt.id,
+          },
+          data: {
+            status: evaluation.status,
+            scoreAfter: completed.score,
+            gradeAfter: completed.grade,
+            completedAt,
+            errorCode: null,
+          },
+        });
+
+        await transaction.workOrder.update({
+          where: {
+            id: attempt.workOrderId,
+          },
+          data: {
+            status: evaluation.workOrderStatus,
+          },
+        });
+      }
+    }
 
     return {
       scanId: completed.id,
@@ -202,13 +341,14 @@ async function persistFailedScan(
   const prisma = getDatabase();
   const errorCode = errorCodeFrom(error);
 
+  const completedAt = new Date();
   const scan = await prisma.scan.update({
     where: { id: scanId },
     data: {
       status: "FAILED",
       score: null,
       grade: null,
-      completedAt: new Date(),
+      completedAt,
       errorCode,
     },
     include: {
@@ -222,12 +362,46 @@ async function persistFailedScan(
     },
   });
 
+  const attempt =
+    await prisma.verificationAttempt.findUnique({
+      where: {
+        scanId,
+      },
+      select: {
+        id: true,
+        workOrderId: true,
+      },
+    });
+
+  if (attempt) {
+    await prisma.$transaction([
+      prisma.verificationAttempt.update({
+        where: {
+          id: attempt.id,
+        },
+        data: {
+          status: "FAILED",
+          completedAt,
+          errorCode,
+        },
+      }),
+      prisma.workOrder.update({
+        where: {
+          id: attempt.workOrderId,
+        },
+        data: {
+          status: "REWORK_REQUIRED",
+        },
+      }),
+    ]);
+  }
+
   return {
     scanId: scan.id,
     siteId: scan.site.id,
     siteName: scan.site.name,
     status: scan.status,
-    finalUrl: scan.site.finalUrl,
+    finalUrl: scan.targetUrl ?? scan.site.finalUrl,
     pageId: null,
     findingsCount: 0,
     score: null,
@@ -263,7 +437,7 @@ export async function runClaimedScan(
 
   try {
     const result = await collectSiteScan(
-      scan.site.baseUrl,
+      scanExecutionUrl(scan),
       fetcher,
       {
         renderedDomCollector,

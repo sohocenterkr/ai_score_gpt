@@ -174,7 +174,7 @@ const templates: Record<string, WorkOrderTemplate> = {
 };
 
 function genericCriteria(ruleCode: string): AcceptanceCriterion[] {
-  const prefix = ruleCode.replace(/[^A-Z0-9]+/g, "-").slice(0, 24);
+  const prefix = ruleCode.replace(/[^A-Z0-9]+/g, "-");
 
   return [
     {

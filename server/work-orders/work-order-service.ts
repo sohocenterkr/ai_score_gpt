@@ -3,6 +3,7 @@ import {
   Prisma,
   type FindingSeverity,
   type FindingStatus,
+  type WorkOrderItemStatus,
   type WorkOrderStatus,
 } from "@prisma/client";
 import type { PublicUser } from "../auth/auth-service";
@@ -12,6 +13,11 @@ import {
   scanResultRenderedDomComparison,
 } from "../scans/scan-result-pdf";
 import { getRuleDefinition } from "../scans/scoring";
+import {
+  SiteUrlError,
+  validatePublicSiteUrl,
+  type DnsResolver,
+} from "../sites/url-safety";
 import {
   buildRenderedImprovementWorkOrderTemplate,
   buildWorkOrderTemplate,
@@ -35,6 +41,19 @@ const workOrderInclude = {
       createdAt: "asc",
     },
   },
+  verificationAttempts: {
+    include: {
+      scan: true,
+      itemResults: {
+        orderBy: {
+          createdAt: "asc",
+        },
+      },
+    },
+    orderBy: {
+      attemptNumber: "desc",
+    },
+  },
 } satisfies Prisma.WorkOrderInclude;
 
 type WorkOrderRecord = Prisma.WorkOrderGetPayload<{
@@ -52,7 +71,7 @@ export interface PublicWorkOrderItem {
   acceptanceCriteria: AcceptanceCriterion[];
   isRequired: boolean;
   weight: number;
-  status: string;
+  status: WorkOrderItemStatus;
   finding: {
     ruleCode: string;
     category: string;
@@ -62,6 +81,41 @@ export interface PublicWorkOrderItem {
     evidence: unknown;
     recommendation: string | null;
   } | null;
+}
+
+export interface PublicVerificationItemResult {
+  id: string;
+  workOrderItemId: string;
+  status: string;
+  criteriaResults: unknown;
+  evidence: unknown;
+  message: string | null;
+  createdAt: string;
+}
+
+export interface PublicVerificationAttempt {
+  id: string;
+  attemptNumber: number;
+  submittedUrl: string;
+  status: string;
+  scoreAfter: number | null;
+  gradeAfter: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  errorCode: string | null;
+  createdAt: string;
+  scan: {
+    id: string;
+    type: string;
+    status: string;
+    targetUrl: string | null;
+    score: number | null;
+    grade: string | null;
+    startedAt: string | null;
+    completedAt: string | null;
+    errorCode: string | null;
+  };
+  itemResults: PublicVerificationItemResult[];
 }
 
 export interface PublicWorkOrder {
@@ -98,6 +152,7 @@ export interface PublicWorkOrder {
     name: string;
   } | null;
   items: PublicWorkOrderItem[];
+  verificationAttempts: PublicVerificationAttempt[];
 }
 
 export interface PublicWorkOrderSummary {
@@ -123,6 +178,10 @@ export interface CreateWorkOrderInput {
   renderedImprovementCodes: string[];
 }
 
+export interface SubmitVerificationInput {
+  submittedUrl: string;
+}
+
 export interface WorkOrderExport {
   formatVersion: "site-ai-score-work-order-v1";
   generatedAt: string;
@@ -143,6 +202,11 @@ export interface WorkOrderService {
   issueWorkOrder(
     user: PublicUser,
     workOrderId: string,
+  ): Promise<PublicWorkOrder>;
+  submitVerification(
+    user: PublicUser,
+    workOrderId: string,
+    input: SubmitVerificationInput,
   ): Promise<PublicWorkOrder>;
   reviseWorkOrder(
     user: PublicUser,
@@ -168,7 +232,9 @@ export class WorkOrderServiceError extends Error {
       | "WORK_ORDER_NOT_FOUND"
       | "WORK_ORDER_INVALID_SCAN"
       | "WORK_ORDER_INVALID_FINDINGS"
-      | "WORK_ORDER_INVALID_STATUS",
+      | "WORK_ORDER_INVALID_STATUS"
+      | "WORK_ORDER_INVALID_VERIFICATION_URL"
+      | "WORK_ORDER_VERIFICATION_ALREADY_RUNNING",
     message: string,
     public readonly status: number,
   ) {
@@ -273,6 +339,42 @@ function publicWorkOrder(record: WorkOrderRecord): PublicWorkOrder {
           }
         : null,
     })),
+    verificationAttempts: record.verificationAttempts.map(
+      (attempt) => ({
+        id: attempt.id,
+        attemptNumber: attempt.attemptNumber,
+        submittedUrl: attempt.submittedUrl,
+        status: attempt.status,
+        scoreAfter: attempt.scoreAfter,
+        gradeAfter: attempt.gradeAfter,
+        startedAt: attempt.startedAt?.toISOString() ?? null,
+        completedAt: attempt.completedAt?.toISOString() ?? null,
+        errorCode: attempt.errorCode,
+        createdAt: attempt.createdAt.toISOString(),
+        scan: {
+          id: attempt.scan.id,
+          type: attempt.scan.type,
+          status: attempt.scan.status,
+          targetUrl: attempt.scan.targetUrl,
+          score: attempt.scan.score,
+          grade: attempt.scan.grade,
+          startedAt:
+            attempt.scan.startedAt?.toISOString() ?? null,
+          completedAt:
+            attempt.scan.completedAt?.toISOString() ?? null,
+          errorCode: attempt.scan.errorCode,
+        },
+        itemResults: attempt.itemResults.map((result) => ({
+          id: result.id,
+          workOrderItemId: result.workOrderItemId,
+          status: result.status,
+          criteriaResults: result.criteriaResultsJson,
+          evidence: result.evidenceJson,
+          message: result.message,
+          createdAt: result.createdAt.toISOString(),
+        })),
+      }),
+    ),
   };
 }
 
@@ -411,7 +513,9 @@ async function accessibleRecord(
   return record;
 }
 
-export function createPrismaWorkOrderService(): WorkOrderService {
+export function createPrismaWorkOrderService(
+  resolver?: DnsResolver,
+): WorkOrderService {
   return {
     async listWorkOrders(user) {
       const prisma = getDatabase();
@@ -672,6 +776,114 @@ export function createPrismaWorkOrderService(): WorkOrderService {
         },
         include: workOrderInclude,
       });
+
+      return publicWorkOrder(updated);
+    },
+
+    async submitVerification(user, workOrderId, input) {
+      const prisma = getDatabase();
+      const current = await accessibleRecord(user, workOrderId);
+
+      if (
+        ![
+          "ISSUED",
+          "ASSIGNED",
+          "IN_PROGRESS",
+          "SUBMITTED",
+          "REWORK_REQUIRED",
+        ].includes(current.status)
+      ) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_INVALID_STATUS",
+          "발급된 작업지시서만 수정 URL을 제출할 수 있습니다.",
+          409,
+        );
+      }
+
+      let submittedUrl: string;
+
+      try {
+        submittedUrl = (
+          await validatePublicSiteUrl(input.submittedUrl, resolver)
+        ).normalizedUrl;
+      } catch (error) {
+        if (error instanceof SiteUrlError) {
+          throw new WorkOrderServiceError(
+            "WORK_ORDER_INVALID_VERIFICATION_URL",
+            error.message,
+            error.status,
+          );
+        }
+
+        throw error;
+      }
+
+      const activeScan = await prisma.scan.findFirst({
+        where: {
+          siteId: current.siteId,
+          status: {
+            in: ["QUEUED", "RUNNING"],
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (activeScan) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_VERIFICATION_ALREADY_RUNNING",
+          "이 사이트에서 이미 대기 중이거나 실행 중인 검사가 있습니다.",
+          409,
+        );
+      }
+
+      const latest = await prisma.verificationAttempt.aggregate({
+        where: {
+          workOrderId: current.id,
+        },
+        _max: {
+          attemptNumber: true,
+        },
+      });
+      const attemptNumber =
+        (latest._max.attemptNumber ?? 0) + 1;
+
+      const updated = await prisma.$transaction(
+        async (transaction) => {
+          const scan = await transaction.scan.create({
+            data: {
+              siteId: current.siteId,
+              targetUrl: submittedUrl,
+              type: "VERIFICATION",
+              status: "QUEUED",
+              rulesVersion: current.rulesVersion,
+              createdBy: user.id,
+            },
+          });
+
+          await transaction.verificationAttempt.create({
+            data: {
+              workOrderId: current.id,
+              scanId: scan.id,
+              attemptNumber,
+              submittedUrl,
+              status: "QUEUED",
+              createdBy: user.id,
+            },
+          });
+
+          return transaction.workOrder.update({
+            where: {
+              id: current.id,
+            },
+            data: {
+              status: "VERIFYING",
+            },
+            include: workOrderInclude,
+          });
+        },
+      );
 
       return publicWorkOrder(updated);
     },

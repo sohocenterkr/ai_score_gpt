@@ -12,6 +12,10 @@ import {
   getRuleDefinition,
   type ScoreSummary,
 } from "./scoring";
+import {
+  buildContentReadinessAssessment,
+  type ContentReadinessAssessment,
+} from "./content-readiness";
 
 export interface PublicScanResultFinding {
   id: string;
@@ -62,6 +66,7 @@ export interface PublicScanResult {
     createdAt: string;
   };
   scoreSummary: ScoreSummary | null;
+  contentReadiness?: ContentReadinessAssessment;
   understandingSummary: string;
   foundInformation: Array<{
     label: string;
@@ -388,6 +393,11 @@ export function createPrismaScanResultService(): ScanResultService {
           createdAt: result.createdAt.toISOString(),
         },
         scoreSummary,
+        contentReadiness: buildContentReadinessAssessment({
+          siteName: result.site.name,
+          siteType: result.site.siteType,
+          findings: result.findings,
+        }),
         understandingSummary: buildUnderstandingSummary(
           result.site.name,
           result.findings,

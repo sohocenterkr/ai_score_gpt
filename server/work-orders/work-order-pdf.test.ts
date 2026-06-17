@@ -35,6 +35,7 @@ const workOrder: PublicWorkOrder = {
     name: "김천식의 사이트",
   },
   agencyOrganization: null,
+  verificationAttempts: [],
   items: [
     {
       id: "item-1",

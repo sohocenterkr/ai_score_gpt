@@ -6,9 +6,8 @@ import type {
   PublicWorkOrderItem,
 } from "./work-order-service";
 
-const FONT_MAIN_NAME = "SiteAiScoreWorkOrderFont";
-const FONT_REGULAR_NAME = FONT_MAIN_NAME;
-const FONT_BOLD_NAME = FONT_MAIN_NAME;
+const FONT_REGULAR_NAME = "SiteAiScoreWorkOrderRegular";
+const FONT_BOLD_NAME = "SiteAiScoreWorkOrderSemiBold";
 
 const COLORS = {
   primary: "#3157E5",
@@ -50,27 +49,29 @@ const SEVERITY_LABELS: Record<string, string> = {
   CRITICAL: "매우 높음",
 };
 
-function fontPaths(): string[] {
+function fontPaths(filename: string): string[] {
   return [
     join(
       process.cwd(),
       "dist",
       "assets",
       "fonts",
-      "DungGeunMo.ttf",
+      "pretendard",
+      filename,
     ),
     join(
       process.cwd(),
       "server",
       "assets",
       "fonts",
-      "DungGeunMo.ttf",
+      "pretendard",
+      filename,
     ),
   ];
 }
 
-function requireFontPath(): string {
-  const candidates = fontPaths();
+function requireFontPath(filename: string): string {
+  const candidates = fontPaths(filename);
   const value = candidates.find((candidate) =>
     existsSync(candidate),
   );
@@ -94,6 +95,22 @@ function cleanText(value: unknown): string {
 
 function pdfCriterionCode(value: string): string {
   return cleanText(value)
+    .replace(
+      /^CONTENT-HEADINGS-001-(\d+)$/,
+      "HEADINGS-$1",
+    )
+    .replace(
+      /^CONTENT-INITIAL-001-(\d+)$/,
+      "INITIAL-TEXT-$1",
+    )
+    .replace(
+      /^CONTENT-ANSWERABILITY-001-(\d+)$/,
+      "ANSWER-$1",
+    )
+    .replace(
+      /^STRUCT-LINKS-001-(\d+)$/,
+      "LINKS-$1",
+    )
     .replace(
       /^RENDERED-ADDED-CONTENT-(\d+)$/,
       "JS-CONTENT-$1",
@@ -773,7 +790,12 @@ export function workOrderPdfFilename(
 export async function renderWorkOrderPdf(
   workOrder: PublicWorkOrder,
 ): Promise<Buffer> {
-  const mainFontPath = requireFontPath();
+  const regularFontPath = requireFontPath(
+    "Pretendard-Regular.ttf",
+  );
+  const boldFontPath = requireFontPath(
+    "Pretendard-SemiBold.ttf",
+  );
 
   const document = new PDFDocument({
     size: "A4",
@@ -793,7 +815,14 @@ export async function renderWorkOrderPdf(
     },
   });
 
-  document.registerFont(FONT_MAIN_NAME, mainFontPath);
+  document.registerFont(
+    FONT_REGULAR_NAME,
+    regularFontPath,
+  );
+  document.registerFont(
+    FONT_BOLD_NAME,
+    boldFontPath,
+  );
 
   const chunks: Buffer[] = [];
   const completed = new Promise<Buffer>((resolve, reject) => {

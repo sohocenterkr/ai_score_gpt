@@ -43,6 +43,50 @@ export interface WorkOrderItem {
   } | null;
 }
 
+export interface VerificationCriterionResult {
+  code: string;
+  label: string;
+  required: boolean;
+  status: string;
+  automated: boolean;
+  message: string;
+}
+
+export interface VerificationItemResult {
+  id: string;
+  workOrderItemId: string;
+  status: string;
+  criteriaResults: VerificationCriterionResult[];
+  evidence: unknown;
+  message: string | null;
+  createdAt: string;
+}
+
+export interface VerificationAttempt {
+  id: string;
+  attemptNumber: number;
+  submittedUrl: string;
+  status: string;
+  scoreAfter: number | null;
+  gradeAfter: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  errorCode: string | null;
+  createdAt: string;
+  scan: {
+    id: string;
+    type: string;
+    status: string;
+    targetUrl: string | null;
+    score: number | null;
+    grade: string | null;
+    startedAt: string | null;
+    completedAt: string | null;
+    errorCode: string | null;
+  };
+  itemResults: VerificationItemResult[];
+}
+
 export interface WorkOrderDetail {
   id: string;
   orderNumber: string;
@@ -77,6 +121,7 @@ export interface WorkOrderDetail {
     name: string;
   } | null;
   items: WorkOrderItem[];
+  verificationAttempts: VerificationAttempt[];
 }
 
 export interface WorkOrderSummary {
@@ -170,6 +215,29 @@ export async function issueWorkOrderRequest(
     {
       method: "POST",
       credentials: "same-origin",
+    },
+  );
+  const data = await readJson<{
+    workOrder: WorkOrderDetail;
+  }>(response);
+  return data.workOrder;
+}
+
+export async function submitVerificationRequest(
+  workOrderId: string,
+  submittedUrl: string,
+): Promise<WorkOrderDetail> {
+  const response = await fetch(
+    `/api/work-orders/${encodeURIComponent(
+      workOrderId,
+    )}/verifications`,
+    {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ submittedUrl }),
     },
   );
   const data = await readJson<{

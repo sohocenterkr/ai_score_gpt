@@ -21,6 +21,10 @@ const renderedImprovementCodeSchema = z.enum([
   "INITIAL-HTML-MISSING-CORE",
 ]);
 
+const verificationSchema = z.object({
+  submittedUrl: z.string().trim().min(1).max(2_048),
+});
+
 const createSchema = z
   .object({
     scanId: z.string().trim().min(1).max(100),
@@ -155,6 +159,34 @@ export function createWorkOrderRouter(
           readRouteParam(request.params.workOrderId),
         );
         response.json({ workOrder });
+      } catch (error) {
+        handleError(response, error);
+      }
+    },
+  );
+
+  router.post(
+    "/:workOrderId/verifications",
+    requireAuth,
+    async (request, response) => {
+      const parsed = verificationSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        response.status(400).json({
+          code: "VALIDATION_ERROR",
+          message: "검수할 공개 배포 URL을 확인해 주세요.",
+        });
+        return;
+      }
+
+      try {
+        const workOrder =
+          await workOrderService.submitVerification(
+            response.locals.authUser,
+            readRouteParam(request.params.workOrderId),
+            parsed.data,
+          );
+        response.status(201).json({ workOrder });
       } catch (error) {
         handleError(response, error);
       }
