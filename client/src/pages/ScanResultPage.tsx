@@ -704,6 +704,36 @@ export function ScanResultPage() {
           </Link>
         </header>
 
+        <div className="scan-result-actions">
+            <button
+              className="work-order-create-button"
+              type="button"
+              onClick={handleCreateWorkOrder}
+              disabled={
+                creatingWorkOrder ||
+                selectedWorkOrderItemCount === 0
+              }
+            >
+              {creatingWorkOrder
+                ? "작업지시서 1건 생성 중..."
+                : selectedWorkOrderItemCount > 0
+                  ? `선택한 ${selectedWorkOrderItemCount}개 항목으로 작업지시서 1건 만들기`
+                  : "작업지시서로 만들 항목을 선택하세요"}
+            </button>
+            <Link
+              className="work-order-list-link"
+              to={`/${locale}/work-orders`}
+            >
+              작업지시서 목록
+            </Link>
+            <a
+              className="scan-report-link"
+              href={scanResultPdfUrl(result.scan.id)}
+            >
+              PDF 보고서 저장
+            </a>
+        </div>
+
         <div className="scan-result-scope" role="note">
           현재 점수는 QUICK 초기 HTML 기준 25개 규칙으로 계산합니다.
           JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고
@@ -1268,35 +1298,6 @@ export function ScanResultPage() {
             </p>
           ) : null}
 
-          <div className="scan-result-actions">
-            <button
-              className="work-order-create-button"
-              type="button"
-              onClick={handleCreateWorkOrder}
-              disabled={
-                creatingWorkOrder ||
-                selectedWorkOrderItemCount === 0
-              }
-            >
-              {creatingWorkOrder
-                ? "작업지시서 1건 생성 중..."
-                : selectedWorkOrderItemCount > 0
-                  ? `선택한 ${selectedWorkOrderItemCount}개 항목으로 작업지시서 1건 만들기`
-                  : "작업지시서로 만들 항목을 선택하세요"}
-            </button>
-            <Link
-              className="work-order-list-link"
-              to={`/${locale}/work-orders`}
-            >
-              작업지시서 목록
-            </Link>
-            <a
-              className="scan-report-link"
-              href={scanResultPdfUrl(result.scan.id)}
-            >
-              PDF 보고서 저장
-            </a>
-          </div>
         </section>
 
         <section className="scan-all-findings">
