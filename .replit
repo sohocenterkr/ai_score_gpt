@@ -5,6 +5,7 @@ expertMode = true
 [deployment]
 build = "npx prisma generate && npm run build:client && npm run build:server"
 run = "npm run start"
+deploymentTarget = "cloudrun"
 
 [workflows]
 runButton = "Project"
