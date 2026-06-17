@@ -532,3 +532,53 @@ h3 {
     min-height: 72px;
   }
 }
+
+
+.header-page-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: #17233d;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-nav {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .header-inner {
+    gap: 8px;
+  }
+
+  .brand {
+    flex-shrink: 0;
+    gap: 0;
+  }
+
+  .brand > span:not(.brand-mark) {
+    display: none;
+  }
+
+  .header-page-title {
+    font-size: 12.5px;
+    text-align: left;
+  }
+
+  .header-nav {
+    gap: 6px;
+  }
+
+  .header-nav a {
+    padding: 0 3px;
+    font-size: 12px;
+  }
+}

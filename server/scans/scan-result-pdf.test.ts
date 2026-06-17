@@ -277,7 +277,7 @@ describe("scan result PDF", () => {
     );
     expect(plans[0]?.acceptanceCriteria).toHaveLength(4);
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.06-scan-report-v10",
+      "2026.06-scan-report-v12",
     );
   });
 

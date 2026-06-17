@@ -1,4 +1,10 @@
-import { Link, Outlet, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  Link,
+  Outlet,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 import { isSupportedLocale } from "../../../shared/locales";
 import { useAuth } from "../auth/AuthContext";
 import { NotFoundPage } from "../pages/NotFoundPage";
@@ -6,6 +12,40 @@ import { NotFoundPage } from "../pages/NotFoundPage";
 export function LocaleLayout() {
   const { locale } = useParams();
   const { state } = useAuth();
+  const location = useLocation();
+  const [pageTitle, setPageTitle] = useState("");
+
+  useEffect(() => {
+    const main = document.querySelector("main");
+
+    if (!main) {
+      setPageTitle("");
+      return;
+    }
+
+    const updatePageTitle = () => {
+      const title =
+        main
+          .querySelector("h1")
+          ?.textContent?.replace(/\s+/g, " ")
+          .trim() ?? "";
+      setPageTitle(title);
+    };
+
+    setPageTitle("");
+    updatePageTitle();
+
+    const observer = new MutationObserver(updatePageTitle);
+    observer.observe(main, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [location.pathname]);
 
   if (!isSupportedLocale(locale)) {
     return <NotFoundPage />;
@@ -19,6 +59,13 @@ export function LocaleLayout() {
             <span className="brand-mark" aria-hidden="true">AI</span>
             <span>Site AI Score</span>
           </Link>
+          {pageTitle ? (
+            <span className="header-page-title" title={pageTitle}>
+              {pageTitle}
+            </span>
+          ) : (
+            <span className="header-page-title" aria-hidden="true" />
+          )}
           <nav className="header-nav" aria-label="주요 메뉴">
             <Link to={`/${locale}/system`}>시스템 확인</Link>
             {state.status === "authenticated" ? (

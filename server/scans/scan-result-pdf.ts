@@ -10,7 +10,7 @@ import type {
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.06-scan-report-v10";
+  "2026.06-scan-report-v12";
 
 let cachedFontHash: string | undefined;
 
@@ -1040,7 +1040,7 @@ function writeCover(
 
   document.moveDown(0.5);
   setText(document, 7.9, COLORS.muted).text(
-    "현재 QUICK 점수는 공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 계산합니다. JavaScript 실행 후 DOM 비교는 AI 수집 개선안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 정밀진단 단계에서 추가됩니다.",
+    "현재 QUICK 점수는 공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 계산합니다. JavaScript 실행 후 DOM 비교는 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 정밀진단 단계에서 추가됩니다.",
     {
       width,
       lineGap: 3,
@@ -1224,14 +1224,14 @@ function writeContentReadiness(
   document.addPage();
   writeSectionTitle(
     document,
-    "AI 답변용 콘텐츠 보완 제안",
-    "현재 저장된 QUICK 증거를 바탕으로 추가 확인할 콘텐츠 주제를 안내합니다. 실제로 없다고 단정하지 않으며 운영자의 사실 확인이 필요합니다.",
+    "AI 답변을 위한 추가 콘텐츠 제안",
+    "현재 QUICK 점수와 별개로, AI가 더 구체적인 질문에 답하는 데 도움이 될 추가 콘텐츠를 안내합니다. 이 제안은 감점이나 미완료 판정이 아닙니다.",
   );
 
   writeTextBox(
     document,
-    `현재 판단 · ${assessment.label}`,
-    assessment.summary,
+    `추가 콘텐츠 안내 · 점수 외 참고`,
+    "이 영역은 자동진단 점수와 별개로 제공되는 추가 콘텐츠 가이드입니다. 자동검사만으로 사실 여부를 확정하기 어려운 이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·자료 처리·운영 주체, 자주 묻는 질문 등을 사이트 운영자가 선택적으로 보완하면 AI가 사이트를 바탕으로 더 구체적인 질문에 답하는 데 도움이 될 수 있습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",
@@ -1241,7 +1241,7 @@ function writeContentReadiness(
 
   writeTextBox(
     document,
-    "판정 기준 안내",
+    "이 제안의 활용 방법",
     [assessment.benchmarkNote, assessment.disclaimer].join(
       "\n\n",
     ),
@@ -1254,7 +1254,7 @@ function writeContentReadiness(
 
   writeSectionTitle(
     document,
-    "현재 저장 증거에서 확인한 항목",
+    "자동검사에서 확인한 참고 단서",
   );
   setText(document, 8.8, COLORS.text).text(
     assessment.confirmedSignals
@@ -1269,29 +1269,29 @@ function writeContentReadiness(
   document.moveDown(0.8);
   writeSectionTitle(
     document,
-    "추가로 확인하고 보완할 콘텐츠",
+    "운영자가 선택적으로 보완할 콘텐츠",
   );
 
   assessment.topics.forEach((topic, index) => {
     const statusLabel =
       topic.status === "PARTIAL"
-        ? "일부 확인"
-        : "운영자 확인 필요";
+        ? "관련 단서 일부 확인"
+        : "추가 정보 제안";
 
     writeTextBox(
       document,
       `${index + 1}. ${topic.title} · ${statusLabel}`,
       [
-        `현재 판단: ${topic.reason}`,
+        `현재 확인 단서: ${topic.reason}`,
         `AI가 답하기 어려울 수 있는 질문: ${topic.questions.join(
           " / ",
         )}`,
         `추가 권장 섹션: ${topic.suggestedSections.join(
           " · ",
         )}`,
-        `콘텐츠 작성자: ${topic.contentWriterInstruction}`,
-        `개발자 반영: ${topic.developerInstruction}`,
-        `완료 확인 기준: ${topic.acceptanceCriteria.join(
+        `사이트 운영자: ${topic.contentWriterInstruction}`,
+        `개발자 참고: ${topic.developerInstruction}`,
+        `보완 체크포인트: ${topic.acceptanceCriteria.join(
           " / ",
         )}`,
       ].join("\n\n"),
@@ -1324,7 +1324,7 @@ function writeRenderedDomComparison(
   writeSectionTitle(
     document,
     "초기 HTML vs JavaScript 렌더링",
-    "브라우저에서 JavaScript를 실행한 뒤 실제 DOM이 얼마나 확장되는지 비교합니다. 이 결과는 점수에 직접 반영하지 않고 AI 수집 개선안을 만드는 데 활용합니다.",
+    "브라우저에서 JavaScript를 실행한 뒤 실제 DOM이 얼마나 확장되는지 비교합니다. 이 결과는 점수에 직접 반영하지 않고 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용합니다.",
   );
 
   if (comparison.status !== "SUCCESS") {
@@ -1408,8 +1408,8 @@ function writeRenderedDomComparison(
 
     writeSectionTitle(
       document,
-      "AI 수집 개선안",
-      "비개발자도 작업 목적을 이해하고 개발자는 바로 수정할 수 있도록 함께 설명합니다.",
+      "초기 HTML·JavaScript 렌더링 비교 총평",
+      "위 비교 수치가 뜻하는 바와 필요한 경우의 개선 방향을 함께 설명합니다.",
     );
 
     if (improvementPlans.length === 0) {
@@ -1562,11 +1562,6 @@ function writePrimaryIssues(
   result: PublicScanResult,
 ): void {
   if (result.primaryIssues.length === 0) {
-    document.addPage();
-    writeSectionTitle(document, "주요 문제");
-    setText(document, 9.2, COLORS.pass).text(
-      "주요 문제로 분류된 항목이 없습니다.",
-    );
     return;
   }
 
@@ -1588,13 +1583,13 @@ function writeCompactFinding(
   const x = document.page.margins.left;
   const width = contentWidth(document);
   const padding = 12;
-  const evidence =
-    finding.status === "PASS"
-      ? ""
-      : evidenceText(finding.evidence);
+  const evidence = evidenceText(finding.evidence).trim();
+  const evidenceLabel =
+    finding.status === "PASS" ? "검사 근거" : "증거 요약";
+  const evidenceLimit = finding.status === "PASS" ? 260 : 600;
   const evidenceSummary =
-    evidence.length > 600
-      ? `${evidence.slice(0, 600)}…`
+    evidence.length > evidenceLimit
+      ? `${evidence.slice(0, evidenceLimit)}…`
       : evidence;
 
   setText(document, 9);
@@ -1622,7 +1617,7 @@ function writeCompactFinding(
       )
     : 0;
   const evidenceHeight = evidenceSummary
-    ? document.heightOfString(`증거 요약: ${evidenceSummary}`, {
+    ? document.heightOfString(`${evidenceLabel}: ${evidenceSummary}`, {
         width: width - padding * 2,
         lineGap: 2,
       })
@@ -1697,7 +1692,7 @@ function writeCompactFinding(
 
   if (evidenceSummary) {
     setText(document, 7.1, COLORS.muted).text(
-      `증거 요약: ${evidenceSummary}`,
+      `${evidenceLabel}: ${evidenceSummary}`,
       x + padding,
       currentY,
       {
@@ -1718,7 +1713,7 @@ function writeAllFindings(
   writeSectionTitle(
     document,
     "전체 진단 항목",
-    `통과·실패·확인 불가·감점 제외를 포함한 ${result.findings.length}개 항목입니다.`,
+    `통과·실패·확인 불가·감점 제외를 포함한 ${result.findings.length}개 항목이며, 각 항목에 검사 근거를 함께 표시합니다.`,
   );
 
   const groups = new Map<string, PublicScanResultFinding[]>();
@@ -1805,7 +1800,7 @@ function writeMethodology(
       "2. 종합점수와 판정은 규칙 버전에 정의된 배점과 완료 조건으로 계산하며 LLM이 임의로 결정하지 않습니다.",
       "3. OAI-SearchBot은 검색용, ChatGPT-User는 사용자 요청용, GPTBot은 학습용 접근으로 구분하여 표시합니다.",
       "4. 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 검사 증거를 보관합니다.",
-      "5. 현재 QUICK 점수는 초기 HTML 기준 25개 규칙으로 계산합니다. JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고 AI 수집 개선안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 포함되지 않습니다.",
+      "5. 현재 QUICK 점수는 초기 HTML 기준 25개 규칙으로 계산합니다. JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 포함되지 않습니다.",
       "6. 이 보고서는 AI 검색 노출, 추천 결과, 사이트 전체 보안성, 모든 기능의 무결성을 보증하지 않습니다.",
       "7. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 재검사해야 합니다.",
     ].join("\n\n"),
@@ -1955,11 +1950,11 @@ export async function renderScanResultPdf(
   writeCover(document, safeResult);
   writeCategoryScores(document, safeResult);
   writeUnderstanding(document, safeResult);
-  writeContentReadiness(document, safeResult);
   writeRenderedDomComparison(document, safeResult);
   writePrimaryIssues(document, safeResult);
   writeAllFindings(document, safeResult);
   writeCollectedPages(document, safeResult);
+  writeContentReadiness(document, safeResult);
   writeMethodology(document, safeResult);
   addFooters(document, safeResult);
 

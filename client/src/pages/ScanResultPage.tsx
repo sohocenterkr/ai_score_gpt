@@ -737,7 +737,7 @@ export function ScanResultPage() {
         <div className="scan-result-scope" role="note">
           현재 점수는 QUICK 초기 HTML 기준 25개 규칙으로 계산합니다.
           JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고
-          AI 수집 개선안에 활용하며, 모바일·PC 별도 비교·업종별
+          렌더링 비교 총평과 개선 제안에 활용하며, 모바일·PC 별도 비교·업종별
           기준정보·질문 정답률은 정밀진단 단계에서 추가됩니다.
         </div>
 
@@ -883,98 +883,7 @@ export function ScanResultPage() {
           </div>
         </section>
 
-        {result.contentReadiness ? (
-          <section className="surface scan-content-readiness-section">
-            <div className="scan-section-heading">
-              <div>
-                <h2>AI 답변용 콘텐츠 보완 제안</h2>
-                <p>
-                  현재 저장된 QUICK 증거를 바탕으로 추가 확인할
-                  콘텐츠 주제를 안내합니다.
-                </p>
-              </div>
-              <span
-                className={`scan-content-readiness-status scan-content-readiness-status-${result.contentReadiness.status.toLowerCase()}`}
-              >
-                {result.contentReadiness.label}
-              </span>
-            </div>
 
-            <p className="scan-content-readiness-summary">
-              {result.contentReadiness.summary}
-            </p>
-
-            <div className="scan-content-readiness-guide" role="note">
-              <strong>판정 기준 안내</strong>
-              <p>{result.contentReadiness.benchmarkNote}</p>
-              <p>{result.contentReadiness.disclaimer}</p>
-            </div>
-
-            <div className="scan-content-readiness-signals">
-              <h3>현재 저장 증거에서 확인한 항목</h3>
-              <ul>
-                {result.contentReadiness.confirmedSignals.map(
-                  (signal) => (
-                    <li key={signal}>{signal}</li>
-                  ),
-                )}
-              </ul>
-            </div>
-
-            <div className="scan-content-topic-grid">
-              {result.contentReadiness.topics.map((topic, index) => (
-                <article className="scan-content-topic" key={topic.code}>
-                  <div className="scan-content-topic-header">
-                    <div>
-                      <span>보완 주제 {index + 1}</span>
-                      <h3>{topic.title}</h3>
-                    </div>
-                    <b>
-                      {topic.status === "PARTIAL"
-                        ? "일부 확인"
-                        : "운영자 확인 필요"}
-                    </b>
-                  </div>
-                  <p>{topic.reason}</p>
-
-                  <div className="scan-content-topic-detail">
-                    <strong>AI가 답하기 어려울 수 있는 질문</strong>
-                    <ul>
-                      {topic.questions.map((question) => (
-                        <li key={question}>{question}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="scan-content-topic-detail">
-                    <strong>추가 권장 섹션</strong>
-                    <p>{topic.suggestedSections.join(" · ")}</p>
-                  </div>
-
-                  <div className="scan-content-topic-instructions">
-                    <div>
-                      <strong>콘텐츠 작성자</strong>
-                      <p>{topic.contentWriterInstruction}</p>
-                    </div>
-                    <div>
-                      <strong>개발자 반영</strong>
-                      <p>{topic.developerInstruction}</p>
-                    </div>
-                  </div>
-
-                  <details>
-                    <summary>완료 확인 기준</summary>
-                    <ul>
-                      {topic.acceptanceCriteria.map((criterion) => (
-                        <li key={criterion}>{criterion}</li>
-                      ))}
-                    </ul>
-                  </details>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
         {renderedDomComparison ? (
           <section className="surface scan-rendered-section">
@@ -1096,11 +1005,11 @@ export function ScanResultPage() {
 
                 <div className="scan-rendered-improvements">
                   <div>
-                    <p className="eyebrow">IMPROVEMENT PLAN</p>
-                    <h3>AI 수집 개선안</h3>
+                    <p className="eyebrow">RENDERING SUMMARY</p>
+                    <h3>초기 HTML·JavaScript 렌더링 비교 총평</h3>
                     <p>
-                      비개발자도 작업 목적을 이해하고 개발자는
-                      바로 수정할 수 있도록 함께 설명합니다.
+                      위 비교 수치가 뜻하는 바와 필요한 경우의
+                      개선 방향을 함께 설명합니다.
                     </p>
                   </div>
 
@@ -1206,7 +1115,7 @@ export function ScanResultPage() {
               Site AI Score는 처음 전달되는 초기 HTML을
               기준으로 점수를 계산합니다. JavaScript 렌더링
               결과는 추가 콘텐츠를 읽을 수 있는 AI 환경까지
-              고려해 위 개선안을 만드는 데 활용합니다.
+              고려해 위 비교 총평과 필요한 개선 제안을 만드는 데 활용합니다.
             </p>
           </section>
         ) : null}
@@ -1368,6 +1277,105 @@ export function ScanResultPage() {
             ))}
           </div>
         </section>
+        {result.contentReadiness ? (
+          <section className="surface scan-content-readiness-section">
+            <div className="scan-section-heading">
+              <div>
+                <h2>AI 답변을 위한 추가 콘텐츠 제안</h2>
+                <p>
+                  현재 QUICK 점수와 별개로, AI가 더 구체적인
+                  질문에 답하는 데 도움이 될 추가 콘텐츠를 안내합니다.
+                </p>
+              </div>
+              <span
+                className={`scan-content-readiness-status scan-content-readiness-status-${result.contentReadiness.status.toLowerCase()}`}
+              >
+                점수 외 참고
+              </span>
+            </div>
+
+            <p className="scan-content-readiness-summary">
+              이 영역은 자동진단 점수와 별개로 제공되는 추가 콘텐츠
+              가이드입니다. 자동검사만으로 사실 여부를 확정하기 어려운
+              이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·자료
+              처리·운영 주체, 자주 묻는 질문 등을 사이트 운영자가
+              선택적으로 보완하면 AI가 사이트를 바탕으로 더 구체적인
+              질문에 답하는 데 도움이 될 수 있습니다. 이 제안은 감점이나
+              미완료 판정이 아닙니다.
+            </p>
+
+            <div className="scan-content-readiness-guide" role="note">
+              <strong>이 제안의 활용 방법</strong>
+              <p>{result.contentReadiness.benchmarkNote}</p>
+              <p>{result.contentReadiness.disclaimer}</p>
+            </div>
+
+            <div className="scan-content-readiness-signals">
+              <h3>자동검사에서 확인한 참고 단서</h3>
+              <ul>
+                {result.contentReadiness.confirmedSignals.map(
+                  (signal) => (
+                    <li key={signal}>{signal}</li>
+                  ),
+                )}
+              </ul>
+            </div>
+
+            <div className="scan-content-topic-grid">
+              {result.contentReadiness.topics.map((topic, index) => (
+                <article className="scan-content-topic" key={topic.code}>
+                  <div className="scan-content-topic-header">
+                    <div>
+                      <span>보완 주제 {index + 1}</span>
+                      <h3>{topic.title}</h3>
+                    </div>
+                    <b>
+                      {topic.status === "PARTIAL"
+                        ? "관련 단서 일부 확인"
+                        : "추가 정보 제안"}
+                    </b>
+                  </div>
+                  <p>{topic.reason}</p>
+
+                  <div className="scan-content-topic-detail">
+                    <strong>AI가 답하기 어려울 수 있는 질문</strong>
+                    <ul>
+                      {topic.questions.map((question) => (
+                        <li key={question}>{question}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="scan-content-topic-detail">
+                    <strong>추가 권장 섹션</strong>
+                    <p>{topic.suggestedSections.join(" · ")}</p>
+                  </div>
+
+                  <div className="scan-content-topic-instructions">
+                    <div>
+                      <strong>사이트 운영자</strong>
+                      <p>{topic.contentWriterInstruction}</p>
+                    </div>
+                    <div>
+                      <strong>개발자 참고</strong>
+                      <p>{topic.developerInstruction}</p>
+                    </div>
+                  </div>
+
+                  <details>
+                    <summary>보완 체크포인트</summary>
+                    <ul>
+                      {topic.acceptanceCriteria.map((criterion) => (
+                        <li key={criterion}>{criterion}</li>
+                      ))}
+                    </ul>
+                  </details>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
       </div>
     </section>
   );
