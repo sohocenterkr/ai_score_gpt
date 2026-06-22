@@ -4,12 +4,16 @@
   "buildCommand": "corepack enable && corepack prepare yarn@1.22.22 --activate && yarn run build:vercel",
   "outputDirectory": "dist/public",
   "functions": {
-    "api/**/*.js": {
+    "api/index.js": {
       "maxDuration": 60,
       "includeFiles": "server/assets/fonts/pretendard/**"
     }
   },
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api?__apiPath=:path*"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
