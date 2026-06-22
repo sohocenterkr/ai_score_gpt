@@ -11,3 +11,5 @@ npm-debug.log*
 .idea/
 .siteaiscore-stage-*/
 siteaiscore_*_patch.cjs
+
+.siteaiscore-db-migration/

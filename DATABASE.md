@@ -81,3 +81,36 @@ npm run db:migrate
 ```
 
 운영 배포에서는 `npm run db:deploy`를 사용한다.
+
+
+## 외부 Supabase DB 이전 절차
+
+2026-06-22 기준, 기존 Replit PostgreSQL의 테이블 이름과 구조를 유지한 채 외부 Supabase PostgreSQL로 이전할 수 있도록 일회성 이전 도구를 둔다.
+
+원칙:
+
+- 실제 DB URL과 비밀번호는 Git, Markdown, 로그에 기록하지 않는다.
+- Cloudinary 파일/이미지 저장 코드는 변경하지 않는다.
+- 이전 중에는 기존 Replit DB를 source, Supabase DB를 target으로 분리한다.
+- target DB에는 Prisma migration으로 같은 구조를 만든 뒤, source의 앱 데이터를 data-only dump/restore 방식으로 옮긴다.
+- `_prisma_migrations` 데이터는 dump 대상에서 제외하고, target에서는 Prisma migration deploy 결과를 사용한다.
+
+명령:
+
+```bash
+npm run db:supabase:preflight
+npm run db:supabase:apply-schema
+npm run db:supabase:dump
+npm run db:supabase:restore
+npm run db:supabase:verify
+```
+
+필요 환경변수:
+
+```text
+SOURCE_DATABASE_URL
+TARGET_DATABASE_URL
+```
+
+`SOURCE_DATABASE_URL`이 없으면 현재 `DATABASE_URL`을 source로 사용한다. 최종 전환 시에는 Replit Secrets의 `DATABASE_URL`을 검증 완료된 Supabase 앱 연결 문자열로 교체한다.
+

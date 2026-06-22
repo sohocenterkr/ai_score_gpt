@@ -20,7 +20,13 @@
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "scan:once": "tsx server/scans/run-once.ts"
+    "scan:once": "tsx server/scans/run-once.ts",
+    "db:supabase:preflight": "node scripts/db/migrate-to-supabase.cjs preflight",
+    "db:supabase:apply-schema": "node scripts/db/migrate-to-supabase.cjs apply-schema",
+    "db:supabase:dump": "node scripts/db/migrate-to-supabase.cjs dump",
+    "db:supabase:restore": "node scripts/db/migrate-to-supabase.cjs restore",
+    "db:supabase:verify": "node scripts/db/migrate-to-supabase.cjs verify",
+    "db:supabase:all": "node scripts/db/migrate-to-supabase.cjs all"
   },
   "dependencies": {
     "@fontsource/noto-sans-kr": "^5.2.9",
