@@ -5,7 +5,7 @@
   "type": "module",
   "description": "AEO diagnosis and URL-based verification platform",
   "engines": {
-    "node": ">=20.19.0"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "node scripts/runtime/use-target-database-url.cjs tsx server/index.ts",
@@ -62,5 +62,6 @@
     "typescript": "^5.8.3",
     "vite": "8.0.16",
     "vitest": "4.1.8"
-  }
+  },
+  "packageManager": "npm@10.9.2"
 }
