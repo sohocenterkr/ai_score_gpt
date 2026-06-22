@@ -112,6 +112,7 @@ const processEnvForRuntime = { ...process.env };
 
 if (processEnvForRuntime.TARGET_DATABASE_URL) {
   processEnvForRuntime.DATABASE_URL = processEnvForRuntime.TARGET_DATABASE_URL;
+  process.env.DATABASE_URL = processEnvForRuntime.TARGET_DATABASE_URL;
 }
 
 const parsed = environmentSchema.safeParse(processEnvForRuntime);
