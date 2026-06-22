@@ -119,6 +119,35 @@ enum ScanReportCacheStatus {
   FAILED
 }
 
+enum AiQuestionKind {
+  BRAND
+  DISCOVERY
+  FEATURE
+  USE_CASE
+  TRUST
+  COMPARISON
+  CUSTOM
+}
+
+enum AiQuestionSource {
+  SYSTEM
+  USER
+  GENERATED
+}
+
+enum AiQuestionStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum AiAnswerRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
 model AppMetadata {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -243,6 +272,7 @@ model Site {
   facts          SiteFact[]
   scans          Scan[]
   workOrders     WorkOrder[]
+  aiQuestions    AiQuestion[]
 
   @@unique([organizationId, baseUrl])
   @@index([organizationId, status])
@@ -286,6 +316,8 @@ model Scan {
   initialWorkOrders   WorkOrder[]
   reportCaches        ScanReportCache[]
   verificationAttempt VerificationAttempt?
+  aiAnswerRuns        AiAnswerRun[]
+  aiAnswerSummary     AiAnswerSummary?
 
   @@index([siteId, createdAt])
   @@index([status, createdAt])
@@ -468,4 +500,92 @@ model ScanReportCache {
   @@unique([scanId, reportType])
   @@index([status, lockExpiresAt])
   @@map("scan_report_caches")
+}
+
+model AiQuestion {
+  id               String           @id @default(cuid())
+  siteId           String           @map("site_id")
+  code             String
+  kind             AiQuestionKind
+  source           AiQuestionSource @default(USER)
+  status           AiQuestionStatus @default(ACTIVE)
+  question         String
+  expectedFactKeys Json             @map("expected_fact_keys")
+  isRequired       Boolean          @default(true) @map("is_required")
+  sortOrder        Int              @default(0) @map("sort_order")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+  site             Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  answerRuns       AiAnswerRun[]
+
+  @@unique([siteId, code])
+  @@index([siteId, status, sortOrder])
+  @@map("ai_questions")
+}
+
+model AiAnswerRun {
+  id                     String            @id @default(cuid())
+  scanId                 String            @map("scan_id")
+  questionId             String?           @map("question_id")
+  runNumber              Int               @default(1) @map("run_number")
+  questionCode           String            @map("question_code")
+  questionKind           AiQuestionKind    @map("question_kind")
+  questionText           String            @map("question_text")
+  expectedFactsSnapshot  Json              @map("expected_facts_snapshot")
+  provider               String
+  model                  String
+  status                 AiAnswerRunStatus @default(QUEUED)
+  responseId             String?           @map("response_id")
+  answerText             String?           @map("answer_text")
+  answerSha256           String?           @map("answer_sha256")
+  brandMentioned         Boolean?          @map("brand_mentioned")
+  targetDomainCited      Boolean?          @map("target_domain_cited")
+  citationsJson          Json?             @map("citations_json")
+  sourcesJson            Json?             @map("sources_json")
+  automaticMetricsJson   Json?             @map("automatic_metrics_json")
+  factualEvaluationJson  Json?             @map("factual_evaluation_json")
+  consistencySignature   String?           @map("consistency_signature")
+  inputTokens            Int?              @map("input_tokens")
+  outputTokens           Int?              @map("output_tokens")
+  errorCode              String?           @map("error_code")
+  errorMessage           String?           @map("error_message")
+  startedAt              DateTime?         @map("started_at")
+  completedAt            DateTime?         @map("completed_at")
+  createdAt              DateTime          @default(now()) @map("created_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
+  scan                   Scan              @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  question               AiQuestion?       @relation(fields: [questionId], references: [id], onDelete: SetNull)
+
+  @@unique([scanId, questionCode, runNumber])
+  @@index([scanId, status])
+  @@index([questionId, createdAt])
+  @@map("ai_answer_runs")
+}
+
+model AiAnswerSummary {
+  id                    String   @id @default(cuid())
+  scanId                String   @unique @map("scan_id")
+  provider              String
+  model                 String
+  methodologyVersion    String   @map("methodology_version")
+  plannedQuestionCount  Int      @map("planned_question_count")
+  completedQuestionCount Int     @map("completed_question_count")
+  totalRunCount         Int      @map("total_run_count")
+  completedRunCount     Int      @map("completed_run_count")
+  partialRunCount       Int      @map("partial_run_count")
+  failedRunCount        Int      @map("failed_run_count")
+  answerCompletionRate  Float?   @map("answer_completion_rate")
+  brandMentionRate      Float?   @map("brand_mention_rate")
+  targetCitationRate    Float?   @map("target_citation_rate")
+  factualAccuracy       Float?   @map("factual_accuracy")
+  completeness          Float?
+  consistency           Float?
+  performanceScore      Float?   @map("performance_score")
+  scoreCoverage         Float?   @map("score_coverage")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  scan                  Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([provider, model])
+  @@map("ai_answer_summaries")
 }

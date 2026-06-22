@@ -18,6 +18,10 @@ import {
 } from "./rendered-dom";
 import { applyScoreToFindings } from "./scoring";
 import { evaluateVerification } from "../work-orders/verification-evaluator";
+import {
+  DeepDiagnosticRunnerError,
+  runDeepAnswerDiagnostic,
+} from "../deep-diagnostics/deep-diagnostic-runner";
 
 export interface ScanRunSummary {
   scanId: string;
@@ -133,6 +137,9 @@ async function claimNextQueuedScan(): Promise<string | null> {
 async function persistSuccessfulScan(
   scanId: string,
   result: Awaited<ReturnType<typeof collectSiteScan>>,
+  options: {
+    deferCompletion?: boolean;
+  } = {},
 ): Promise<ScanRunSummary> {
   const prisma = getDatabase();
   const scored = applyScoreToFindings(result.findings);
@@ -201,13 +208,21 @@ async function persistSuccessfulScan(
     const completedAt = new Date();
     const completed = await transaction.scan.update({
       where: { id: scanId },
-      data: {
-        status: result.status,
-        score: scored.summary.score,
-        grade: scored.summary.grade,
-        completedAt,
-        errorCode: null,
-      },
+      data: options.deferCompletion
+        ? {
+            status: "RUNNING",
+            score: scored.summary.score,
+            grade: scored.summary.grade,
+            completedAt: null,
+            errorCode: null,
+          }
+        : {
+            status: result.status,
+            score: scored.summary.score,
+            grade: scored.summary.grade,
+            completedAt,
+            errorCode: null,
+          },
     });
 
     if (scan.type === "VERIFICATION") {
@@ -443,7 +458,54 @@ export async function runClaimedScan(
         renderedDomCollector,
       },
     );
-    return await persistSuccessfulScan(scanId, result);
+    const technical = await persistSuccessfulScan(
+      scanId,
+      result,
+      {
+        deferCompletion: scan.type === "DEEP",
+      },
+    );
+
+    if (scan.type !== "DEEP") {
+      return technical;
+    }
+
+    try {
+      const deepResult = await runDeepAnswerDiagnostic(scanId);
+      const completed = await prisma.scan.update({
+        where: { id: scanId },
+        data: {
+          status: deepResult.status,
+          completedAt: new Date(),
+          errorCode: deepResult.errorCode,
+        },
+      });
+
+      return {
+        ...technical,
+        status: completed.status,
+        errorCode: completed.errorCode,
+      };
+    } catch (error) {
+      const errorCode =
+        error instanceof DeepDiagnosticRunnerError
+          ? error.code
+          : "DEEP_ANSWER_INTERNAL_ERROR";
+      const completed = await prisma.scan.update({
+        where: { id: scanId },
+        data: {
+          status: "PARTIAL",
+          completedAt: new Date(),
+          errorCode,
+        },
+      });
+
+      return {
+        ...technical,
+        status: completed.status,
+        errorCode: completed.errorCode,
+      };
+    }
   } catch (error) {
     return persistFailedScan(scanId, error);
   }

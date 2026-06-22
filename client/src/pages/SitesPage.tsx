@@ -469,6 +469,12 @@ export function SitesPage() {
                           </div>
 
                           <div className="site-card-actions">
+                            <Link
+                              className="site-secondary-button"
+                              to={`/${locale}/sites/${site.id}/deep-diagnostic`}
+                            >
+                              정밀진단 준비
+                            </Link>
                             <button
                               className="site-primary-button"
                               type="button"

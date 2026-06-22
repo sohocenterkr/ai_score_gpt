@@ -32,6 +32,13 @@ import {
   createPrismaWorkOrderService,
   type WorkOrderService,
 } from "./work-orders/work-order-service";
+import {
+  createDeepDiagnosticAdminRouter,
+} from "./deep-diagnostics/deep-diagnostic-admin-router";
+import {
+  createPrismaDeepDiagnosticAdminService,
+  type DeepDiagnosticAdminService,
+} from "./deep-diagnostics/deep-diagnostic-admin-service";
 import { createSiteRouter } from "./sites/site-router";
 import {
   createPrismaSiteService,
@@ -44,6 +51,7 @@ interface CreateAppOptions {
   passwordService?: PasswordService;
   passwordResetMailer?: PasswordResetMailer;
   siteService?: SiteService;
+  deepDiagnosticAdminService?: DeepDiagnosticAdminService;
   scanResultService?: ScanResultService;
   scanReportCacheService?: ScanReportCacheService;
   workOrderService?: WorkOrderService;
@@ -57,6 +65,9 @@ export function createApp(options: CreateAppOptions = {}) {
   const passwordResetMailer =
     options.passwordResetMailer ?? createResendPasswordResetMailer();
   const siteService = options.siteService ?? createPrismaSiteService();
+  const deepDiagnosticAdminService =
+    options.deepDiagnosticAdminService ??
+    createPrismaDeepDiagnosticAdminService();
   const scanResultService =
     options.scanResultService ?? createPrismaScanResultService();
   const scanReportCacheService =
@@ -102,6 +113,13 @@ export function createApp(options: CreateAppOptions = {}) {
     "/api/sites",
     createSiteRouter({
       siteService,
+      requireAuth,
+    }),
+  );
+  app.use(
+    "/api/deep-diagnostics",
+    createDeepDiagnosticAdminRouter({
+      service: deepDiagnosticAdminService,
       requireAuth,
     }),
   );

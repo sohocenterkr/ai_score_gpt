@@ -79,6 +79,33 @@ const environmentSchema = z.object({
     .min(0)
     .max(10_000)
     .default(3_000),
+  OPENAI_API_KEY: optionalString,
+  OPENAI_WEB_SEARCH_MODEL: z.preprocess(
+    emptyStringToUndefined,
+    z.string().trim().min(1).default("gpt-5.4-mini"),
+  ),
+  OPENAI_EVALUATION_MODEL: z.preprocess(
+    emptyStringToUndefined,
+    z.string().trim().min(1).default("gpt-5.4-mini"),
+  ),
+  OPENAI_TIMEOUT_MS: z.coerce
+    .number()
+    .int()
+    .min(10_000)
+    .max(300_000)
+    .default(120_000),
+  DEEP_DIAGNOSTIC_RUNS_PER_QUESTION: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(3)
+    .default(2),
+  DEEP_DIAGNOSTIC_MAX_QUESTIONS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(8),
 });
 
 const parsed = environmentSchema.safeParse(process.env);

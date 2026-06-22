@@ -4,6 +4,7 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { LocaleLayout } from "./components/LocaleLayout";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { DeepDiagnosticSetupPage } from "./pages/DeepDiagnosticSetupPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -39,6 +40,14 @@ export function App() {
           element={
             <RequireAuth>
               <SitesPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="sites/:siteId/deep-diagnostic"
+          element={
+            <RequireAuth>
+              <DeepDiagnosticSetupPage />
             </RequireAuth>
           }
         />

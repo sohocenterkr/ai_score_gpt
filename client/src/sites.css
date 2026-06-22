@@ -143,6 +143,13 @@
   background: var(--brand);
 }
 
+.site-card-actions a.site-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .site-secondary-button {
   border: 1px solid #cbd3df;
   color: #35425a;
