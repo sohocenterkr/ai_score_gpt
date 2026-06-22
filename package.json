@@ -26,7 +26,8 @@
     "db:supabase:dump": "node scripts/db/migrate-to-supabase.cjs dump",
     "db:supabase:restore": "node scripts/db/migrate-to-supabase.cjs restore",
     "db:supabase:verify": "node scripts/db/migrate-to-supabase.cjs verify",
-    "db:supabase:all": "node scripts/db/migrate-to-supabase.cjs all"
+    "db:supabase:all": "node scripts/db/migrate-to-supabase.cjs all",
+    "build:vercel": "prisma generate && npm run check && npm run build:client"
   },
   "dependencies": {
     "@fontsource/noto-sans-kr": "^5.2.9",

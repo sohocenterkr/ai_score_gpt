@@ -108,7 +108,13 @@ const environmentSchema = z.object({
     .default(8),
 });
 
-const parsed = environmentSchema.safeParse(process.env);
+const processEnvForRuntime = { ...process.env };
+
+if (processEnvForRuntime.TARGET_DATABASE_URL) {
+  processEnvForRuntime.DATABASE_URL = processEnvForRuntime.TARGET_DATABASE_URL;
+}
+
+const parsed = environmentSchema.safeParse(processEnvForRuntime);
 
 if (!parsed.success) {
   const summary = parsed.error.issues
