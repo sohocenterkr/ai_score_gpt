@@ -13,3 +13,5 @@ npm-debug.log*
 siteaiscore_*_patch.cjs
 
 .siteaiscore-db-migration/
+
+api/_server/
