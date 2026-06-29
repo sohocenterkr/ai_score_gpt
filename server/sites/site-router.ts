@@ -1,3 +1,4 @@
+import { runQueuedScanById } from "../scans/scan-worker";
 import {
   Router,
   type NextFunction,
@@ -221,6 +222,11 @@ export function createSiteRouter(options: CreateSiteRouterOptions) {
           readRouteParam(request.params.siteId),
           parsed.data.type,
         );
+
+        if (process.env.VERCEL === "1" && scan.type === "QUICK") {
+          await runQueuedScanById(scan.id);
+        }
+
         response.status(201).json({ scan });
       } catch (error) {
         handleError(response, error);
