@@ -489,7 +489,8 @@ export function SitesPage() {
                             </button>
                             {site.latestScan &&
                             (site.latestScan.status === "COMPLETED" ||
-                              site.latestScan.status === "PARTIAL") ? (
+                              site.latestScan.status === "PARTIAL" ||
+                              site.latestScan.status === "FAILED") ? (
                               <Link
                                 className="site-secondary-button"
                                 to={`/${locale}/sites/${site.id}/scans/${site.latestScan.id}`}
