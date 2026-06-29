@@ -1,4 +1,5 @@
 import { runQueuedScanById } from "../scans/scan-worker";
+import { createSafeHttpFetcher } from "../scans/http-fetcher";
 import {
   Router,
   type NextFunction,
@@ -224,7 +225,11 @@ export function createSiteRouter(options: CreateSiteRouterOptions) {
         );
 
         if (process.env.VERCEL === "1" && scan.type === "QUICK") {
-          await runQueuedScanById(scan.id);
+          await runQueuedScanById(
+            scan.id,
+            createSafeHttpFetcher(),
+            undefined,
+          );
         }
 
         response.status(201).json({ scan });
