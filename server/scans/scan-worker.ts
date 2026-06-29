@@ -511,6 +511,74 @@ export async function runClaimedScan(
   }
 }
 
+async function claimQueuedScanById(scanId: string): Promise<string | null> {
+  const prisma = getDatabase();
+  const scan = await prisma.scan.findUnique({
+    where: { id: scanId },
+    select: {
+      id: true,
+      status: true,
+      site: {
+        select: {
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!scan || scan.status !== "QUEUED" || scan.site.status !== "ACTIVE") {
+    return null;
+  }
+
+  const claimedAt = new Date();
+  const claimed = await prisma.scan.updateMany({
+    where: {
+      id: scanId,
+      status: "QUEUED",
+    },
+    data: {
+      status: "RUNNING",
+      startedAt: claimedAt,
+      completedAt: null,
+      errorCode: null,
+    },
+  });
+
+  if (claimed.count !== 1) {
+    return null;
+  }
+
+  await prisma.verificationAttempt.updateMany({
+    where: {
+      scanId,
+      status: "QUEUED",
+    },
+    data: {
+      status: "RUNNING",
+      startedAt: claimedAt,
+      errorCode: null,
+    },
+  });
+
+  return scanId;
+}
+
+export async function runQueuedScanById(
+  scanId: string,
+  fetcher: SafeHttpFetcher = createSafeHttpFetcher(),
+  renderedDomCollector:
+    | RenderedDomCollector
+    | undefined = configuredRenderedDomCollector(),
+): Promise<ScanRunSummary | null> {
+  const claimedScanId = await claimQueuedScanById(scanId);
+
+  if (!claimedScanId) {
+    return null;
+  }
+
+  return runClaimedScan(claimedScanId, fetcher, renderedDomCollector);
+}
+
 export async function runNextQueuedScan(
   fetcher: SafeHttpFetcher = createSafeHttpFetcher(),
   renderedDomCollector:
