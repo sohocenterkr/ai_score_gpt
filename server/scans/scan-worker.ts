@@ -177,9 +177,9 @@ async function persistSuccessfulScan(
       },
     });
 
-    for (const item of scored.findings) {
-      await transaction.finding.create({
-        data: {
+    if (scored.findings.length > 0) {
+      await transaction.finding.createMany({
+        data: scored.findings.map((item) => ({
           scanId,
           scanPageId: page.id,
           ruleCode: item.ruleCode,
@@ -192,7 +192,7 @@ async function persistSuccessfulScan(
             item.evidence as Prisma.InputJsonValue,
           recommendation: item.recommendation,
           scoreDelta: item.scoreDelta,
-        },
+        })),
       });
     }
 
@@ -346,6 +346,9 @@ async function persistSuccessfulScan(
       grade: completed.grade,
       errorCode: null,
     };
+  }, {
+    maxWait: 10_000,
+    timeout: 20_000,
   });
 }
 
