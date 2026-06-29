@@ -1231,171 +1231,38 @@ export function ScanResultPage() {
 
         </section>
 
-        <section className="scan-all-findings">
-          <div className="scan-section-heading">
-            <div>
-              <h2>전체 진단 항목</h2>
-              <p>통과·실패·확인 불가·감점 제외를 모두 표시합니다.</p>
-            </div>
-            <span>{result.findings.length}개</span>
-          </div>
-
-          {groupedFindings.map(([category, findings]) => (
-            <div className="scan-finding-group" key={category}>
-              <h3>{category}</h3>
-              <div className="scan-finding-list">
-                {findings.map((finding) => (
-                  <FindingCard
-                    finding={finding}
-                    key={finding.id}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-
         <section className="surface scan-page-section">
           <div className="scan-section-heading">
             <div>
-              <h2>수집 페이지</h2>
-              <p>원본 HTML은 저장하지 않고 해시와 측정값만 보관합니다.</p>
+              <h2>상세 보고서와 작업지시서 안내</h2>
+              <p>
+                간편진단 결과 화면은 핵심 점수와 주요 문제 예시만
+                제공합니다. 전체 진단 근거와 실행 문서는 별도 산출물로
+                제공합니다.
+              </p>
             </div>
+            <span>유료 산출물</span>
           </div>
-          <div className="scan-page-list">
-            {result.pages.map((page) => (
-              <dl key={page.id}>
-                <div>
-                  <dt>검사 URL</dt>
-                  <dd>{page.url}</dd>
-                </div>
-                <div>
-                  <dt>최종 URL</dt>
-                  <dd>{page.finalUrl ?? "미확인"}</dd>
-                </div>
-                <div>
-                  <dt>HTTP</dt>
-                  <dd>{page.statusCode ?? "미확인"}</dd>
-                </div>
-                <div>
-                  <dt>초기 텍스트</dt>
-                  <dd>
-                    {page.initialTextLength?.toLocaleString("ko-KR") ??
-                      "미확인"}
-                    자
-                  </dd>
-                </div>
-                <div>
-                  <dt>iframe</dt>
-                  <dd>{page.iframeCount ?? "미확인"}개</dd>
-                </div>
-                <div>
-                  <dt>HTML SHA-256</dt>
-                  <dd className="scan-hash">
-                    {page.rawHtmlHash ?? "미저장"}
-                  </dd>
-                </div>
-              </dl>
-            ))}
+
+          <div className="work-order-selection" role="note">
+            <strong>상세 진단 PDF 보고서에 포함되는 내용</strong>
+            <p>
+              결제 후 저장할 수 있는 상세 PDF 보고서에는 전체 진단 항목,
+              수집 페이지의 측정 증거, 초기 HTML과 JavaScript 렌더링
+              비교의 상세 해석, AI 답변을 위한 추가 콘텐츠 제안이
+              포함됩니다.
+            </p>
+          </div>
+
+          <div className="work-order-selection" role="note">
+            <strong>수정 작업지시서에 포함되는 내용</strong>
+            <p>
+              작업지시서에는 개발자가 바로 실행할 수 있도록 작업 우선순위,
+              개발자 전달 문구, 완료 판정 기준, 회귀 방지 기준,
+              자동검수 기준을 정리해 제공합니다.
+            </p>
           </div>
         </section>
-        {result.contentReadiness ? (
-          <section className="surface scan-content-readiness-section">
-            <div className="scan-section-heading">
-              <div>
-                <h2>AI 답변을 위한 추가 콘텐츠 제안</h2>
-                <p>
-                  현재 QUICK 점수와 별개로, AI가 더 구체적인
-                  질문에 답하는 데 도움이 될 추가 콘텐츠를 안내합니다.
-                </p>
-              </div>
-              <span
-                className={`scan-content-readiness-status scan-content-readiness-status-${result.contentReadiness.status.toLowerCase()}`}
-              >
-                점수 외 참고
-              </span>
-            </div>
-
-            <p className="scan-content-readiness-summary">
-              이 영역은 자동진단 점수와 별개로 제공되는 추가 콘텐츠
-              가이드입니다. 자동검사만으로 사실 여부를 확정하기 어려운
-              이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·자료
-              처리·운영 주체, 자주 묻는 질문 등을 사이트 운영자가
-              선택적으로 보완하면 AI가 사이트를 바탕으로 더 구체적인
-              질문에 답하는 데 도움이 될 수 있습니다. 이 제안은 감점이나
-              미완료 판정이 아닙니다.
-            </p>
-
-            <div className="scan-content-readiness-guide" role="note">
-              <strong>이 제안의 활용 방법</strong>
-              <p>{result.contentReadiness.benchmarkNote}</p>
-              <p>{result.contentReadiness.disclaimer}</p>
-            </div>
-
-            <div className="scan-content-readiness-signals">
-              <h3>자동검사에서 확인한 참고 단서</h3>
-              <ul>
-                {result.contentReadiness.confirmedSignals.map(
-                  (signal) => (
-                    <li key={signal}>{signal}</li>
-                  ),
-                )}
-              </ul>
-            </div>
-
-            <div className="scan-content-topic-grid">
-              {result.contentReadiness.topics.map((topic, index) => (
-                <article className="scan-content-topic" key={topic.code}>
-                  <div className="scan-content-topic-header">
-                    <div>
-                      <span>보완 주제 {index + 1}</span>
-                      <h3>{topic.title}</h3>
-                    </div>
-                    <b>
-                      {topic.status === "PARTIAL"
-                        ? "관련 단서 일부 확인"
-                        : "추가 정보 제안"}
-                    </b>
-                  </div>
-                  <p>{topic.reason}</p>
-
-                  <div className="scan-content-topic-detail">
-                    <strong>AI가 답하기 어려울 수 있는 질문</strong>
-                    <ul>
-                      {topic.questions.map((question) => (
-                        <li key={question}>{question}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="scan-content-topic-detail">
-                    <strong>추가 권장 섹션</strong>
-                    <p>{topic.suggestedSections.join(" · ")}</p>
-                  </div>
-
-                  <div className="scan-content-topic-instructions">
-                    <div>
-                      <strong>사이트 운영자</strong>
-                      <p>{topic.contentWriterInstruction}</p>
-                    </div>
-                    <div>
-                      <strong>개발자 참고</strong>
-                      <p>상세 개발 반영 방법은 수정 작업지시서에서 제공합니다.</p>
-                    </div>
-                  </div>
-
-                  <details>
-                    <summary>보완 체크포인트</summary>
-                    <p>
-                        상세 보완 체크포인트와 완료 기준은 수정
-                        작업지시서에서 제공합니다.
-                      </p>
-                  </details>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
 
       </div>
     </section>
