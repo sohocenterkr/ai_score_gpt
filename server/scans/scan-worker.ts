@@ -75,6 +75,22 @@ function errorCodeFrom(error: unknown): string {
     return error.code;
   }
 
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return `PRISMA_${error.code}`;
+  }
+
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return "PRISMA_INITIALIZATION_ERROR";
+  }
+
+  if (error instanceof Prisma.PrismaClientUnknownRequestError) {
+    return "PRISMA_UNKNOWN_REQUEST";
+  }
+
+  if (error instanceof TypeError) {
+    return "TYPE_ERROR";
+  }
+
   return "SCAN_INTERNAL_ERROR";
 }
 
@@ -510,6 +526,13 @@ export async function runClaimedScan(
       };
     }
   } catch (error) {
+    console.error("[scan-worker] runClaimedScan failed", {
+      scanId,
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : null,
+    });
+
     return persistFailedScan(scanId, error);
   }
 }
