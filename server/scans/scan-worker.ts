@@ -54,7 +54,8 @@ function configuredRenderedDomCollector():
   | undefined {
   if (
     env.NODE_ENV === "test" ||
-    !env.RENDERED_DOM_ENABLED
+    !env.RENDERED_DOM_ENABLED ||
+    !env.CHROMIUM_PATH?.trim()
   ) {
     return undefined;
   }
