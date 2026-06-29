@@ -604,7 +604,7 @@ function writeCover(
 
   document.moveDown(0.5);
   setRegular(document, 7.8, COLORS.muted).text(
-    "예상 점수 범위는 선택된 점수 규칙 배점만으로 계산합니다. 점수 외 AI 수집 개선안은 예상 점수에 포함되지 않으며 실제 점수 상승이나 AI 검색 노출을 보장하지 않습니다.",
+    "예상 점수 범위는 선택된 점수 규칙 배점만으로 계산합니다. 점수 외 AI 수집 개선안은 예상 점수에 포함되지 않으며 실제 점수 상승이나 AI 검색 노출을 보장하지 않습니다. 핵심 목표는 AI가 서비스를 더 정확히 인식하고 인용할 수 있게 만드는 것입니다.",
     {
       width,
       lineGap: 2,
@@ -852,7 +852,7 @@ export async function renderWorkOrderPdf(
   );
   document.moveDown(0.9);
   setRegular(document, 9.2, COLORS.text).text(
-    "예상 점수 범위는 현재 규칙 배점을 기준으로 계산한 참고값입니다. 실제 점수 상승, AI 검색 노출, 추천 결과, 사이트 전체 보안성과 모든 기능의 무결성을 보장하지 않습니다.",
+    "예상 점수 범위는 현재 규칙 배점을 기준으로 계산한 참고값입니다. 800자, 75% 같은 수치는 Site AI Score 내부 기준이며 모든 검색엔진이나 AI 서비스의 공식 기준이 아닙니다. 실제 점수 상승, AI 검색 노출, 추천 결과, 사이트 전체 보안성과 모든 기능의 무결성을 보장하지 않습니다.",
     {
       width: contentWidth(document),
       lineGap: 4,

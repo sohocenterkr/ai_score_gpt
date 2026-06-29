@@ -120,9 +120,9 @@ const templates: Record<string, WorkOrderTemplate> = {
   },
   "STRUCT-JSONLD-001": {
     requirement:
-      "사이트의 성격과 핵심정보를 설명하는 유효한 Schema.org JSON-LD를 초기 HTML에 추가합니다.",
+      "사이트의 성격과 핵심정보를 설명하는 유효한 Schema.org JSON-LD를 초기 HTML에 추가하고, 실제 화면 정보와 일치하도록 유지합니다.",
     developerMessage:
-      '초기 HTML에 <script type="application/ld+json">을 출력하고 JSON 문법, 필수 속성, 화면 정보와의 일치를 확인해 주세요.',
+      '초기 HTML에 <script type="application/ld+json">을 출력하고 JSON 문법, 필수 속성, 화면 정보와의 일치를 확인해 주세요. SaaS·웹서비스는 WebApplication 또는 WebSite/Organization 조합을 우선 검토하고, 실제 화면에 FAQ가 있다면 FAQPage JSON-LD도 함께 선언해 주세요.',
     acceptanceCriteria: [
       {
         code: "JSONLD-01",
@@ -141,8 +141,13 @@ const templates: Record<string, WorkOrderTemplate> = {
       },
       {
         code: "JSONLD-04",
-        label: "이름·URL 등 구조화 데이터가 실제 화면 정보와 일치한다.",
+        label: "이름·URL·설명 등 구조화 데이터가 실제 화면 정보와 일치한다.",
         required: true,
+      },
+      {
+        code: "JSONLD-05",
+        label: "FAQPage를 추가한 경우 실제 화면 FAQ와 질문·답변이 일치한다.",
+        required: false,
       },
     ],
     isRequired: true,
@@ -213,9 +218,11 @@ export function buildRenderedImprovementWorkOrderTemplate(
       `무슨 뜻인가요: ${plan.meaning}`,
       `무엇을 바꾸나요: ${plan.change}`,
     ].join("\n\n"),
-    developerMessage: plan.developerInstructions
-      .map((instruction) => `- ${instruction}`)
-      .join("\n"),
+    developerMessage: [
+      "- 점수만 올리기 위한 숨김 텍스트가 아니라, 실제 사용자 화면과 같은 의미의 콘텐츠를 초기 HTML과 구조화 데이터에 반영해 주세요.",
+      "- AI 검색 노출 보장이 아니라 AI가 서비스를 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.",
+      ...plan.developerInstructions.map((instruction) => `- ${instruction}`),
+    ].join("\n"),
     acceptanceCriteria: plan.acceptanceCriteria.map(
       (label, index) => ({
         code: `${prefix}-${String(index + 1).padStart(2, "0")}`,
