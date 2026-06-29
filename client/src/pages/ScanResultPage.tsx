@@ -603,7 +603,7 @@ export function ScanResultPage() {
 
     if (!result || selectedCount === 0) {
       setWorkOrderError(
-        "작업지시서에 포함할 문제나 개선안을 1개 이상 선택해 주세요.",
+        "상세 산출물 이용을 위해 결제 기능 연결이 필요합니다.",
       );
       return;
     }
@@ -719,52 +719,16 @@ export function ScanResultPage() {
             <p className="eyebrow">SCAN RESULT</p>
             <h1>{result.site.name} 간편진단 결과</h1>
             <p>
-              공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로
-              점수를 계산하고, JavaScript 렌더링 결과는 AI 수집
-              개선안을 만드는 데 활용합니다.
+              공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 QUICK 점수를 계산합니다.
+              JavaScript 렌더링 결과는 점수에 직접 반영하지 않고 AI 수집 개선안과
+              렌더링 비교에 활용하며, 모바일·PC 별도 비교·업종별 기준정보·질문
+              정답률은 정밀진단 단계에서 추가됩니다.
             </p>
           </div>
           <Link className="scan-result-back" to={`/${locale}/sites`}>
             사이트 관리로
           </Link>
         </header>
-
-        <div className="scan-result-actions">
-            <button
-              className="work-order-create-button"
-              type="button"
-              onClick={handleCreateWorkOrder}
-              disabled={
-                creatingWorkOrder ||
-                selectedWorkOrderItemCount === 0
-              }
-            >
-              {creatingWorkOrder
-                ? "작업지시서 1건 생성 중..."
-                : selectedWorkOrderItemCount > 0
-                  ? `선택한 ${selectedWorkOrderItemCount}개 항목으로 작업지시서 1건 만들기`
-                  : "작업지시서로 만들 항목을 선택하세요"}
-            </button>
-            <Link
-              className="work-order-list-link"
-              to={`/${locale}/work-orders`}
-            >
-              작업지시서 목록
-            </Link>
-            <a
-              className="scan-report-link"
-              href={scanResultPdfUrl(result.scan.id)}
-            >
-              PDF 보고서 저장
-            </a>
-        </div>
-
-        <div className="scan-result-scope" role="note">
-          현재 점수는 QUICK 초기 HTML 기준 25개 규칙으로 계산합니다.
-          JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고
-          렌더링 비교 총평과 개선 제안에 활용하며, 모바일·PC 별도 비교·업종별
-          기준정보·질문 정답률은 정밀진단 단계에서 추가됩니다.
-        </div>
 
         <section className="surface scan-score-hero">
           <div className="scan-score-main">
@@ -1053,21 +1017,6 @@ export function ScanResultPage() {
                         >
                           <div className="scan-rendered-improvement-header">
                             <h4>{plan.title}</h4>
-                            <label className="scan-rendered-improvement-select">
-                              <input
-                                type="checkbox"
-                                checked={selectedRenderedImprovementCodes.includes(
-                                  plan.code,
-                                )}
-                                onChange={(event) =>
-                                  toggleRenderedImprovement(
-                                    plan.code,
-                                    event.target.checked,
-                                  )
-                                }
-                              />
-                              <span>작업지시서에 포함</span>
-                            </label>
                           </div>
 
                           <div className="scan-rendered-explanation">
@@ -1102,9 +1051,7 @@ export function ScanResultPage() {
                             <section>
                               <h5>다음 단계</h5>
                               <p>
-                                선택한 개선안을 작업지시서에 포함하면
-                                개발자 전달 문구, 완료 판정 기준, 회귀 방지
-                                기준을 확인할 수 있습니다.
+                                상세 실행 기준은 유료 작업지시서에서 확인할 수 있습니다.
                               </p>
                             </section>
                           </div>
@@ -1145,18 +1092,12 @@ export function ScanResultPage() {
         <section className="surface scan-issues-section">
           <div className="scan-section-heading">
             <div>
-              <h2>주요 문제</h2>
+              <h2>상세보고서 예시</h2>
               <p>
-                배점과 중요도를 기준으로 먼저 확인할 항목입니다.
+                상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 3개만 미리 보여드립니다.
               </p>
             </div>
-            {scoreSummary ? (
-              <span>
-                예상 개선 범위 +{scoreSummary.expectedImprovementMin}~
-                {scoreSummary.expectedImprovementMax}점
-              </span>
-            ) : null}
-          </div>
+</div>
 
           <div
             className="scan-finding-guide"
@@ -1190,7 +1131,7 @@ export function ScanResultPage() {
 
           {result.primaryIssues.length > 0 ? (
             <div className="scan-issue-list">
-              {result.primaryIssues.map((finding) => (
+              {result.primaryIssues.slice(0, 3).map((finding) => (
                 <FindingCard
                   finding={finding}
                   key={finding.id}
@@ -1207,22 +1148,6 @@ export function ScanResultPage() {
             </p>
           )}
 
-          <p className="scan-improvement-disclaimer">
-            예상 개선 범위는 현재 규칙 배점 기준이며 실제 점수 상승을
-            보장하지 않습니다. 재검사 시 동일 규칙 버전과 조건으로
-            확인합니다.
-          </p>
-
-          <div className="work-order-selection" role="note">
-            <strong>작업지시서는 선택 기능입니다</strong>
-            <p>
-              PDF 보고서 저장과는 별개입니다. 사이트 수정을 맡기거나
-              진행 상황을 관리할 때 주요 문제와 AI 수집 개선안을
-              선택해 작업지시서 1건으로 만들 수 있습니다. 현재{" "}
-              {selectedWorkOrderItemCount}개 항목이 선택되어 있습니다.
-            </p>
-          </div>
-
           {workOrderError ? (
             <p className="work-order-message work-order-error" role="alert">
               {workOrderError}
@@ -1234,33 +1159,39 @@ export function ScanResultPage() {
         <section className="surface scan-page-section">
           <div className="scan-section-heading">
             <div>
-              <h2>상세 보고서와 작업지시서 안내</h2>
+              <h2>상세 보고서와 작업지시서</h2>
               <p>
-                간편진단 결과 화면은 핵심 점수와 주요 문제 예시만
-                제공합니다. 전체 진단 근거와 실행 문서는 별도 산출물로
+                간편진단 결과 화면은 핵심 점수와 주요 문제 예시만 제공합니다.
+                결제 후에는 상세 진단 PDF 보고서와 수정 작업지시서를 확인하고
+                저장할 수 있습니다.
+              </p>
+            </div>
+          </div>
+
+          <div className="scan-paid-products-grid">
+            <div className="work-order-selection scan-paid-product-card" role="note">
+              <strong>상세 진단 PDF 보고서</strong>
+              <p>
+                전체 진단 항목, 수집 페이지의 측정 증거, 초기 HTML과
+                JavaScript 렌더링 비교의 상세 해석, AI 답변을 위한 추가
+                콘텐츠 제안이 포함됩니다.
+              </p>
+            </div>
+
+            <div className="work-order-selection scan-paid-product-card" role="note">
+              <strong>수정 작업지시서</strong>
+              <p>
+                작업 우선순위, 개발자 전달 문구, 완료 판정 기준,
+                회귀 방지 기준, 자동검수 기준을 정리한 실행용 문서를
                 제공합니다.
               </p>
             </div>
-            <span>유료 산출물</span>
           </div>
 
-          <div className="work-order-selection" role="note">
-            <strong>상세 진단 PDF 보고서에 포함되는 내용</strong>
-            <p>
-              결제 후 저장할 수 있는 상세 PDF 보고서에는 전체 진단 항목,
-              수집 페이지의 측정 증거, 초기 HTML과 JavaScript 렌더링
-              비교의 상세 해석, AI 답변을 위한 추가 콘텐츠 제안이
-              포함됩니다.
-            </p>
-          </div>
-
-          <div className="work-order-selection" role="note">
-            <strong>수정 작업지시서에 포함되는 내용</strong>
-            <p>
-              작업지시서에는 개발자가 바로 실행할 수 있도록 작업 우선순위,
-              개발자 전달 문구, 완료 판정 기준, 회귀 방지 기준,
-              자동검수 기준을 정리해 제공합니다.
-            </p>
+          <div className="scan-paywall-button-wrap">
+            <button type="button" className="scan-paywall-button">
+              결제하고 상세 보고서·작업지시서 이용하기
+            </button>
           </div>
         </section>
 
@@ -1325,19 +1256,6 @@ function FindingCard({
         </div>
       </div>
 
-      {selectable ? (
-        <label className="work-order-checkbox">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={(event) =>
-              onToggle?.(finding.id, event.target.checked)
-            }
-          />
-          작업지시서에 포함
-        </label>
-      ) : null}
-
       <p>{finding.description}</p>
 
       {finding.recommendation ? (
@@ -1347,10 +1265,10 @@ function FindingCard({
         </div>
       ) : null}
 
-      <details>
-        <summary>검사 증거 보기</summary>
+      <div className="scan-evidence-inline">
+        <strong>검사 증거</strong>
         <pre>{evidenceText(finding.evidence)}</pre>
-      </details>
+      </div>
     </article>
   );
 }

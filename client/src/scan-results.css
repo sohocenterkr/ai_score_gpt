@@ -1125,3 +1125,46 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* quick scan paid preview */
+.scan-paid-products-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.scan-paid-product-card {
+  min-height: 100%;
+}
+
+.scan-paywall-button-wrap {
+  margin-top: 20px;
+}
+
+.scan-paywall-button {
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  padding: 16px 18px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scan-evidence-inline {
+  margin-top: 12px;
+}
+
+.scan-evidence-inline > strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+@media (min-width: 1024px) {
+  .scan-paid-products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
