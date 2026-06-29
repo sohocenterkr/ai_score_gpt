@@ -433,7 +433,7 @@ export function SitesPage() {
                               <dd>{site.siteType ?? "미입력"}</dd>
                             </div>
                             <div>
-                              <dt>지역</dt>
+                              <dt>지역/상권</dt>
                               <dd>{site.region ?? "미입력"}</dd>
                             </div>
                             <div>
@@ -580,7 +580,7 @@ function SiteFields({ prefix, form, onChange }: SiteFieldsProps) {
 
       <div className="site-field-row">
         <label htmlFor={`${prefix}-country`}>
-          국가
+          대상 국가/시장
           <input
             id={`${prefix}-country`}
             name="country"
@@ -595,7 +595,7 @@ function SiteFields({ prefix, form, onChange }: SiteFieldsProps) {
         </label>
 
         <label htmlFor={`${prefix}-locale`}>
-          기본 언어
+          검사 기본 언어
           <input
             id={`${prefix}-locale`}
             name="primaryLocale"
@@ -610,13 +610,13 @@ function SiteFields({ prefix, form, onChange }: SiteFieldsProps) {
       </div>
 
       <label htmlFor={`${prefix}-region`}>
-        지역
+        지역/상권(선택)
         <input
           id={`${prefix}-region`}
           name="region"
           value={form.region}
           onChange={(event) => onChange("region", event.target.value)}
-          placeholder="예: 서울, 경기도"
+          placeholder="예: 서울, 강남구, 역삼동 (다중 입력가능)"
         />
       </label>
     </div>
