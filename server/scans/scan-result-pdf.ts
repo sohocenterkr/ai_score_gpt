@@ -866,6 +866,22 @@ export function buildRenderedDomImprovementPlans(
   return plans;
 }
 
+function publicRenderedPlanChange(
+  code: string,
+  fallback: string,
+): string {
+  switch (code) {
+    case "RENDERED-ADDED-CONTENT":
+      return "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.";
+    case "RENDERED-INCONSISTENT-INFORMATION":
+      return "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.";
+    case "INITIAL-HTML-MISSING-CORE":
+      return "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.";
+    default:
+      return fallback;
+  }
+}
+
 function comparisonMetricText(
   label: string,
   metric: {
@@ -1298,14 +1314,10 @@ function writeContentReadiness(
         `AI가 답하기 어려울 수 있는 질문: ${topic.questions.join(
           " / ",
         )}`,
-        `추가 권장 섹션: ${topic.suggestedSections.join(
+        `개선 방향: ${topic.suggestedSections.join(
           " · ",
-        )}`,
-        `사이트 운영자: ${topic.contentWriterInstruction}`,
-        `개발자 참고: ${topic.developerInstruction}`,
-        `보완 체크포인트: ${topic.acceptanceCriteria.join(
-          " / ",
-        )}`,
+        )} 같은 콘텐츠 보강이 필요합니다.`,
+        "상세 반영 문구, 개발자 전달 내용, 완료 판정 기준은 별도 수정 작업지시서에서 제공합니다.",
       ].join("\n\n"),
       {
         background: COLORS.white,
@@ -1443,20 +1455,18 @@ function writeRenderedDomComparison(
           [
             `현재 어떤 상태인가요?\n${plan.currentState}`,
             `무슨 뜻인가요?\n${plan.meaning}`,
-            `무엇을 바꾸나요?\n${plan.change}`,
-            `개발자 작업 지시\n${plan.developerInstructions
-              .map((item) => `- ${item}`)
-              .join("\n")}`,
-            `완료 확인 기준\n${plan.acceptanceCriteria
-              .map((item) => `- ${item}`)
-              .join("\n")}`,
+            `개선 방향 요약\n${publicRenderedPlanChange(
+              plan.code,
+              plan.change,
+            )}`,
+            "상세 개발자 작업 지시와 완료 확인 기준은 별도 수정 작업지시서에서 제공합니다.",
           ].join("\n\n"),
           {
             background: COLORS.primarySoft,
             border: "#C7D2FE",
             accent: COLORS.primary,
             fontSize: 8.5,
-            maxCharacters: 6_000,
+            maxCharacters: 2_400,
           },
         );
       }

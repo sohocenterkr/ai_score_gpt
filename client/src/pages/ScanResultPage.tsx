@@ -487,6 +487,22 @@ function buildRenderedImprovementPlans(
   return plans;
 }
 
+function publicRenderedPlanChange(
+  code: string,
+  fallback: string,
+): string {
+  switch (code) {
+    case "RENDERED-ADDED-CONTENT":
+      return "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.";
+    case "RENDERED-INCONSISTENT-INFORMATION":
+      return "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.";
+    case "INITIAL-HTML-MISSING-CORE":
+      return "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.";
+    default:
+      return fallback;
+  }
+}
+
 function metricValue(
   value: number | null,
   suffix: string,
@@ -1064,35 +1080,32 @@ export function ScanResultPage() {
                               <p>{plan.meaning}</p>
                             </section>
                             <section>
-                              <strong>무엇을 바꾸나요?</strong>
-                              <p>{plan.change}</p>
+                              <strong>개선 방향 요약</strong>
+                              <p>
+                                {publicRenderedPlanChange(
+                                  plan.code,
+                                  plan.change,
+                                )}
+                              </p>
                             </section>
                           </div>
 
                           <div className="scan-rendered-action-grid">
                             <section>
-                              <h5>개발자 작업 지시</h5>
-                              <ul>
-                                {plan.developerInstructions.map(
-                                  (instruction) => (
-                                    <li key={instruction}>
-                                      {instruction}
-                                    </li>
-                                  ),
-                                )}
-                              </ul>
+                              <h5>진단 보고서 제공 범위</h5>
+                              <p>
+                                이 보고서는 현재 상태, 영향, 개선 방향만
+                                요약합니다. 세부 구현 순서와 완료 기준은
+                                작업지시서에서 제공합니다.
+                              </p>
                             </section>
                             <section>
-                              <h5>완료 확인 기준</h5>
-                              <ul>
-                                {plan.acceptanceCriteria.map(
-                                  (criterion) => (
-                                    <li key={criterion}>
-                                      {criterion}
-                                    </li>
-                                  ),
-                                )}
-                              </ul>
+                              <h5>다음 단계</h5>
+                              <p>
+                                선택한 개선안을 작업지시서에 포함하면
+                                개발자 전달 문구, 완료 판정 기준, 회귀 방지
+                                기준을 확인할 수 있습니다.
+                              </p>
                             </section>
                           </div>
                         </article>
@@ -1367,17 +1380,16 @@ export function ScanResultPage() {
                     </div>
                     <div>
                       <strong>개발자 참고</strong>
-                      <p>{topic.developerInstruction}</p>
+                      <p>상세 개발 반영 방법은 수정 작업지시서에서 제공합니다.</p>
                     </div>
                   </div>
 
                   <details>
                     <summary>보완 체크포인트</summary>
-                    <ul>
-                      {topic.acceptanceCriteria.map((criterion) => (
-                        <li key={criterion}>{criterion}</li>
-                      ))}
-                    </ul>
+                    <p>
+                        상세 보완 체크포인트와 완료 기준은 수정
+                        작업지시서에서 제공합니다.
+                      </p>
                   </details>
                 </article>
               ))}
