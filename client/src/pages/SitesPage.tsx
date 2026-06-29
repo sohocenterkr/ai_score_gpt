@@ -367,6 +367,9 @@ export function SitesPage() {
                   const scanPending =
                     site.latestScan?.status === "QUEUED" ||
                     site.latestScan?.status === "RUNNING";
+                  const scanCompleted =
+                    site.latestScan?.status === "COMPLETED" ||
+                    site.latestScan?.status === "PARTIAL";
                   const working = workingSiteId === site.id;
 
                   return (
@@ -437,15 +440,15 @@ export function SitesPage() {
                               <dd>{site.region ?? "미입력"}</dd>
                             </div>
                             <div>
-                              <dt>최종 URL</dt>
+                              <dt>최종 확인 URL</dt>
                               <dd>
                                 {site.finalUrl ??
-                                  "첫 실제 검사에서 확인"}
+                                  "간편검사 후 자동 확인"}
                               </dd>
                             </div>
                             <div>
-                              <dt>최근 수정(KST)</dt>
-                              <dd>{formatKST(site.updatedAt)}</dd>
+                              <dt>등록일(KST)</dt>
+                              <dd>{formatKST(site.createdAt)}</dd>
                             </div>
                           </dl>
 
@@ -469,23 +472,19 @@ export function SitesPage() {
                           </div>
 
                           <div className="site-card-actions">
-                            <Link
-                              className="site-secondary-button"
-                              to={`/${locale}/sites/${site.id}/deep-diagnostic`}
-                            >
-                              정밀진단 준비
-                            </Link>
                             <button
                               className="site-primary-button"
                               type="button"
                               onClick={() => void handleQueueScan(site)}
-                              disabled={working || scanPending}
+                              disabled={working || scanPending || scanCompleted}
                             >
                               {scanPending
                                 ? "검사 대기 중"
-                                : working
-                                  ? "처리 중..."
-                                  : "간편검사 작업 만들기"}
+                                : scanCompleted
+                                  ? "간편검사 완료"
+                                  : working
+                                    ? "처리 중..."
+                                    : "간편검사 시작"}
                             </button>
                             {site.latestScan &&
                             (site.latestScan.status === "COMPLETED" ||
