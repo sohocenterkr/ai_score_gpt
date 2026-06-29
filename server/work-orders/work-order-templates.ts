@@ -31,6 +31,146 @@ interface RenderedImprovementTemplateInput {
 }
 
 const templates: Record<string, WorkOrderTemplate> = {
+  "STRUCT-H1-001": {
+    requirement:
+      "P0 초기 HTML SSR/SSG 작업 안에서 페이지 대표 H1을 정확히 1개 추가합니다.",
+    developerMessage:
+      "이 항목만 따로 고치지 말고 초기 HTML SSR/SSG·본문·링크 보강 작업과 같은 커밋에서 처리해 주세요. 서버가 처음 반환하는 HTML에 페이지 핵심 주제를 설명하는 H1을 정확히 1개 출력하고, JavaScript 렌더링 후에도 같은 핵심 주제가 유지되도록 확인해 주세요.",
+    acceptanceCriteria: [
+      {
+        code: "H1-01",
+        label: "초기 HTML에 H1이 정확히 1개 존재한다.",
+        required: true,
+      },
+      {
+        code: "H1-02",
+        label: "H1이 페이지의 실제 서비스 주제와 일치한다.",
+        required: true,
+      },
+      {
+        code: "H1-03",
+        label: "렌더링 후 DOM에서도 대표 H1이 중복되지 않는다.",
+        required: true,
+      },
+      {
+        code: "H1-04",
+        label: "검사 대상 운영 URL에서 자동검수 가능하며 기존 정상 항목을 깨뜨리지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-HEADINGS-001": {
+    requirement:
+      "P0 초기 HTML SSR/SSG 작업 안에서 H1·H2 제목 계층을 함께 구성합니다.",
+    developerMessage:
+      "H1만 따로 추가하지 말고, 서비스 소개·이용 대상·이용 절차·요금/보안·FAQ 같은 주요 섹션을 H2로 나누어 초기 HTML에서 제목 계층이 드러나게 해 주세요. 제목 구조는 사용자 화면의 실제 섹션 구조와 일치해야 합니다.",
+    acceptanceCriteria: [
+      {
+        code: "HEADINGS-01",
+        label: "초기 HTML에서 H1과 H2 제목 계층을 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "HEADINGS-02",
+        label: "H2 섹션이 실제 사용자 화면의 주요 콘텐츠 섹션과 일치한다.",
+        required: true,
+      },
+      {
+        code: "HEADINGS-03",
+        label: "제목 계층을 추가하면서 기존 디자인과 주요 기능이 깨지지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-INITIAL-001": {
+    requirement:
+      "랜딩 페이지를 SSR, SSG 또는 사전 렌더링 방식으로 보강하여 초기 HTML 본문을 제공합니다.",
+    developerMessage:
+      "현재 문제의 핵심은 CSR로 인해 초기 HTML 본문이 비어 있는 것입니다. React 기반이면 Next.js SSR/SSG, react-snap류 사전 렌더링, Prerender.io 또는 자체 사전 렌더링 미들웨어 등 현재 구조에 맞는 방식을 검토해 랜딩 페이지의 최초 HTML에 실제 본문을 포함해 주세요. 단순 글자 수 채우기가 아니라 서비스 정의, 대상 고객, 대표 활용 사례, 이용 절차, 요금·데이터 처리 요약을 실제 화면 콘텐츠로 제공해야 합니다.",
+    acceptanceCriteria: [
+      {
+        code: "INITIAL-TEXT-01",
+        label: "초기 HTML 본문이 최소 200자 이상이다.",
+        required: true,
+      },
+      {
+        code: "INITIAL-TEXT-02",
+        label: "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하거나 핵심 정보 격차가 허용 범위다.",
+        required: true,
+      },
+      {
+        code: "INITIAL-TEXT-03",
+        label: "서비스 정의, 대상 고객, 대표 활용 사례, 이용 절차, 요금·데이터 처리 요약이 초기 HTML에서 확인된다.",
+        required: true,
+      },
+      {
+        code: "INITIAL-TEXT-04",
+        label: "검색 노출용 숨김 텍스트가 아니라 실제 사용자 화면과 같은 의미의 콘텐츠다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-ANSWERABILITY-001": {
+    requirement:
+      "AI가 Form Assign의 목적·대상·이용 절차·요금·데이터 처리 질문에 답할 수 있도록 초기 HTML 콘텐츠를 보강합니다.",
+    developerMessage:
+      "이 항목은 CONTENT-INITIAL-001과 같은 P0 작업 묶음에서 처리해 주세요. 초기 HTML에 최소 800자 수준을 내부 목표로 삼되, 글자 수 자체보다 AI가 '무엇을 제공하나', '누가 쓰나', '어떻게 시작하나', '무료/유료 범위는 무엇인가', '입력 자료는 어떻게 처리하나'에 답할 수 있는 실제 정보를 넣는 것이 중요합니다.",
+    acceptanceCriteria: [
+      {
+        code: "ANSWER-01",
+        label: "초기 HTML만으로 서비스 정의와 핵심 가치를 설명할 수 있다.",
+        required: true,
+      },
+      {
+        code: "ANSWER-02",
+        label: "이용 대상과 최소 2개의 대표 활용 사례가 확인된다.",
+        required: true,
+      },
+      {
+        code: "ANSWER-03",
+        label: "가입부터 생성, 배포, 제출 확인, 내보내기 등 3~5단계 이용 절차를 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "ANSWER-04",
+        label: "요금·데이터 처리·운영 주체 또는 문의 경로가 확인된다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "STRUCT-LINKS-001": {
+    requirement:
+      "주요 내부 페이지를 JavaScript 클릭이 아닌 표준 a 링크로 초기 HTML에 제공합니다.",
+    developerMessage:
+      "P0 초기 HTML 보강 작업과 함께 요금제, 기능 소개, 이용약관, 개인정보처리방침, 도움말/문의 등 주요 페이지 링크를 href 속성이 있는 표준 a 태그로 초기 HTML에 출력해 주세요. 링크 텍스트는 '자세히 보기'보다 목적지를 설명하는 문구를 사용해 AI와 크롤러가 이동 경로를 이해할 수 있게 해 주세요.",
+    acceptanceCriteria: [
+      {
+        code: "LINKS-01",
+        label: "초기 HTML에서 주요 내부 링크를 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "LINKS-02",
+        label: "주요 내부 링크가 href 속성이 있는 표준 a 태그다.",
+        required: true,
+      },
+      {
+        code: "LINKS-03",
+        label: "초기 HTML 내부 링크 수가 렌더링 DOM 대비 75% 이상이거나 차이가 2개 이하이다.",
+        required: true,
+      },
+      {
+        code: "LINKS-04",
+        label: "링크 텍스트가 목적지 내용을 설명한다.",
+        required: false,
+      },
+    ],
+    isRequired: true,
+  },
   "ACCESS-SITEMAP-001": {
     requirement:
       "robots.txt에 실제 sitemap URL을 선언하고, 해당 주소가 인증 없이 2xx XML 응답을 반환하도록 수정합니다.",

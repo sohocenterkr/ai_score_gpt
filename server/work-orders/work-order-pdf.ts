@@ -612,6 +612,134 @@ function writeCover(
   );
 }
 
+function writeExecutionPlanPage(
+  document: PDFKit.PDFDocument,
+  workOrder: PublicWorkOrder,
+): void {
+  const shouldWritePlan = workOrder.items.some((item) => {
+    const itemText = [
+      item.title,
+      item.requirement,
+      item.developerMessage,
+    ].join(" ");
+
+    return (
+      itemText.includes("초기 HTML") ||
+      itemText.includes("SSR") ||
+      itemText.includes("SSG") ||
+      itemText.includes("렌더링") ||
+      itemText.includes("H1") ||
+      itemText.includes("내부 링크")
+    );
+  });
+
+  if (!shouldWritePlan) {
+    return;
+  }
+
+  document.addPage();
+
+  writeSectionTitle(document, "실행용 작업 묶음");
+
+  setRegular(document, 8.6, COLORS.muted).text(
+    "자동검수 항목을 개발자가 실제로 처리하기 좋은 Epic 단위로 재구성했습니다.",
+    {
+      width: contentWidth(document),
+      lineGap: 2,
+    },
+  );
+
+  document.moveDown(0.5);
+
+  setRegular(document, 8.9, COLORS.text).text(
+    [
+      "아래 작업 묶음은 점수 항목을 숨기거나 제거하는 것이 아니라, 같은 원인에서 나온 항목을 한 번에 구현하도록 정리한 실행 가이드입니다.",
+      "자동검수와 점수 계산은 뒤쪽 상세 항목 기준으로 유지되며, 개발자는 먼저 P0·P1·P2 묶음 단위로 구현한 뒤 상세 완료 기준을 확인하면 됩니다.",
+    ].join("\n\n"),
+    {
+      width: contentWidth(document),
+      lineGap: 3,
+    },
+  );
+
+  document.moveDown(0.9);
+
+  const epics = [
+    {
+      priority: "P0",
+      title: "초기 HTML SSR/SSG 도입 — 본문·H1·내부 링크 보강",
+      owner: "프론트엔드 / 풀스택",
+      body: [
+        "랜딩 페이지의 최초 HTML에 서비스 정의, 대상 고객, 대표 활용 사례, 3~5단계 이용 절차, 요금·데이터 처리 요약을 포함합니다.",
+        "H1은 정확히 1개, H2는 서비스 소개·이용 대상·이용 절차·요금/보안·FAQ 등 주요 섹션으로 구성합니다.",
+        "요금제, 기능 소개, 이용약관, 개인정보처리방침, 도움말/문의 링크는 href가 있는 표준 a 태그로 제공합니다.",
+        "React 기반이면 Next.js SSR/SSG, react-snap류 사전 렌더링, Prerender.io 또는 자체 사전 렌더링 방식을 현재 구조에 맞게 검토합니다.",
+        "완료 기준: 초기 HTML 본문 200자 이상, 내부 목표 800자, 렌더링 DOM 대비 본문·링크 75% 이상 또는 차이 2개 이하, 기존 UI/기능 회귀 없음.",
+      ],
+    },
+    {
+      priority: "P1",
+      title: "초기 HTML ↔ 렌더링 DOM 정보 일치성 점검",
+      owner: "프론트엔드",
+      body: [
+        "초기 HTML과 JavaScript 렌더링 후 DOM의 title, meta description, H1, JSON-LD 값을 비교합니다.",
+        "클라이언트 코드가 올바른 초기값을 오래된 값이나 다른 값으로 덮어쓰지 않게 정리합니다.",
+        "요금, 보안, 개인정보, 지원 범위처럼 구매 검토에 영향을 주는 정보는 화면 본문·메타데이터·JSON-LD가 같은 의미를 전달해야 합니다.",
+        "완료 기준: 대표 H1 1개, 충돌 메타데이터 없음, 재검사에서 렌더링 전후 핵심정보 불일치 없음.",
+      ],
+    },
+    {
+      priority: "P2",
+      title: "FAQ 콘텐츠 및 FAQPage JSON-LD 추가",
+      owner: "콘텐츠 기획 + 프론트엔드",
+      body: [
+        "실제 화면에 보이는 핵심 FAQ 3~4개를 작성합니다.",
+        "무료/유료 범위, 데이터 처리 방식, 시작 방법, 지원 범위 등 실제 사용자가 묻는 질문을 우선합니다.",
+        "같은 질문·답변을 FAQPage JSON-LD로 선언하되, 화면 FAQ와 구조화 데이터가 항상 일치해야 합니다.",
+        "완료 기준: 화면 FAQ 존재, FAQPage JSON-LD 유효, 도움말·문의 링크가 초기 HTML에서 확인됨.",
+      ],
+    },
+  ];
+
+  epics.forEach((epic) => {
+    setBold(document, 9.3, COLORS.primaryDark).text(
+      `${epic.priority} · ${epic.title}`,
+      {
+        width: contentWidth(document),
+      },
+    );
+
+    setRegular(document, 8.2, COLORS.muted).text(
+      `권장 담당: ${epic.owner}`,
+      {
+        width: contentWidth(document),
+      },
+    );
+
+    setRegular(document, 8.7, COLORS.text).text(
+      epic.body.map((line) => `• ${line}`).join("\n"),
+      {
+        width: contentWidth(document),
+        lineGap: 2,
+      },
+    );
+
+    document.moveDown(0.7);
+  });
+
+  writeTextBox(
+    document,
+    "검증 원칙",
+    "P0 배포 후 같은 운영 URL로 Site AI Score 재검사를 실행하고, 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
+    {
+      background: COLORS.primarySoft,
+      border: "#C7D2FE",
+      accent: COLORS.primary,
+    },
+  );
+}
+
+
 function writeItemPage(
   document: PDFKit.PDFDocument,
   workOrder: PublicWorkOrder,
@@ -836,6 +964,8 @@ export async function renderWorkOrderPdf(
   });
 
   writeCover(document, workOrder);
+
+  writeExecutionPlanPage(document, workOrder);
 
   workOrder.items.forEach((item, index) => {
     writeItemPage(document, workOrder, item, index);
