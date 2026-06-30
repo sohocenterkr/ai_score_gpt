@@ -28,7 +28,7 @@ export function HomePage() {
           </p>
           <div className="hero-actions">
             <Link className="primary-action" to={`/${locale}/sites`}>
-              사이트 대시보드에서 진단 시작
+              사이트 진단
             </Link>
           </div>
         </div>

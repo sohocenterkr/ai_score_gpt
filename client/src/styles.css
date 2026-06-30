@@ -119,7 +119,7 @@ main {
 
 .hero-content,
 .section-content {
-  padding: 56px var(--page-padding);
+  padding: 56px 0;
 }
 
 .hero-content {
@@ -588,7 +588,7 @@ h3 {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-top: 30px;
+  margin-top: 22px;
 }
 
 .hero-actions .primary-action {
