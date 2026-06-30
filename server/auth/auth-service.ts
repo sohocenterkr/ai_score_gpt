@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import * as argon2 from "argon2";
 import { Prisma, type User } from "@prisma/client";
 import { env } from "../config/env";
@@ -125,6 +125,124 @@ async function verifyPassword(
   }
 }
 
+function safeEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+async function verifySuperAdminPassword(password: string): Promise<boolean> {
+  if (env.SUPER_ADMIN_PASSWORD_HASH) {
+    return verifyPassword(env.SUPER_ADMIN_PASSWORD_HASH, password);
+  }
+
+  if (env.SUPER_ADMIN_PASSWORD) {
+    return safeEqual(env.SUPER_ADMIN_PASSWORD, password);
+  }
+
+  return false;
+}
+
+async function loginConfiguredSuperAdmin(
+  email: string,
+  password: string,
+): Promise<AuthResult | null> {
+  const configuredEmail = env.SUPER_ADMIN_EMAIL
+    ? normalizeEmail(env.SUPER_ADMIN_EMAIL)
+    : null;
+
+  if (!configuredEmail || email !== configuredEmail) {
+    return null;
+  }
+
+  if (!env.SUPER_ADMIN_PASSWORD && !env.SUPER_ADMIN_PASSWORD_HASH) {
+    throw new AuthError(
+      "AUTH_CONFIGURATION_ERROR",
+      "수퍼관리자 로그인 설정이 완료되지 않았습니다.",
+      503,
+    );
+  }
+
+  const passwordMatches = await verifySuperAdminPassword(password);
+
+  if (!passwordMatches) {
+    throw new AuthError(
+      "AUTH_INVALID_CREDENTIALS",
+      "이메일 또는 비밀번호가 올바르지 않습니다.",
+      401,
+    );
+  }
+
+  const prisma = getDatabase();
+  const now = new Date();
+  const session = createSessionValues();
+  const passwordHash = await hashPassword(password);
+
+  const user = await prisma.$transaction(async (transaction) => {
+    const existingUser = await transaction.user.findUnique({
+      where: { email },
+    });
+
+    const superAdminData = {
+      name: "수퍼관리자",
+      passwordHash,
+      role: "SUPER_ADMIN" as const,
+      status: "ACTIVE" as const,
+      emailVerifiedAt: now,
+      loginCount: { increment: 1 },
+      lastLoginAt: now,
+    };
+
+    const nextUser = existingUser
+      ? await transaction.user.update({
+          where: { id: existingUser.id },
+          data: superAdminData,
+        })
+      : await transaction.user.create({
+          data: {
+            ...(env.SUPER_ADMIN_ID ? { id: env.SUPER_ADMIN_ID } : {}),
+            email,
+            name: "수퍼관리자",
+            passwordHash,
+            role: "SUPER_ADMIN",
+            status: "ACTIVE",
+            emailVerifiedAt: now,
+            termsAcceptedAt: now,
+            privacyAcceptedAt: now,
+            loginCount: 1,
+            lastLoginAt: now,
+            authAccounts: {
+              create: {
+                provider: "SECRET_ADMIN",
+                providerAccountId: email,
+              },
+            },
+          },
+        });
+
+    await transaction.session.create({
+      data: {
+        userId: nextUser.id,
+        sessionTokenHash: session.tokenHash,
+        expiresAt: session.expiresAt,
+      },
+    });
+
+    return nextUser;
+  });
+
+  return {
+    user: toPublicUser(user),
+    token: session.token,
+    expiresAt: session.expiresAt,
+  };
+}
+
 export function createPrismaAuthService(): AuthService {
   return {
     async signup(input) {
@@ -188,8 +306,17 @@ export function createPrismaAuthService(): AuthService {
     },
 
     async login(input) {
-      const prisma = getDatabase();
       const email = normalizeEmail(input.email);
+      const superAdminResult = await loginConfiguredSuperAdmin(
+        email,
+        input.password,
+      );
+
+      if (superAdminResult) {
+        return superAdminResult;
+      }
+
+      const prisma = getDatabase();
       const user = await prisma.user.findUnique({ where: { email } });
 
       if (!user?.passwordHash) {

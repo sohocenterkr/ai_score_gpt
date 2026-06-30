@@ -46,6 +46,10 @@ const environmentSchema = z.object({
     emptyStringToUndefined,
     z.string().min(32).optional(),
   ),
+  SUPER_ADMIN_ID: optionalString,
+  SUPER_ADMIN_EMAIL: optionalEmail,
+  SUPER_ADMIN_PASSWORD: optionalString,
+  SUPER_ADMIN_PASSWORD_HASH: optionalString,
   RESEND_API_KEY: optionalString,
   RESEND_FROM_EMAIL: optionalEmail,
   RESEND_FROM_NAME: z.preprocess(

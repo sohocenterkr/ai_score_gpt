@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import {
   getScanResultRequest,
   scanResultPdfUrl,
@@ -525,6 +526,10 @@ function metricDelta(
 }
 
 export function ScanResultPage() {
+  const { state: authState } = useAuth();
+  const isSuperAdmin =
+    authState.status === "authenticated" &&
+    authState.user.role === "SUPER_ADMIN";
   const {
     locale = "ko",
     siteId = "",
@@ -1189,9 +1194,45 @@ export function ScanResultPage() {
           </div>
 
           <div className="scan-paywall-button-wrap">
-            <button type="button" className="scan-paywall-button">
-              결제하고 상세 보고서·작업지시서 이용하기
-            </button>
+            {isSuperAdmin ? (
+              <div
+                className="scan-admin-actions"
+                role="group"
+                aria-label="수퍼관리자 산출물"
+              >
+                <a
+                  className="scan-paywall-button scan-admin-action-link"
+                  href={scanResultPdfUrl(result.scan.id)}
+                >
+                  상세 PDF 보고서 저장
+                </a>
+                <button
+                  type="button"
+                  className="scan-paywall-button scan-admin-action-button"
+                  onClick={handleCreateWorkOrder}
+                  disabled={
+                    creatingWorkOrder ||
+                    selectedWorkOrderItemCount === 0
+                  }
+                >
+                  {creatingWorkOrder
+                    ? "작업지시서 생성 중..."
+                    : selectedWorkOrderItemCount > 0
+                      ? "작업지시서 생성하기"
+                      : "작업지시서 대상 없음"}
+                </button>
+                <Link
+                  className="scan-admin-secondary-link"
+                  to={`/${locale}/work-orders`}
+                >
+                  작업지시서 목록
+                </Link>
+              </div>
+            ) : (
+              <button type="button" className="scan-paywall-button">
+                결제하고 상세 보고서·작업지시서 이용하기
+              </button>
+            )}
           </div>
         </section>
 
