@@ -236,7 +236,7 @@ export function WorkOrderPage() {
       );
       setWorkOrder(value);
       setMessage(
-        "수정된 공개 URL을 접수했습니다. 자동 검사를 시작합니다.",
+        "공개 URL을 접수했습니다. 검수를 시작합니다.",
       );
     } catch (error) {
       setErrorMessage(
@@ -315,8 +315,7 @@ export function WorkOrderPage() {
             <p className="eyebrow">WORK ORDER</p>
             <h1>{workOrder.site.name} 수정 작업지시서</h1>
             <p>
-              {workOrder.orderNumber} · v{workOrder.version} ·{" "}
-              {statusLabels[workOrder.status] ?? workOrder.status}
+              {workOrder.orderNumber} · v{workOrder.version}
             </p>
           </div>
           <Link className="work-order-back" to={`/${locale}/work-orders`}>
@@ -324,7 +323,7 @@ export function WorkOrderPage() {
           </Link>
         </header>
 
-        {message && !message.startsWith("수정된 공개 URL") ? (
+        {message && !message.startsWith("공개 URL") ? (
           <p className="work-order-message work-order-success" role="status">
             {message}
           </p>
@@ -438,11 +437,10 @@ export function WorkOrderPage() {
           <div className="work-order-verification-heading">
             <div>
               <p className="eyebrow">AUTOMATIC VERIFICATION</p>
-              <h2>수정된 공개 URL 자동검수</h2>
+              <h2>사이트 개선 후 검수진행</h2>
               <p>
-                개발자가 수정 사항을 배포한 뒤 공개 URL을 제출하면
-                원래 사이트 주소를 바꾸지 않고 별도의 검수 검사로
-                확인합니다.
+                개발자가 사이트를 수정한 후 사이트 주소를 바꾸지 않고
+                다시한번 검수를 진행합니다.
               </p>
             </div>
             {workOrder.status === "VERIFYING" ? (
@@ -467,7 +465,7 @@ export function WorkOrderPage() {
               }}
             >
               <label htmlFor="verification-url">
-                수정 사항이 배포된 공개 URL
+                공개 URL
               </label>
               <div>
                 <input
@@ -491,7 +489,7 @@ export function WorkOrderPage() {
                 >
                   {submittingVerification
                     ? "검수 요청 중..."
-                    : "수정 URL 제출 및 자동검수"}
+                    : "검수시작"}
                 </button>
               </div>
               <small>
@@ -511,7 +509,7 @@ export function WorkOrderPage() {
             </p>
           ) : null}
 
-          {message && message.startsWith("수정된 공개 URL") ? (
+          {message && message.startsWith("공개 URL") ? (
             <p className="work-order-message work-order-success" role="status">
               {message}
             </p>
@@ -521,11 +519,11 @@ export function WorkOrderPage() {
           workOrder.status !== "CANCELLED" ? (
             <div className="work-order-revision-panel" role="note">
               <div>
-                <strong>자동검수 후 후속 버전</strong>
+                <strong>사이트 수정 후 재검수 가능</strong>
                 <p>
-                  새 버전은 현재 작업지시서를 바로 대체하는 기능이 아닙니다.
-                  수정된 URL을 자동검수한 뒤 점수가 충분히 오르지 않았거나
-                  남은 문제가 있을 때 후속 작업지시서를 만들 때 사용합니다.
+                  재검수는 개선된 사이트를 검수한 뒤 점수가 충분히
+                  오르지 않았거나 남은 문제가 있을 때 후속 작업지시서를
+                  만들 때 사용합니다.
                 </p>
               </div>
               <button
@@ -539,8 +537,8 @@ export function WorkOrderPage() {
                 }
               >
                 {workOrder.verificationAttempts.length === 0
-                  ? "자동검수 후 후속 버전 만들기"
-                  : "검수 결과로 후속 버전 만들기"}
+                  ? "후속 작업지시서 발급"
+                  : "후속 작업지시서 발급"}
               </button>
             </div>
           ) : null}
