@@ -781,7 +781,7 @@ async function botFinding(
           ? "학습용 GPTBot은 robots.txt에서 차단되어 있습니다. 이 선택은 자동 감점하지 않습니다."
           : actualAccessible
             ? "학습용 GPTBot User-Agent 요청이 실제로 응답했습니다."
-            : "학습용 GPTBot User-Agent의 실제 응답을 확인하지 못했습니다.",
+            : "학습용 GPTBot User-Agent의 실제 응답을 확인하지 못했습니다. CDN·WAF·봇 방어 설정에 따라 일시적으로 달라질 수 있으며 점수에는 직접 반영하지 않습니다.",
       evidence: {
         kind: definition.kind,
         robotsDecision,
@@ -802,7 +802,7 @@ async function botFinding(
     return finding({
       ruleCode: definition.ruleCode,
       category: "AI 에이전트 사용 가능성",
-      severity: actualAccessible ? "INFO" : "HIGH",
+      severity: actualAccessible ? "INFO" : "MEDIUM",
       status: actualAccessible
         ? "PASS"
         : resource.response
@@ -811,7 +811,7 @@ async function botFinding(
       title: definition.label,
       description: actualAccessible
         ? "사용자 요청형 ChatGPT-User User-Agent가 실제 페이지에 접근했습니다."
-        : "사용자 요청형 ChatGPT-User User-Agent의 실제 접근을 확인하지 못했습니다.",
+        : "사용자 요청형 ChatGPT-User User-Agent의 실제 접근을 확인하지 못했습니다. CDN·WAF·봇 방어 설정에 따라 일시적으로 달라질 수 있으며 점수에는 직접 반영하지 않습니다.",
       evidence: {
         kind: definition.kind,
         robotsDecision,
@@ -828,7 +828,7 @@ async function botFinding(
       },
       recommendation: actualAccessible
         ? null
-        : "사용자 요청에 따른 페이지 확인이 필요하면 WAF·CDN·봇 방어 설정에서 ChatGPT-User의 실제 요청을 허용하세요.",
+        : "반복적으로 실패하면 사용자 요청형 AI 접근이 필요한 서비스인지 확인하고, 필요 시 WAF·CDN·봇 방어 설정을 점검하세요.",
     });
   }
 
@@ -839,7 +839,7 @@ async function botFinding(
   return finding({
     ruleCode: definition.ruleCode,
     category: "접근 및 수집 정책",
-    severity: passed ? "INFO" : "HIGH",
+    severity: passed ? "INFO" : blockedByPolicy ? "HIGH" : "MEDIUM",
     status: passed
       ? "PASS"
       : blockedByPolicy
@@ -852,7 +852,7 @@ async function botFinding(
       ? "robots.txt 정책과 실제 User-Agent 요청에서 접근 가능함을 확인했습니다."
       : blockedByPolicy
         ? "robots.txt 정책에서 해당 검색 봇의 접근을 차단합니다."
-        : "robots.txt는 차단하지 않지만 실제 검색 봇 User-Agent 요청이 정상 응답하지 않았습니다.",
+        : "robots.txt는 차단하지 않지만 실제 검색 봇 User-Agent 요청이 정상 응답하지 않았습니다. CDN·WAF·봇 방어 설정에 따라 일시적으로 달라질 수 있으며 점수에는 직접 반영하지 않습니다.",
     evidence: {
       kind: definition.kind,
       robotsDecision,
@@ -868,7 +868,9 @@ async function botFinding(
     },
     recommendation: passed
       ? null
-      : "AI 검색 노출이 필요하면 OAI-SearchBot을 robots.txt와 WAF·CDN 모두에서 허용하세요.",
+      : blockedByPolicy
+        ? "AI 검색 노출이 필요하면 robots.txt에서 OAI-SearchBot 접근을 허용하세요."
+        : "반복적으로 실패하면 AI 검색 봇 접근이 필요한 서비스인지 확인하고, 필요 시 WAF·CDN·봇 방어 설정을 점검하세요.",
   });
 }
 

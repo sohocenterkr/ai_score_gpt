@@ -80,13 +80,13 @@ describe("scan scoring", () => {
     indexability.status = "FAIL";
     const summary = calculateScore(findings);
 
-    expect(summary.rawScore).toBe(97);
+    expect(summary.rawScore).toBe(96);
     expect(summary.score).toBe(30);
     expect(summary.grade).toBe("E");
     expect(summary.cap).toBe(30);
   });
 
-  it("OAI 검색봇 전체 차단은 40점 상한을 적용한다", () => {
+  it("OAI 검색봇 실제 요청 실패는 점수 상한을 적용하지 않는다", () => {
     const findings = allFindings();
     const searchBot = findings.find(
       (finding) =>
@@ -100,9 +100,9 @@ describe("scan scoring", () => {
     searchBot.status = "FAIL";
     const summary = calculateScore(findings);
 
-    expect(summary.rawScore).toBe(96);
-    expect(summary.score).toBe(40);
-    expect(summary.grade).toBe("D");
-    expect(summary.cap).toBe(40);
+    expect(summary.rawScore).toBe(100);
+    expect(summary.score).toBe(100);
+    expect(summary.grade).toBe("A+");
+    expect(summary.cap).toBe(null);
   });
 });

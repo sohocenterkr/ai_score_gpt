@@ -3,7 +3,7 @@ import type {
   CollectedFindingStatus,
 } from "./scan-engine";
 
-export const CURRENT_RULES_VERSION = "2026.06-core-v2";
+export const CURRENT_RULES_VERSION = "2026.06-core-v3";
 
 export const SCORE_CATEGORIES = [
   "접근 및 수집 정책",
@@ -37,17 +37,17 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-ROBOTS-001",
     category: "접근 및 수집 정책",
-    weight: 2,
+    weight: 4,
   },
   {
     ruleCode: "ACCESS-OAI-SEARCHBOT-001",
     category: "접근 및 수집 정책",
-    weight: 4,
+    weight: 0,
   },
   {
     ruleCode: "ACCESS-SITEMAP-001",
     category: "접근 및 수집 정책",
-    weight: 3,
+    weight: 4,
   },
   {
     ruleCode: "CONTENT-HTML-001",
@@ -57,7 +57,7 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "CONTENT-INITIAL-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 8,
+    weight: 10,
   },
   {
     ruleCode: "STRUCT-H1-001",
@@ -107,7 +107,7 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "CONTENT-ANSWERABILITY-001",
     category: "콘텐츠 이해 및 답변 가능성",
-    weight: 8,
+    weight: 10,
   },
   {
     ruleCode: "CONTENT-HEADINGS-001",
@@ -122,12 +122,12 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-CHATGPT-USER-001",
     category: "AI 에이전트 사용 가능성",
-    weight: 4,
+    weight: 0,
   },
   {
     ruleCode: "ACCESS-INDEXABILITY-001",
     category: "AI 에이전트 사용 가능성",
-    weight: 3,
+    weight: 4,
   },
   {
     ruleCode: "STRUCT-LINKS-001",
@@ -210,13 +210,6 @@ function scoreCap(
     "FAIL"
   ) {
     caps.push(30);
-  }
-
-  if (
-    statusFor(findingsByCode, "ACCESS-OAI-SEARCHBOT-001") ===
-    "FAIL"
-  ) {
-    caps.push(40);
   }
 
   if (statusFor(findingsByCode, "CONTENT-HTML-001") !== "PASS") {
