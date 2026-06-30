@@ -293,9 +293,6 @@ export function SitesPage() {
               자동으로 차단됩니다.
             </p>
           </div>
-          <Link className="sites-back-link" to={`/${locale}/settings`}>
-            설정으로
-          </Link>
         </div>
 
         <div className="sites-notice" role="note">
