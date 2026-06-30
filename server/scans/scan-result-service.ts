@@ -66,6 +66,8 @@ export interface PublicScanResult {
     createdAt: string;
   };
   scoreSummary: ScoreSummary | null;
+  currentRulesVersion: string;
+  isOutdatedRulesVersion: boolean;
   contentReadiness?: ContentReadinessAssessment;
   understandingSummary: string;
   foundInformation: Array<{
@@ -349,9 +351,10 @@ export function createPrismaScanResultService(): ScanResultService {
         );
       }
 
+      const isOutdatedRulesVersion =
+        result.rulesVersion !== CURRENT_RULES_VERSION;
       const scoreSummary =
-        result.rulesVersion === CURRENT_RULES_VERSION &&
-        result.findings.length > 0
+        !isOutdatedRulesVersion && result.findings.length > 0
           ? calculateScore(result.findings)
           : null;
       const findings = result.findings.map(publicFinding);
@@ -393,6 +396,8 @@ export function createPrismaScanResultService(): ScanResultService {
           createdAt: result.createdAt.toISOString(),
         },
         scoreSummary,
+        currentRulesVersion: CURRENT_RULES_VERSION,
+        isOutdatedRulesVersion,
         contentReadiness: buildContentReadinessAssessment({
           siteName: result.site.name,
           siteType: result.site.siteType,

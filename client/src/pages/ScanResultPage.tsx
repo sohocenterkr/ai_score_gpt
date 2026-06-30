@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import {
   getScanResultRequest,
+  queueSiteScanRequest,
   scanResultPdfUrl,
   SiteApiError,
   type ScanResultFinding,
@@ -536,6 +537,9 @@ export function ScanResultPage() {
     scanId = "",
   } = useParams();
   const navigate = useNavigate();
+  const [refreshingRulesVersion, setRefreshingRulesVersion] =
+    useState(false);
+  const [rulesRefreshError, setRulesRefreshError] = useState("");
   const [result, setResult] =
     useState<ScanResultResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -571,6 +575,7 @@ export function ScanResultPage() {
           return;
         }
 
+        setRulesRefreshError("");
         setResult(response);
         setSelectedFindingIds(
           response.primaryIssues
@@ -600,6 +605,28 @@ export function ScanResultPage() {
       cancelled = true;
     };
   }, [scanId, siteId]);
+
+  async function handleRefreshWithCurrentRules() {
+    if (!result) {
+      return;
+    }
+
+    setRefreshingRulesVersion(true);
+    setRulesRefreshError("");
+
+    try {
+      const scan = await queueSiteScanRequest(result.site.id, "QUICK");
+      navigate(`/${locale}/sites/${result.site.id}/scans/${scan.id}`);
+    } catch (error) {
+      setRulesRefreshError(
+        error instanceof SiteApiError
+          ? error.message
+          : "현재 기준으로 다시 진단하지 못했습니다.",
+      );
+    } finally {
+      setRefreshingRulesVersion(false);
+    }
+  }
 
   async function handleCreateWorkOrder() {
     const selectedCount =
@@ -715,6 +742,7 @@ export function ScanResultPage() {
   const score = result.scan.score;
   const grade = result.scan.grade;
   const scoreSummary = result.scoreSummary;
+  const isOutdatedRulesVersion = result.isOutdatedRulesVersion;
 
   return (
     <section className="full-bleed-section scan-result-section">
@@ -734,6 +762,35 @@ export function ScanResultPage() {
             사이트 관리로
           </Link>
         </header>
+
+        {isOutdatedRulesVersion ? (
+          <section className="surface scan-rules-version-alert" role="status">
+            <div>
+              <strong>이전 판단 기준으로 진단된 결과입니다.</strong>
+              <p>
+                이 결과는 {result.scan.rulesVersion} 기준으로 계산되었습니다.
+                현재 기준은 {result.currentRulesVersion}입니다. 판단 기준이
+                업데이트되어 점수와 개선 항목이 달라질 수 있으므로 현재
+                기준으로 다시 진단하는 것을 권장합니다.
+              </p>
+              {rulesRefreshError ? (
+                <p className="scan-rules-version-error" role="alert">
+                  {rulesRefreshError}
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              className="scan-rules-version-button"
+              onClick={handleRefreshWithCurrentRules}
+              disabled={refreshingRulesVersion}
+            >
+              {refreshingRulesVersion
+                ? "새 기준 진단 시작 중..."
+                : "새 기준으로 다시 진단하기"}
+            </button>
+          </section>
+        ) : null}
 
         <section className="surface scan-score-hero">
           <div className="scan-score-main">

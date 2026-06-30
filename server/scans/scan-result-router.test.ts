@@ -46,6 +46,8 @@ const sampleResult: PublicScanResult = {
     createdAt: "2026-06-15T00:00:00.000Z",
   },
   scoreSummary: null,
+  currentRulesVersion: "2026.06-core-v3",
+  isOutdatedRulesVersion: false,
   understandingSummary: "예제 사이트 요약",
   foundInformation: [],
   missingInformation: [],

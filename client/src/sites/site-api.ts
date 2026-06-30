@@ -257,6 +257,8 @@ export interface ScanResultResponse {
     createdAt: string;
   };
   scoreSummary: ScanScoreSummary | null;
+  currentRulesVersion: string;
+  isOutdatedRulesVersion: boolean;
   contentReadiness?: ContentReadinessAssessment;
   understandingSummary: string;
   foundInformation: Array<{

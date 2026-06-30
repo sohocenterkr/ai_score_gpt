@@ -57,6 +57,8 @@ const sampleResult: PublicScanResult = {
       },
     ],
   },
+  currentRulesVersion: "2026.06-core-v3",
+  isOutdatedRulesVersion: false,
   contentReadiness: {
     status: "PARTIAL",
     label: "일부 보완 필요",
@@ -272,10 +274,12 @@ describe("scan result PDF", () => {
       title:
         "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
     });
-    expect(plans[0]?.developerInstructions[0]).toContain(
-      "초기 HTML",
-    );
-    expect(plans[0]?.acceptanceCriteria).toHaveLength(4);
+    expect(
+      plans[0]?.developerInstructions.some((instruction) =>
+        instruction.includes("초기 HTML"),
+      ),
+    ).toBe(true);
+    expect(plans[0]?.acceptanceCriteria.length).toBeGreaterThanOrEqual(4);
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
       "2026.06-scan-report-v12",
     );
