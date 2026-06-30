@@ -324,7 +324,7 @@ export function WorkOrderPage() {
           </Link>
         </header>
 
-        {message ? (
+        {message && !message.startsWith("수정된 공개 URL") ? (
           <p className="work-order-message work-order-success" role="status">
             {message}
           </p>
@@ -355,35 +355,39 @@ export function WorkOrderPage() {
               </button>
             </>
           ) : (
-            <button
-              type="button"
-              onClick={handleRevise}
-              disabled={
-                working || workOrder.status === "CANCELLED"
-              }
-            >
-              새 버전 만들기
-            </button>
+            <>
+              <a
+                className="work-order-primary-link"
+                href={workOrderExportUrl(workOrder.id, "pdf")}
+              >
+                PDF 저장
+              </a>
+              <a
+                className="secondary"
+                href={workOrderExportUrl(workOrder.id, "json")}
+              >
+                JSON 저장
+              </a>
+              <a
+                className="secondary"
+                href={workOrderExportUrl(workOrder.id, "csv")}
+              >
+                CSV 저장
+              </a>
+            </>
           )}
-          <a
-            className="secondary"
-            href={workOrderExportUrl(workOrder.id, "json")}
-          >
-            JSON 저장
-          </a>
-          <a
-            className="secondary"
-            href={workOrderExportUrl(workOrder.id, "csv")}
-          >
-            CSV 저장
-          </a>
-          <a
-            className="secondary"
-            href={workOrderExportUrl(workOrder.id, "pdf")}
-          >
-            PDF 저장
-          </a>
         </div>
+
+        {workOrder.status !== "DRAFT" ? (
+          <div className="work-order-process-guide" role="note">
+            <strong>현재 단계: 작업지시서로 사이트 수정 진행</strong>
+            <p>
+              이 문서를 PDF로 저장하거나 개발자에게 전달해 사이트 수정을
+              진행하세요. 수정 사항을 배포한 뒤 아래 자동검수 영역에 공개
+              URL을 제출하면 작업 반영 여부를 확인할 수 있습니다.
+            </p>
+          </div>
+        ) : null}
 
         <section className="surface work-order-overview">
           <div className="work-order-score-range">
@@ -505,6 +509,40 @@ export function WorkOrderPage() {
               현재 제출된 URL을 검사하고 있습니다. 이 화면은 자동으로
               상태를 갱신합니다.
             </p>
+          ) : null}
+
+          {message && message.startsWith("수정된 공개 URL") ? (
+            <p className="work-order-message work-order-success" role="status">
+              {message}
+            </p>
+          ) : null}
+
+          {workOrder.status !== "DRAFT" &&
+          workOrder.status !== "CANCELLED" ? (
+            <div className="work-order-revision-panel" role="note">
+              <div>
+                <strong>자동검수 후 후속 버전</strong>
+                <p>
+                  새 버전은 현재 작업지시서를 바로 대체하는 기능이 아닙니다.
+                  수정된 URL을 자동검수한 뒤 점수가 충분히 오르지 않았거나
+                  남은 문제가 있을 때 후속 작업지시서를 만들 때 사용합니다.
+                </p>
+              </div>
+              <button
+                className="secondary work-order-revision-button"
+                type="button"
+                onClick={handleRevise}
+                disabled={
+                  working ||
+                  workOrder.status === "VERIFYING" ||
+                  workOrder.verificationAttempts.length === 0
+                }
+              >
+                {workOrder.verificationAttempts.length === 0
+                  ? "자동검수 후 후속 버전 만들기"
+                  : "검수 결과로 후속 버전 만들기"}
+              </button>
+            </div>
           ) : null}
 
           {workOrder.verificationAttempts.length > 0 ? (
