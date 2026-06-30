@@ -36,7 +36,7 @@ export function LoginPage() {
   }
 
   if (state.status === "authenticated") {
-    return <Navigate to={`/${locale}/dashboard`} replace />;
+    return <Navigate to={`/${locale}/sites`} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -48,7 +48,7 @@ export function LoginPage() {
       await login({ email, password });
       const destination =
         (location.state as LoginLocationState | null)?.from ??
-        `/${locale}/dashboard`;
+        `/${locale}/sites`;
       navigate(destination, { replace: true });
     } catch (error) {
       setMessage(

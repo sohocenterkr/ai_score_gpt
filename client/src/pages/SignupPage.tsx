@@ -27,7 +27,7 @@ export function SignupPage() {
   }
 
   if (state.status === "authenticated") {
-    return <Navigate to={`/${locale}/dashboard`} replace />;
+    return <Navigate to={`/${locale}/sites`} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -54,7 +54,7 @@ export function SignupPage() {
         termsAccepted: true,
         privacyAccepted: true,
       });
-      navigate(`/${locale}/dashboard`, { replace: true });
+      navigate(`/${locale}/sites`, { replace: true });
     } catch (error) {
       setMessage(
         error instanceof AuthApiError

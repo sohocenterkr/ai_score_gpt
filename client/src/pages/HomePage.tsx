@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
 const diagnosticAreas = [
   "검색·AI 봇 접근 가능 여부",
@@ -14,17 +14,7 @@ const serviceSteps = [
 ];
 
 export function HomePage() {
-  const [url, setUrl] = useState("");
-  const [message, setMessage] = useState("");
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage(
-      url.trim()
-        ? "무료 진단 기능은 검사 엔진 단계에서 연결됩니다. 현재는 프로젝트 기반 화면입니다."
-        : "진단할 사이트 주소를 입력해 주세요.",
-    );
-  }
+  const { locale = "ko" } = useParams();
 
   return (
     <>
@@ -36,23 +26,11 @@ export function HomePage() {
             공개 URL을 진단하고, 무엇을 고쳐야 하는지 작업지시서로 정리하며,
             수정 후에는 같은 기준으로 개선 결과를 다시 측정합니다.
           </p>
-          <form className="diagnosis-form" onSubmit={handleSubmit} noValidate>
-            <label htmlFor="site-url">사이트 주소</label>
-            <div className="url-field-row">
-              <input
-                id="site-url"
-                name="siteUrl"
-                type="url"
-                inputMode="url"
-                placeholder="example.com"
-                value={url}
-                onChange={(event) => setUrl(event.target.value)}
-                autoComplete="url"
-              />
-              <button type="submit">무료 진단 준비</button>
-            </div>
-            {message ? <p className="form-message" role="status">{message}</p> : null}
-          </form>
+          <div className="hero-actions">
+            <Link className="primary-action" to={`/${locale}/sites`}>
+              사이트 대시보드에서 진단 시작
+            </Link>
+          </div>
         </div>
       </section>
 

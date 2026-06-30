@@ -287,14 +287,14 @@ export function SitesPage() {
         <div className="sites-heading">
           <div>
             <p className="eyebrow">SITE MANAGEMENT</p>
-            <h1>검사할 사이트 관리</h1>
+            <h1>사이트 대시보드</h1>
             <p>
               공개 URL만 등록할 수 있으며, 사설 IP·localhost·내부망은
               자동으로 차단됩니다.
             </p>
           </div>
-          <Link className="sites-back-link" to={`/${locale}/dashboard`}>
-            대시보드로
+          <Link className="sites-back-link" to={`/${locale}/settings`}>
+            설정으로
           </Link>
         </div>
 

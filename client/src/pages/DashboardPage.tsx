@@ -43,11 +43,11 @@ export function DashboardPage() {
     <section className="full-bleed-section dashboard-section">
       <div className="content-container section-content">
         <div className="section-heading">
-          <p className="eyebrow">DASHBOARD</p>
-          <h1>{state.user.name}님, 반갑습니다.</h1>
+          <p className="eyebrow">SETTINGS</p>
+          <h1>계정 설정</h1>
           <p>
-            검사할 사이트를 등록하고, 진단·점수·작업지시서로 이어지는
-            핵심 서비스 작업을 시작할 수 있습니다.
+            로그인 정보와 계정 보안 설정을 확인하고, 필요한 계정 작업을
+            진행할 수 있습니다.
           </p>
         </div>
 
@@ -78,7 +78,7 @@ export function DashboardPage() {
 
         <div className="dashboard-actions">
           <Link className="secondary-action" to={`/${locale}/sites`}>
-            사이트 관리
+            사이트 대시보드
           </Link>
           <Link className="secondary-action" to={`/${locale}/change-password`}>
             비밀번호 변경

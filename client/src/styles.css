@@ -582,3 +582,29 @@ h3 {
     font-size: 12px;
   }
 }
+
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.hero-actions .primary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 22px;
+  border-radius: 12px;
+  background: #3157e5;
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 16px 36px rgba(49, 87, 229, 0.22);
+}
+
+.hero-actions .primary-action:active {
+  transform: translateY(1px);
+}

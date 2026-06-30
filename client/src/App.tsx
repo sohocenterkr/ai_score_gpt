@@ -13,7 +13,6 @@ import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { ScanResultPage } from "./pages/ScanResultPage";
 import { SignupPage } from "./pages/SignupPage";
 import { SitesPage } from "./pages/SitesPage";
-import { SystemPage } from "./pages/SystemPage";
 import { WorkOrderPage } from "./pages/WorkOrderPage";
 import { WorkOrdersPage } from "./pages/WorkOrdersPage";
 
@@ -27,8 +26,9 @@ export function App() {
         <Route path="signup" element={<SignupPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="dashboard" element={<Navigate to="../sites" replace />} />
         <Route
-          path="dashboard"
+          path="settings"
           element={
             <RequireAuth>
               <DashboardPage />
@@ -83,7 +83,7 @@ export function App() {
             </RequireAuth>
           }
         />
-        <Route path="system" element={<SystemPage />} />
+        <Route path="system" element={<Navigate to="../settings" replace />} />
       </Route>
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

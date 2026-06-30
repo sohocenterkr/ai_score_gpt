@@ -102,7 +102,7 @@ export function ChangePasswordPage() {
           </button>
 
           <p className="auth-switch">
-            <Link to={`/${locale}/dashboard`}>대시보드로 돌아가기</Link>
+            <Link to={`/${locale}/settings`}>설정으로 돌아가기</Link>
           </p>
         </form>
       </div>

@@ -67,9 +67,11 @@ export function LocaleLayout() {
             <span className="header-page-title" aria-hidden="true" />
           )}
           <nav className="header-nav" aria-label="주요 메뉴">
-            <Link to={`/${locale}/system`}>시스템 확인</Link>
             {state.status === "authenticated" ? (
-              <Link to={`/${locale}/dashboard`}>대시보드</Link>
+              <>
+                <Link to={`/${locale}/sites`}>대시보드</Link>
+                <Link to={`/${locale}/settings`}>설정</Link>
+              </>
             ) : (
               <Link to={`/${locale}/login`}>로그인</Link>
             )}
