@@ -87,12 +87,20 @@ const BLOCKED_RESOURCE_TYPES = new Set([
 function executableCandidates(
   configured?: string,
 ): string[] {
-  if (configured) {
-    return [configured];
+  const normalizedConfigured =
+    typeof configured === "string" ? configured.trim() : "";
+
+  if (normalizedConfigured) {
+    return [normalizedConfigured];
   }
 
-  if (process.env.CHROMIUM_PATH) {
-    return [process.env.CHROMIUM_PATH];
+  const envChromiumPath =
+    typeof process.env.CHROMIUM_PATH === "string"
+      ? process.env.CHROMIUM_PATH.trim()
+      : "";
+
+  if (envChromiumPath) {
+    return [envChromiumPath];
   }
 
   const candidates: string[] = [];
@@ -103,9 +111,12 @@ function executableCandidates(
     "google-chrome-stable",
     "google-chrome",
   ]) {
-    const resolved = spawnSync("which", [command], {
+    const result = spawnSync("which", [command], {
       encoding: "utf8",
-    }).stdout.trim();
+    });
+    const stdout = result.stdout;
+    const resolved =
+      typeof stdout === "string" ? stdout.trim() : "";
 
     if (resolved) {
       candidates.push(resolved);
@@ -124,7 +135,14 @@ function findExecutable(configured?: string): string | null {
 }
 
 function explicitExecutableConfigured(configured?: string): boolean {
-  return Boolean(configured?.trim() || process.env.CHROMIUM_PATH?.trim());
+  const normalizedConfigured =
+    typeof configured === "string" ? configured.trim() : "";
+  const envChromiumPath =
+    typeof process.env.CHROMIUM_PATH === "string"
+      ? process.env.CHROMIUM_PATH.trim()
+      : "";
+
+  return Boolean(normalizedConfigured || envChromiumPath);
 }
 
 function uniqueLaunchArgs(args: string[]): string[] {
@@ -223,33 +241,28 @@ export function createPlaywrightRenderedDomCollector(
         );
       }
 
-      const executablePath = findExecutable(
-        options.executablePath,
-      );
-
-      if (!executablePath) {
-        return failure(
-          "RENDERED_DOM_BROWSER_UNAVAILABLE",
-          "JavaScript 렌더링용 Chromium을 찾지 못했습니다.",
+        const launchConfig = await browserLaunchConfig(
+          options.executablePath,
         );
-      }
 
-      const startedAt = Date.now();
-      let browser:
-        | Awaited<ReturnType<typeof chromium.launch>>
-        | undefined;
+        if (!launchConfig) {
+          return failure(
+            "RENDERED_DOM_BROWSER_UNAVAILABLE",
+            "JavaScript 렌더링용 Chromium을 찾지 못했습니다.",
+          );
+        }
 
-      try {
-        browser = await chromium.launch({
-          executablePath,
-          headless: true,
-          args: [
-            "--no-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-          ],
-        });
+        const startedAt = Date.now();
+        let browser:
+          | Awaited<ReturnType<typeof chromium.launch>>
+          | undefined;
 
+        try {
+          browser = await chromium.launch({
+            executablePath: launchConfig.executablePath,
+            headless: true,
+            args: launchConfig.args,
+          });
         const context = await browser.newContext({
           viewport: {
             width: 1_365,
@@ -271,7 +284,7 @@ export function createPlaywrightRenderedDomCollector(
           const requestUrl = request.url();
           let parsed: URL;
 
-          try {
+        try {
             parsed = new URL(requestUrl);
           } catch {
             blockedRequests += 1;
@@ -308,7 +321,7 @@ export function createPlaywrightRenderedDomCollector(
             validationCache.set(cacheKey, validation);
           }
 
-          try {
+        try {
             await validation;
             allowedRequests += 1;
             await route.continue();
@@ -323,7 +336,7 @@ export function createPlaywrightRenderedDomCollector(
             throw new Error("비필수 실시간 연결이 차단되었습니다.");
           };
 
-          try {
+        try {
             Object.defineProperty(window, "WebSocket", {
               configurable: false,
               value: class {
@@ -336,7 +349,7 @@ export function createPlaywrightRenderedDomCollector(
             // 브라우저가 재정의를 허용하지 않으면 요청 라우팅으로 차단한다.
           }
 
-          try {
+        try {
             Object.defineProperty(window, "EventSource", {
               configurable: false,
               value: class {
