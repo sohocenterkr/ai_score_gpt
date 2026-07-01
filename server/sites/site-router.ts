@@ -225,11 +225,7 @@ export function createSiteRouter(options: CreateSiteRouterOptions) {
         );
 
         if (process.env.VERCEL === "1" && scan.type === "QUICK") {
-          await runQueuedScanById(
-            scan.id,
-            createSafeHttpFetcher(),
-            undefined,
-          );
+          await runQueuedScanById(scan.id, createSafeHttpFetcher());
         }
 
         response.status(201).json({ scan });
