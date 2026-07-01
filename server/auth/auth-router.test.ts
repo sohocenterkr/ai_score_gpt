@@ -55,10 +55,7 @@ describe("auth API", () => {
     expect(response.status).toBe(201);
     expect(response.body.user.email).toBe("member@example.com");
     expect(response.body.message).toContain("회원가입이 완료되었습니다.");
-    expect(response.headers["set-cookie"]?.[0]).toContain(
-      "siteaiscore_session=raw-session-token",
-    );
-    expect(response.headers["set-cookie"]?.[0]).toContain("HttpOnly");
+    expect(response.headers["set-cookie"]).toBeUndefined();
   });
 
   it("회원가입 입력값을 서버에서 검증한다", async () => {
