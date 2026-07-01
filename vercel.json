@@ -6,7 +6,10 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
-      "includeFiles": "server/assets/fonts/pretendard/**"
+      "includeFiles": [
+        "server/assets/fonts/pretendard/**",
+        "node_modules/@sparticuz/chromium/bin/**"
+      ]
     }
   },
   "rewrites": [

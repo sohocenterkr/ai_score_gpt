@@ -56,6 +56,22 @@ export interface CreatePlaywrightRenderedDomCollectorOptions {
   validateUrl?: UrlValidator;
 }
 
+type BrowserLaunchConfig = {
+  executablePath: string;
+  args: string[];
+};
+
+type ServerlessChromiumModule = {
+  args?: string[];
+  executablePath?: string | (() => Promise<string> | string);
+};
+
+const DEFAULT_CHROMIUM_LAUNCH_ARGS = [
+  "--no-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+];
+
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 30_000;
 const DEFAULT_SETTLE_MS = 3_000;
 const DEFAULT_MAX_REQUESTS = 300;
@@ -105,6 +121,59 @@ function findExecutable(configured?: string): string | null {
       existsSync(candidate),
     ) ?? null
   );
+}
+
+function explicitExecutableConfigured(configured?: string): boolean {
+  return Boolean(configured?.trim() || process.env.CHROMIUM_PATH?.trim());
+}
+
+function uniqueLaunchArgs(args: string[]): string[] {
+  return [...new Set(args.filter(Boolean))];
+}
+
+async function serverlessChromiumLaunchConfig(): Promise<BrowserLaunchConfig | null> {
+  try {
+    const imported = await import("@sparticuz/chromium");
+    const serverlessChromium = (imported.default ??
+      imported) as ServerlessChromiumModule;
+    const executablePathValue =
+      typeof serverlessChromium.executablePath === "function"
+        ? await serverlessChromium.executablePath()
+        : serverlessChromium.executablePath;
+
+    if (!executablePathValue || !existsSync(executablePathValue)) {
+      return null;
+    }
+
+    return {
+      executablePath: executablePathValue,
+      args: uniqueLaunchArgs([
+        ...(serverlessChromium.args ?? []),
+        ...DEFAULT_CHROMIUM_LAUNCH_ARGS,
+      ]),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function browserLaunchConfig(
+  configured?: string,
+): Promise<BrowserLaunchConfig | null> {
+  const executablePath = findExecutable(configured);
+
+  if (executablePath) {
+    return {
+      executablePath,
+      args: DEFAULT_CHROMIUM_LAUNCH_ARGS,
+    };
+  }
+
+  if (explicitExecutableConfigured(configured)) {
+    return null;
+  }
+
+  return serverlessChromiumLaunchConfig();
 }
 
 function failure(

@@ -52,11 +52,7 @@ export function shouldUpdateSiteFinalUrl(type: ScanType): boolean {
 function configuredRenderedDomCollector():
   | RenderedDomCollector
   | undefined {
-  if (
-    env.NODE_ENV === "test" ||
-    !env.RENDERED_DOM_ENABLED ||
-    !env.CHROMIUM_PATH?.trim()
-  ) {
+  if (env.NODE_ENV === "test" || !env.RENDERED_DOM_ENABLED) {
     return undefined;
   }
 
