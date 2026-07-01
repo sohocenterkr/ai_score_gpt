@@ -37,6 +37,8 @@ export function createResendEmailVerificationMailer(): EmailVerificationMailer {
       const verificationUrl =
         `${baseUrl}/${delivery.locale}/signup?email=${encodeURIComponent(
           delivery.to,
+        )}&emailVerificationId=${encodeURIComponent(
+          delivery.verificationId,
         )}&emailVerificationToken=${encodeURIComponent(delivery.token)}`;
       const fromName = env.RESEND_FROM_NAME || "Site AI Score";
       const from = `${fromName} <${env.RESEND_FROM_EMAIL}>`;

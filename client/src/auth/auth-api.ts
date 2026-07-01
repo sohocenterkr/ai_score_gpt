@@ -23,6 +23,15 @@ interface MessageResponse {
   message: string;
 }
 
+interface EmailVerificationResponse {
+  message: string;
+  verificationId: string | null;
+}
+
+interface EmailVerificationStatusResponse {
+  verified: boolean;
+}
+
 interface ResetTokenValidationResponse {
   valid: boolean;
 }
@@ -62,7 +71,8 @@ export async function signupRequest(input: {
   name: string;
   password: string;
   passwordConfirm: string;
-  emailVerificationToken: string;
+  emailVerificationToken?: string;
+  emailVerificationId?: string;
   termsAccepted: true;
   privacyAccepted: true;
 }): Promise<AuthResponse> {
@@ -79,7 +89,7 @@ export async function signupRequest(input: {
 export async function sendEmailVerificationRequest(input: {
   email: string;
   locale: string;
-}): Promise<MessageResponse> {
+}): Promise<EmailVerificationResponse> {
   const response = await fetch("/api/auth/email-verification", {
     method: "POST",
     credentials: "same-origin",
@@ -87,7 +97,36 @@ export async function sendEmailVerificationRequest(input: {
     body: JSON.stringify(input),
   });
 
-  return readResponse<MessageResponse>(response);
+  return readResponse<EmailVerificationResponse>(response);
+}
+
+export async function confirmEmailVerificationRequest(input: {
+  email: string;
+  emailVerificationId: string;
+  emailVerificationToken: string;
+}): Promise<MessageResponse & { verified: boolean }> {
+  const response = await fetch("/api/auth/email-verification/confirm", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  return readResponse<MessageResponse & { verified: boolean }>(response);
+}
+
+export async function checkEmailVerificationStatusRequest(input: {
+  email: string;
+  emailVerificationId: string;
+}): Promise<EmailVerificationStatusResponse> {
+  const response = await fetch("/api/auth/email-verification/status", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  return readResponse<EmailVerificationStatusResponse>(response);
 }
 
 export async function loginRequest(input: {

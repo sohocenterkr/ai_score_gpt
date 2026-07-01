@@ -1,6 +1,11 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { AuthApiError, sendEmailVerificationRequest } from "../auth/auth-api";
+import {
+  AuthApiError,
+  checkEmailVerificationStatusRequest,
+  confirmEmailVerificationRequest,
+  sendEmailVerificationRequest,
+} from "../auth/auth-api";
 import { useAuth } from "../auth/AuthContext";
 
 
@@ -10,7 +15,9 @@ const EMAIL_VERIFICATION_STORAGE_TTL_MS = 30 * 60 * 1_000;
 
 interface StoredEmailVerification {
   email: string;
-  token: string;
+  verificationId: string;
+  verified: boolean;
+  token?: string;
   savedAt: number;
 }
 
@@ -34,7 +41,8 @@ function readStoredEmailVerification(): StoredEmailVerification | null {
 
     if (
       typeof parsed.email !== "string" ||
-      typeof parsed.token !== "string" ||
+      typeof parsed.verificationId !== "string" ||
+      typeof parsed.verified !== "boolean" ||
       typeof parsed.savedAt !== "number"
     ) {
       window.localStorage.removeItem(EMAIL_VERIFICATION_STORAGE_KEY);
@@ -48,7 +56,9 @@ function readStoredEmailVerification(): StoredEmailVerification | null {
 
     return {
       email: normalizeEmailForVerification(parsed.email),
-      token: parsed.token,
+      verificationId: parsed.verificationId,
+      verified: parsed.verified,
+      token: typeof parsed.token === "string" ? parsed.token : undefined,
       savedAt: parsed.savedAt,
     };
   } catch {
@@ -57,7 +67,12 @@ function readStoredEmailVerification(): StoredEmailVerification | null {
   }
 }
 
-function saveStoredEmailVerification(email: string, token: string) {
+function saveStoredEmailVerification(
+  email: string,
+  verificationId: string,
+  verified: boolean,
+  token?: string,
+) {
   if (typeof window === "undefined") {
     return;
   }
@@ -66,7 +81,9 @@ function saveStoredEmailVerification(email: string, token: string) {
     EMAIL_VERIFICATION_STORAGE_KEY,
     JSON.stringify({
       email: normalizeEmailForVerification(email),
-      token,
+      verificationId,
+      verified,
+      ...(token ? { token } : {}),
       savedAt: Date.now(),
     } satisfies StoredEmailVerification),
   );
@@ -86,6 +103,8 @@ export function SignupPage() {
   const [searchParams] = useSearchParams();
   const { state, signup } = useAuth();
   const emailFromVerificationLink = searchParams.get("email")?.trim() ?? "";
+  const verificationIdFromLink =
+    searchParams.get("emailVerificationId")?.trim() ?? "";
   const tokenFromVerificationLink =
     searchParams.get("emailVerificationToken")?.trim() ?? "";
   const [email, setEmail] = useState(emailFromVerificationLink);
@@ -94,8 +113,14 @@ export function SignupPage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [emailVerificationId, setEmailVerificationId] = useState(
+    verificationIdFromLink,
+  );
   const [emailVerificationToken, setEmailVerificationToken] = useState(
     tokenFromVerificationLink,
+  );
+  const [emailVerificationVerified, setEmailVerificationVerified] = useState(
+    Boolean(verificationIdFromLink && tokenFromVerificationLink),
   );
   const [verificationNotice, setVerificationNotice] = useState(
     tokenFromVerificationLink
@@ -107,6 +132,8 @@ export function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     function applyStoredVerification() {
       const stored = readStoredEmailVerification();
 
@@ -121,23 +148,72 @@ export function SignupPage() {
       }
 
       setEmail(stored.email);
-      setEmailVerificationToken(stored.token);
-      setVerificationNotice(
-        "이메일 인증이 완료되었습니다. 나머지 정보를 입력해 주세요.",
-      );
+      setEmailVerificationId(stored.verificationId);
+      setEmailVerificationVerified(stored.verified);
+
+      if (stored.verified) {
+        setEmailVerificationToken(stored.token ?? "");
+        setVerificationNotice(
+          "이메일 인증이 완료되었습니다. 나머지 정보를 입력해 주세요.",
+        );
+      }
     }
 
-    if (emailFromVerificationLink && tokenFromVerificationLink) {
-      saveStoredEmailVerification(
-        emailFromVerificationLink,
-        tokenFromVerificationLink,
-      );
-      setVerificationNotice(
-        "이메일 인증이 완료되었습니다. 원래 열어둔 회원가입 창에서도 계속 가입할 수 있습니다.",
-      );
-    } else {
-      applyStoredVerification();
+    async function confirmLinkVerification() {
+      if (!emailFromVerificationLink || !tokenFromVerificationLink) {
+        applyStoredVerification();
+        return;
+      }
+
+      if (!verificationIdFromLink) {
+        setEmail(emailFromVerificationLink);
+        setEmailVerificationToken(tokenFromVerificationLink);
+        setEmailVerificationVerified(true);
+        setVerificationNotice(
+          "이메일 인증 링크가 적용되었습니다. 나머지 정보를 입력해 주세요.",
+        );
+        return;
+      }
+
+      try {
+        const response = await confirmEmailVerificationRequest({
+          email: emailFromVerificationLink,
+          emailVerificationId: verificationIdFromLink,
+          emailVerificationToken: tokenFromVerificationLink,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (response.verified) {
+          saveStoredEmailVerification(
+            emailFromVerificationLink,
+            verificationIdFromLink,
+            true,
+            tokenFromVerificationLink,
+          );
+          setEmail(emailFromVerificationLink);
+          setEmailVerificationId(verificationIdFromLink);
+          setEmailVerificationToken(tokenFromVerificationLink);
+          setEmailVerificationVerified(true);
+          setVerificationNotice(
+            "이메일 인증이 완료되었습니다. 원래 열어둔 회원가입 창에서도 계속 가입할 수 있습니다.",
+          );
+          return;
+        }
+
+        setVerificationNotice(response.message);
+      } catch {
+        if (!cancelled) {
+          setVerificationNotice(
+            "이메일 인증 상태를 확인하지 못했습니다. 원래 창에서 인증 완료 확인을 눌러 주세요.",
+          );
+        }
+      }
     }
+
+    void confirmLinkVerification();
 
     function handleStorage(event: StorageEvent) {
       if (event.key === EMAIL_VERIFICATION_STORAGE_KEY) {
@@ -153,10 +229,16 @@ export function SignupPage() {
     window.addEventListener("focus", handleFocus);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [email, emailFromVerificationLink, tokenFromVerificationLink]);
+  }, [
+    email,
+    emailFromVerificationLink,
+    verificationIdFromLink,
+    tokenFromVerificationLink,
+  ]);
 
   if (state.status === "loading") {
     return (
@@ -175,7 +257,9 @@ export function SignupPage() {
   function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
     clearStoredEmailVerification();
     setEmail(event.target.value);
+    setEmailVerificationId("");
     setEmailVerificationToken("");
+    setEmailVerificationVerified(false);
     setVerificationNotice("");
   }
 
@@ -192,8 +276,22 @@ export function SignupPage() {
 
     try {
       clearStoredEmailVerification();
+      setEmailVerificationId("");
       setEmailVerificationToken("");
+      setEmailVerificationVerified(false);
       const response = await sendEmailVerificationRequest({ email, locale });
+
+      if (response.verificationId) {
+        const normalizedEmail = normalizeEmailForVerification(email);
+        setEmail(normalizedEmail);
+        setEmailVerificationId(response.verificationId);
+        saveStoredEmailVerification(
+          normalizedEmail,
+          response.verificationId,
+          false,
+        );
+      }
+
       setVerificationNotice(response.message);
     } catch (error) {
       setMessage(
@@ -206,11 +304,47 @@ export function SignupPage() {
     }
   }
 
+  async function handleCheckEmailVerificationStatus() {
+    setMessage("");
+
+    if (!emailVerificationId) {
+      setMessage("먼저 인증 메일을 받아 주세요.");
+      return;
+    }
+
+    try {
+      const response = await checkEmailVerificationStatusRequest({
+        email,
+        emailVerificationId,
+      });
+
+      if (response.verified) {
+        saveStoredEmailVerification(email, emailVerificationId, true);
+        setEmailVerificationToken("");
+        setEmailVerificationVerified(true);
+        setVerificationNotice(
+          "이메일 인증이 완료되었습니다. 회원가입을 계속해 주세요.",
+        );
+        return;
+      }
+
+      setMessage(
+        "아직 이메일 인증이 완료되지 않았습니다. 메일의 인증 링크를 먼저 눌러 주세요.",
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof AuthApiError
+          ? error.message
+          : "이메일 인증 상태를 확인하지 못했습니다.",
+      );
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
 
-    if (!emailVerificationToken) {
+    if (!emailVerificationToken && !emailVerificationVerified) {
       setMessage("이메일 인증을 완료한 뒤 회원가입해 주세요.");
       return;
     }
@@ -233,7 +367,9 @@ export function SignupPage() {
         name,
         password,
         passwordConfirm,
-        emailVerificationToken,
+        ...(emailVerificationToken
+          ? { emailVerificationToken }
+          : { emailVerificationId }),
         termsAccepted: true,
         privacyAccepted: true,
       });
@@ -281,8 +417,19 @@ export function SignupPage() {
             {verificationSubmitting ? "인증 메일 발송 중..." : "인증 메일 받기"}
           </button>
           <p className="field-guide email-verification-guide">
-            메일의 인증 링크를 눌러 돌아온 뒤 회원가입을 완료할 수 있습니다.
+            메일의 인증 링크를 누른 뒤 이 화면에서 인증 완료를 확인할 수 있습니다.
           </p>
+
+          {emailVerificationId && !emailVerificationVerified ? (
+            <button
+              className="secondary-action email-verification-action"
+              type="button"
+              onClick={handleCheckEmailVerificationStatus}
+              disabled={verificationSubmitting || submitting}
+            >
+              인증 완료 확인
+            </button>
+          ) : null}
 
           {verificationNotice ? (
             <p className="auth-message auth-success" role="status">

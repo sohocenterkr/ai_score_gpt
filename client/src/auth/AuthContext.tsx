@@ -22,7 +22,8 @@ interface AuthContextValue {
     name: string;
     password: string;
     passwordConfirm: string;
-    emailVerificationToken: string;
+    emailVerificationToken?: string;
+    emailVerificationId?: string;
     termsAccepted: true;
     privacyAccepted: true;
   }): Promise<void>;

@@ -6,7 +6,11 @@ import {
 } from "express";
 import { z } from "zod";
 import { AuthError, type AuthService } from "./auth-service";
-import { createEmailVerificationDelivery } from "./email-verification-service";
+import {
+  confirmEmailVerification,
+  createEmailVerificationDelivery,
+  getEmailVerificationStatus,
+} from "./email-verification-service";
 import { createMemoryRateLimit } from "./rate-limit";
 import {
   clearSessionCookie,
@@ -46,8 +50,13 @@ const signupSchema = z
     emailVerificationToken: z
       .string()
       .trim()
-      .min(20, "이메일 인증을 완료해 주세요.")
-      .max(512, "이메일 인증값이 너무 깁니다."),
+      .max(512, "이메일 인증값이 너무 깁니다.")
+      .optional(),
+    emailVerificationId: z
+      .string()
+      .trim()
+      .max(128, "이메일 인증 요청값이 너무 깁니다.")
+      .optional(),
     termsAccepted: z
       .boolean()
       .refine((value) => value, "이용약관에 동의해 주세요."),
@@ -63,6 +72,14 @@ const signupSchema = z
         message: "비밀번호 확인이 일치하지 않습니다.",
       });
     }
+
+    if (!value.emailVerificationToken && !value.emailVerificationId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["emailVerificationToken"],
+        message: "이메일 인증을 완료해 주세요.",
+      });
+    }
   });
 
 const loginSchema = z.object({
@@ -73,6 +90,17 @@ const loginSchema = z.object({
 const emailVerificationSchema = z.object({
   email: emailSchema,
   locale: z.enum(["ko", "en"]).default("ko"),
+});
+
+const emailVerificationConfirmSchema = z.object({
+  email: emailSchema,
+  emailVerificationId: z.string().trim().min(1).max(128),
+  emailVerificationToken: z.string().trim().min(20).max(512),
+});
+
+const emailVerificationStatusSchema = z.object({
+  email: emailSchema,
+  emailVerificationId: z.string().trim().min(1).max(128),
 });
 
 function originGuard(
@@ -171,7 +199,64 @@ export function createAuthRouter(
         response.status(202).json({
           message:
             "인증 메일을 발송했습니다. 메일의 인증 링크를 눌러 회원가입을 계속해 주세요.",
+          verificationId: delivery?.verificationId ?? null,
         });
+      } catch (error) {
+        handleAuthError(response, error);
+      }
+    },
+  );
+
+  router.post(
+    "/email-verification/confirm",
+    originGuard,
+    mutationRateLimit,
+    async (request, response) => {
+      const parsed = emailVerificationConfirmSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        validationError(response, parsed.error);
+        return;
+      }
+
+      try {
+        const verified = await confirmEmailVerification(
+          parsed.data.email,
+          parsed.data.emailVerificationId,
+          parsed.data.emailVerificationToken,
+        );
+
+        response.json({
+          verified,
+          message: verified
+            ? "이메일 인증이 완료되었습니다."
+            : "이메일 인증 링크가 올바르지 않거나 만료되었습니다.",
+        });
+      } catch (error) {
+        handleAuthError(response, error);
+      }
+    },
+  );
+
+  router.post(
+    "/email-verification/status",
+    originGuard,
+    mutationRateLimit,
+    async (request, response) => {
+      const parsed = emailVerificationStatusSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        validationError(response, parsed.error);
+        return;
+      }
+
+      try {
+        const status = await getEmailVerificationStatus(
+          parsed.data.email,
+          parsed.data.emailVerificationId,
+        );
+
+        response.json(status);
       } catch (error) {
         handleAuthError(response, error);
       }

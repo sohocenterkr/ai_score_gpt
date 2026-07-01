@@ -3,7 +3,7 @@ import * as argon2 from "argon2";
 import { Prisma, type User } from "@prisma/client";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
-import { consumeEmailVerificationToken } from "./email-verification-service";
+import { consumeEmailVerification } from "./email-verification-service";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 const LOGIN_LOCK_MAX_FAILURES = 5;
@@ -26,7 +26,8 @@ export interface SignupInput {
   name: string;
   password: string;
   passwordConfirm: string;
-  emailVerificationToken: string;
+  emailVerificationToken?: string;
+  emailVerificationId?: string;
   termsAccepted: boolean;
   privacyAccepted: boolean;
 }
@@ -275,10 +276,10 @@ export function createPrismaAuthService(): AuthService {
       const email = normalizeEmail(input.email);
       const name = normalizeName(input.name);
       const now = new Date();
-      const emailVerified = await consumeEmailVerificationToken(
-        email,
-        input.emailVerificationToken,
-      );
+      const emailVerified = await consumeEmailVerification(email, {
+        token: input.emailVerificationToken,
+        verificationId: input.emailVerificationId,
+      });
 
       if (!emailVerified) {
         throw new AuthError(
