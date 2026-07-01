@@ -141,6 +141,8 @@ export interface PublicWorkOrder {
     id: string;
     score: number | null;
     grade: string | null;
+    rulesVersion: string;
+    targetUrl: string | null;
     completedAt: string | null;
   };
   customerOrganization: {
@@ -300,6 +302,8 @@ function publicWorkOrder(record: WorkOrderRecord): PublicWorkOrder {
       id: record.initialScan.id,
       score: record.initialScan.score,
       grade: record.initialScan.grade,
+        rulesVersion: record.initialScan.rulesVersion,
+        targetUrl: record.initialScan.targetUrl,
       completedAt:
         record.initialScan.completedAt?.toISOString() ?? null,
     },

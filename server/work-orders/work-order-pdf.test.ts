@@ -28,6 +28,8 @@ const workOrder: PublicWorkOrder = {
     id: "scan-1",
     score: 71,
     grade: "B",
+    rulesVersion: "2026.06-core-v3",
+    targetUrl: "https://example.com/",
     completedAt: "2026-06-15T06:29:35.490Z",
   },
   customerOrganization: {
@@ -91,7 +93,7 @@ describe("work order PDF", () => {
 
       expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
       expect(result.length).toBeGreaterThan(10_000);
-      expect(pageCount).toBe(3);
+      expect(pageCount).toBe(4);
     },
     45_000,
   );

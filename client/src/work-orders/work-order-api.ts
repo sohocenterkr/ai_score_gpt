@@ -110,6 +110,8 @@ export interface WorkOrderDetail {
     id: string;
     score: number | null;
     grade: string | null;
+    rulesVersion: string;
+    targetUrl: string | null;
     completedAt: string | null;
   };
   customerOrganization: {

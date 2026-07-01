@@ -48,6 +48,8 @@ const workOrder = {
     id: "scan-1",
     score: 71,
     grade: "B",
+    rulesVersion: "2026.06-core-v3",
+    targetUrl: "https://example.com/",
     completedAt: new Date().toISOString(),
   },
   customerOrganization: {

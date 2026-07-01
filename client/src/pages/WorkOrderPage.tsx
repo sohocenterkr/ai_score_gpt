@@ -406,25 +406,27 @@ export function WorkOrderPage() {
 
                     <dl className="work-order-score-comparison-meta">
                       <div>
-                        <dt>규칙 버전</dt>
-                        <dd>{workOrder.rulesVersion}</dd>
+                        <dt>1차 규칙 버전</dt>
+                        <dd>{workOrder.initialScan.rulesVersion}</dd>
                       </div>
                       <div>
-                        <dt>발급 시각(KST)</dt>
-                        <dd>{formatKST(workOrder.issuedAt)}</dd>
+                        <dt>1차 검수 완료 시각(KST)</dt>
+                        <dd>{formatKST(workOrder.initialScan.completedAt)}</dd>
                       </div>
                       <div>
-                        <dt>검사 URL</dt>
+                        <dt>1차 검사 URL</dt>
                         <dd>
                           <a
                             href={
+                              workOrder.initialScan.targetUrl ??
                               workOrder.site.finalUrl ??
                               workOrder.site.baseUrl
                             }
                             target="_blank"
                             rel="noreferrer"
                           >
-                            {workOrder.site.finalUrl ??
+                            {workOrder.initialScan.targetUrl ??
+                              workOrder.site.finalUrl ??
                               workOrder.site.baseUrl}
                           </a>
                         </dd>
@@ -477,25 +479,27 @@ export function WorkOrderPage() {
                   </div>
                   <dl>
                     <div>
-                      <dt>규칙 버전</dt>
-                      <dd>{workOrder.rulesVersion}</dd>
+                      <dt>1차 규칙 버전</dt>
+                      <dd>{workOrder.initialScan.rulesVersion}</dd>
                     </div>
                     <div>
-                      <dt>발급 시각(KST)</dt>
-                      <dd>{formatKST(workOrder.issuedAt)}</dd>
+                      <dt>1차 검수 완료 시각(KST)</dt>
+                      <dd>{formatKST(workOrder.initialScan.completedAt)}</dd>
                     </div>
                     <div>
-                      <dt>검사 URL</dt>
+                      <dt>1차 검사 URL</dt>
                       <dd>
                         <a
                           href={
+                            workOrder.initialScan.targetUrl ??
                             workOrder.site.finalUrl ??
                             workOrder.site.baseUrl
                           }
                           target="_blank"
                           rel="noreferrer"
                         >
-                          {workOrder.site.finalUrl ??
+                          {workOrder.initialScan.targetUrl ??
+                            workOrder.site.finalUrl ??
                             workOrder.site.baseUrl}
                         </a>
                       </dd>
@@ -832,7 +836,7 @@ export function WorkOrderPage() {
         <section className="work-order-items-section">
           <div className="work-order-section-heading">
             <div>
-              <h2>선택한 수정 요구사항</h2>
+              <h2>1차 진단에서 발견된 수정 항목</h2>
               <p>
                 소스코드가 아니라 배포된 공개 URL에서 완료 여부를
                 확인합니다.
@@ -874,7 +878,7 @@ export function WorkOrderPage() {
                     <dd>{item.targetUrl}</dd>
                   </div>
                   <div>
-                    <dt>현재 판정</dt>
+                    <dt>1차 판정</dt>
                     <dd>
                       {item.finding?.status ?? "추가 개선 권장"}
                     </dd>
