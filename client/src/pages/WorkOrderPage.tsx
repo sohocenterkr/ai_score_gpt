@@ -456,11 +456,6 @@ export function WorkOrderPage() {
                     </div>
                   </div>
 
-                  <p className="work-order-score-comparison-note">
-                    예상 점수 범위 {workOrder.expectedScoreMin}~
-                    {workOrder.expectedScoreMax}점은 보장값이 아닌 규칙 배점
-                    기준입니다.
-                  </p>
                 </>
               ) : (
                 <>
