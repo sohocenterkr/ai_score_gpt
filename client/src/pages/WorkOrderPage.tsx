@@ -432,7 +432,7 @@ export function WorkOrderPage() {
                       ) : null}
                     </strong>
                     <small>
-                      {latestScoredVerificationAttempt.attemptNumber}차 검수 완료
+                      {latestScoredVerificationAttempt.attemptNumber + 1}차 검수 완료
                     </small>
                   </div>
                 </>
@@ -563,11 +563,17 @@ export function WorkOrderPage() {
                 className="secondary work-order-revision-button"
                 type="button"
                 onClick={handleRevise}
-                disabled={
-                  working ||
-                  workOrder.status === "VERIFYING" ||
-                  workOrder.verificationAttempts.length === 0
-                }
+                  disabled={
+                    working ||
+                    workOrder.status === "VERIFYING" ||
+                    workOrder.verificationAttempts.length === 0 ||
+                    workOrder.verificationAttempts.some(
+                      (attempt) =>
+                        attempt.status === "PASSED" ||
+                        ((attempt.scoreAfter ?? -1) >=
+                          workOrder.expectedScoreMax),
+                    )
+                  }
               >
                 {workOrder.verificationAttempts.length === 0
                   ? "후속 작업지시서 발급"
@@ -600,7 +606,7 @@ export function WorkOrderPage() {
                     <li key={attempt.id}>
                       <div>
                         <strong>
-                          {attempt.attemptNumber}차 검수
+                          {attempt.attemptNumber + 1}차 검수
                         </strong>
                         <span
                           className={`verification-attempt-status verification-attempt-status-${verificationStatusClass(
