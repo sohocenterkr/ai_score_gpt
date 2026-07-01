@@ -34,6 +34,7 @@ function createFakeService(
     createSessionForVerifiedEmail: vi.fn().mockResolvedValue(authResult),
     login: vi.fn().mockResolvedValue(authResult),
     getSessionUser: vi.fn().mockResolvedValue(sampleUser),
+    deleteAccount: vi.fn().mockResolvedValue(undefined),
     logout: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };

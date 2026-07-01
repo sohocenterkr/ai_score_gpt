@@ -29,6 +29,7 @@ function createFakeAuthService(): AuthService {
     createSessionForVerifiedEmail: vi.fn(),
     login: vi.fn(),
     getSessionUser: vi.fn().mockResolvedValue(sampleUser),
+    deleteAccount: vi.fn(),
     logout: vi.fn(),
   };
 }

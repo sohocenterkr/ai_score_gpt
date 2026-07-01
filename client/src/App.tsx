@@ -5,6 +5,7 @@ import { LocaleLayout } from "./components/LocaleLayout";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeepDiagnosticSetupPage } from "./pages/DeepDiagnosticSetupPage";
+import { DeleteAccountPage } from "./pages/DeleteAccountPage";
 import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
@@ -80,6 +81,14 @@ export function App() {
           element={
             <RequireAuth>
               <ChangePasswordPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="account/delete"
+          element={
+            <RequireAuth>
+              <DeleteAccountPage />
             </RequireAuth>
           }
         />

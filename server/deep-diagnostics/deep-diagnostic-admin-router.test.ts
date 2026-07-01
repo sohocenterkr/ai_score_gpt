@@ -94,6 +94,7 @@ function authService(authenticated = true): AuthService {
     getSessionUser: vi
       .fn()
       .mockResolvedValue(authenticated ? user : null),
+    deleteAccount: vi.fn().mockResolvedValue(undefined),
     logout: vi.fn().mockResolvedValue(undefined),
   };
 }

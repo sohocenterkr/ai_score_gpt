@@ -83,6 +83,9 @@ export function DashboardPage() {
           <Link className="secondary-action" to={`/${locale}/change-password`}>
             비밀번호 변경
           </Link>
+          <Link className="secondary-action" to={`/${locale}/account/delete`}>
+            회원탈퇴
+          </Link>
           <button
             className="secondary-action"
             type="button"

@@ -167,6 +167,20 @@ export async function logoutRequest(): Promise<void> {
   }
 }
 
+export async function deleteAccountRequest(input: {
+  currentPassword: string;
+  confirmation: string;
+}): Promise<MessageResponse> {
+  const response = await fetch("/api/auth/delete-account", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  return readResponse<MessageResponse>(response);
+}
+
 export async function forgotPasswordRequest(
   email: string,
 ): Promise<MessageResponse> {

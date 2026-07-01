@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  deleteAccountRequest,
   fetchSession,
   loginRequest,
   logoutRequest,
@@ -25,6 +26,10 @@ interface AuthContextValue {
     locale: string;
     termsAccepted: true;
     privacyAccepted: true;
+  }): Promise<void>;
+  deleteAccount(input: {
+    currentPassword: string;
+    confirmation: string;
   }): Promise<void>;
   logout(): Promise<void>;
   refresh(): Promise<void>;
@@ -61,6 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signup(input) {
         await signupRequest(input);
+      },
+      async deleteAccount(input) {
+        await deleteAccountRequest(input);
+        setState({ status: "anonymous" });
       },
       async logout() {
         await logoutRequest();

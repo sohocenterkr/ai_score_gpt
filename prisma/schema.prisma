@@ -243,6 +243,14 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
+model DeletedAccountEmail {
+  id        String   @id @default(cuid())
+  emailHash String   @unique @map("email_hash")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("deleted_account_emails")
+}
+
 model Organization {
   id        String           @id @default(cuid())
   name      String

@@ -71,6 +71,20 @@ const loginSchema = z.object({
   password: z.string().min(1, "비밀번호를 입력해 주세요.").max(128),
 });
 
+const deleteAccountSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(1, "현재 비밀번호를 입력해 주세요.")
+    .max(128, "현재 비밀번호는 128자 이하여야 합니다."),
+  confirmation: z
+    .string()
+    .trim()
+    .refine(
+      (value) => value === "회원탈퇴",
+      "회원탈퇴를 정확히 입력해 주세요.",
+    ),
+});
+
 const emailVerificationSchema = z.object({
   email: emailSchema,
   locale: z.enum(["ko", "en"]).default("ko"),
@@ -316,6 +330,42 @@ export function createAuthRouter(
         const result = await authService.login(parsed.data);
         setSessionCookie(response, result.token, result.expiresAt);
         response.json({ user: result.user });
+      } catch (error) {
+        handleAuthError(response, error);
+      }
+    },
+  );
+
+  router.post(
+    "/delete-account",
+    originGuard,
+    mutationRateLimit,
+    async (request, response) => {
+      const rawToken = readSessionToken(request);
+
+      if (!rawToken) {
+        response.status(401).json({
+          code: "AUTH_REQUIRED",
+          message: "로그인이 필요합니다.",
+        });
+        return;
+      }
+
+      const parsed = deleteAccountSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        validationError(response, parsed.error);
+        return;
+      }
+
+      try {
+        await authService.deleteAccount(rawToken, {
+          currentPassword: parsed.data.currentPassword,
+        });
+        clearSessionCookie(response);
+        response.json({
+          message: "회원탈퇴가 완료되었습니다.",
+        });
       } catch (error) {
         handleAuthError(response, error);
       }

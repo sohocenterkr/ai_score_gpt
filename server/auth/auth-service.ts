@@ -34,6 +34,10 @@ export interface LoginInput {
   password: string;
 }
 
+export interface DeleteAccountInput {
+  currentPassword: string;
+}
+
 export interface SignupResult {
   user: PublicUser;
 }
@@ -55,6 +59,7 @@ export interface AuthService {
   ): Promise<AuthResult>;
   login(input: LoginInput): Promise<AuthResult>;
   getSessionUser(rawToken: string): Promise<PublicUser | null>;
+  deleteAccount(rawToken: string, input: DeleteAccountInput): Promise<void>;
   logout(rawToken: string): Promise<void>;
 }
 
@@ -92,6 +97,12 @@ function normalizeName(name: string): string {
 function hashSessionToken(rawToken: string): string {
   return createHmac("sha256", requireSessionSecret())
     .update(rawToken)
+    .digest("hex");
+}
+
+function hashDeletedAccountEmail(email: string): string {
+  return createHmac("sha256", requireSessionSecret())
+    .update(`deleted-account-email:${normalizeEmail(email)}`)
     .digest("hex");
 }
 
@@ -284,6 +295,19 @@ export function createPrismaAuthService(): AuthService {
       const email = normalizeEmail(input.email);
       const name = normalizeName(input.name);
       const now = new Date();
+      const deletedAccount = await prisma.deletedAccountEmail.findUnique({
+        where: { emailHash: hashDeletedAccountEmail(email) },
+        select: { id: true },
+      });
+
+      if (deletedAccount) {
+        throw new AuthError(
+          "AUTH_EMAIL_WITHDRAWN",
+          "탈퇴한 이메일 아이디로는 다시 가입할 수 없습니다.",
+          409,
+        );
+      }
+
       const passwordHash = await hashPassword(input.password);
 
       try {
@@ -505,6 +529,107 @@ export function createPrismaAuthService(): AuthService {
       }
 
       return toPublicUser(session.user);
+    },
+
+    async deleteAccount(rawToken, input) {
+      const prisma = getDatabase();
+      const sessionTokenHash = hashSessionToken(rawToken);
+      const session = await prisma.session.findUnique({
+        where: { sessionTokenHash },
+        include: {
+          user: {
+            include: {
+              organizationMembers: {
+                include: {
+                  organization: {
+                    include: {
+                      members: { select: { userId: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!session || session.revokedAt || session.expiresAt <= new Date()) {
+        throw new AuthError(
+          "AUTH_REQUIRED",
+          "로그인이 필요합니다.",
+          401,
+        );
+      }
+
+      const user = session.user;
+
+      if (user.role === "SUPER_ADMIN") {
+        throw new AuthError(
+          "AUTH_SUPER_ADMIN_DELETE_FORBIDDEN",
+          "수퍼관리자 계정은 회원탈퇴할 수 없습니다.",
+          403,
+        );
+      }
+
+      if (!user.passwordHash) {
+        throw new AuthError(
+          "AUTH_PASSWORD_REQUIRED",
+          "비밀번호 로그인 계정만 회원탈퇴할 수 있습니다.",
+          400,
+        );
+      }
+
+      const passwordMatches = await verifyPassword(
+        user.passwordHash,
+        input.currentPassword,
+      );
+
+      if (!passwordMatches) {
+        throw new AuthError(
+          "AUTH_INVALID_PASSWORD",
+          "현재 비밀번호가 올바르지 않습니다.",
+          401,
+        );
+      }
+
+      const ownOrganizationIds = user.organizationMembers
+        .filter((member) => member.organization.members.length <= 1)
+        .map((member) => member.organizationId);
+      const sharedOrganizationIds = user.organizationMembers
+        .filter((member) => member.organization.members.length > 1)
+        .map((member) => member.organizationId);
+      const emailHash = hashDeletedAccountEmail(user.email);
+
+      await prisma.$transaction(async (transaction) => {
+        await transaction.deletedAccountEmail.upsert({
+          where: { emailHash },
+          update: {},
+          create: { emailHash },
+        });
+
+        if (ownOrganizationIds.length > 0) {
+          await transaction.organization.deleteMany({
+            where: { id: { in: ownOrganizationIds } },
+          });
+        }
+
+        if (sharedOrganizationIds.length > 0) {
+          await transaction.organizationMember.deleteMany({
+            where: {
+              userId: user.id,
+              organizationId: { in: sharedOrganizationIds },
+            },
+          });
+        }
+
+        await transaction.emailVerificationToken.deleteMany({
+          where: { email: user.email },
+        });
+
+        await transaction.user.delete({
+          where: { id: user.id },
+        });
+      });
     },
 
     async logout(rawToken) {
