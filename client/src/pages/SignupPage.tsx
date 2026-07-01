@@ -140,14 +140,14 @@ export function SignupPage() {
           />
 
           <button
-            className="auth-submit"
+            className="secondary-action email-verification-action"
             type="button"
             onClick={handleSendEmailVerification}
             disabled={verificationSubmitting || submitting}
           >
             {verificationSubmitting ? "인증 메일 발송 중..." : "인증 메일 받기"}
           </button>
-          <p className="field-guide">
+          <p className="field-guide email-verification-guide">
             메일의 인증 링크를 눌러 돌아온 뒤 회원가입을 완료할 수 있습니다.
           </p>
 
