@@ -5,6 +5,8 @@ import { env } from "../config/env";
 import { getDatabase } from "../db";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
+const LOGIN_LOCK_MAX_FAILURES = 5;
+const LOGIN_LOCK_MS = 30 * 60 * 1_000;
 
 export interface PublicUser {
   id: string;
@@ -22,6 +24,7 @@ export interface SignupInput {
   email: string;
   name: string;
   password: string;
+  passwordConfirm: string;
   termsAccepted: boolean;
   privacyAccepted: boolean;
 }
@@ -196,6 +199,8 @@ async function loginConfiguredSuperAdmin(
       emailVerifiedAt: now,
       loginCount: { increment: 1 },
       lastLoginAt: now,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
     };
 
     const nextUser = existingUser
@@ -241,6 +246,24 @@ async function loginConfiguredSuperAdmin(
     token: session.token,
     expiresAt: session.expiresAt,
   };
+}
+
+function formatLockRemaining(lockedUntil: Date, now = new Date()): string {
+  const remainingMs = Math.max(lockedUntil.getTime() - now.getTime(), 0);
+  const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60_000));
+
+  return `${remainingMinutes}분`;
+}
+
+function createAccountLockedError(lockedUntil: Date, now = new Date()): AuthError {
+  return new AuthError(
+    "AUTH_ACCOUNT_LOCKED",
+    `비밀번호를 여러 번 잘못 입력해 계정이 잠겼습니다. ${formatLockRemaining(
+      lockedUntil,
+      now,
+    )} 후 다시 시도해 주세요.`,
+    423,
+  );
 }
 
 export function createPrismaAuthService(): AuthService {
@@ -335,12 +358,40 @@ export function createPrismaAuthService(): AuthService {
         );
       }
 
+      const now = new Date();
+
+      if (user.lockedUntil && user.lockedUntil.getTime() > now.getTime()) {
+        throw createAccountLockedError(user.lockedUntil, now);
+      }
+
       const passwordMatches = await verifyPassword(
         user.passwordHash,
         input.password,
       );
 
       if (!passwordMatches) {
+        const previousFailureCount =
+          user.lockedUntil && user.lockedUntil.getTime() <= now.getTime()
+            ? 0
+            : user.failedLoginAttempts;
+        const nextFailureCount = previousFailureCount + 1;
+        const nextLockedUntil =
+          nextFailureCount >= LOGIN_LOCK_MAX_FAILURES
+            ? new Date(now.getTime() + LOGIN_LOCK_MS)
+            : null;
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedLoginAttempts: nextFailureCount,
+            lockedUntil: nextLockedUntil,
+          },
+        });
+
+        if (nextLockedUntil) {
+          throw createAccountLockedError(nextLockedUntil, now);
+        }
+
         throw new AuthError(
           "AUTH_INVALID_CREDENTIALS",
           "이메일 또는 비밀번호가 올바르지 않습니다.",
@@ -354,7 +405,9 @@ export function createPrismaAuthService(): AuthService {
           where: { id: user.id },
           data: {
             loginCount: { increment: 1 },
-            lastLoginAt: new Date(),
+            lastLoginAt: now,
+            failedLoginAttempts: 0,
+            lockedUntil: null,
           },
         });
 

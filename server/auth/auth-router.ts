@@ -28,21 +28,35 @@ const passwordSchema = z
     "비밀번호에는 영문자와 숫자가 각각 1개 이상 필요합니다.",
   );
 
-const signupSchema = z.object({
-  email: emailSchema,
-  name: z
-    .string()
-    .trim()
-    .min(2, "이름은 2자 이상 입력해 주세요.")
-    .max(50, "이름은 50자 이하여야 합니다."),
-  password: passwordSchema,
-  termsAccepted: z
-    .boolean()
-    .refine((value) => value, "이용약관에 동의해 주세요."),
-  privacyAccepted: z
-    .boolean()
-    .refine((value) => value, "개인정보처리방침에 동의해 주세요."),
-});
+const signupSchema = z
+  .object({
+    email: emailSchema,
+    name: z
+      .string()
+      .trim()
+      .min(2, "이름은 2자 이상 입력해 주세요.")
+      .max(50, "이름은 50자 이하여야 합니다."),
+    password: passwordSchema,
+    passwordConfirm: z
+      .string()
+      .min(1, "비밀번호 확인을 입력해 주세요.")
+      .max(128, "비밀번호 확인은 128자 이하여야 합니다."),
+    termsAccepted: z
+      .boolean()
+      .refine((value) => value, "이용약관에 동의해 주세요."),
+    privacyAccepted: z
+      .boolean()
+      .refine((value) => value, "개인정보처리방침에 동의해 주세요."),
+  })
+  .superRefine((value, context) => {
+    if (value.password !== value.passwordConfirm) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["passwordConfirm"],
+        message: "비밀번호 확인이 일치하지 않습니다.",
+      });
+    }
+  });
 
 const loginSchema = z.object({
   email: emailSchema,

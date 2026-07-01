@@ -21,6 +21,7 @@ interface AuthContextValue {
     email: string;
     name: string;
     password: string;
+    passwordConfirm: string;
     termsAccepted: true;
     privacyAccepted: true;
   }): Promise<void>;

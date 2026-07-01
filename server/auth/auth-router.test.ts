@@ -45,6 +45,7 @@ describe("auth API", () => {
       email: "member@example.com",
       name: "테스트 회원",
       password: "securepass123",
+      passwordConfirm: "securepass123",
       termsAccepted: true,
       privacyAccepted: true,
     });

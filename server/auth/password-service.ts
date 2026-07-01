@@ -109,7 +109,7 @@ export function createPrismaPasswordService(): PasswordService {
       await prisma.$transaction([
         prisma.user.update({
           where: { id: userId },
-          data: { passwordHash },
+          data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
         }),
         prisma.session.updateMany({
           where: { userId, revokedAt: null },
@@ -234,7 +234,7 @@ export function createPrismaPasswordService(): PasswordService {
 
         await transaction.user.update({
           where: { id: resetToken.userId },
-          data: { passwordHash },
+          data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
         });
 
         await transaction.session.updateMany({

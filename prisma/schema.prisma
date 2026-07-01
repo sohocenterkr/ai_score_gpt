@@ -170,6 +170,8 @@ model User {
   privacyAcceptedAt   DateTime             @map("privacy_accepted_at")
   loginCount          Int                  @default(0) @map("login_count")
   lastLoginAt         DateTime?            @map("last_login_at")
+  failedLoginAttempts Int                  @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime?            @map("locked_until")
   createdAt           DateTime             @default(now()) @map("created_at")
   updatedAt           DateTime             @updatedAt @map("updated_at")
   authAccounts        AuthAccount[]
@@ -181,6 +183,7 @@ model User {
   verificationAttemptsCreated VerificationAttempt[] @relation("VerificationAttemptCreator")
 
   @@index([status])
+  @@index([lockedUntil])
   @@map("users")
 }
 

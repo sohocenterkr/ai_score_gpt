@@ -51,6 +51,7 @@ export function SignupPage() {
         email,
         name,
         password,
+        passwordConfirm,
         termsAccepted: true,
         privacyAccepted: true,
       });
