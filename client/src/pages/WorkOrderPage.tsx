@@ -405,6 +405,39 @@ export function WorkOrderPage() {
             </strong>
             <small>보장값이 아닌 규칙 배점 기준</small>
           </div>
+
+            {(() => {
+              const latestScoredVerificationAttempt =
+                workOrder.verificationAttempts.find(
+                  (attempt) => attempt.scoreAfter !== null,
+                );
+
+              return latestScoredVerificationAttempt ? (
+                <>
+                  <div
+                    className="work-order-arrow verification"
+                    aria-hidden="true"
+                  >
+                    →
+                  </div>
+                  <div className="work-order-score-range verification">
+                    <span>최근 재검수</span>
+                    <strong>
+                      {latestScoredVerificationAttempt.scoreAfter}
+                      {latestScoredVerificationAttempt.gradeAfter ? (
+                        <small>
+                          {" "}
+                          {latestScoredVerificationAttempt.gradeAfter}
+                        </small>
+                      ) : null}
+                    </strong>
+                    <small>
+                      {latestScoredVerificationAttempt.attemptNumber}차 검수 완료
+                    </small>
+                  </div>
+                </>
+              ) : null;
+            })()}
           <dl>
             <div>
               <dt>규칙 버전</dt>
