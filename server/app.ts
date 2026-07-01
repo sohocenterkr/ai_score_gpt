@@ -45,6 +45,7 @@ import {
   type SiteService,
 } from "./sites/site-service";
 import { getNowKST } from "../shared/kst";
+import { getRenderedDomCollectorRuntimeStatus } from "./scans/scan-worker";
 
 interface CreateAppOptions {
   authService?: AuthService;
@@ -95,6 +96,12 @@ export function createApp(options: CreateAppOptions = {}) {
       status: healthy ? "ok" : "degraded",
       service: "site-ai-score",
       environment: env.NODE_ENV,
+      deployment: {
+        vercel: process.env.VERCEL === "1",
+        commit:
+          process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+      },
+      renderedDom: getRenderedDomCollectorRuntimeStatus(),
       timestampKST: getNowKST(),
       database,
     });

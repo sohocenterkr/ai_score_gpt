@@ -63,6 +63,24 @@ function configuredRenderedDomCollector():
   });
 }
 
+export function getRenderedDomCollectorRuntimeStatus(): {
+  nodeEnv: string;
+  renderedDomEnabled: boolean;
+  hasChromiumPath: boolean;
+  collectorConfigured: boolean;
+  timeoutMs: number;
+  settleMs: number;
+} {
+  return {
+    nodeEnv: env.NODE_ENV,
+    renderedDomEnabled: env.RENDERED_DOM_ENABLED,
+    hasChromiumPath: Boolean(env.CHROMIUM_PATH?.trim()),
+    collectorConfigured: Boolean(configuredRenderedDomCollector()),
+    timeoutMs: env.RENDERED_DOM_TIMEOUT_MS,
+    settleMs: env.RENDERED_DOM_SETTLE_MS,
+  };
+}
+
 function errorCodeFrom(error: unknown): string {
   if (error instanceof HttpFetchError) {
     return error.code;
