@@ -114,6 +114,21 @@ const environmentSchema = z.object({
 
 const processEnvForRuntime = { ...process.env };
 
+const runtimeNodeEnv =
+  typeof processEnvForRuntime.NODE_ENV === "string" &&
+  processEnvForRuntime.NODE_ENV.trim() !== ""
+    ? processEnvForRuntime.NODE_ENV.trim()
+    : "development";
+
+const hasExplicitScanWorkerEnabled =
+  typeof processEnvForRuntime.SCAN_WORKER_ENABLED === "string" &&
+  processEnvForRuntime.SCAN_WORKER_ENABLED.trim() !== "";
+
+if (runtimeNodeEnv !== "production" && !hasExplicitScanWorkerEnabled) {
+  processEnvForRuntime.SCAN_WORKER_ENABLED = "false";
+  process.env.SCAN_WORKER_ENABLED = "false";
+}
+
 if (processEnvForRuntime.TARGET_DATABASE_URL) {
   processEnvForRuntime.DATABASE_URL = processEnvForRuntime.TARGET_DATABASE_URL;
   process.env.DATABASE_URL = processEnvForRuntime.TARGET_DATABASE_URL;
