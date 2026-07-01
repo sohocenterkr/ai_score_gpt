@@ -885,16 +885,25 @@ export async function collectSiteScan(
     ? analyzeHtml(main.body, main.finalUrl)
     : null;
   const httpPassed = isSuccessful(main.statusCode);
-  const renderedDomPromise =
-    httpPassed && analysis && options.renderedDomCollector
-      ? options.renderedDomCollector.collect(main.finalUrl)
-      : Promise.resolve<RenderedDomResult>({
-          status: "NOT_RUN",
-          reason:
-            options.renderedDomCollector
-              ? "대표 페이지가 정상 HTML 응답이 아닙니다."
-              : "렌더링 수집기가 비활성화되어 있습니다.",
-        });
+    const renderedDomPromise =
+      httpPassed && analysis && options.renderedDomCollector
+        ? options.renderedDomCollector
+            .collect(main.finalUrl)
+            .catch((error): RenderedDomResult => ({
+              status: "FAILED",
+              errorCode: "RENDERED_DOM_FAILED",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "JavaScript 렌더링 수집 중 알 수 없는 오류가 발생했습니다.",
+            }))
+        : Promise.resolve<RenderedDomResult>({
+            status: "NOT_RUN",
+            reason:
+              options.renderedDomCollector
+                ? "대표 페이지가 정상 HTML 응답이 아닙니다."
+                : "렌더링 수집기가 비활성화되어 있습니다.",
+          });
   const finalUrl = new URL(main.finalUrl);
   const finalOrigin = finalUrl.origin;
   const robotsUrl = new URL("/robots.txt", finalOrigin).toString();
