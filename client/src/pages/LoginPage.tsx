@@ -36,7 +36,7 @@ export function LoginPage() {
   }
 
   if (state.status === "authenticated") {
-    return <Navigate to={`/${locale}/sites`} replace />;
+    return <Navigate to={`/${locale}`} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -46,10 +46,7 @@ export function LoginPage() {
 
     try {
       await login({ email, password });
-      const destination =
-        (location.state as LoginLocationState | null)?.from ??
-        `/${locale}/sites`;
-      navigate(destination, { replace: true });
+      navigate(`/${locale}`, { replace: true });
     } catch (error) {
       setMessage(
         error instanceof AuthApiError

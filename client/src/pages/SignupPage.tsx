@@ -1,7 +1,84 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { AuthApiError, sendEmailVerificationRequest } from "../auth/auth-api";
 import { useAuth } from "../auth/AuthContext";
+
+
+const EMAIL_VERIFICATION_STORAGE_KEY =
+  "site-ai-score:signup-email-verification";
+const EMAIL_VERIFICATION_STORAGE_TTL_MS = 30 * 60 * 1_000;
+
+interface StoredEmailVerification {
+  email: string;
+  token: string;
+  savedAt: number;
+}
+
+function normalizeEmailForVerification(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function readStoredEmailVerification(): StoredEmailVerification | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(EMAIL_VERIFICATION_STORAGE_KEY);
+
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<StoredEmailVerification>;
+
+    if (
+      typeof parsed.email !== "string" ||
+      typeof parsed.token !== "string" ||
+      typeof parsed.savedAt !== "number"
+    ) {
+      window.localStorage.removeItem(EMAIL_VERIFICATION_STORAGE_KEY);
+      return null;
+    }
+
+    if (Date.now() - parsed.savedAt > EMAIL_VERIFICATION_STORAGE_TTL_MS) {
+      window.localStorage.removeItem(EMAIL_VERIFICATION_STORAGE_KEY);
+      return null;
+    }
+
+    return {
+      email: normalizeEmailForVerification(parsed.email),
+      token: parsed.token,
+      savedAt: parsed.savedAt,
+    };
+  } catch {
+    window.localStorage.removeItem(EMAIL_VERIFICATION_STORAGE_KEY);
+    return null;
+  }
+}
+
+function saveStoredEmailVerification(email: string, token: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    EMAIL_VERIFICATION_STORAGE_KEY,
+    JSON.stringify({
+      email: normalizeEmailForVerification(email),
+      token,
+      savedAt: Date.now(),
+    } satisfies StoredEmailVerification),
+  );
+}
+
+function clearStoredEmailVerification() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(EMAIL_VERIFICATION_STORAGE_KEY);
+}
 
 export function SignupPage() {
   const { locale = "ko" } = useParams();
@@ -29,6 +106,58 @@ export function SignupPage() {
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    function applyStoredVerification() {
+      const stored = readStoredEmailVerification();
+
+      if (!stored) {
+        return;
+      }
+
+      const currentEmail = normalizeEmailForVerification(email);
+
+      if (currentEmail && currentEmail !== stored.email) {
+        return;
+      }
+
+      setEmail(stored.email);
+      setEmailVerificationToken(stored.token);
+      setVerificationNotice(
+        "이메일 인증이 완료되었습니다. 나머지 정보를 입력해 주세요.",
+      );
+    }
+
+    if (emailFromVerificationLink && tokenFromVerificationLink) {
+      saveStoredEmailVerification(
+        emailFromVerificationLink,
+        tokenFromVerificationLink,
+      );
+      setVerificationNotice(
+        "이메일 인증이 완료되었습니다. 원래 열어둔 회원가입 창에서도 계속 가입할 수 있습니다.",
+      );
+    } else {
+      applyStoredVerification();
+    }
+
+    function handleStorage(event: StorageEvent) {
+      if (event.key === EMAIL_VERIFICATION_STORAGE_KEY) {
+        applyStoredVerification();
+      }
+    }
+
+    function handleFocus() {
+      applyStoredVerification();
+    }
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [email, emailFromVerificationLink, tokenFromVerificationLink]);
+
   if (state.status === "loading") {
     return (
       <section className="full-bleed-section auth-section">
@@ -40,10 +169,11 @@ export function SignupPage() {
   }
 
   if (state.status === "authenticated") {
-    return <Navigate to={`/${locale}/sites`} replace />;
+    return <Navigate to={`/${locale}`} replace />;
   }
 
   function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
+    clearStoredEmailVerification();
     setEmail(event.target.value);
     setEmailVerificationToken("");
     setVerificationNotice("");
@@ -61,6 +191,8 @@ export function SignupPage() {
     setVerificationSubmitting(true);
 
     try {
+      clearStoredEmailVerification();
+      setEmailVerificationToken("");
       const response = await sendEmailVerificationRequest({ email, locale });
       setVerificationNotice(response.message);
     } catch (error) {
@@ -105,7 +237,8 @@ export function SignupPage() {
         termsAccepted: true,
         privacyAccepted: true,
       });
-      navigate(`/${locale}/sites`, { replace: true });
+      clearStoredEmailVerification();
+      navigate(`/${locale}`, { replace: true });
     } catch (error) {
       setMessage(
         error instanceof AuthApiError
