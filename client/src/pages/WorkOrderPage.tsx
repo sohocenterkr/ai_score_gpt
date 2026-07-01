@@ -388,24 +388,7 @@ export function WorkOrderPage() {
           </div>
         ) : null}
 
-        <section className="surface work-order-overview">
-          <div className="work-order-score-range">
-            <span>현재 점수</span>
-            <strong>{workOrder.scoreBefore ?? "—"}</strong>
-            <small>{workOrder.gradeBefore ?? "미계산"}</small>
-          </div>
-          <div className="work-order-arrow" aria-hidden="true">
-            →
-          </div>
-          <div className="work-order-score-range expected">
-            <span>예상 점수 범위</span>
-            <strong>
-              {workOrder.expectedScoreMin}~
-              {workOrder.expectedScoreMax}
-            </strong>
-            <small>보장값이 아닌 규칙 배점 기준</small>
-          </div>
-
+          <section className="surface work-order-overview">
             {(() => {
               const latestScoredVerificationAttempt =
                 workOrder.verificationAttempts.find(
@@ -414,57 +397,119 @@ export function WorkOrderPage() {
 
               return latestScoredVerificationAttempt ? (
                 <>
-                  <div
-                    className="work-order-arrow verification"
-                    aria-hidden="true"
-                  >
+                  <div className="work-order-score-comparison">
+                    <div className="work-order-score-card">
+                      <span>1차 점수</span>
+                      <strong>{workOrder.scoreBefore ?? "—"}</strong>
+                      <small>1차 검수완료</small>
+                    </div>
+
+                    <dl className="work-order-score-comparison-meta">
+                      <div>
+                        <dt>규칙 버전</dt>
+                        <dd>{workOrder.rulesVersion}</dd>
+                      </div>
+                      <div>
+                        <dt>발급 시각(KST)</dt>
+                        <dd>{formatKST(workOrder.issuedAt)}</dd>
+                      </div>
+                      <div>
+                        <dt>검사 URL</dt>
+                        <dd>
+                          <a
+                            href={
+                              workOrder.site.finalUrl ??
+                              workOrder.site.baseUrl
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {workOrder.site.finalUrl ??
+                              workOrder.site.baseUrl}
+                          </a>
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div
+                      className="work-order-score-comparison-arrow"
+                      aria-hidden="true"
+                    >
+                      →
+                    </div>
+
+                    <div className="work-order-score-card verification">
+                      <span>최근 재검수</span>
+                      <strong>
+                        {latestScoredVerificationAttempt.scoreAfter}
+                        {latestScoredVerificationAttempt.gradeAfter ? (
+                          <small>
+                            {" "}
+                            {latestScoredVerificationAttempt.gradeAfter}
+                          </small>
+                        ) : null}
+                      </strong>
+                      <small>
+                        {latestScoredVerificationAttempt.attemptNumber + 1}차
+                        검수완료
+                      </small>
+                    </div>
+                  </div>
+
+                  <p className="work-order-score-comparison-note">
+                    예상 점수 범위 {workOrder.expectedScoreMin}~
+                    {workOrder.expectedScoreMax}점은 보장값이 아닌 규칙 배점
+                    기준입니다.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="work-order-score-range">
+                    <span>1차 점수</span>
+                    <strong>{workOrder.scoreBefore ?? "—"}</strong>
+                    <small>1차 검수완료</small>
+                  </div>
+                  <div className="work-order-arrow" aria-hidden="true">
                     →
                   </div>
-                  <div className="work-order-score-range verification">
-                    <span>최근 재검수</span>
+                  <div className="work-order-score-range expected">
+                    <span>예상 점수 범위</span>
                     <strong>
-                      {latestScoredVerificationAttempt.scoreAfter}
-                      {latestScoredVerificationAttempt.gradeAfter ? (
-                        <small>
-                          {" "}
-                          {latestScoredVerificationAttempt.gradeAfter}
-                        </small>
-                      ) : null}
+                      {workOrder.expectedScoreMin}~
+                      {workOrder.expectedScoreMax}
                     </strong>
-                    <small>
-                      {latestScoredVerificationAttempt.attemptNumber + 1}차 검수 완료
-                    </small>
+                    <small>보장값이 아닌 규칙 배점 기준</small>
                   </div>
+                  <dl>
+                    <div>
+                      <dt>규칙 버전</dt>
+                      <dd>{workOrder.rulesVersion}</dd>
+                    </div>
+                    <div>
+                      <dt>발급 시각(KST)</dt>
+                      <dd>{formatKST(workOrder.issuedAt)}</dd>
+                    </div>
+                    <div>
+                      <dt>검사 URL</dt>
+                      <dd>
+                        <a
+                          href={
+                            workOrder.site.finalUrl ??
+                            workOrder.site.baseUrl
+                          }
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {workOrder.site.finalUrl ??
+                            workOrder.site.baseUrl}
+                        </a>
+                      </dd>
+                    </div>
+                  </dl>
                 </>
-              ) : null;
+              );
             })()}
-          <dl>
-            <div>
-              <dt>규칙 버전</dt>
-              <dd>{workOrder.rulesVersion}</dd>
-            </div>
-            <div>
-              <dt>발급 시각(KST)</dt>
-              <dd>{formatKST(workOrder.issuedAt)}</dd>
-            </div>
-            <div>
-              <dt>검사 URL</dt>
-              <dd>
-                <a
-                  href={
-                    workOrder.site.finalUrl ??
-                    workOrder.site.baseUrl
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {workOrder.site.finalUrl ??
-                    workOrder.site.baseUrl}
-                </a>
-              </dd>
-            </div>
-          </dl>
-        </section>
+          </section>
 
         <section className="surface work-order-verification">
           <div className="work-order-verification-heading">
