@@ -46,6 +46,7 @@ describe("auth API", () => {
       name: "테스트 회원",
       password: "securepass123",
       passwordConfirm: "securepass123",
+      emailVerificationToken: "email-verification-token-value-1234567890",
       termsAccepted: true,
       privacyAccepted: true,
     });

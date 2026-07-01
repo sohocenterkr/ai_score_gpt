@@ -62,6 +62,7 @@ export async function signupRequest(input: {
   name: string;
   password: string;
   passwordConfirm: string;
+  emailVerificationToken: string;
   termsAccepted: true;
   privacyAccepted: true;
 }): Promise<AuthResponse> {
@@ -73,6 +74,20 @@ export async function signupRequest(input: {
   });
 
   return readResponse<AuthResponse>(response);
+}
+
+export async function sendEmailVerificationRequest(input: {
+  email: string;
+  locale: string;
+}): Promise<MessageResponse> {
+  const response = await fetch("/api/auth/email-verification", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  return readResponse<MessageResponse>(response);
 }
 
 export async function loginRequest(input: {

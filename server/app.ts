@@ -16,6 +16,10 @@ import {
   createResendPasswordResetMailer,
   type PasswordResetMailer,
 } from "./email/password-reset-mailer";
+import {
+  createResendEmailVerificationMailer,
+  type EmailVerificationMailer,
+} from "./email/email-verification-mailer";
 import { env } from "./config/env";
 import { getDatabaseHealth } from "./services/database-health";
 import { createScanResultRouter } from "./scans/scan-result-router";
@@ -51,6 +55,7 @@ interface CreateAppOptions {
   authService?: AuthService;
   passwordService?: PasswordService;
   passwordResetMailer?: PasswordResetMailer;
+  emailVerificationMailer?: EmailVerificationMailer;
   siteService?: SiteService;
   deepDiagnosticAdminService?: DeepDiagnosticAdminService;
   scanResultService?: ScanResultService;
@@ -65,6 +70,8 @@ export function createApp(options: CreateAppOptions = {}) {
     options.passwordService ?? createPrismaPasswordService();
   const passwordResetMailer =
     options.passwordResetMailer ?? createResendPasswordResetMailer();
+  const emailVerificationMailer =
+    options.emailVerificationMailer ?? createResendEmailVerificationMailer();
   const siteService = options.siteService ?? createPrismaSiteService();
   const deepDiagnosticAdminService =
     options.deepDiagnosticAdminService ??
@@ -107,7 +114,7 @@ export function createApp(options: CreateAppOptions = {}) {
     });
   });
 
-  app.use("/api/auth", createAuthRouter(authService));
+  app.use("/api/auth", createAuthRouter(authService, emailVerificationMailer));
   app.use(
     "/api/auth",
     createPasswordRouter({

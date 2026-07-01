@@ -1,18 +1,31 @@
-import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { AuthApiError } from "../auth/auth-api";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { AuthApiError, sendEmailVerificationRequest } from "../auth/auth-api";
 import { useAuth } from "../auth/AuthContext";
 
 export function SignupPage() {
   const { locale = "ko" } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { state, signup } = useAuth();
-  const [email, setEmail] = useState("");
+  const emailFromVerificationLink = searchParams.get("email")?.trim() ?? "";
+  const tokenFromVerificationLink =
+    searchParams.get("emailVerificationToken")?.trim() ?? "";
+  const [email, setEmail] = useState(emailFromVerificationLink);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [emailVerificationToken, setEmailVerificationToken] = useState(
+    tokenFromVerificationLink,
+  );
+  const [verificationNotice, setVerificationNotice] = useState(
+    tokenFromVerificationLink
+      ? "이메일 인증 링크가 적용되었습니다. 나머지 정보를 입력해 주세요."
+      : "",
+  );
+  const [verificationSubmitting, setVerificationSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -30,9 +43,45 @@ export function SignupPage() {
     return <Navigate to={`/${locale}/sites`} replace />;
   }
 
+  function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
+    setEmail(event.target.value);
+    setEmailVerificationToken("");
+    setVerificationNotice("");
+  }
+
+  async function handleSendEmailVerification() {
+    setMessage("");
+    setVerificationNotice("");
+
+    if (!email.trim()) {
+      setMessage("인증받을 이메일 주소를 입력해 주세요.");
+      return;
+    }
+
+    setVerificationSubmitting(true);
+
+    try {
+      const response = await sendEmailVerificationRequest({ email, locale });
+      setVerificationNotice(response.message);
+    } catch (error) {
+      setMessage(
+        error instanceof AuthApiError
+          ? error.message
+          : "인증 메일 발송 중 오류가 발생했습니다.",
+      );
+    } finally {
+      setVerificationSubmitting(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage("");
+
+    if (!emailVerificationToken) {
+      setMessage("이메일 인증을 완료한 뒤 회원가입해 주세요.");
+      return;
+    }
 
     if (password !== passwordConfirm) {
       setMessage("비밀번호 확인이 일치하지 않습니다.");
@@ -52,6 +101,7 @@ export function SignupPage() {
         name,
         password,
         passwordConfirm,
+        emailVerificationToken,
         termsAccepted: true,
         privacyAccepted: true,
       });
@@ -85,9 +135,27 @@ export function SignupPage() {
             inputMode="email"
             autoComplete="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={handleEmailChange}
             required
           />
+
+          <button
+            className="auth-submit"
+            type="button"
+            onClick={handleSendEmailVerification}
+            disabled={verificationSubmitting || submitting}
+          >
+            {verificationSubmitting ? "인증 메일 발송 중..." : "인증 메일 받기"}
+          </button>
+          <p className="field-guide">
+            메일의 인증 링크를 눌러 돌아온 뒤 회원가입을 완료할 수 있습니다.
+          </p>
+
+          {verificationNotice ? (
+            <p className="auth-message auth-success" role="status">
+              {verificationNotice}
+            </p>
+          ) : null}
 
           <label htmlFor="signup-name">이름</label>
           <input

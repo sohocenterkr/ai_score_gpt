@@ -3,6 +3,7 @@ import * as argon2 from "argon2";
 import { Prisma, type User } from "@prisma/client";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
+import { consumeEmailVerificationToken } from "./email-verification-service";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 const LOGIN_LOCK_MAX_FAILURES = 5;
@@ -25,6 +26,7 @@ export interface SignupInput {
   name: string;
   password: string;
   passwordConfirm: string;
+  emailVerificationToken: string;
   termsAccepted: boolean;
   privacyAccepted: boolean;
 }
@@ -272,8 +274,21 @@ export function createPrismaAuthService(): AuthService {
       const prisma = getDatabase();
       const email = normalizeEmail(input.email);
       const name = normalizeName(input.name);
-      const passwordHash = await hashPassword(input.password);
       const now = new Date();
+      const emailVerified = await consumeEmailVerificationToken(
+        email,
+        input.emailVerificationToken,
+      );
+
+      if (!emailVerified) {
+        throw new AuthError(
+          "AUTH_EMAIL_VERIFICATION_REQUIRED",
+          "이메일 인증을 완료한 뒤 회원가입해 주세요.",
+          400,
+        );
+      }
+
+      const passwordHash = await hashPassword(input.password);
       const session = createSessionValues();
 
       try {
@@ -285,6 +300,7 @@ export function createPrismaAuthService(): AuthService {
               passwordHash,
               termsAcceptedAt: now,
               privacyAcceptedAt: now,
+              emailVerifiedAt: now,
               loginCount: 1,
               lastLoginAt: now,
               authAccounts: {

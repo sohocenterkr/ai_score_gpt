@@ -6,12 +6,14 @@ import {
 } from "express";
 import { z } from "zod";
 import { AuthError, type AuthService } from "./auth-service";
+import { createEmailVerificationDelivery } from "./email-verification-service";
 import { createMemoryRateLimit } from "./rate-limit";
 import {
   clearSessionCookie,
   readSessionToken,
   setSessionCookie,
 } from "./session-cookie";
+import type { EmailVerificationMailer } from "../email/email-verification-mailer";
 
 const emailSchema = z
   .string()
@@ -41,6 +43,11 @@ const signupSchema = z
       .string()
       .min(1, "비밀번호 확인을 입력해 주세요.")
       .max(128, "비밀번호 확인은 128자 이하여야 합니다."),
+    emailVerificationToken: z
+      .string()
+      .trim()
+      .min(20, "이메일 인증을 완료해 주세요.")
+      .max(512, "이메일 인증값이 너무 깁니다."),
     termsAccepted: z
       .boolean()
       .refine((value) => value, "이용약관에 동의해 주세요."),
@@ -61,6 +68,11 @@ const signupSchema = z
 const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, "비밀번호를 입력해 주세요.").max(128),
+});
+
+const emailVerificationSchema = z.object({
+  email: emailSchema,
+  locale: z.enum(["ko", "en"]).default("ko"),
 });
 
 function originGuard(
@@ -116,12 +128,55 @@ function handleAuthError(response: Response, error: unknown) {
   });
 }
 
-export function createAuthRouter(authService: AuthService) {
+export function createAuthRouter(
+  authService: AuthService,
+  emailVerificationMailer?: EmailVerificationMailer,
+) {
   const router = Router();
   const mutationRateLimit = createMemoryRateLimit({
     windowMs: 15 * 60 * 1_000,
     maxRequests: 20,
   });
+
+  router.post(
+    "/email-verification",
+    originGuard,
+    mutationRateLimit,
+    async (request, response) => {
+      const parsed = emailVerificationSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        validationError(response, parsed.error);
+        return;
+      }
+
+      if (!emailVerificationMailer?.isConfigured()) {
+        response.status(503).json({
+          code: "EMAIL_NOT_CONFIGURED",
+          message: "이메일 인증 메일 설정이 완료되지 않았습니다.",
+        });
+        return;
+      }
+
+      try {
+        const delivery = await createEmailVerificationDelivery(
+          parsed.data.email,
+          parsed.data.locale,
+        );
+
+        if (delivery) {
+          await emailVerificationMailer.sendEmailVerification(delivery);
+        }
+
+        response.status(202).json({
+          message:
+            "인증 메일을 발송했습니다. 메일의 인증 링크를 눌러 회원가입을 계속해 주세요.",
+        });
+      } catch (error) {
+        handleAuthError(response, error);
+      }
+    },
+  );
 
   router.post(
     "/signup",
