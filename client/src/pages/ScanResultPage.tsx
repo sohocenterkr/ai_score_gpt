@@ -936,11 +936,78 @@ export function ScanResultPage() {
 
 
 
+        <section className="surface scan-issues-section">
+          <div className="scan-section-heading">
+            <div>
+              <h2>상세보고서 예시</h2>
+              <p>
+                상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 3개만 미리 보여드립니다.
+              </p>
+            </div>
+</div>
+
+          <div
+            className="scan-finding-guide"
+            role="note"
+            aria-label="진단 배지 안내"
+          >
+            <strong>진단 배지 읽는 법</strong>
+            <dl>
+              <div>
+                <dt>판정</dt>
+                <dd>
+                  통과·실패·확인 불가 등 실제 검사 결과입니다.
+                </dd>
+              </div>
+              <div>
+                <dt>중요도</dt>
+                <dd>
+                  참고·낮음·주의·높음·매우 높음 순으로 해결
+                  우선순위를 나타냅니다.
+                </dd>
+              </div>
+              <div>
+                <dt>점수 영향</dt>
+                <dd>
+                  통과한 항목은 배점, 실패·확인 불가 항목은
+                  감점으로 표시합니다.
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          {result.primaryIssues.length > 0 ? (
+            <div className="scan-issue-list">
+              {result.primaryIssues.slice(0, 3).map((finding) => (
+                <FindingCard
+                  finding={finding}
+                  key={finding.id}
+                  primary
+                  selectable={finding.weight > 0}
+                  selected={selectedFindingIds.includes(finding.id)}
+                  onToggle={toggleWorkOrderFinding}
+                />
+              ))}
+            </div>
+          ) : (
+            <p className="scan-empty-message">
+              주요 문제로 분류된 항목이 없습니다.
+            </p>
+          )}
+
+          {workOrderError ? (
+            <p className="work-order-message work-order-error" role="alert">
+              {workOrderError}
+            </p>
+          ) : null}
+
+        </section>
+
         {renderedDomComparison ? (
           <section className="surface scan-rendered-section">
             <div className="scan-section-heading">
               <div>
-                <h2>초기 HTML vs JavaScript 렌더링</h2>
+                <h2>추가 기술 참고: JavaScript 렌더링 비교</h2>
                 <p>
                   브라우저에서 JavaScript를 실행한 뒤 실제 DOM이
                   얼마나 확장되는지 비교했습니다.
@@ -950,10 +1017,10 @@ export function ScanResultPage() {
                 className={`scan-rendered-status scan-rendered-status-${renderedDomComparison.status.toLowerCase()}`}
               >
                 {renderedDomComparison.status === "SUCCESS"
-                  ? "렌더링 성공"
+                  ? "비교 완료"
                   : renderedDomComparison.status === "FAILED"
-                    ? "렌더링 실패"
-                    : "렌더링 미실행"}
+                    ? "비교 실패"
+                    : "비교 미실행"}
               </span>
             </div>
 
@@ -1057,7 +1124,7 @@ export function ScanResultPage() {
                 <div className="scan-rendered-improvements">
                   <div>
                     <p className="eyebrow">RENDERING SUMMARY</p>
-                    <h3>초기 HTML·JavaScript 렌더링 비교 총평</h3>
+                    <h3>JavaScript 렌더링 비교 참고 의견</h3>
                     <p>
                       위 비교 수치가 뜻하는 바와 필요한 경우의
                       개선 방향을 함께 설명합니다.
@@ -1137,7 +1204,7 @@ export function ScanResultPage() {
                 </strong>
                 <p>
                   {renderedDomComparison.message ??
-                    "JavaScript 렌더링 비교 증거를 생성하지 못했습니다."}
+                    "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다."}
                 </p>
               </div>
             )}
@@ -1151,72 +1218,7 @@ export function ScanResultPage() {
           </section>
         ) : null}
 
-        <section className="surface scan-issues-section">
-          <div className="scan-section-heading">
-            <div>
-              <h2>상세보고서 예시</h2>
-              <p>
-                상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 3개만 미리 보여드립니다.
-              </p>
-            </div>
-</div>
 
-          <div
-            className="scan-finding-guide"
-            role="note"
-            aria-label="진단 배지 안내"
-          >
-            <strong>진단 배지 읽는 법</strong>
-            <dl>
-              <div>
-                <dt>판정</dt>
-                <dd>
-                  통과·실패·확인 불가 등 실제 검사 결과입니다.
-                </dd>
-              </div>
-              <div>
-                <dt>중요도</dt>
-                <dd>
-                  참고·낮음·주의·높음·매우 높음 순으로 해결
-                  우선순위를 나타냅니다.
-                </dd>
-              </div>
-              <div>
-                <dt>점수 영향</dt>
-                <dd>
-                  통과한 항목은 배점, 실패·확인 불가 항목은
-                  감점으로 표시합니다.
-                </dd>
-              </div>
-            </dl>
-          </div>
-
-          {result.primaryIssues.length > 0 ? (
-            <div className="scan-issue-list">
-              {result.primaryIssues.slice(0, 3).map((finding) => (
-                <FindingCard
-                  finding={finding}
-                  key={finding.id}
-                  primary
-                  selectable={finding.weight > 0}
-                  selected={selectedFindingIds.includes(finding.id)}
-                  onToggle={toggleWorkOrderFinding}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="scan-empty-message">
-              주요 문제로 분류된 항목이 없습니다.
-            </p>
-          )}
-
-          {workOrderError ? (
-            <p className="work-order-message work-order-error" role="alert">
-              {workOrderError}
-            </p>
-          ) : null}
-
-        </section>
 
         <section className="surface scan-page-section">
           <div className="scan-section-heading">

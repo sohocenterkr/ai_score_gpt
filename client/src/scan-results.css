@@ -1469,3 +1469,25 @@
   }
 }
 
+/* JavaScript 렌더링 비교는 점수 필수 항목이 아닌 보조 기술 참고입니다. */
+.scan-rendered-status-not_run,
+.scan-rendered-status-unknown {
+  background: #eef2ff;
+  color: #334155;
+}
+
+.scan-rendered-status-failed {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.scan-rendered-failure {
+  background: #f8fafc;
+  border-color: #dbeafe;
+  color: #334155;
+}
+
+.scan-rendered-failure strong {
+  color: #334155;
+}
+

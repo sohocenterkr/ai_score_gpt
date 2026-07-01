@@ -10,7 +10,7 @@ import type {
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.06-scan-report-v12";
+  "2026.06-scan-report-v13";
 
 let cachedFontHash: string | undefined;
 
@@ -1162,9 +1162,9 @@ function writeCategoryScores(
       "점수 상한 적용",
       `치명적 조건으로 최종 점수가 ${result.scoreSummary.cap}점 이하로 제한되었습니다.`,
       {
-        background: COLORS.failSoft,
-        border: "#FECACA",
-        accent: COLORS.fail,
+        background: COLORS.neutralSoft,
+        border: COLORS.border,
+        accent: COLORS.neutral,
       },
     );
   }
@@ -1190,7 +1190,7 @@ function writeUnderstanding(
     document,
     "AI가 읽은 사이트",
     scanResultRenderedDomComparison(result)
-      ? "저장된 초기 HTML 검사 증거를 요약했으며 JavaScript 렌더링 비교는 다음 페이지에 표시합니다."
+      ? "저장된 초기 HTML 검사 증거를 요약했습니다. JavaScript 렌더링 비교는 뒤쪽의 추가 기술 참고에 별도로 표시합니다."
       : "LLM의 추측이 아니라 저장된 초기 HTML 검사 증거를 요약했습니다.",
   );
 
@@ -1347,26 +1347,26 @@ function writeRenderedDomComparison(
   document.addPage();
   writeSectionTitle(
     document,
-    "초기 HTML vs JavaScript 렌더링",
-    "브라우저에서 JavaScript를 실행한 뒤 실제 DOM이 얼마나 확장되는지 비교합니다. 이 결과는 점수에 직접 반영하지 않고 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용합니다.",
+    "추가 기술 참고: JavaScript 렌더링 비교",
+    "JavaScript 실행 후 화면 변화는 점수 산정 필수 항목이 아니라 보조 참고 자료로 제공합니다. 필요한 경우 추가 콘텐츠 보완과 기술 검토에 활용합니다.",
   );
 
   if (comparison.status !== "SUCCESS") {
     writeTextBox(
       document,
-      "렌더링 결과",
+      "렌더링 비교 상태",
       [
         `상태: ${comparison.status}`,
         `오류 코드: ${comparison.errorCode ?? "미기록"}`,
         `안내: ${
           comparison.message ??
-          "JavaScript 렌더링 비교 증거를 생성하지 못했습니다."
+          "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다."
         }`,
       ].join("\n"),
       {
-        background: COLORS.failSoft,
-        border: "#FECACA",
-        accent: COLORS.fail,
+        background: COLORS.neutralSoft,
+        border: COLORS.border,
+        accent: COLORS.neutral,
       },
     );
   } else {
@@ -1432,7 +1432,7 @@ function writeRenderedDomComparison(
 
     writeSectionTitle(
       document,
-      "초기 HTML·JavaScript 렌더링 비교 총평",
+      "JavaScript 렌더링 비교 참고 의견",
       "위 비교 수치가 뜻하는 바와 필요한 경우의 개선 방향을 함께 설명합니다.",
     );
 
