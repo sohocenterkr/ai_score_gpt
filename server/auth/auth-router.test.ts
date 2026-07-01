@@ -30,7 +30,8 @@ function createFakeService(
   overrides: Partial<AuthService> = {},
 ): AuthService {
   return {
-    signup: vi.fn().mockResolvedValue(authResult),
+    signup: vi.fn().mockResolvedValue({ user: sampleUser }),
+    createSessionForVerifiedEmail: vi.fn().mockResolvedValue(authResult),
     login: vi.fn().mockResolvedValue(authResult),
     getSessionUser: vi.fn().mockResolvedValue(sampleUser),
     logout: vi.fn().mockResolvedValue(undefined),
@@ -39,20 +40,21 @@ function createFakeService(
 }
 
 describe("auth API", () => {
-  it("회원가입 후 HttpOnly 세션 쿠키를 발급한다", async () => {
+  it("회원가입 후 인증 메일 발송 안내를 반환한다", async () => {
     const app = createApp({ authService: createFakeService() });
     const response = await request(app).post("/api/auth/signup").send({
       email: "member@example.com",
       name: "테스트 회원",
       password: "securepass123",
       passwordConfirm: "securepass123",
-      emailVerificationToken: "email-verification-token-value-1234567890",
+      locale: "ko",
       termsAccepted: true,
       privacyAccepted: true,
     });
 
     expect(response.status).toBe(201);
     expect(response.body.user.email).toBe("member@example.com");
+    expect(response.body.message).toContain("회원가입이 완료되었습니다.");
     expect(response.headers["set-cookie"]?.[0]).toContain(
       "siteaiscore_session=raw-session-token",
     );

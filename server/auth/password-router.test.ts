@@ -26,6 +26,7 @@ const sampleUser: PublicUser = {
 function createFakeAuthService(): AuthService {
   return {
     signup: vi.fn(),
+    createSessionForVerifiedEmail: vi.fn(),
     login: vi.fn(),
     getSessionUser: vi.fn().mockResolvedValue(sampleUser),
     logout: vi.fn(),

@@ -42,10 +42,10 @@ export async function createEmailVerificationDelivery(
   const email = normalizeEmail(rawEmail);
   const existingUser = await prisma.user.findUnique({
     where: { email },
-    select: { id: true },
+    select: { id: true, emailVerifiedAt: true },
   });
 
-  if (existingUser) {
+  if (!existingUser || existingUser.emailVerifiedAt) {
     return null;
   }
 
@@ -94,18 +94,31 @@ export async function confirmEmailVerification(
 
   const prisma = getDatabase();
   const now = new Date();
-  const confirmed = await prisma.emailVerificationToken.updateMany({
-    where: {
-      id: verificationId.trim(),
-      email: normalizeEmail(rawEmail),
-      tokenHash: hashEmailVerificationToken(token),
-      usedAt: null,
-      expiresAt: { gt: now },
-    },
-    data: { verifiedAt: now },
-  });
+  const email = normalizeEmail(rawEmail);
 
-  return confirmed.count === 1;
+  return prisma.$transaction(async (transaction) => {
+    const confirmed = await transaction.emailVerificationToken.updateMany({
+      where: {
+        id: verificationId.trim(),
+        email,
+        tokenHash: hashEmailVerificationToken(token),
+        usedAt: null,
+        expiresAt: { gt: now },
+      },
+      data: { verifiedAt: now },
+    });
+
+    if (confirmed.count !== 1) {
+      return false;
+    }
+
+    await transaction.user.updateMany({
+      where: { email, emailVerifiedAt: null },
+      data: { emailVerifiedAt: now },
+    });
+
+    return true;
+  });
 }
 
 export async function getEmailVerificationStatus(

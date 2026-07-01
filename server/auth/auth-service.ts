@@ -3,7 +3,6 @@ import * as argon2 from "argon2";
 import { Prisma, type User } from "@prisma/client";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
-import { consumeEmailVerification } from "./email-verification-service";
 
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1_000;
 const LOGIN_LOCK_MAX_FAILURES = 5;
@@ -26,8 +25,6 @@ export interface SignupInput {
   name: string;
   password: string;
   passwordConfirm: string;
-  emailVerificationToken?: string;
-  emailVerificationId?: string;
   termsAccepted: boolean;
   privacyAccepted: boolean;
 }
@@ -37,14 +34,25 @@ export interface LoginInput {
   password: string;
 }
 
+export interface SignupResult {
+  user: PublicUser;
+}
+
 export interface AuthResult {
   user: PublicUser;
   token: string;
   expiresAt: Date;
 }
 
+export interface VerifiedEmailLoginInput {
+  email: string;
+}
+
 export interface AuthService {
-  signup(input: SignupInput): Promise<AuthResult>;
+  signup(input: SignupInput): Promise<SignupResult>;
+  createSessionForVerifiedEmail(
+    input: VerifiedEmailLoginInput,
+  ): Promise<AuthResult>;
   login(input: LoginInput): Promise<AuthResult>;
   getSessionUser(rawToken: string): Promise<PublicUser | null>;
   logout(rawToken: string): Promise<void>;
@@ -276,58 +284,30 @@ export function createPrismaAuthService(): AuthService {
       const email = normalizeEmail(input.email);
       const name = normalizeName(input.name);
       const now = new Date();
-      const emailVerified = await consumeEmailVerification(email, {
-        token: input.emailVerificationToken,
-        verificationId: input.emailVerificationId,
-      });
-
-      if (!emailVerified) {
-        throw new AuthError(
-          "AUTH_EMAIL_VERIFICATION_REQUIRED",
-          "이메일 인증을 완료한 뒤 회원가입해 주세요.",
-          400,
-        );
-      }
-
       const passwordHash = await hashPassword(input.password);
-      const session = createSessionValues();
 
       try {
-        const user = await prisma.$transaction(async (transaction) => {
-          const createdUser = await transaction.user.create({
-            data: {
-              email,
-              name,
-              passwordHash,
-              termsAcceptedAt: now,
-              privacyAcceptedAt: now,
-              emailVerifiedAt: now,
-              loginCount: 1,
-              lastLoginAt: now,
-              authAccounts: {
-                create: {
-                  provider: "LOCAL",
-                  providerAccountId: email,
-                },
+        const user = await prisma.user.create({
+          data: {
+            email,
+            name,
+            passwordHash,
+            termsAcceptedAt: now,
+            privacyAcceptedAt: now,
+            emailVerifiedAt: null,
+            loginCount: 0,
+            lastLoginAt: null,
+            authAccounts: {
+              create: {
+                provider: "LOCAL",
+                providerAccountId: email,
               },
             },
-          });
-
-          await transaction.session.create({
-            data: {
-              userId: createdUser.id,
-              sessionTokenHash: session.tokenHash,
-              expiresAt: session.expiresAt,
-            },
-          });
-
-          return createdUser;
+          },
         });
 
         return {
           user: toPublicUser(user),
-          token: session.token,
-          expiresAt: session.expiresAt,
         };
       } catch (error) {
         if (
@@ -335,14 +315,66 @@ export function createPrismaAuthService(): AuthService {
           error.code === "P2002"
         ) {
           throw new AuthError(
-            "AUTH_EMAIL_ALREADY_EXISTS",
-            "이미 가입된 이메일 주소입니다.",
+            "AUTH_EMAIL_EXISTS",
+            "이미 가입된 이메일입니다.",
             409,
           );
         }
 
         throw error;
       }
+    },
+
+    async createSessionForVerifiedEmail(input) {
+      const prisma = getDatabase();
+      const email = normalizeEmail(input.email);
+      const now = new Date();
+      const user = await prisma.user.findUnique({ where: { email } });
+
+      if (!user?.emailVerifiedAt) {
+        throw new AuthError(
+          "AUTH_EMAIL_VERIFICATION_REQUIRED",
+          "이메일 인증을 완료한 뒤 로그인할 수 있습니다.",
+          403,
+        );
+      }
+
+      if (user.status === "SUSPENDED") {
+        throw new AuthError(
+          "AUTH_ACCOUNT_SUSPENDED",
+          "정지된 계정입니다. 관리자에게 문의해 주세요.",
+          403,
+        );
+      }
+
+      const session = createSessionValues();
+      const updatedUser = await prisma.$transaction(async (transaction) => {
+        const nextUser = await transaction.user.update({
+          where: { id: user.id },
+          data: {
+            loginCount: { increment: 1 },
+            lastLoginAt: now,
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+          },
+        });
+
+        await transaction.session.create({
+          data: {
+            userId: user.id,
+            sessionTokenHash: session.tokenHash,
+            expiresAt: session.expiresAt,
+          },
+        });
+
+        return nextUser;
+      });
+
+      return {
+        user: toPublicUser(updatedUser),
+        token: session.token,
+        expiresAt: session.expiresAt,
+      };
     },
 
     async login(input) {
@@ -371,6 +403,14 @@ export function createPrismaAuthService(): AuthService {
         throw new AuthError(
           "AUTH_ACCOUNT_SUSPENDED",
           "정지된 계정입니다. 관리자에게 문의해 주세요.",
+          403,
+        );
+      }
+
+      if (!user.emailVerifiedAt) {
+        throw new AuthError(
+          "AUTH_EMAIL_NOT_VERIFIED",
+          "이메일 인증을 완료한 뒤 로그인해 주세요.",
           403,
         );
       }

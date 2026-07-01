@@ -14,6 +14,12 @@ interface AuthResponse {
   user: AuthUser;
 }
 
+interface SignupResponse {
+  user: AuthUser;
+  emailVerificationSent: boolean;
+  message: string;
+}
+
 interface SessionResponse {
   authenticated: boolean;
   user: AuthUser | null;
@@ -71,11 +77,10 @@ export async function signupRequest(input: {
   name: string;
   password: string;
   passwordConfirm: string;
-  emailVerificationToken?: string;
-  emailVerificationId?: string;
+  locale: string;
   termsAccepted: true;
   privacyAccepted: true;
-}): Promise<AuthResponse> {
+}): Promise<SignupResponse> {
   const response = await fetch("/api/auth/signup", {
     method: "POST",
     credentials: "same-origin",
@@ -83,7 +88,7 @@ export async function signupRequest(input: {
     body: JSON.stringify(input),
   });
 
-  return readResponse<AuthResponse>(response);
+  return readResponse<SignupResponse>(response);
 }
 
 export async function sendEmailVerificationRequest(input: {

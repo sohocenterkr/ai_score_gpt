@@ -67,7 +67,8 @@ function createFakeAuthService(
   overrides: Partial<AuthService> = {},
 ): AuthService {
   return {
-    signup: vi.fn().mockResolvedValue(authResult),
+    signup: vi.fn().mockResolvedValue({ user: sampleUser }),
+    createSessionForVerifiedEmail: vi.fn().mockResolvedValue(authResult),
     login: vi.fn().mockResolvedValue(authResult),
     getSessionUser: vi.fn().mockResolvedValue(sampleUser),
     logout: vi.fn().mockResolvedValue(undefined),

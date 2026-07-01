@@ -22,8 +22,7 @@ interface AuthContextValue {
     name: string;
     password: string;
     passwordConfirm: string;
-    emailVerificationToken?: string;
-    emailVerificationId?: string;
+    locale: string;
     termsAccepted: true;
     privacyAccepted: true;
   }): Promise<void>;
@@ -61,8 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setState({ status: "authenticated", user: response.user });
       },
       async signup(input) {
-        const response = await signupRequest(input);
-        setState({ status: "authenticated", user: response.user });
+        await signupRequest(input);
       },
       async logout() {
         await logoutRequest();

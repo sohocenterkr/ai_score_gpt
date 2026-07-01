@@ -47,16 +47,7 @@ const signupSchema = z
       .string()
       .min(1, "비밀번호 확인을 입력해 주세요.")
       .max(128, "비밀번호 확인은 128자 이하여야 합니다."),
-    emailVerificationToken: z
-      .string()
-      .trim()
-      .max(512, "이메일 인증값이 너무 깁니다.")
-      .optional(),
-    emailVerificationId: z
-      .string()
-      .trim()
-      .max(128, "이메일 인증 요청값이 너무 깁니다.")
-      .optional(),
+    locale: z.enum(["ko", "en"]).default("ko"),
     termsAccepted: z
       .boolean()
       .refine((value) => value, "이용약관에 동의해 주세요."),
@@ -73,13 +64,6 @@ const signupSchema = z
       });
     }
 
-    if (!value.emailVerificationToken && !value.emailVerificationId) {
-      context.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["emailVerificationToken"],
-        message: "이메일 인증을 완료해 주세요.",
-      });
-    }
   });
 
 const loginSchema = z.object({
@@ -226,11 +210,23 @@ export function createAuthRouter(
           parsed.data.emailVerificationToken,
         );
 
+        if (!verified) {
+          response.json({
+            verified: false,
+            message: "이메일 인증 링크가 올바르지 않거나 만료되었습니다.",
+          });
+          return;
+        }
+
+        const result = await authService.createSessionForVerifiedEmail({
+          email: parsed.data.email,
+        });
+        setSessionCookie(response, result.token, result.expiresAt);
+
         response.json({
-          verified,
-          message: verified
-            ? "이메일 인증이 완료되었습니다."
-            : "이메일 인증 링크가 올바르지 않거나 만료되었습니다.",
+          verified: true,
+          user: result.user,
+          message: "이메일 인증이 완료되었습니다.",
         });
       } catch (error) {
         handleAuthError(response, error);
@@ -277,8 +273,27 @@ export function createAuthRouter(
 
       try {
         const result = await authService.signup(parsed.data);
-        setSessionCookie(response, result.token, result.expiresAt);
-        response.status(201).json({ user: result.user });
+        let emailVerificationSent = false;
+
+        if (emailVerificationMailer?.isConfigured()) {
+          const delivery = await createEmailVerificationDelivery(
+            result.user.email,
+            parsed.data.locale,
+          );
+
+          if (delivery) {
+            await emailVerificationMailer.sendEmailVerification(delivery);
+            emailVerificationSent = true;
+          }
+        }
+
+        response.status(201).json({
+          user: result.user,
+          emailVerificationSent,
+          message: emailVerificationSent
+            ? "회원가입이 완료되었습니다. 이메일 인증 링크를 누르면 자동으로 로그인됩니다."
+            : "회원가입이 완료되었습니다. 이메일 인증 메일 설정을 확인해 주세요.",
+        });
       } catch (error) {
         handleAuthError(response, error);
       }

@@ -88,7 +88,8 @@ const setup: PublicDeepDiagnosticSetup = {
 
 function authService(authenticated = true): AuthService {
   return {
-    signup: vi.fn().mockResolvedValue(authResult),
+    signup: vi.fn().mockResolvedValue({ user }),
+    createSessionForVerifiedEmail: vi.fn().mockResolvedValue(authResult),
     login: vi.fn().mockResolvedValue(authResult),
     getSessionUser: vi
       .fn()
