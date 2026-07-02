@@ -9,6 +9,7 @@ import { isSupportedLocale } from "../../../shared/locales";
 import { useAuth } from "../auth/AuthContext";
 import { NoticePopup } from "./NoticePopup";
 import { NotFoundPage } from "../pages/NotFoundPage";
+import { RouteMeta } from "./RouteMeta";
 
 export function LocaleLayout() {
   const { locale } = useParams();
@@ -58,6 +59,7 @@ export function LocaleLayout() {
 
   return (
     <div className="app-shell">
+      <RouteMeta />
       <header className="site-header">
         <div className="header-inner">
           <Link className="brand" to={`/${locale}`} aria-label="Site AI Score 홈">
