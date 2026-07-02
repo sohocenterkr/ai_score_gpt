@@ -16,8 +16,59 @@ const serviceSteps = [
 export function HomePage() {
   const { locale = "ko" } = useParams();
 
+  const homeJsonLd = JSON.stringify([
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "소호센터",
+      alternateName: "SOHO Center",
+      url: "https://siteaiscore.com/ko",
+      logo: "https://siteaiscore.com/favicon.ico",
+      contactPoint: {
+        "@type": "ContactPoint",
+        telephone: "+82-70-4513-4093",
+        contactType: "customer support",
+        availableLanguage: ["ko"],
+      },
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "KR",
+        addressRegion: "서울특별시",
+        addressLocality: "강동구",
+        streetAddress: "양재대로 1522-10, 202호(길동)",
+      },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: "Site AI Score",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: "https://siteaiscore.com/ko",
+      description:
+        "Site AI Score는 웹사이트의 AI 검색 친화도, 검색엔진 접근성, 구조화 데이터, 초기 HTML 콘텐츠, 개선 방향을 진단하는 웹 애플리케이션입니다.",
+      provider: {
+        "@type": "Organization",
+        name: "소호센터",
+        url: "https://siteaiscore.com/ko",
+      },
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "USD",
+        price: "100",
+        availability: "https://schema.org/PreOrder",
+        description:
+          "간편진단 실행은 무료로 제공되며, 상세 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다.",
+      },
+    },
+  ]);
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: homeJsonLd }}
+      />
       <section className="hero-section full-bleed-section">
         <div className="content-container hero-content">
           <p className="eyebrow">AEO WEB QUALITY VERIFICATION</p>
