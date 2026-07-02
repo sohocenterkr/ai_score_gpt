@@ -1317,7 +1317,7 @@ function writeContentReadiness(
         `개선 방향: ${topic.suggestedSections.join(
           " · ",
         )} 같은 콘텐츠 보강이 필요합니다.`,
-        "상세 반영 문구, 개발자 전달 내용, 완료 판정 기준은 별도 수정 작업지시서에서 제공합니다.",
+        "",
       ].join("\n\n"),
       {
         background: COLORS.white,

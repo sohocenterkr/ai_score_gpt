@@ -1184,7 +1184,7 @@ export function ScanResultPage() {
                             <section>
                               <h5>다음 단계</h5>
                               <p>
-                                상세 실행 기준은 유료 작업지시서에서 확인할 수 있습니다.
+                                
                               </p>
                             </section>
                           </div>
@@ -1242,7 +1242,8 @@ export function ScanResultPage() {
               <p>
                 전체 진단 항목, 수집 페이지의 측정 증거, 초기 HTML과
                 JavaScript 렌더링 비교의 상세 해석, AI 답변을 위한 추가
-                콘텐츠 제안이 포함됩니다.
+                콘텐츠 제안, 운영자가 선택적으로 보완할 콘텐츠 제안이
+                포함됩니다.
               </p>
             </div>
 
@@ -1269,7 +1270,7 @@ export function ScanResultPage() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  상세 PDF 보고서 저장
+                  상세 진단 보고서
                 </a>
                 <button
                   className="scan-report-link secondary"
@@ -1283,7 +1284,7 @@ export function ScanResultPage() {
                   {creatingWorkOrder
                     ? "작업지시서 생성 중..."
                     : selectedWorkOrderItemCount > 0
-                      ? "작업지시서 생성하기"
+                      ? "작업지시서 생성"
                       : "작업지시서 대상 없음"}
                 </button>
                 <Link
@@ -1304,14 +1305,14 @@ export function ScanResultPage() {
                   type="button"
                   disabled
                 >
-                  결제 후 PDF 보고서 제공 예정
+                  상세 진단 보고서
                 </button>
                 <button
                   className="scan-report-link secondary scan-paid-locked-action"
                   type="button"
                   disabled
                 >
-                  결제 후 작업지시서 제공 예정
+                  작업지시서 생성
                 </button>
                 <Link
                   className="scan-report-link ghost"
@@ -1323,7 +1324,7 @@ export function ScanResultPage() {
             )}
 
             <button className="primary" type="button" disabled>
-              결제하고 상세 보고서·작업지시서 이용하기
+              결제하기
             </button>
           </div>
         </section>
