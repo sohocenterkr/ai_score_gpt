@@ -1240,20 +1240,46 @@ export function ScanResultPage() {
             <div className="work-order-selection scan-paid-product-card" role="note">
               <strong>상세 진단 PDF 보고서</strong>
               <p>
-                전체 진단 항목, 수집 페이지의 측정 증거, 초기 HTML과
-                JavaScript 렌더링 비교의 상세 해석, AI 답변을 위한 추가
-                콘텐츠 제안, 운영자가 선택적으로 보완할 콘텐츠 제안이
-                포함됩니다.
+                현재 사이트 상태를 기준으로 아래 항목을 상세 보고서로
+                제공합니다.
               </p>
+              <ul className="scan-paid-feature-list">
+                <li>전체 진단 항목</li>
+                <li>수집 페이지의 측정 증거</li>
+                <li>초기 HTML과 JavaScript 렌더링 비교</li>
+                <li>주요 문제와 개선 방향</li>
+              </ul>
             </div>
 
             <div className="work-order-selection scan-paid-product-card" role="note">
               <strong>수정 작업지시서</strong>
               <p>
-                작업 우선순위, 개발자 전달 문구, 완료 판정 기준,
-                회귀 방지 기준, 자동검수 기준을 정리한 실행용 문서를
-                제공합니다.
+                사이트를 실제로 수정할 수 있도록 아래 항목을 실행용
+                문서로 정리합니다.
               </p>
+              <ul className="scan-paid-feature-list">
+                <li>작업 우선순위</li>
+                <li>개발자 전달 문구</li>
+                <li>완료 판정 기준</li>
+                <li>회귀 방지 기준과 자동검수 기준</li>
+              </ul>
+            </div>
+
+            <div
+              className="work-order-selection scan-paid-product-card scan-paid-followup-card"
+              role="note"
+            >
+              <strong>개선 후 추가 제공</strong>
+              <p>
+                사이트 수정·업그레이드 후 재진단 결과를 바탕으로 AI가
+                더 구체적으로 답변할 수 있도록 보완 콘텐츠 제안을
+                추가로 제공합니다.
+              </p>
+              <ul className="scan-paid-feature-list">
+                <li>AI 답변을 위한 추가 콘텐츠 제안</li>
+                <li>운영자가 선택적으로 보완할 콘텐츠 제안</li>
+                <li>개선 전후 비교를 위한 재진단 기준 안내</li>
+              </ul>
             </div>
           </div>
 
