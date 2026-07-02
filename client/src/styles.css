@@ -796,3 +796,15 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+
+.checkout-price-list {
+  margin: 0.75rem 0 0;
+  padding-left: 1.15rem;
+  color: var(--text-muted);
+  line-height: 1.75;
+}
+
+.checkout-price-list li + li {
+  margin-top: 0.2rem;
+}

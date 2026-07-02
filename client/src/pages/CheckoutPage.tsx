@@ -30,12 +30,18 @@ export function CheckoutPage() {
             <article>
               <span>기본 가격</span>
               <strong>USD 100</strong>
-              <p>상세 진단 PDF 보고서와 수정 작업지시서 제공</p>
+              <ul className="checkout-price-list">
+                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
+                <li>개선 사례 활용 동의 없이 이용하는 기본 가격</li>
+              </ul>
             </article>
             <article>
               <span>개선 사례 활용 동의 시</span>
               <strong>USD 70</strong>
-              <p>진단 전후 개선 사례 활용에 동의하는 경우 적용 검토</p>
+              <ul className="checkout-price-list">
+                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
+                <li>진단 전후 개선 사례 활용에 동의하는 경우 적용 검토</li>
+              </ul>
             </article>
           </div>
         </section>
