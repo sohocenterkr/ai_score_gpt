@@ -261,9 +261,6 @@ export function SignupPage() {
           >
             Google로 회원가입
           </button>
-          <p className="field-guide">
-            Google 회원가입은 이메일 인증 없이 바로 로그인됩니다.
-          </p>
 
           {successMessage ? (
             <p className="auth-message auth-success" role="status">
