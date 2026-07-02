@@ -196,3 +196,119 @@
     gap: 20px;
   }
 }
+
+/* super admin dashboard */
+.admin-section {
+  padding: 40px 0 72px;
+  background:
+    radial-gradient(circle at top left, rgba(59, 130, 246, 0.08), transparent 32rem),
+    #f3f6fb;
+}
+
+.admin-container {
+  width: min(100% - 48px, 1440px);
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.admin-panel {
+  display: grid;
+  gap: 28px;
+  padding: 28px;
+}
+
+.admin-panel > h2 {
+  margin: 18px 0 0;
+  font-size: 1.35rem;
+}
+
+.admin-panel > h3 {
+  margin: 8px 0 0;
+}
+
+.admin-panel label {
+  font-weight: 700;
+}
+
+.admin-panel input,
+.admin-panel textarea,
+.admin-panel select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+}
+
+.admin-panel textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.admin-panel table {
+  font-size: 0.9rem;
+}
+
+.admin-panel th,
+.admin-panel td {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-panel th {
+  padding: 10px 8px;
+  white-space: nowrap;
+  background: #f8fafc;
+}
+
+.admin-panel code {
+  word-break: break-all;
+}
+
+.admin-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-metric-grid p {
+  margin: 0;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+@media (max-width: 900px) {
+  .admin-section {
+    padding: 0;
+  }
+
+  .admin-container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .admin-panel {
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    padding: 20px;
+  }
+
+  .admin-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-panel {
+    padding: 16px;
+  }
+}

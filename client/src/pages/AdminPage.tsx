@@ -348,8 +348,8 @@ export function AdminPage() {
 
   if (state.status === "loading") {
     return (
-      <section className="full-bleed-section auth-section">
-        <div className="content-container auth-container" role="status">
+      <section className="full-bleed-section admin-section">
+        <div className="content-container admin-container" role="status">
           로그인 상태를 확인하고 있습니다.
         </div>
       </section>
@@ -362,8 +362,8 @@ export function AdminPage() {
 
   if (!isSuperAdmin) {
     return (
-      <section className="full-bleed-section auth-section">
-        <div className="content-container auth-container surface">
+      <section className="full-bleed-section admin-section">
+        <div className="content-container admin-container surface">
           <div className="auth-heading">
             <p className="eyebrow">ADMIN</p>
             <h1>접근 권한이 없습니다</h1>
@@ -540,15 +540,15 @@ export function AdminPage() {
   }
 
   return (
-    <section className="full-bleed-section auth-section">
-      <div className="content-container auth-container">
+    <section className="full-bleed-section admin-section">
+      <div className="content-container admin-container">
         <div className="auth-heading">
           <p className="eyebrow">SUPER ADMIN</p>
           <h1>관리자 페이지</h1>
           <p>총관리자 전용 관리 화면입니다.</p>
         </div>
 
-        <div className="auth-form surface">
+        <div className="admin-panel surface">
           <h2>관리자 인증</h2>
           <p>
             현재 로그인: <strong>{state.user.email}</strong>
