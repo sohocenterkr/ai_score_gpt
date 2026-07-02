@@ -642,8 +642,8 @@ export function AdminPage() {
             </p>
           ) : null}
 
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="admin-table-scroll">
+            <table className="admin-members-table">
               <thead>
                 <tr>
                   <th align="left">ID</th>
