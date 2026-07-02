@@ -1349,9 +1349,9 @@ export function ScanResultPage() {
               </div>
             )}
 
-            <button className="primary" type="button" disabled>
+            <Link className="primary" to={`/${locale}/checkout`}>
               결제하기
-            </button>
+            </Link>
           </div>
         </section>
 

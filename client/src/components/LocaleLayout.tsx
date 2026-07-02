@@ -115,6 +115,7 @@ export function LocaleLayout() {
             <Link to={`/${locale}/privacy`}>개인정보처리방침</Link>
             <Link to={`/${locale}/guide`}>이용가이드</Link>
             <Link to={`/${locale}/faq`}>FAQ</Link>
+            <Link to={`/${locale}/checkout`}>요금/결제 안내</Link>
           </nav>
         </div>
       </footer>

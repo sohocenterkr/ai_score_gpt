@@ -155,6 +155,13 @@ const pages = [
     jsonLd: [organizationJsonLd, faqJsonLd],
   },
   {
+    path: "/ko/checkout",
+    title: "요금/결제 안내 | Site AI Score",
+    description:
+      "Site AI Score의 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 추가 제공 항목과 요금 안내입니다.",
+    jsonLd: [organizationJsonLd],
+  },
+  {
     path: "/ko/terms",
     title: "이용약관 | Site AI Score",
     description:

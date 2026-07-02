@@ -27,6 +27,10 @@
       "destination": "/ko/faq/index.html"
     },
     {
+      "source": "/ko/checkout",
+      "destination": "/ko/checkout/index.html"
+    },
+    {
       "source": "/ko/terms",
       "destination": "/ko/terms/index.html"
     },

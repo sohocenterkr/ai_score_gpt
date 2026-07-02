@@ -4,6 +4,7 @@ import { RequireAuth } from "./auth/RequireAuth";
 import { LocaleLayout } from "./components/LocaleLayout";
 import { AdminPage } from "./pages/AdminPage";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
+import { CheckoutPage } from "./pages/CheckoutPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeepDiagnosticSetupPage } from "./pages/DeepDiagnosticSetupPage";
 import { DeleteAccountPage } from "./pages/DeleteAccountPage";
@@ -35,6 +36,7 @@ export function App() {
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="guide" element={<GuidePage />} />
         <Route path="faq" element={<FaqPage />} />
+        <Route path="checkout" element={<CheckoutPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="dashboard" element={<Navigate to="../sites" replace />} />

@@ -24,6 +24,11 @@ const routeMeta: Record<string, { title: string; description: string }> = {
     description:
       "Site AI Score의 무료 이용 범위, 유료 산출물, 결제 준비 상태, 개인정보 보호, 문의 방법을 확인하세요.",
   },
+  checkout: {
+    title: "요금/결제 안내 | Site AI Score",
+    description:
+      "Site AI Score의 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 추가 제공 항목과 요금 안내입니다.",
+  },
   terms: {
     title: "이용약관 | Site AI Score",
     description:
