@@ -15,6 +15,26 @@
       "destination": "/api?__apiPath=:path*"
     },
     {
+      "source": "/ko",
+      "destination": "/ko/index.html"
+    },
+    {
+      "source": "/ko/guide",
+      "destination": "/ko/guide/index.html"
+    },
+    {
+      "source": "/ko/faq",
+      "destination": "/ko/faq/index.html"
+    },
+    {
+      "source": "/ko/terms",
+      "destination": "/ko/terms/index.html"
+    },
+    {
+      "source": "/ko/privacy",
+      "destination": "/ko/privacy/index.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
