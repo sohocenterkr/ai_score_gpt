@@ -528,6 +528,10 @@ function metricDelta(
 
 export function ScanResultPage() {
   const { state: authState } = useAuth();
+  const canAccessPaidOutputs =
+    authState.status === "authenticated" &&
+    authState.user.role === "SUPER_ADMIN" &&
+    authState.user.email.trim().toLowerCase() === "sohocenter.kr@gmail.com";
   const isSuperAdmin =
     authState.status === "authenticated" &&
     authState.user.role === "SUPER_ADMIN";
@@ -1259,12 +1263,35 @@ export function ScanResultPage() {
                 role="group"
                 aria-label="수퍼관리자 산출물"
               >
+{canAccessPaidOutputs ? (
                 <a
-                  className="scan-paywall-button scan-admin-action-link"
+                  className="scan-report-link"
                   href={scanResultPdfUrl(result.scan.id)}
+                  target="_blank"
+                  rel="noreferrer"
                 >
                   상세 PDF 보고서 저장
                 </a>
+              ) : (
+<button
+                  className="scan-report-link secondary"
+                  type="button"
+                  onClick={handleCreateWorkOrder}
+                  disabled={
+                    !canAccessPaidOutputs ||
+                    creatingWorkOrder ||
+                    selectedWorkOrderItemCount === 0
+                  }
+                >
+                  {!canAccessPaidOutputs
+                    ? "결제 후 작업지시서 제공 예정"
+                    : creatingWorkOrder
+                      ? "작업지시서 생성 중..."
+                      : selectedWorkOrderItemCount > 0
+                        ? "작업지시서 생성하기"
+                        : "작업지시서 대상 없음"}
+                </button>
+              )}
                 <button
                   type="button"
                   className="scan-paywall-button scan-admin-action-button"

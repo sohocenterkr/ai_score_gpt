@@ -7,6 +7,10 @@ import {
 import { z } from "zod";
 import type { AuthenticatedResponseLocals } from "../auth/auth-middleware";
 import {
+  hasPaidFeatureAccess,
+  sendPaidFeatureRequired,
+} from "../billing/paid-feature-access";
+import {
   renderWorkOrderPdf,
   workOrderPdfFilename,
 } from "./work-order-pdf";
@@ -98,6 +102,22 @@ function filename(orderNumber: string, version: number, extension: string) {
   );
 }
 
+function requirePaidWorkOrderFeature(
+  _request: Request,
+  response: Response<unknown, AuthenticatedResponseLocals>,
+  next: NextFunction,
+): void {
+  if (hasPaidFeatureAccess(response.locals.authUser)) {
+    next();
+    return;
+  }
+
+  sendPaidFeatureRequired(
+    response,
+    "수정 작업지시서는 유료 결제 후 제공됩니다. 결제 기능은 준비 중입니다.",
+  );
+}
+
 export function createWorkOrderRouter(
   options: CreateWorkOrderRouterOptions,
 ) {
@@ -115,7 +135,7 @@ export function createWorkOrderRouter(
     }
   });
 
-  router.post("/", requireAuth, async (request, response) => {
+  router.post("/", requireAuth, requirePaidWorkOrderFeature, async (request, response) => {
     const parsed = createSchema.safeParse(request.body);
 
     if (!parsed.success) {
@@ -152,6 +172,7 @@ export function createWorkOrderRouter(
   router.post(
     "/:workOrderId/issue",
     requireAuth,
+    requirePaidWorkOrderFeature,
     async (request, response) => {
       try {
         const workOrder = await workOrderService.issueWorkOrder(
@@ -168,6 +189,7 @@ export function createWorkOrderRouter(
   router.post(
     "/:workOrderId/verifications",
     requireAuth,
+    requirePaidWorkOrderFeature,
     async (request, response) => {
       const parsed = verificationSchema.safeParse(request.body);
 
@@ -196,6 +218,7 @@ export function createWorkOrderRouter(
   router.post(
     "/:workOrderId/revise",
     requireAuth,
+    requirePaidWorkOrderFeature,
     async (request, response) => {
       try {
         const workOrder = await workOrderService.reviseWorkOrder(
@@ -212,6 +235,7 @@ export function createWorkOrderRouter(
   router.delete(
     "/:workOrderId",
     requireAuth,
+    requirePaidWorkOrderFeature,
     async (request, response) => {
       try {
         await workOrderService.cancelWorkOrder(
@@ -228,6 +252,7 @@ export function createWorkOrderRouter(
   router.get(
     "/:workOrderId/export.json",
     requireAuth,
+    requirePaidWorkOrderFeature,
     async (request, response) => {
       try {
         const exported = await workOrderService.exportJson(
@@ -255,6 +280,7 @@ export function createWorkOrderRouter(
   router.get(
     "/:workOrderId/export.pdf",
     requireAuth,
+    requirePaidWorkOrderFeature,
     async (request, response) => {
       try {
         const workOrder = await workOrderService.getWorkOrder(
@@ -283,6 +309,7 @@ export function createWorkOrderRouter(
   router.get(
     "/:workOrderId/export.csv",
     requireAuth,
+    requirePaidWorkOrderFeature,
     async (request, response) => {
       try {
         const workOrder = await workOrderService.getWorkOrder(

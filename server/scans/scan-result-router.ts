@@ -5,6 +5,10 @@ import {
   type Response,
 } from "express";
 import type { AuthenticatedResponseLocals } from "../auth/auth-middleware";
+import {
+  hasPaidFeatureAccess,
+  sendPaidFeatureRequired,
+} from "../billing/paid-feature-access";
 import { scanResultPdfFilename } from "./scan-result-pdf";
 import {
   ScanReportCacheError,
@@ -49,6 +53,14 @@ export function createScanResultRouter(
     "/:scanId/export.pdf",
     requireAuth,
     async (request, response) => {
+      if (!hasPaidFeatureAccess(response.locals.authUser)) {
+        sendPaidFeatureRequired(
+          response,
+          "상세 진단 PDF 보고서는 유료 결제 후 제공됩니다. 결제 기능은 준비 중입니다.",
+        );
+        return;
+      }
+
       try {
         const result = await scanResultService.getScanResult(
           response.locals.authUser,

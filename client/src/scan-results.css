@@ -1491,3 +1491,10 @@
   color: #334155;
 }
 
+
+
+.scan-paid-locked-action,
+.scan-paid-locked-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

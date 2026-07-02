@@ -12,9 +12,9 @@ import {
 
 const sampleUser: PublicUser = {
   id: "user-1",
-  email: "user@example.com",
+  email: "sohocenter.kr@gmail.com",
   name: "테스트 사용자",
-  role: "USER",
+  role: "SUPER_ADMIN",
   status: "ACTIVE",
   emailVerifiedAt: null,
   loginCount: 1,
@@ -64,6 +64,7 @@ function createApp(
       cacheStatus: "HIT",
     }),
   },
+  currentUser = sampleUser,
 ) {
   const app = express();
   app.use(
@@ -72,7 +73,7 @@ function createApp(
       scanResultService: service,
       scanReportCacheService: cacheService,
       requireAuth: async (_request, response, next) => {
-        response.locals.authUser = sampleUser;
+        response.locals.authUser = currentUser;
         next();
       },
     }),
@@ -93,6 +94,27 @@ describe("scan result router", () => {
       sampleUser,
       "scan-1",
     );
+  });
+
+  it("일반 회원의 진단 보고서 PDF 다운로드를 차단한다", async () => {
+    const regularUser = {
+      ...sampleUser,
+      email: "user@example.com",
+      role: "USER" as const,
+    };
+    const getScanResult = vi.fn().mockResolvedValue(sampleResult);
+
+    const response = await request(
+      createApp(
+        { getScanResult },
+        undefined,
+        regularUser,
+      ),
+    ).get("/api/scan-results/scan-1/export.pdf");
+
+    expect(response.status).toBe(402);
+    expect(response.body.code).toBe("PAID_FEATURE_REQUIRED");
+    expect(getScanResult).not.toHaveBeenCalled();
   });
 
   it("인증 회원의 캐시된 진단 보고서 PDF를 반환한다", async () => {

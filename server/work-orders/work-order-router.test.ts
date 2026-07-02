@@ -15,9 +15,9 @@ import type {
 
 const user: PublicUser = {
   id: "user-1",
-  email: "owner@example.com",
+  email: "sohocenter.kr@gmail.com",
   name: "소유자",
-  role: "USER",
+  role: "SUPER_ADMIN",
   status: "ACTIVE",
   emailVerifiedAt: null,
   loginCount: 1,
