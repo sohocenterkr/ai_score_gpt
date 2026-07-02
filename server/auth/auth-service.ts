@@ -34,6 +34,13 @@ export interface LoginInput {
   password: string;
 }
 
+export interface GoogleLoginInput {
+  providerAccountId: string;
+  email: string;
+  name: string;
+  mode: "login" | "signup";
+}
+
 export interface DeleteAccountInput {
   currentPassword: string;
 }
@@ -58,6 +65,7 @@ export interface AuthService {
     input: VerifiedEmailLoginInput,
   ): Promise<AuthResult>;
   login(input: LoginInput): Promise<AuthResult>;
+  loginWithGoogle(input: GoogleLoginInput): Promise<AuthResult>;
   getSessionUser(rawToken: string): Promise<PublicUser | null>;
   deleteAccount(rawToken: string, input: DeleteAccountInput): Promise<void>;
   logout(rawToken: string): Promise<void>;
@@ -505,6 +513,149 @@ export function createPrismaAuthService(): AuthService {
 
       return {
         user: toPublicUser(updatedUser),
+        token: session.token,
+        expiresAt: session.expiresAt,
+      };
+    },
+
+    async loginWithGoogle(input) {
+      const prisma = getDatabase();
+      const email = normalizeEmail(input.email);
+      const providerAccountId = input.providerAccountId.trim();
+      const fallbackName = email.split("@")[0] || "Google 사용자";
+      const name = normalizeName(input.name || fallbackName);
+
+      if (!providerAccountId) {
+        throw new AuthError(
+          "AUTH_GOOGLE_PROFILE_INVALID",
+          "Google 계정 정보를 확인할 수 없습니다.",
+          403,
+        );
+      }
+
+      const existingAccount = await prisma.authAccount.findUnique({
+        where: {
+          provider_providerAccountId: {
+            provider: "GOOGLE",
+            providerAccountId,
+          },
+        },
+        include: { user: true },
+      });
+
+      const now = new Date();
+
+      if (existingAccount) {
+        const user = existingAccount.user;
+
+        if (user.status === "SUSPENDED") {
+          throw new AuthError(
+            "AUTH_ACCOUNT_SUSPENDED",
+            "정지된 계정입니다. 관리자에게 문의해 주세요.",
+            403,
+          );
+        }
+
+        const session = createSessionValues();
+        const updatedUser = await prisma.$transaction(async (transaction) => {
+          const nextUser = await transaction.user.update({
+            where: { id: user.id },
+            data: {
+              loginCount: { increment: 1 },
+              lastLoginAt: now,
+              failedLoginAttempts: 0,
+              lockedUntil: null,
+            },
+          });
+
+          await transaction.session.create({
+            data: {
+              userId: user.id,
+              sessionTokenHash: session.tokenHash,
+              expiresAt: session.expiresAt,
+            },
+          });
+
+          return nextUser;
+        });
+
+        return {
+          user: toPublicUser(updatedUser),
+          token: session.token,
+          expiresAt: session.expiresAt,
+        };
+      }
+
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+
+      if (existingUser) {
+        throw new AuthError(
+          "AUTH_EMAIL_EXISTS",
+          "이미 가입된 이메일입니다. 이메일/비밀번호로 로그인해 주세요.",
+          409,
+        );
+      }
+
+      if (input.mode === "login") {
+        throw new AuthError(
+          "AUTH_GOOGLE_ACCOUNT_NOT_FOUND",
+          "가입된 Google 계정이 없습니다. 회원가입을 먼저 진행해 주세요.",
+          404,
+        );
+      }
+
+      const deletedAccount = await prisma.deletedAccountEmail.findUnique({
+        where: { emailHash: hashDeletedAccountEmail(email) },
+        select: { id: true },
+      });
+
+      if (deletedAccount) {
+        throw new AuthError(
+          "AUTH_EMAIL_WITHDRAWN",
+          "탈퇴한 이메일 아이디로는 다시 가입할 수 없습니다.",
+          409,
+        );
+      }
+
+      const session = createSessionValues();
+      const user = await prisma.$transaction(async (transaction) => {
+        const nextUser = await transaction.user.create({
+          data: {
+            email,
+            name,
+            passwordHash: null,
+            termsAcceptedAt: now,
+            privacyAcceptedAt: now,
+            emailVerifiedAt: now,
+            loginCount: 1,
+            lastLoginAt: now,
+            failedLoginAttempts: 0,
+            lockedUntil: null,
+            authAccounts: {
+              create: {
+                provider: "GOOGLE",
+                providerAccountId,
+              },
+            },
+          },
+        });
+
+        await transaction.session.create({
+          data: {
+            userId: nextUser.id,
+            sessionTokenHash: session.tokenHash,
+            expiresAt: session.expiresAt,
+          },
+        });
+
+        return nextUser;
+      });
+
+      return {
+        user: toPublicUser(user),
         token: session.token,
         expiresAt: session.expiresAt,
       };

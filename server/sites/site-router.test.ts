@@ -70,6 +70,7 @@ function createFakeAuthService(
     signup: vi.fn().mockResolvedValue({ user: sampleUser }),
     createSessionForVerifiedEmail: vi.fn().mockResolvedValue(authResult),
     login: vi.fn().mockResolvedValue(authResult),
+    loginWithGoogle: vi.fn(),
     getSessionUser: vi.fn().mockResolvedValue(sampleUser),
     deleteAccount: vi.fn().mockResolvedValue(undefined),
     logout: vi.fn().mockResolvedValue(undefined),

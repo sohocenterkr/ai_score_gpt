@@ -56,6 +56,8 @@ const environmentSchema = z.object({
     emptyStringToUndefined,
     z.string().trim().min(1).max(100).default("Site AI Score"),
   ),
+  GOOGLE_CLIENT_ID: optionalString,
+  GOOGLE_CLIENT_SECRET: optionalString,
   SCAN_WORKER_ENABLED: z.preprocess(
     stringToBoolean,
     z.boolean().default(true),

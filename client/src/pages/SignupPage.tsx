@@ -12,6 +12,7 @@ export function SignupPage() {
   const [searchParams] = useSearchParams();
   const { state, signup, refresh } = useAuth();
 
+  const authErrorFromQuery = searchParams.get("authError")?.trim() ?? "";
   const emailFromVerificationLink = searchParams.get("email")?.trim() ?? "";
   const verificationIdFromLink =
     searchParams.get("emailVerificationId")?.trim() ?? "";
@@ -116,6 +117,22 @@ export function SignupPage() {
     setEmail(event.target.value);
     setMessage("");
     setSuccessMessage("");
+  }
+
+  function handleGoogleSignup() {
+    setMessage("");
+    setSuccessMessage("");
+
+    if (!termsAccepted || !privacyAccepted) {
+      setMessage(
+        "Google 회원가입을 하려면 이용약관과 개인정보처리방침에 모두 동의해 주세요.",
+      );
+      return;
+    }
+
+    window.location.href = `/api/auth/google/start?mode=signup&locale=${encodeURIComponent(
+      locale,
+    )}`;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -237,9 +254,26 @@ export function SignupPage() {
             <span>개인정보처리방침에 동의합니다. (필수)</span>
           </label>
 
+          <button
+            className="auth-submit"
+            type="button"
+            onClick={handleGoogleSignup}
+          >
+            Google로 회원가입
+          </button>
+          <p className="field-guide">
+            Google 회원가입은 이메일 인증 없이 바로 로그인됩니다.
+          </p>
+
           {successMessage ? (
             <p className="auth-message auth-success" role="status">
               {successMessage}
+            </p>
+          ) : null}
+
+          {authErrorFromQuery ? (
+            <p className="auth-message auth-error" role="alert">
+              {authErrorFromQuery}
             </p>
           ) : null}
 

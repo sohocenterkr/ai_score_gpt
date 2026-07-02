@@ -91,6 +91,7 @@ function authService(authenticated = true): AuthService {
     signup: vi.fn().mockResolvedValue({ user }),
     createSessionForVerifiedEmail: vi.fn().mockResolvedValue(authResult),
     login: vi.fn().mockResolvedValue(authResult),
+    loginWithGoogle: vi.fn(),
     getSessionUser: vi
       .fn()
       .mockResolvedValue(authenticated ? user : null),

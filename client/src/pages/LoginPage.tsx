@@ -5,6 +5,7 @@ import {
   useLocation,
   useNavigate,
   useParams,
+  useSearchParams,
 } from "react-router-dom";
 import { AuthApiError } from "../auth/auth-api";
 import { useAuth } from "../auth/AuthContext";
@@ -18,12 +19,14 @@ export function LoginPage() {
   const { locale = "ko" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { state, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const notice = (location.state as LoginLocationState | null)?.notice;
+  const authError = searchParams.get("authError")?.trim() ?? "";
 
   if (state.status === "loading") {
     return (
@@ -74,6 +77,12 @@ export function LoginPage() {
             </p>
           ) : null}
 
+          {authError ? (
+            <p className="auth-message auth-error" role="alert">
+              {authError}
+            </p>
+          ) : null}
+
           <label htmlFor="login-email">이메일</label>
           <input
             id="login-email"
@@ -111,6 +120,18 @@ export function LoginPage() {
 
           <button className="auth-submit" type="submit" disabled={submitting}>
             {submitting ? "로그인 중..." : "로그인"}
+          </button>
+
+          <button
+            className="auth-submit"
+            type="button"
+            onClick={() => {
+              window.location.href = `/api/auth/google/start?mode=login&locale=${encodeURIComponent(
+                locale,
+              )}`;
+            }}
+          >
+            Google로 로그인
           </button>
 
           <p className="auth-switch">

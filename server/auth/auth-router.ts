@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import {
   Router,
   type NextFunction,
@@ -6,6 +7,10 @@ import {
 } from "express";
 import { z } from "zod";
 import { AuthError, type AuthService } from "./auth-service";
+import {
+  createGoogleAuthorizationUrl,
+  exchangeGoogleCodeForProfile,
+} from "./google-oauth";
 import {
   confirmEmailVerification,
   createEmailVerificationDelivery,
@@ -17,6 +22,7 @@ import {
   readSessionToken,
   setSessionCookie,
 } from "./session-cookie";
+import { env } from "../config/env";
 import type { EmailVerificationMailer } from "../email/email-verification-mailer";
 
 const emailSchema = z
@@ -101,6 +107,97 @@ const emailVerificationStatusSchema = z.object({
   emailVerificationId: z.string().trim().min(1).max(128),
 });
 
+const googleOAuthStartSchema = z.object({
+  mode: z.enum(["login", "signup"]).default("login"),
+  locale: z.enum(["ko", "en"]).default("ko"),
+});
+
+const GOOGLE_OAUTH_STATE_COOKIE = "siteaiscore_google_oauth_state";
+const googleOAuthCookieOptions = {
+  httpOnly: true,
+  secure: env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/api/auth/google",
+};
+
+interface GoogleOAuthState {
+  state: string;
+  mode: "login" | "signup";
+  locale: "ko" | "en";
+}
+
+function frontendUrl(path: string): string {
+  return new URL(path, env.APP_BASE_URL).toString();
+}
+
+function readCookieValue(request: Request, name: string): string | undefined {
+  const cookieHeader = request.headers.cookie;
+
+  if (!cookieHeader) {
+    return undefined;
+  }
+
+  for (const entry of cookieHeader.split(";")) {
+    const [rawName, ...rawValueParts] = entry.trim().split("=");
+
+    if (rawName !== name) {
+      continue;
+    }
+
+    const value = rawValueParts.join("=");
+
+    if (!value) {
+      return undefined;
+    }
+
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+}
+
+function readGoogleOAuthState(request: Request): GoogleOAuthState | null {
+  const rawValue = readCookieValue(request, GOOGLE_OAUTH_STATE_COOKIE);
+
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(rawValue) as Partial<GoogleOAuthState>;
+
+    if (
+      typeof parsed.state === "string" &&
+      (parsed.mode === "login" || parsed.mode === "signup") &&
+      (parsed.locale === "ko" || parsed.locale === "en")
+    ) {
+      return parsed as GoogleOAuthState;
+    }
+  } catch {
+    // 아래 공통 실패 처리를 사용합니다.
+  }
+
+  return null;
+}
+
+function redirectToAuthError(
+  response: Response,
+  locale: "ko" | "en",
+  mode: "login" | "signup",
+  message: string,
+): void {
+  const page = mode === "signup" ? "signup" : "login";
+  response.redirect(
+    frontendUrl(
+      `/${locale}/${page}?authError=${encodeURIComponent(message)}`,
+    ),
+  );
+}
+
 function originGuard(
   request: Request,
   response: Response,
@@ -162,6 +259,114 @@ export function createAuthRouter(
   const mutationRateLimit = createMemoryRateLimit({
     windowMs: 15 * 60 * 1_000,
     maxRequests: 20,
+  });
+
+  router.get("/google/start", mutationRateLimit, (request, response) => {
+    const parsed = googleOAuthStartSchema.safeParse(request.query);
+
+    if (!parsed.success) {
+      redirectToAuthError(
+        response,
+        "ko",
+        "login",
+        "Google 로그인 요청을 확인할 수 없습니다.",
+      );
+      return;
+    }
+
+    if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+      redirectToAuthError(
+        response,
+        parsed.data.locale,
+        parsed.data.mode,
+        "Google 로그인 설정이 완료되지 않았습니다.",
+      );
+      return;
+    }
+
+    const oauthState: GoogleOAuthState = {
+      state: randomBytes(32).toString("base64url"),
+      mode: parsed.data.mode,
+      locale: parsed.data.locale,
+    };
+
+    response.cookie(
+      GOOGLE_OAUTH_STATE_COOKIE,
+      JSON.stringify(oauthState),
+      {
+        ...googleOAuthCookieOptions,
+        maxAge: 10 * 60 * 1_000,
+      },
+    );
+
+    response.redirect(createGoogleAuthorizationUrl(oauthState.state));
+  });
+
+  router.get("/google/callback", mutationRateLimit, async (request, response) => {
+    const storedState = readGoogleOAuthState(request);
+
+    response.clearCookie(
+      GOOGLE_OAUTH_STATE_COOKIE,
+      googleOAuthCookieOptions,
+    );
+
+    const locale = storedState?.locale ?? "ko";
+    const mode = storedState?.mode ?? "login";
+    const returnedState =
+      typeof request.query.state === "string" ? request.query.state : "";
+    const code = typeof request.query.code === "string" ? request.query.code : "";
+    const googleError =
+      typeof request.query.error === "string" ? request.query.error : "";
+
+    if (googleError) {
+      redirectToAuthError(
+        response,
+        locale,
+        mode,
+        "Google 인증이 취소되었거나 실패했습니다.",
+      );
+      return;
+    }
+
+    if (!storedState || !returnedState || returnedState !== storedState.state) {
+      redirectToAuthError(
+        response,
+        locale,
+        mode,
+        "Google 로그인 요청을 확인할 수 없습니다.",
+      );
+      return;
+    }
+
+    if (!code) {
+      redirectToAuthError(
+        response,
+        locale,
+        mode,
+        "Google 인증 코드를 확인할 수 없습니다.",
+      );
+      return;
+    }
+
+    try {
+      const profile = await exchangeGoogleCodeForProfile(code);
+      const result = await authService.loginWithGoogle({
+        ...profile,
+        mode,
+      });
+
+      setSessionCookie(response, result.token, result.expiresAt);
+      response.redirect(frontendUrl(`/${locale}`));
+    } catch (error) {
+      redirectToAuthError(
+        response,
+        locale,
+        mode,
+        error instanceof AuthError
+          ? error.message
+          : "Google 로그인 중 오류가 발생했습니다.",
+      );
+    }
   });
 
   router.post(
