@@ -91,9 +91,29 @@ export function LocaleLayout() {
         <Outlet context={{ locale }} />
       </main>
       <footer className="site-footer">
-        <div className="footer-inner">
-          <strong>Site AI Score</strong>
-          <span>AI 친화도 진단·작업지시·독립 검수 플랫폼</span>
+        <div className="footer-inner footer-rich">
+          <div className="footer-brand-block">
+            <strong>Site AI Score</strong>
+            <span>AI 친화도 진단·작업지시·독립 검수 플랫폼</span>
+            <span>
+              소호센터 | 대표 : 김은식 | 개인정보보호 책임자 : 김천식
+            </span>
+            <span>
+              주소 : 서울시 강동구 양재대로 1522-10, 202호(길동)
+            </span>
+            <span>
+              사업자등록번호 : 232-02-03802 | 전화번호 : 070-4513-4093
+            </span>
+            <a href="https://open.kakao.com/me/sohocenter" target="_blank" rel="noreferrer">
+              문의연락: 카카오톡 오픈채팅
+            </a>
+          </div>
+          <nav className="footer-links" aria-label="푸터 메뉴">
+            <Link to={`/${locale}/terms`}>이용약관</Link>
+            <Link to={`/${locale}/privacy`}>개인정보처리방침</Link>
+            <Link to={`/${locale}/guide`}>이용가이드</Link>
+            <Link to={`/${locale}/faq`}>FAQ</Link>
+          </nav>
         </div>
       </footer>
     </div>

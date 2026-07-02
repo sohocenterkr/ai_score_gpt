@@ -608,3 +608,120 @@ h3 {
 .hero-actions .primary-action:active {
   transform: translateY(1px);
 }
+
+/* legal / search engine trust pages */
+.legal-section {
+  padding: 56px 0 80px;
+  background: #f3f6fb;
+}
+
+.legal-content {
+  display: grid;
+  gap: 20px;
+}
+
+.legal-card {
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+}
+
+.legal-card h2 {
+  margin: 18px 0 0;
+  font-size: 1.25rem;
+}
+
+.legal-card h2:first-child {
+  margin-top: 0;
+}
+
+.legal-card p {
+  margin: 0;
+  line-height: 1.8;
+  color: #334155;
+}
+
+.faq-list {
+  gap: 0;
+}
+
+.faq-list details {
+  border-bottom: 1px solid #e2e8f0;
+  padding: 18px 0;
+}
+
+.faq-list details:first-child {
+  padding-top: 0;
+}
+
+.faq-list details:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.faq-list summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.faq-list p {
+  margin-top: 12px;
+}
+
+.footer-rich {
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.footer-brand-block {
+  display: grid;
+  gap: 6px;
+}
+
+.footer-brand-block a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.footer-links a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .legal-section {
+    padding: 0;
+  }
+
+  .legal-content {
+    gap: 0;
+  }
+
+  .legal-card {
+    border-left: 0;
+    border-right: 0;
+    border-radius: 0;
+    padding: 22px 18px;
+  }
+
+  .footer-rich {
+    display: grid;
+  }
+
+  .footer-links {
+    display: grid;
+    gap: 8px;
+  }
+}

@@ -14,6 +14,10 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { ScanResultPage } from "./pages/ScanResultPage";
 import { SignupPage } from "./pages/SignupPage";
+import { TermsPage } from "./pages/TermsPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
+import { GuidePage } from "./pages/GuidePage";
+import { FaqPage } from "./pages/FaqPage";
 import { SitesPage } from "./pages/SitesPage";
 import { WorkOrderPage } from "./pages/WorkOrderPage";
 import { WorkOrdersPage } from "./pages/WorkOrdersPage";
@@ -26,6 +30,11 @@ export function App() {
         <Route index element={<HomePage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="signup" element={<SignupPage />} />
+
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        <Route path="guide" element={<GuidePage />} />
+        <Route path="faq" element={<FaqPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="dashboard" element={<Navigate to="../sites" replace />} />
