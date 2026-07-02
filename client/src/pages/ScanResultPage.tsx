@@ -1257,13 +1257,12 @@ export function ScanResultPage() {
           </div>
 
           <div className="scan-paywall-button-wrap">
-            {isSuperAdmin ? (
+            {canAccessPaidOutputs ? (
               <div
                 className="scan-admin-actions"
                 role="group"
                 aria-label="수퍼관리자 산출물"
               >
-{canAccessPaidOutputs ? (
                 <a
                   className="scan-report-link"
                   href={scanResultPdfUrl(result.scan.id)}
@@ -1272,29 +1271,9 @@ export function ScanResultPage() {
                 >
                   상세 PDF 보고서 저장
                 </a>
-              ) : (
-<button
+                <button
                   className="scan-report-link secondary"
                   type="button"
-                  onClick={handleCreateWorkOrder}
-                  disabled={
-                    !canAccessPaidOutputs ||
-                    creatingWorkOrder ||
-                    selectedWorkOrderItemCount === 0
-                  }
-                >
-                  {!canAccessPaidOutputs
-                    ? "결제 후 작업지시서 제공 예정"
-                    : creatingWorkOrder
-                      ? "작업지시서 생성 중..."
-                      : selectedWorkOrderItemCount > 0
-                        ? "작업지시서 생성하기"
-                        : "작업지시서 대상 없음"}
-                </button>
-              )}
-                <button
-                  type="button"
-                  className="scan-paywall-button scan-admin-action-button"
                   onClick={handleCreateWorkOrder}
                   disabled={
                     creatingWorkOrder ||
@@ -1308,17 +1287,44 @@ export function ScanResultPage() {
                       : "작업지시서 대상 없음"}
                 </button>
                 <Link
-                  className="scan-admin-secondary-link"
+                  className="scan-report-link ghost"
                   to={`/${locale}/work-orders`}
                 >
                   작업지시서 목록
                 </Link>
               </div>
             ) : (
-              <button type="button" className="scan-paywall-button">
-                결제하고 상세 보고서·작업지시서 이용하기
-              </button>
+              <div
+                className="scan-admin-actions"
+                role="group"
+                aria-label="유료 산출물 안내"
+              >
+                <button
+                  className="scan-report-link scan-paid-locked-action"
+                  type="button"
+                  disabled
+                >
+                  결제 후 PDF 보고서 제공 예정
+                </button>
+                <button
+                  className="scan-report-link secondary scan-paid-locked-action"
+                  type="button"
+                  disabled
+                >
+                  결제 후 작업지시서 제공 예정
+                </button>
+                <Link
+                  className="scan-report-link ghost"
+                  to={`/${locale}/work-orders`}
+                >
+                  작업지시서 목록
+                </Link>
+              </div>
             )}
+
+            <button className="primary" type="button" disabled>
+              결제하고 상세 보고서·작업지시서 이용하기
+            </button>
           </div>
         </section>
 
