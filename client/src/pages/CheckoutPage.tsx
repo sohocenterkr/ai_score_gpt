@@ -1,5 +1,37 @@
 import { Link, useParams } from "react-router-dom";
 
+const CONTACT_EMAIL = "sohocenter.kr@gmail.com";
+
+function checkoutMailto(plan: "basic" | "discount") {
+  const isDiscount = plan === "discount";
+  const subject = isDiscount
+    ? "[Site AI Score] 할인 가격 USD 70 구매 신청"
+    : "[Site AI Score] 기본 가격 USD 100 구매 신청";
+
+  const body = [
+    "Site AI Score 유료 산출물 구매를 신청합니다.",
+    "",
+    `신청 상품: ${isDiscount ? "할인 가격 USD 70" : "기본 가격 USD 100"}`,
+    "제공 항목: 상세 진단 PDF 보고서 + 수정 작업지시서",
+    "",
+    "신청자명:",
+    "가입 이메일:",
+    "진단한 사이트명:",
+    "진단한 사이트 URL:",
+    "사업자/세금계산서 필요 여부:",
+    "",
+    isDiscount
+      ? "개선 사례 활용 동의: 진단 전후 개선 사례를 Site AI Score의 서비스 소개와 개선 사례 자료로 활용하는 것에 동의합니다."
+      : "개선 사례 활용 동의: 동의하지 않습니다.",
+    "",
+    "추가 요청사항:",
+  ].join("\n");
+
+  return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+    subject,
+  )}&body=${encodeURIComponent(body)}`;
+}
+
 export function CheckoutPage() {
   const { locale = "ko" } = useParams();
 
@@ -34,6 +66,9 @@ export function CheckoutPage() {
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
                 <li>개선 사례 활용 동의 없이 이용하는 기본 가격</li>
               </ul>
+              <a className="primary checkout-price-action" href={checkoutMailto("basic")}>
+                기본 가격 신청
+              </a>
             </article>
             <article>
               <span>개선 사례 활용 동의 시</span>
@@ -42,6 +77,12 @@ export function CheckoutPage() {
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
                 <li>진단 전후 개선 사례 활용에 동의하는 경우 적용 검토</li>
               </ul>
+              <a
+                className="primary checkout-price-action"
+                href={checkoutMailto("discount")}
+              >
+                할인 가격 신청
+              </a>
             </article>
           </div>
         </section>
@@ -83,12 +124,19 @@ export function CheckoutPage() {
         <section className="legal-card surface checkout-notice-card">
           <h2>결제 기능 준비 중</h2>
           <p>
-            온라인 결제 기능은 준비 중입니다. 결제 기능 도입 전에는 카카오톡
-            오픈채팅 또는 이메일로 문의해 주세요.
+            온라인 결제 기능은 준비 중입니다. 현재는 아래 신청 버튼 또는
+            카카오톡 오픈채팅으로 접수해 주세요. 신청 내용을 확인한 뒤 결제와
+            산출물 제공 절차를 안내드립니다.
           </p>
           <div className="checkout-contact-actions">
+            <a className="primary" href={checkoutMailto("basic")}>
+              기본 가격 신청
+            </a>
+            <a className="primary" href={checkoutMailto("discount")}>
+              할인 가격 신청
+            </a>
             <a
-              className="primary"
+              className="secondary"
               href="https://open.kakao.com/me/sohocenter"
               target="_blank"
               rel="noreferrer"

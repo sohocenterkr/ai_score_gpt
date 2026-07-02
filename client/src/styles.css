@@ -808,3 +808,22 @@ h3 {
 .checkout-price-list li + li {
   margin-top: 0.2rem;
 }
+
+
+.checkout-price-action {
+  display: inline-flex;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .checkout-price-action {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .checkout-contact-actions .primary,
+  .checkout-contact-actions .secondary {
+    width: 100%;
+    justify-content: center;
+  }
+}
