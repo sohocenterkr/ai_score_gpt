@@ -50,6 +50,7 @@ import {
 } from "./sites/site-service";
 import { getNowKST } from "../shared/kst";
 import { getRenderedDomCollectorRuntimeStatus } from "./scans/scan-worker";
+import { createAdminRouter } from "./admin/admin-router";
 
 interface CreateAppOptions {
   authService?: AuthService;
@@ -120,6 +121,12 @@ export function createApp(options: CreateAppOptions = {}) {
     createPasswordRouter({
       passwordService,
       passwordResetMailer,
+      requireAuth,
+    }),
+  );
+  app.use(
+    "/api/admin",
+    createAdminRouter({
       requireAuth,
     }),
   );

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { defaultLocale } from "../../shared/locales";
 import { RequireAuth } from "./auth/RequireAuth";
 import { LocaleLayout } from "./components/LocaleLayout";
+import { AdminPage } from "./pages/AdminPage";
 import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeepDiagnosticSetupPage } from "./pages/DeepDiagnosticSetupPage";
@@ -89,6 +90,14 @@ export function App() {
           element={
             <RequireAuth>
               <DeleteAccountPage />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="admin"
+          element={
+            <RequireAuth>
+              <AdminPage />
             </RequireAuth>
           }
         />

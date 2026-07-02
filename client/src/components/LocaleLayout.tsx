@@ -14,6 +14,10 @@ export function LocaleLayout() {
   const { state } = useAuth();
   const location = useLocation();
   const [pageTitle, setPageTitle] = useState("");
+  const isSuperAdmin =
+    state.status === "authenticated" &&
+    state.user.role === "SUPER_ADMIN" &&
+    state.user.email.trim().toLowerCase() === "sohocenter.kr@gmail.com";
 
   useEffect(() => {
     const main = document.querySelector("main");
@@ -70,6 +74,9 @@ export function LocaleLayout() {
             {state.status === "authenticated" ? (
               <>
                 <Link to={`/${locale}/sites`}>대시보드</Link>
+                {isSuperAdmin ? (
+                  <Link to={`/${locale}/admin`}>관리자</Link>
+                ) : null}
                 <Link to={`/${locale}/settings`}>설정</Link>
               </>
             ) : (
