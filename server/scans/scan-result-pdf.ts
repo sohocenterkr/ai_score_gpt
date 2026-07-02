@@ -10,7 +10,7 @@ import type {
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.06-scan-report-v13";
+  "2026.06-scan-report-v14";
 
 let cachedFontHash: string | undefined;
 
