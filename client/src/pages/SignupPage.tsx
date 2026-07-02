@@ -1,5 +1,11 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 import {
   AuthApiError,
   confirmEmailVerificationRequest,
@@ -19,6 +25,7 @@ export function SignupPage() {
   const tokenFromVerificationLink =
     searchParams.get("emailVerificationToken")?.trim() ?? "";
 
+  const [emailSignupOpen, setEmailSignupOpen] = useState(false);
   const [email, setEmail] = useState(emailFromVerificationLink);
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -113,20 +120,29 @@ export function SignupPage() {
     return <Navigate to={`/${locale}`} replace />;
   }
 
-  function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
-    setEmail(event.target.value);
+  function clearMessages() {
     setMessage("");
     setSuccessMessage("");
   }
 
-  function handleGoogleSignup() {
-    setMessage("");
-    setSuccessMessage("");
+  function handleEmailChange(event: ChangeEvent<HTMLInputElement>) {
+    setEmail(event.target.value);
+    clearMessages();
+  }
 
+  function validateConsent(): boolean {
     if (!termsAccepted || !privacyAccepted) {
-      setMessage(
-        "Google 회원가입을 하려면 이용약관과 개인정보처리방침에 모두 동의해 주세요.",
-      );
+      setMessage("이용약관과 개인정보처리방침에 모두 동의해 주세요.");
+      return false;
+    }
+
+    return true;
+  }
+
+  function handleGoogleSignup() {
+    clearMessages();
+
+    if (!validateConsent()) {
       return;
     }
 
@@ -135,18 +151,26 @@ export function SignupPage() {
     )}`;
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-    setSuccessMessage("");
+  function handleEmailSignupOpen() {
+    clearMessages();
 
-    if (password !== passwordConfirm) {
-      setMessage("비밀번호 확인이 일치하지 않습니다.");
+    if (!validateConsent()) {
       return;
     }
 
-    if (!termsAccepted || !privacyAccepted) {
-      setMessage("이용약관과 개인정보처리방침에 모두 동의해 주세요.");
+    setEmailSignupOpen(true);
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    clearMessages();
+
+    if (!validateConsent()) {
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      setMessage("비밀번호 확인이 일치하지 않습니다.");
       return;
     }
 
@@ -183,64 +207,18 @@ export function SignupPage() {
         <div className="auth-heading">
           <p className="eyebrow">CREATE ACCOUNT</p>
           <h1>회원가입</h1>
-          <p>회원가입 후 이메일 인증을 완료하면 자동으로 로그인됩니다.</p>
+          <p>Google 계정 또는 이메일로 가입할 수 있습니다.</p>
         </div>
 
         <form className="auth-form surface" onSubmit={handleSubmit} noValidate>
-          <label htmlFor="signup-email">이메일</label>
-          <input
-            id="signup-email"
-            name="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            value={email}
-            onChange={handleEmailChange}
-            required
-          />
-
-          <label htmlFor="signup-name">이름</label>
-          <input
-            id="signup-name"
-            name="name"
-            type="text"
-            autoComplete="name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-          />
-
-          <label htmlFor="signup-password">비밀번호</label>
-          <input
-            id="signup-password"
-            name="password"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            aria-describedby="password-guide"
-            required
-          />
-          <p id="password-guide" className="field-guide">
-            영문자와 숫자를 포함하여 10자 이상 입력해 주세요.
-          </p>
-
-          <label htmlFor="signup-password-confirm">비밀번호 확인</label>
-          <input
-            id="signup-password-confirm"
-            name="passwordConfirm"
-            type="password"
-            autoComplete="new-password"
-            value={passwordConfirm}
-            onChange={(event) => setPasswordConfirm(event.target.value)}
-            required
-          />
-
           <label className="consent-row">
             <input
               type="checkbox"
               checked={termsAccepted}
-              onChange={(event) => setTermsAccepted(event.target.checked)}
+              onChange={(event) => {
+                setTermsAccepted(event.target.checked);
+                clearMessages();
+              }}
             />
             <span>이용약관에 동의합니다. (필수)</span>
           </label>
@@ -249,7 +227,10 @@ export function SignupPage() {
             <input
               type="checkbox"
               checked={privacyAccepted}
-              onChange={(event) => setPrivacyAccepted(event.target.checked)}
+              onChange={(event) => {
+                setPrivacyAccepted(event.target.checked);
+                clearMessages();
+              }}
             />
             <span>개인정보처리방침에 동의합니다. (필수)</span>
           </label>
@@ -261,6 +242,77 @@ export function SignupPage() {
           >
             Google로 회원가입
           </button>
+
+          <button
+            className="auth-submit"
+            type="button"
+            onClick={handleEmailSignupOpen}
+            aria-expanded={emailSignupOpen}
+          >
+            이메일로 회원가입
+          </button>
+
+          {emailSignupOpen ? (
+            <>
+              <label htmlFor="signup-email">이메일</label>
+              <input
+                id="signup-email"
+                name="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                value={email}
+                onChange={handleEmailChange}
+                required
+              />
+
+              <label htmlFor="signup-name">이름</label>
+              <input
+                id="signup-name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  clearMessages();
+                }}
+                required
+              />
+
+              <label htmlFor="signup-password">비밀번호</label>
+              <input
+                id="signup-password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  clearMessages();
+                }}
+                aria-describedby="password-guide"
+                required
+              />
+              <p id="password-guide" className="field-guide">
+                영문자와 숫자를 포함하여 10자 이상 입력해 주세요.
+              </p>
+
+              <label htmlFor="signup-password-confirm">비밀번호 확인</label>
+              <input
+                id="signup-password-confirm"
+                name="passwordConfirm"
+                type="password"
+                autoComplete="new-password"
+                value={passwordConfirm}
+                onChange={(event) => {
+                  setPasswordConfirm(event.target.value);
+                  clearMessages();
+                }}
+                required
+              />
+            </>
+          ) : null}
 
           {successMessage ? (
             <p className="auth-message auth-success" role="status">
@@ -280,9 +332,11 @@ export function SignupPage() {
             </p>
           ) : null}
 
-          <button className="auth-submit" type="submit" disabled={submitting}>
-            {submitting ? "가입 중..." : "회원가입"}
-          </button>
+          {emailSignupOpen ? (
+            <button className="auth-submit" type="submit" disabled={submitting}>
+              {submitting ? "가입 중..." : "회원가입"}
+            </button>
+          ) : null}
 
           <p className="auth-switch">
             이미 계정이 있으신가요?{" "}
