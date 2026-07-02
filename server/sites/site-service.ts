@@ -91,7 +91,8 @@ export class SiteServiceError extends Error {
     public readonly code:
       | "SITE_NOT_FOUND"
       | "SITE_DUPLICATE"
-      | "SCAN_ALREADY_RUNNING",
+      | "SCAN_ALREADY_RUNNING"
+      | "FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED",
     message: string,
     public readonly status: number,
   ) {
@@ -166,6 +167,51 @@ function isUniqueConstraintError(error: unknown): boolean {
     error instanceof Prisma.PrismaClientKnownRequestError &&
     error.code === "P2002"
   );
+}
+
+const FREE_QUICK_SCAN_SITE_LIMIT = 10;
+
+async function assertFreeQuickScanSiteLimit(
+  user: PublicUser,
+  siteId: string,
+  type: ScanType,
+): Promise<void> {
+  if (type !== "QUICK" || user.role === "SUPER_ADMIN") {
+    return;
+  }
+
+  const prisma = getDatabase();
+
+  const existingQuickScanForSite = await prisma.scan.findFirst({
+    where: {
+      createdBy: user.id,
+      siteId,
+      type: "QUICK",
+    },
+    select: { id: true },
+  });
+
+  if (existingQuickScanForSite) {
+    return;
+  }
+
+  const usedSites = await prisma.scan.findMany({
+    where: {
+      createdBy: user.id,
+      type: "QUICK",
+    },
+    distinct: ["siteId"],
+    select: { siteId: true },
+    take: FREE_QUICK_SCAN_SITE_LIMIT,
+  });
+
+  if (usedSites.length >= FREE_QUICK_SCAN_SITE_LIMIT) {
+    throw new SiteServiceError(
+      "FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED",
+      `무료 간편진단은 계정당 최대 ${FREE_QUICK_SCAN_SITE_LIMIT}개 사이트까지 사용할 수 있습니다. 이미 진단한 사이트의 재진단은 계속 가능합니다.`,
+      403,
+    );
+  }
 }
 
 async function findAccessibleSite(
@@ -453,11 +499,9 @@ export function createPrismaSiteService(
       const prisma = getDatabase();
       const site = await findAccessibleSite(user.id, siteId);
 
-      await validatePublicSiteUrl(site.baseUrl, resolver);
-
       const runningScan = await prisma.scan.findFirst({
         where: {
-          siteId,
+          siteId: site.id,
           status: {
             in: ["QUEUED", "RUNNING"],
           },
@@ -473,9 +517,12 @@ export function createPrismaSiteService(
         );
       }
 
+      await assertFreeQuickScanSiteLimit(user, site.id, type);
+      await validatePublicSiteUrl(site.baseUrl, resolver);
+
       const scan = await prisma.scan.create({
         data: {
-          siteId,
+          siteId: site.id,
           type,
           status: "QUEUED",
           rulesVersion: CURRENT_RULES_VERSION,

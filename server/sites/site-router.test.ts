@@ -242,6 +242,29 @@ describe("site API", () => {
     );
   });
 
+  it("무료 간편진단 사이트 제한 오류를 반환한다", async () => {
+    const app = createApp({
+      authService: createFakeAuthService(),
+      siteService: createFakeSiteService({
+        queueScan: vi.fn().mockRejectedValue(
+          new SiteServiceError(
+            "FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED",
+            "무료 간편진단은 계정당 최대 10개 사이트까지 사용할 수 있습니다. 이미 진단한 사이트의 재진단은 계속 가능합니다.",
+            403,
+          ),
+        ),
+      }),
+    });
+
+    const response = await request(app)
+      .post("/api/sites/site-11/scans")
+      .set("Cookie", sessionCookie)
+      .send({ type: "QUICK" });
+
+    expect(response.status).toBe(403);
+    expect(response.body.code).toBe("FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED");
+  });
+
   it("SSRF 차단 오류를 내부 정보 없이 반환한다", async () => {
     const app = createApp({
       authService: createFakeAuthService(),
