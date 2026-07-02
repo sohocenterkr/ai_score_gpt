@@ -51,6 +51,7 @@ import {
 import { getNowKST } from "../shared/kst";
 import { getRenderedDomCollectorRuntimeStatus } from "./scans/scan-worker";
 import { createAdminRouter } from "./admin/admin-router";
+import { createNoticeRouter } from "./notices/notice-router";
 
 interface CreateAppOptions {
   authService?: AuthService;
@@ -114,6 +115,8 @@ export function createApp(options: CreateAppOptions = {}) {
       database,
     });
   });
+
+  app.use("/api/notices", createNoticeRouter());
 
   app.use("/api/auth", createAuthRouter(authService, emailVerificationMailer));
   app.use(

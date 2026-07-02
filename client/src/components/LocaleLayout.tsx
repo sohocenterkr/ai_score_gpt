@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import { isSupportedLocale } from "../../../shared/locales";
 import { useAuth } from "../auth/AuthContext";
+import { NoticePopup } from "./NoticePopup";
 import { NotFoundPage } from "../pages/NotFoundPage";
 
 export function LocaleLayout() {
@@ -85,6 +86,7 @@ export function LocaleLayout() {
           </nav>
         </div>
       </header>
+      <NoticePopup />
       <main>
         <Outlet context={{ locale }} />
       </main>
