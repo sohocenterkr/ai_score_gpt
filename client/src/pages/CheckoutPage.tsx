@@ -41,8 +41,8 @@ type CheckoutMessage = {
 };
 
 const domesticPrices: Record<PaymentPlan, string> = {
-  BASIC: "140,000원",
-  CASE_STUDY_DISCOUNT: "100,000원",
+  BASIC: "165,000원 (VAT 포함)",
+  CASE_STUDY_DISCOUNT: "110,000원 (VAT 포함)",
 };
 
 function planLabel(plan: PaymentPlan): string {
@@ -243,10 +243,10 @@ export function CheckoutPage() {
           <div className="checkout-price-grid">
             <article>
               <span>기본 가격</span>
-              <strong>140,000원</strong>
+              <strong>165,000원</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>개선 사례 활용 동의 없이 이용하는 기본 가격</li>
+                <li>개선 사례 활용 동의 없이 이용하는 기본 가격 · VAT 포함</li>
               </ul>
               <button
                 className="primary checkout-price-action"
@@ -264,7 +264,7 @@ export function CheckoutPage() {
             </article>
             <article>
               <span>개선 사례 활용 동의 시</span>
-              <strong>100,000원</strong>
+              <strong>110,000원</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
                 <li>진단 전후 개선 사례 활용에 동의하는 경우 적용</li>

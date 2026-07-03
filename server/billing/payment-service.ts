@@ -95,8 +95,8 @@ export class PaymentServiceError extends Error {
 }
 
 const DOMESTIC_PRICES: Record<PaymentPlan, number> = {
-  BASIC: 140_000,
-  CASE_STUDY_DISCOUNT: 100_000,
+  BASIC: 165_000,
+  CASE_STUDY_DISCOUNT: 110_000,
 };
 
 function normalizeId(value: string): string {
