@@ -1,8 +1,78 @@
-import { Link, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import {
+  createPaymentOrderRequest,
+  type PaymentPlan,
+} from "../billing/payment-api";
 
+type CheckoutMessage = {
+  tone: "info" | "success" | "error";
+  text: string;
+};
+
+const domesticPrices: Record<PaymentPlan, string> = {
+  BASIC: "140,000원",
+  CASE_STUDY_DISCOUNT: "100,000원",
+};
+
+function planLabel(plan: PaymentPlan): string {
+  return plan === "CASE_STUDY_DISCOUNT"
+    ? "개선 사례 활용 동의 할인"
+    : "기본 가격";
+}
 
 export function CheckoutPage() {
   const { locale = "ko" } = useParams();
+  const [searchParams] = useSearchParams();
+  const scanId = searchParams.get("scanId")?.trim() ?? "";
+  const [submittingPlan, setSubmittingPlan] =
+    useState<PaymentPlan | null>(null);
+  const [message, setMessage] = useState<CheckoutMessage | null>(null);
+
+  const hasScanId = useMemo(() => scanId.length > 0, [scanId]);
+
+  async function handleCreateDomesticOrder(plan: PaymentPlan) {
+    if (!hasScanId) {
+      setMessage({
+        tone: "error",
+        text: "결제할 진단 결과가 연결되지 않았습니다. 진단 결과 화면의 결제하기 버튼으로 다시 이동해 주세요.",
+      });
+      return;
+    }
+
+    setSubmittingPlan(plan);
+    setMessage(null);
+
+    try {
+      const result = await createPaymentOrderRequest({
+        scanId,
+        plan,
+      });
+
+      if (!result.portone.configured) {
+        setMessage({
+          tone: "info",
+          text: `${planLabel(plan)} ${domesticPrices[plan]} 결제 주문이 생성되었습니다. Vercel/Replit 환경변수에 PORTONE_STORE_ID와 PORTONE_CHANNEL_KEY를 넣으면 다음 단계에서 결제창 호출을 연결할 수 있습니다.`,
+        });
+        return;
+      }
+
+      setMessage({
+        tone: "success",
+        text: `${planLabel(plan)} ${domesticPrices[plan]} 결제 주문이 생성되었습니다. 결제창 호출에 필요한 PortOne Store ID, 채널 키, paymentId가 준비되었습니다.`,
+      });
+    } catch (error) {
+      setMessage({
+        tone: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "결제 주문을 생성하지 못했습니다.",
+      });
+    } finally {
+      setSubmittingPlan(null);
+    }
+  }
 
   return (
     <section className="full-bleed-section legal-section">
@@ -19,11 +89,89 @@ export function CheckoutPage() {
 
         <section className="legal-card surface checkout-pricing-card">
           <div>
-            <p className="eyebrow">기본 상품</p>
-            <h2>상세 진단 보고서 + 수정 작업지시서</h2>
+            <p className="eyebrow">국내 결제</p>
+            <h2>PortOne + KG이니시스 결제</h2>
             <p>
-              현재 사이트 상태를 상세하게 진단하고, 실제 수정에 활용할 수 있는
-              작업지시서를 함께 제공합니다.
+              국내 고객은 원화 결제, 국내 카드전표, 세금계산서 대응을 기준으로
+              PortOne 결제 흐름을 준비합니다. 결제 성공 후에는 상세 PDF 보고서와
+              수정 작업지시서 접근 권한이 자동으로 열리도록 연결합니다.
+            </p>
+          </div>
+
+          {!hasScanId ? (
+            <p className="checkout-payment-note" role="alert">
+              결제할 진단 결과가 연결되지 않았습니다. 진단 결과 화면에서
+              결제하기 버튼을 눌러 주세요.
+            </p>
+          ) : null}
+
+          {message ? (
+            <p
+              className="checkout-payment-note"
+              role={message.tone === "error" ? "alert" : "status"}
+            >
+              {message.text}
+            </p>
+          ) : null}
+
+          <div className="checkout-price-grid">
+            <article>
+              <span>기본 가격</span>
+              <strong>140,000원</strong>
+              <ul className="checkout-price-list">
+                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
+                <li>개선 사례 활용 동의 없이 이용하는 기본 가격</li>
+              </ul>
+              <button
+                className="primary checkout-price-action"
+                type="button"
+                disabled={!hasScanId || submittingPlan !== null}
+                onClick={() => void handleCreateDomesticOrder("BASIC")}
+              >
+                {submittingPlan === "BASIC"
+                  ? "결제 주문 생성 중..."
+                  : "국내 결제 준비"}
+              </button>
+              <p className="checkout-payment-note">
+                PortOne 결제창 호출 전 주문 생성 단계입니다.
+              </p>
+            </article>
+            <article>
+              <span>개선 사례 활용 동의 시</span>
+              <strong>100,000원</strong>
+              <ul className="checkout-price-list">
+                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
+                <li>진단 전후 개선 사례 활용에 동의하는 경우 적용</li>
+              </ul>
+              <button
+                className="primary checkout-price-action"
+                type="button"
+                disabled={!hasScanId || submittingPlan !== null}
+                onClick={() =>
+                  void handleCreateDomesticOrder(
+                    "CASE_STUDY_DISCOUNT",
+                  )
+                }
+              >
+                {submittingPlan === "CASE_STUDY_DISCOUNT"
+                  ? "결제 주문 생성 중..."
+                  : "국내 결제 준비"}
+              </button>
+              <p className="checkout-payment-note">
+                할인 플랜도 동일한 산출물을 제공합니다.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section className="legal-card surface checkout-pricing-card">
+          <div>
+            <p className="eyebrow">해외 결제</p>
+            <h2>Polar 결제 예정</h2>
+            <p>
+              해외 고객과 USD 결제는 Polar로 분리하여 연결할 예정입니다. 단,
+              결제 성공 후 유료 권한을 여는 로직은 국내 결제와 동일한
+              paid_entitlements 구조를 사용합니다.
             </p>
           </div>
 
@@ -33,28 +181,30 @@ export function CheckoutPage() {
               <strong>USD 100</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>개선 사례 활용 동의 없이 이용하는 기본 가격</li>
+                <li>해외 카드와 글로벌 SaaS 결제 방식 대응 예정</li>
               </ul>
-              <button className="primary checkout-price-action" type="button" disabled>
-                결제 준비 중
+              <button
+                className="primary checkout-price-action"
+                type="button"
+                disabled
+              >
+                Polar 준비 중
               </button>
-              <p className="checkout-payment-note">
-                결제사 확정 후 결제창으로 연결됩니다.
-              </p>
             </article>
             <article>
               <span>개선 사례 활용 동의 시</span>
               <strong>USD 70</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>진단 전후 개선 사례 활용에 동의하는 경우 적용 검토</li>
+                <li>진단 전후 개선 사례 활용에 동의하는 경우 적용</li>
               </ul>
-              <button className="primary checkout-price-action" type="button" disabled>
-                결제 준비 중
+              <button
+                className="primary checkout-price-action"
+                type="button"
+                disabled
+              >
+                Polar 준비 중
               </button>
-              <p className="checkout-payment-note">
-                결제사 확정 후 결제창으로 연결됩니다.
-              </p>
             </article>
           </div>
         </section>
@@ -94,12 +244,11 @@ export function CheckoutPage() {
         </section>
 
         <section className="legal-card surface checkout-notice-card">
-          <h2>결제창 준비 중</h2>
+          <h2>결제 연동 진행 상태</h2>
           <p>
-            현재는 결제사가 확정되지 않아 결제창이 열리지 않습니다. 결제 기능
-            도입 후 기본 가격과 할인 가격 버튼은 실제 결제창으로 연결됩니다.
-            결제 전 문의가 필요한 경우 카카오톡 오픈채팅 또는 이메일로 연락해
-            주세요.
+            현재 단계에서는 국내 결제 주문 생성 API와 checkout 화면 연결을 먼저
+            적용합니다. 다음 단계에서 PortOne 브라우저 결제창 호출, 결제 검증,
+            웹훅 처리, paid_entitlements 자동 생성까지 연결합니다.
           </p>
           <div className="checkout-contact-actions">
             <a

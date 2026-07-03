@@ -112,6 +112,10 @@ const environmentSchema = z.object({
     .min(1)
     .max(20)
     .default(8),
+  PORTONE_STORE_ID: optionalString,
+  PORTONE_CHANNEL_KEY: optionalString,
+  PORTONE_API_SECRET: optionalString,
+  PORTONE_WEBHOOK_SECRET: optionalString,
 });
 
 const processEnvForRuntime = { ...process.env };

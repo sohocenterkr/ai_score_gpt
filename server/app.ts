@@ -52,6 +52,11 @@ import { getNowKST } from "../shared/kst";
 import { getRenderedDomCollectorRuntimeStatus } from "./scans/scan-worker";
 import { createAdminRouter } from "./admin/admin-router";
 import { createNoticeRouter } from "./notices/notice-router";
+import { createPaymentRouter } from "./billing/payment-router";
+import {
+  createPrismaPaymentService,
+  type PaymentService,
+} from "./billing/payment-service";
 
 interface CreateAppOptions {
   authService?: AuthService;
@@ -63,6 +68,7 @@ interface CreateAppOptions {
   scanResultService?: ScanResultService;
   scanReportCacheService?: ScanReportCacheService;
   workOrderService?: WorkOrderService;
+  paymentService?: PaymentService;
 }
 
 export function createApp(options: CreateAppOptions = {}) {
@@ -85,6 +91,8 @@ export function createApp(options: CreateAppOptions = {}) {
     createPrismaScanReportCacheService();
   const workOrderService =
     options.workOrderService ?? createPrismaWorkOrderService();
+  const paymentService =
+    options.paymentService ?? createPrismaPaymentService();
   const requireAuth = createRequireAuth(authService);
 
   app.disable("x-powered-by");
@@ -137,6 +145,13 @@ export function createApp(options: CreateAppOptions = {}) {
     "/api/sites",
     createSiteRouter({
       siteService,
+      requireAuth,
+    }),
+  );
+  app.use(
+    "/api/billing",
+    createPaymentRouter({
+      paymentService,
       requireAuth,
     }),
   );

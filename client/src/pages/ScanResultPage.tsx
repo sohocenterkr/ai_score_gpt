@@ -1349,7 +1349,12 @@ export function ScanResultPage() {
               </div>
             )}
 
-            <Link className="primary" to={`/${locale}/checkout`}>
+            <Link
+              className="primary"
+              to={`/${locale}/checkout?scanId=${encodeURIComponent(
+                result.scan.id,
+              )}`}
+            >
               결제하기
             </Link>
           </div>
