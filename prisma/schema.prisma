@@ -148,6 +148,28 @@ enum AiAnswerRunStatus {
   FAILED
 }
 
+enum PaymentProvider {
+  PORTONE
+  POLAR
+}
+
+enum PaymentOrderStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELED
+}
+
+enum PaidPlan {
+  BASIC
+  CASE_STUDY_DISCOUNT
+}
+
+enum PaidEntitlementStatus {
+  ACTIVE
+  REVOKED
+}
+
 model AppMetadata {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -159,28 +181,30 @@ model AppMetadata {
 }
 
 model User {
-  id                  String               @id @default(cuid())
-  email               String               @unique
-  name                String
-  passwordHash        String?              @map("password_hash")
-  role                UserRole             @default(USER)
-  status              UserStatus           @default(ACTIVE)
-  emailVerifiedAt     DateTime?            @map("email_verified_at")
-  termsAcceptedAt     DateTime             @map("terms_accepted_at")
-  privacyAcceptedAt   DateTime             @map("privacy_accepted_at")
-  loginCount          Int                  @default(0) @map("login_count")
-  lastLoginAt         DateTime?            @map("last_login_at")
-  failedLoginAttempts Int                  @default(0) @map("failed_login_attempts")
-  lockedUntil         DateTime?            @map("locked_until")
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  authAccounts        AuthAccount[]
-  sessions            Session[]
-  passwordResetTokens PasswordResetToken[]
-  organizationMembers OrganizationMember[]
+  id                          String                @id @default(cuid())
+  email                       String                @unique
+  name                        String
+  passwordHash                String?               @map("password_hash")
+  role                        UserRole              @default(USER)
+  status                      UserStatus            @default(ACTIVE)
+  emailVerifiedAt             DateTime?             @map("email_verified_at")
+  termsAcceptedAt             DateTime              @map("terms_accepted_at")
+  privacyAcceptedAt           DateTime              @map("privacy_accepted_at")
+  loginCount                  Int                   @default(0) @map("login_count")
+  lastLoginAt                 DateTime?             @map("last_login_at")
+  failedLoginAttempts         Int                   @default(0) @map("failed_login_attempts")
+  lockedUntil                 DateTime?             @map("locked_until")
+  createdAt                   DateTime              @default(now()) @map("created_at")
+  updatedAt                   DateTime              @updatedAt @map("updated_at")
+  authAccounts                AuthAccount[]
+  sessions                    Session[]
+  passwordResetTokens         PasswordResetToken[]
+  organizationMembers         OrganizationMember[]
   scansCreated                Scan[]                @relation("ScanCreator")
   workOrdersCreated           WorkOrder[]           @relation("WorkOrderCreator")
   verificationAttemptsCreated VerificationAttempt[] @relation("VerificationAttemptCreator")
+  paymentOrdersCreated        PaymentOrder[]        @relation("PaymentOrderUser")
+  paidEntitlements            PaidEntitlement[]     @relation("PaidEntitlementUser")
 
   @@index([status])
   @@index([lockedUntil])
@@ -230,13 +254,13 @@ model PasswordResetToken {
 }
 
 model EmailVerificationToken {
-  id        String    @id @default(cuid())
-  email     String
-  tokenHash String    @unique @map("token_hash")
-  expiresAt DateTime  @map("expires_at")
+  id         String    @id @default(cuid())
+  email      String
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
   verifiedAt DateTime? @map("verified_at")
-  usedAt    DateTime? @map("used_at")
-  createdAt DateTime  @default(now()) @map("created_at")
+  usedAt     DateTime? @map("used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   @@index([email])
   @@index([expiresAt])
@@ -251,15 +275,14 @@ model DeletedAccountEmail {
   @@map("deleted_account_emails")
 }
 
-
 model NoticePopup {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   title     String
   content   String
   startsAt  DateTime? @map("starts_at")
   endsAt    DateTime? @map("ends_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   @@index([startsAt])
   @@index([endsAt])
@@ -267,15 +290,15 @@ model NoticePopup {
 }
 
 model Organization {
-  id        String           @id @default(cuid())
-  name      String
-  type      OrganizationType @default(CUSTOMER)
-  createdAt DateTime         @default(now()) @map("created_at")
-  updatedAt DateTime         @updatedAt @map("updated_at")
+  id                 String               @id @default(cuid())
+  name               String
+  type               OrganizationType     @default(CUSTOMER)
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
   members            OrganizationMember[]
   sites              Site[]
-  customerWorkOrders WorkOrder[] @relation("CustomerWorkOrders")
-  agencyWorkOrders   WorkOrder[] @relation("AgencyWorkOrders")
+  customerWorkOrders WorkOrder[]          @relation("CustomerWorkOrders")
+  agencyWorkOrders   WorkOrder[]          @relation("AgencyWorkOrders")
 
   @@index([type])
   @@map("organizations")
@@ -296,23 +319,25 @@ model OrganizationMember {
 }
 
 model Site {
-  id             String       @id @default(cuid())
-  organizationId String       @map("organization_id")
-  name           String
-  baseUrl        String       @map("base_url")
-  finalUrl       String?      @map("final_url")
-  siteType       String?      @map("site_type")
-  country        String       @default("KR")
-  region         String?
-  primaryLocale  String       @default("ko") @map("primary_locale")
-  status         SiteStatus   @default(ACTIVE)
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  facts          SiteFact[]
-  scans          Scan[]
-  workOrders     WorkOrder[]
-  aiQuestions    AiQuestion[]
+  id               String            @id @default(cuid())
+  organizationId   String            @map("organization_id")
+  name             String
+  baseUrl          String            @map("base_url")
+  finalUrl         String?           @map("final_url")
+  siteType         String?           @map("site_type")
+  country          String            @default("KR")
+  region           String?
+  primaryLocale    String            @default("ko") @map("primary_locale")
+  status           SiteStatus        @default(ACTIVE)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+  organization     Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  facts            SiteFact[]
+  scans            Scan[]
+  workOrders       WorkOrder[]
+  aiQuestions      AiQuestion[]
+  paymentOrders    PaymentOrder[]
+  paidEntitlements PaidEntitlement[]
 
   @@unique([organizationId, baseUrl])
   @@index([organizationId, status])
@@ -335,29 +360,31 @@ model SiteFact {
 }
 
 model Scan {
-  id           String     @id @default(cuid())
-  siteId       String     @map("site_id")
-  targetUrl    String?    @map("target_url")
-  type         ScanType
-  status       ScanStatus @default(QUEUED)
-  rulesVersion String     @map("rules_version")
-  score        Float?
-  grade        String?
-  startedAt    DateTime?  @map("started_at")
-  completedAt  DateTime?  @map("completed_at")
-  errorCode    String?    @map("error_code")
-  createdBy    String?    @map("created_by")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  site         Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  creator      User?      @relation("ScanCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  pages             ScanPage[]
-  findings          Finding[]
+  id                  String               @id @default(cuid())
+  siteId              String               @map("site_id")
+  targetUrl           String?              @map("target_url")
+  type                ScanType
+  status              ScanStatus           @default(QUEUED)
+  rulesVersion        String               @map("rules_version")
+  score               Float?
+  grade               String?
+  startedAt           DateTime?            @map("started_at")
+  completedAt         DateTime?            @map("completed_at")
+  errorCode           String?              @map("error_code")
+  createdBy           String?              @map("created_by")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  site                Site                 @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  creator             User?                @relation("ScanCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  pages               ScanPage[]
+  findings            Finding[]
   initialWorkOrders   WorkOrder[]
   reportCaches        ScanReportCache[]
   verificationAttempt VerificationAttempt?
   aiAnswerRuns        AiAnswerRun[]
   aiAnswerSummary     AiAnswerSummary?
+  paymentOrders       PaymentOrder[]
+  paidEntitlements    PaidEntitlement[]
 
   @@index([siteId, createdAt])
   @@index([status, createdAt])
@@ -387,21 +414,21 @@ model ScanPage {
 }
 
 model Finding {
-  id            String          @id @default(cuid())
-  scanId        String          @map("scan_id")
-  scanPageId    String?         @map("scan_page_id")
-  ruleCode      String          @map("rule_code")
-  category      String
-  severity      FindingSeverity
-  status        FindingStatus
-  title         String
-  description   String
-  evidenceJson  Json?           @map("evidence_json")
+  id             String          @id @default(cuid())
+  scanId         String          @map("scan_id")
+  scanPageId     String?         @map("scan_page_id")
+  ruleCode       String          @map("rule_code")
+  category       String
+  severity       FindingSeverity
+  status         FindingStatus
+  title          String
+  description    String
+  evidenceJson   Json?           @map("evidence_json")
   recommendation String?
-  scoreDelta    Float           @default(0) @map("score_delta")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  scan          Scan            @relation(fields: [scanId], references: [id], onDelete: Cascade)
-  scanPage      ScanPage?       @relation(fields: [scanPageId], references: [id], onDelete: SetNull)
+  scoreDelta     Float           @default(0) @map("score_delta")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  scan           Scan            @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  scanPage       ScanPage?       @relation(fields: [scanPageId], references: [id], onDelete: SetNull)
   workOrderItems WorkOrderItem[]
 
   @@index([scanId, status])
@@ -411,30 +438,30 @@ model Finding {
 }
 
 model WorkOrder {
-  id                     String          @id @default(cuid())
-  orderNumber            String          @map("order_number")
-  siteId                 String          @map("site_id")
-  initialScanId          String          @map("initial_scan_id")
-  customerOrganizationId String          @map("customer_organization_id")
-  agencyOrganizationId   String?         @map("agency_organization_id")
-  version                Int             @default(1)
-  status                 WorkOrderStatus @default(DRAFT)
-  rulesVersion           String          @map("rules_version")
-  scoreBefore            Float?          @map("score_before")
-  gradeBefore            String?         @map("grade_before")
-  expectedScoreMin       Int             @map("expected_score_min")
-  expectedScoreMax       Int             @map("expected_score_max")
-  issuedAt               DateTime?       @map("issued_at")
-  createdBy              String?         @map("created_by")
-  createdAt              DateTime        @default(now()) @map("created_at")
-  updatedAt              DateTime        @updatedAt @map("updated_at")
-  site                   Site            @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  initialScan            Scan            @relation(fields: [initialScanId], references: [id], onDelete: Cascade)
-  customerOrganization   Organization    @relation("CustomerWorkOrders", fields: [customerOrganizationId], references: [id], onDelete: Cascade)
-  agencyOrganization     Organization?   @relation("AgencyWorkOrders", fields: [agencyOrganizationId], references: [id], onDelete: SetNull)
+  id                     String                @id @default(cuid())
+  orderNumber            String                @map("order_number")
+  siteId                 String                @map("site_id")
+  initialScanId          String                @map("initial_scan_id")
+  customerOrganizationId String                @map("customer_organization_id")
+  agencyOrganizationId   String?               @map("agency_organization_id")
+  version                Int                   @default(1)
+  status                 WorkOrderStatus       @default(DRAFT)
+  rulesVersion           String                @map("rules_version")
+  scoreBefore            Float?                @map("score_before")
+  gradeBefore            String?               @map("grade_before")
+  expectedScoreMin       Int                   @map("expected_score_min")
+  expectedScoreMax       Int                   @map("expected_score_max")
+  issuedAt               DateTime?             @map("issued_at")
+  createdBy              String?               @map("created_by")
+  createdAt              DateTime              @default(now()) @map("created_at")
+  updatedAt              DateTime              @updatedAt @map("updated_at")
+  site                   Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  initialScan            Scan                  @relation(fields: [initialScanId], references: [id], onDelete: Cascade)
+  customerOrganization   Organization          @relation("CustomerWorkOrders", fields: [customerOrganizationId], references: [id], onDelete: Cascade)
+  agencyOrganization     Organization?         @relation("AgencyWorkOrders", fields: [agencyOrganizationId], references: [id], onDelete: SetNull)
   creator                User?                 @relation("WorkOrderCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   items                  WorkOrderItem[]
-  verificationAttempts  VerificationAttempt[]
+  verificationAttempts   VerificationAttempt[]
 
   @@unique([orderNumber, version])
   @@index([siteId, createdAt])
@@ -446,20 +473,20 @@ model WorkOrder {
 }
 
 model WorkOrderItem {
-  id                     String              @id @default(cuid())
-  workOrderId            String              @map("work_order_id")
-  findingId              String?             @map("finding_id")
-  itemCode               String              @map("item_code")
-  targetUrl              String              @map("target_url")
+  id                     String                   @id @default(cuid())
+  workOrderId            String                   @map("work_order_id")
+  findingId              String?                  @map("finding_id")
+  itemCode               String                   @map("item_code")
+  targetUrl              String                   @map("target_url")
   title                  String
   requirement            String
-  developerMessage       String              @map("developer_message")
-  acceptanceCriteriaJson Json                @map("acceptance_criteria_json")
-  isRequired             Boolean             @default(true) @map("is_required")
+  developerMessage       String                   @map("developer_message")
+  acceptanceCriteriaJson Json                     @map("acceptance_criteria_json")
+  isRequired             Boolean                  @default(true) @map("is_required")
   weight                 Int
-  status                 WorkOrderItemStatus @default(PENDING)
-  createdAt              DateTime            @default(now()) @map("created_at")
-  updatedAt              DateTime            @updatedAt @map("updated_at")
+  status                 WorkOrderItemStatus      @default(PENDING)
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  updatedAt              DateTime                 @updatedAt @map("updated_at")
   workOrder              WorkOrder                @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
   finding                Finding?                 @relation(fields: [findingId], references: [id], onDelete: SetNull)
   verificationResults    VerificationItemResult[]
@@ -517,29 +544,84 @@ model VerificationItemResult {
 }
 
 model ScanReportCache {
-  id                String                @id @default(cuid())
-  scanId            String                @map("scan_id")
-  reportType        String                @default("DIAGNOSTIC") @map("report_type")
-  cacheKey          String                @map("cache_key")
-  sourceHash        String                @map("source_hash")
-  rendererVersion   String                @map("renderer_version")
-  fontHash          String                @map("font_hash")
-  status            ScanReportCacheStatus @default(GENERATING)
-  pdfBytes          Bytes?                @map("pdf_bytes")
-  pdfSha256         String?               @map("pdf_sha256")
-  sizeBytes         Int?                  @map("size_bytes")
-  generationToken   String?               @map("generation_token")
-  lockExpiresAt     DateTime?             @map("lock_expires_at")
-  generatedAt       DateTime?             @map("generated_at")
-  lastAccessedAt    DateTime?             @map("last_accessed_at")
-  errorMessage      String?               @map("error_message")
-  createdAt         DateTime              @default(now()) @map("created_at")
-  updatedAt         DateTime              @updatedAt @map("updated_at")
-  scan              Scan                  @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  id              String                @id @default(cuid())
+  scanId          String                @map("scan_id")
+  reportType      String                @default("DIAGNOSTIC") @map("report_type")
+  cacheKey        String                @map("cache_key")
+  sourceHash      String                @map("source_hash")
+  rendererVersion String                @map("renderer_version")
+  fontHash        String                @map("font_hash")
+  status          ScanReportCacheStatus @default(GENERATING)
+  pdfBytes        Bytes?                @map("pdf_bytes")
+  pdfSha256       String?               @map("pdf_sha256")
+  sizeBytes       Int?                  @map("size_bytes")
+  generationToken String?               @map("generation_token")
+  lockExpiresAt   DateTime?             @map("lock_expires_at")
+  generatedAt     DateTime?             @map("generated_at")
+  lastAccessedAt  DateTime?             @map("last_accessed_at")
+  errorMessage    String?               @map("error_message")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  scan            Scan                  @relation(fields: [scanId], references: [id], onDelete: Cascade)
 
   @@unique([scanId, reportType])
   @@index([status, lockExpiresAt])
   @@map("scan_report_caches")
+}
+
+model PaymentOrder {
+  id                String             @id @default(cuid())
+  userId            String             @map("user_id")
+  siteId            String             @map("site_id")
+  scanId            String?            @map("scan_id")
+  provider          PaymentProvider
+  status            PaymentOrderStatus @default(PENDING)
+  plan              PaidPlan
+  amount            Int
+  currency          String
+  providerOrderId   String?            @map("provider_order_id")
+  providerPaymentId String?            @map("provider_payment_id")
+  idempotencyKey    String?            @unique @map("idempotency_key")
+  metadata          Json?
+  paidAt            DateTime?          @map("paid_at")
+  failedAt          DateTime?          @map("failed_at")
+  canceledAt        DateTime?          @map("canceled_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  user              User               @relation("PaymentOrderUser", fields: [userId], references: [id], onDelete: Cascade)
+  site              Site               @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  scan              Scan?              @relation(fields: [scanId], references: [id], onDelete: SetNull)
+  paidEntitlement   PaidEntitlement?
+
+  @@unique([provider, providerOrderId])
+  @@unique([provider, providerPaymentId])
+  @@index([userId, status, createdAt])
+  @@index([siteId, status])
+  @@index([scanId, status])
+  @@map("payment_orders")
+}
+
+model PaidEntitlement {
+  id             String                @id @default(cuid())
+  userId         String                @map("user_id")
+  siteId         String                @map("site_id")
+  scanId         String?               @map("scan_id")
+  paymentOrderId String?               @unique @map("payment_order_id")
+  plan           PaidPlan
+  status         PaidEntitlementStatus @default(ACTIVE)
+  grantedAt      DateTime              @default(now()) @map("granted_at")
+  revokedAt      DateTime?             @map("revoked_at")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  user           User                  @relation("PaidEntitlementUser", fields: [userId], references: [id], onDelete: Cascade)
+  site           Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  scan           Scan?                 @relation(fields: [scanId], references: [id], onDelete: SetNull)
+  paymentOrder   PaymentOrder?         @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, grantedAt])
+  @@index([siteId, status])
+  @@index([scanId, status])
+  @@map("paid_entitlements")
 }
 
 model AiQuestion {
@@ -564,37 +646,37 @@ model AiQuestion {
 }
 
 model AiAnswerRun {
-  id                     String            @id @default(cuid())
-  scanId                 String            @map("scan_id")
-  questionId             String?           @map("question_id")
-  runNumber              Int               @default(1) @map("run_number")
-  questionCode           String            @map("question_code")
-  questionKind           AiQuestionKind    @map("question_kind")
-  questionText           String            @map("question_text")
-  expectedFactsSnapshot  Json              @map("expected_facts_snapshot")
-  provider               String
-  model                  String
-  status                 AiAnswerRunStatus @default(QUEUED)
-  responseId             String?           @map("response_id")
-  answerText             String?           @map("answer_text")
-  answerSha256           String?           @map("answer_sha256")
-  brandMentioned         Boolean?          @map("brand_mentioned")
-  targetDomainCited      Boolean?          @map("target_domain_cited")
-  citationsJson          Json?             @map("citations_json")
-  sourcesJson            Json?             @map("sources_json")
-  automaticMetricsJson   Json?             @map("automatic_metrics_json")
-  factualEvaluationJson  Json?             @map("factual_evaluation_json")
-  consistencySignature   String?           @map("consistency_signature")
-  inputTokens            Int?              @map("input_tokens")
-  outputTokens           Int?              @map("output_tokens")
-  errorCode              String?           @map("error_code")
-  errorMessage           String?           @map("error_message")
-  startedAt              DateTime?         @map("started_at")
-  completedAt            DateTime?         @map("completed_at")
-  createdAt              DateTime          @default(now()) @map("created_at")
-  updatedAt              DateTime          @updatedAt @map("updated_at")
-  scan                   Scan              @relation(fields: [scanId], references: [id], onDelete: Cascade)
-  question               AiQuestion?       @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  id                    String            @id @default(cuid())
+  scanId                String            @map("scan_id")
+  questionId            String?           @map("question_id")
+  runNumber             Int               @default(1) @map("run_number")
+  questionCode          String            @map("question_code")
+  questionKind          AiQuestionKind    @map("question_kind")
+  questionText          String            @map("question_text")
+  expectedFactsSnapshot Json              @map("expected_facts_snapshot")
+  provider              String
+  model                 String
+  status                AiAnswerRunStatus @default(QUEUED)
+  responseId            String?           @map("response_id")
+  answerText            String?           @map("answer_text")
+  answerSha256          String?           @map("answer_sha256")
+  brandMentioned        Boolean?          @map("brand_mentioned")
+  targetDomainCited     Boolean?          @map("target_domain_cited")
+  citationsJson         Json?             @map("citations_json")
+  sourcesJson           Json?             @map("sources_json")
+  automaticMetricsJson  Json?             @map("automatic_metrics_json")
+  factualEvaluationJson Json?             @map("factual_evaluation_json")
+  consistencySignature  String?           @map("consistency_signature")
+  inputTokens           Int?              @map("input_tokens")
+  outputTokens          Int?              @map("output_tokens")
+  errorCode             String?           @map("error_code")
+  errorMessage          String?           @map("error_message")
+  startedAt             DateTime?         @map("started_at")
+  completedAt           DateTime?         @map("completed_at")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+  scan                  Scan              @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  question              AiQuestion?       @relation(fields: [questionId], references: [id], onDelete: SetNull)
 
   @@unique([scanId, questionCode, runNumber])
   @@index([scanId, status])
@@ -603,28 +685,28 @@ model AiAnswerRun {
 }
 
 model AiAnswerSummary {
-  id                    String   @id @default(cuid())
-  scanId                String   @unique @map("scan_id")
-  provider              String
-  model                 String
-  methodologyVersion    String   @map("methodology_version")
-  plannedQuestionCount  Int      @map("planned_question_count")
-  completedQuestionCount Int     @map("completed_question_count")
-  totalRunCount         Int      @map("total_run_count")
-  completedRunCount     Int      @map("completed_run_count")
-  partialRunCount       Int      @map("partial_run_count")
-  failedRunCount        Int      @map("failed_run_count")
-  answerCompletionRate  Float?   @map("answer_completion_rate")
-  brandMentionRate      Float?   @map("brand_mention_rate")
-  targetCitationRate    Float?   @map("target_citation_rate")
-  factualAccuracy       Float?   @map("factual_accuracy")
-  completeness          Float?
-  consistency           Float?
-  performanceScore      Float?   @map("performance_score")
-  scoreCoverage         Float?   @map("score_coverage")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
-  scan                  Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  id                     String   @id @default(cuid())
+  scanId                 String   @unique @map("scan_id")
+  provider               String
+  model                  String
+  methodologyVersion     String   @map("methodology_version")
+  plannedQuestionCount   Int      @map("planned_question_count")
+  completedQuestionCount Int      @map("completed_question_count")
+  totalRunCount          Int      @map("total_run_count")
+  completedRunCount      Int      @map("completed_run_count")
+  partialRunCount        Int      @map("partial_run_count")
+  failedRunCount         Int      @map("failed_run_count")
+  answerCompletionRate   Float?   @map("answer_completion_rate")
+  brandMentionRate       Float?   @map("brand_mention_rate")
+  targetCitationRate     Float?   @map("target_citation_rate")
+  factualAccuracy        Float?   @map("factual_accuracy")
+  completeness           Float?
+  consistency            Float?
+  performanceScore       Float?   @map("performance_score")
+  scoreCoverage          Float?   @map("score_coverage")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
+  scan                   Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
 
   @@index([provider, model])
   @@map("ai_answer_summaries")
