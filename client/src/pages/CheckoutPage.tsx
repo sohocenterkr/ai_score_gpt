@@ -318,10 +318,10 @@ export function CheckoutPage() {
           <div className="checkout-price-grid">
             <article>
               <span>기본 가격</span>
-              <strong>165,000원</strong>
+              <strong>165,000원 (VAT 포함)</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>개선 사례 활용 동의 없이 이용하는 기본 가격 · VAT 포함</li>
+                <li>개선 사례 활용 동의 없이 이용하는 기본 가격</li>
               </ul>
               <button
                 className="primary checkout-price-action"
@@ -330,16 +330,13 @@ export function CheckoutPage() {
                 onClick={() => void handleCreateDomesticOrder("BASIC")}
               >
                 {submittingPlan === "BASIC"
-                  ? "결제 주문 생성 중..."
+                  ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
                   : "국내 결제 준비"}
               </button>
-              <p className="checkout-payment-note">
-                PortOne 결제창 호출 전 주문 생성 단계입니다.
-              </p>
             </article>
             <article>
               <span>개선 사례 활용 동의 시</span>
-              <strong>110,000원</strong>
+              <strong>110,000원 (VAT 포함)</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
                 <li>진단 전후 개선 사례 활용에 동의하는 경우 적용</li>
@@ -355,12 +352,9 @@ export function CheckoutPage() {
                 }
               >
                 {submittingPlan === "CASE_STUDY_DISCOUNT"
-                  ? "결제 주문 생성 중..."
+                  ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
                   : "국내 결제 준비"}
               </button>
-              <p className="checkout-payment-note">
-                할인 플랜도 동일한 산출물을 제공합니다.
-              </p>
             </article>
           </div>
         </section>
