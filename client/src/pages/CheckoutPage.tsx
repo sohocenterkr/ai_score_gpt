@@ -154,22 +154,13 @@ export function CheckoutPage() {
         storeId: result.portone.storeId,
         channelKey: result.portone.channelKey,
         paymentId: result.portone.paymentId,
-        orderName: "Site AI Score",
+        orderName: "Site AI Score 진단 보고서",
         totalAmount: result.portone.totalAmount,
         currency: "CURRENCY_KRW",
         payMethod: result.portone.payMethod,
         customer: {
           fullName: "Site AI Score 고객",
         },
-        products: [
-          {
-            id: "site_ai_score_report",
-            name: "Site AI Score 진단 보고서",
-            amount: result.portone.totalAmount,
-            quantity: 1,
-          },
-        ],
-        productType: "DIGITAL",
         redirectUrl: checkoutRedirectUrl(
           locale,
           scanId,
