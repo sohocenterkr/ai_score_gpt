@@ -1,9 +1,39 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import * as PortOne from "@portone/browser-sdk/v2";
 import {
+  completePaymentOrderRequest,
   createPaymentOrderRequest,
   type PaymentPlan,
 } from "../billing/payment-api";
+
+type PortOnePaymentFailure = {
+  code?: string;
+  message?: string;
+};
+
+function isPortOnePaymentFailure(
+  response: unknown,
+): response is PortOnePaymentFailure {
+  return (
+    typeof response === "object" &&
+    response !== null &&
+    "code" in response
+  );
+}
+
+function checkoutRedirectUrl(
+  locale: string,
+  scanId: string,
+  orderId: string,
+): string {
+  const url = new URL(window.location.href);
+  url.pathname = `/${locale}/checkout`;
+  url.search = "";
+  url.searchParams.set("scanId", scanId);
+  url.searchParams.set("paymentOrderId", orderId);
+  return url.toString();
+}
 
 type CheckoutMessage = {
   tone: "info" | "success" | "error";
@@ -25,11 +55,66 @@ export function CheckoutPage() {
   const { locale = "ko" } = useParams();
   const [searchParams] = useSearchParams();
   const scanId = searchParams.get("scanId")?.trim() ?? "";
+  const redirectedPaymentOrderId =
+    searchParams.get("paymentOrderId")?.trim() ?? "";
+  const redirectedPaymentId =
+    searchParams.get("paymentId")?.trim() ?? "";
+  const redirectedErrorMessage =
+    searchParams.get("message")?.trim() ?? "";
   const [submittingPlan, setSubmittingPlan] =
     useState<PaymentPlan | null>(null);
   const [message, setMessage] = useState<CheckoutMessage | null>(null);
+  const redirectHandledRef = useRef(false);
 
   const hasScanId = useMemo(() => scanId.length > 0, [scanId]);
+
+  useEffect(() => {
+    if (redirectHandledRef.current) {
+      return;
+    }
+
+    if (redirectedErrorMessage) {
+      redirectHandledRef.current = true;
+      setMessage({
+        tone: "error",
+        text: redirectedErrorMessage,
+      });
+      return;
+    }
+
+    if (!redirectedPaymentOrderId || !redirectedPaymentId) {
+      return;
+    }
+
+    redirectHandledRef.current = true;
+    setSubmittingPlan("BASIC");
+    completePaymentOrderRequest({
+      paymentOrderId: redirectedPaymentOrderId,
+      providerPaymentId: redirectedPaymentId,
+    })
+      .then(() => {
+        setMessage({
+          tone: "success",
+          text: "결제가 확인되어 상세 진단 보고서와 수정 작업지시서 접근 권한이 열렸습니다. 진단 결과 화면으로 돌아가 산출물을 이용해 주세요.",
+        });
+      })
+      .catch((error: unknown) => {
+        setMessage({
+          tone: "error",
+          text:
+            error instanceof Error
+              ? error.message
+              : "결제 완료 검증을 처리하지 못했습니다.",
+        });
+      })
+      .finally(() => {
+        setSubmittingPlan(null);
+      });
+  }, [
+    redirectedErrorMessage,
+    redirectedPaymentId,
+    redirectedPaymentOrderId,
+  ]);
 
   async function handleCreateDomesticOrder(plan: PaymentPlan) {
     if (!hasScanId) {
@@ -52,14 +137,52 @@ export function CheckoutPage() {
       if (!result.portone.configured) {
         setMessage({
           tone: "info",
-          text: `${planLabel(plan)} ${domesticPrices[plan]} 결제 주문이 생성되었습니다. Vercel/Replit 환경변수에 PORTONE_STORE_ID와 PORTONE_CHANNEL_KEY를 넣으면 다음 단계에서 결제창 호출을 연결할 수 있습니다.`,
+          text: `${planLabel(plan)} ${domesticPrices[plan]} 결제 주문이 생성되었습니다. Vercel/Replit 환경변수에 PORTONE_STORE_ID와 PORTONE_CHANNEL_KEY를 넣으면 결제창이 열립니다.`,
         });
         return;
       }
 
+      if (!result.portone.storeId || !result.portone.channelKey) {
+        setMessage({
+          tone: "error",
+          text: "PortOne 결제 설정을 확인하지 못했습니다.",
+        });
+        return;
+      }
+
+      const paymentResponse = await PortOne.requestPayment({
+        storeId: result.portone.storeId,
+        channelKey: result.portone.channelKey,
+        paymentId: result.portone.paymentId,
+        orderName: result.portone.orderName,
+        totalAmount: result.portone.totalAmount,
+        currency: "CURRENCY_KRW",
+        payMethod: result.portone.payMethod,
+        redirectUrl: checkoutRedirectUrl(
+          locale,
+          scanId,
+          result.paymentOrder.id,
+        ),
+      });
+
+      if (isPortOnePaymentFailure(paymentResponse)) {
+        setMessage({
+          tone: "error",
+          text:
+            paymentResponse.message ??
+            "결제가 완료되지 않았습니다.",
+        });
+        return;
+      }
+
+      await completePaymentOrderRequest({
+        paymentOrderId: result.paymentOrder.id,
+        providerPaymentId: result.portone.paymentId,
+      });
+
       setMessage({
         tone: "success",
-        text: `${planLabel(plan)} ${domesticPrices[plan]} 결제 주문이 생성되었습니다. 결제창 호출에 필요한 PortOne Store ID, 채널 키, paymentId가 준비되었습니다.`,
+        text: "결제가 확인되어 상세 진단 보고서와 수정 작업지시서 접근 권한이 열렸습니다. 진단 결과 화면으로 돌아가 산출물을 이용해 주세요.",
       });
     } catch (error) {
       setMessage({

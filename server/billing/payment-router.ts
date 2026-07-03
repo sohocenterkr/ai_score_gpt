@@ -17,6 +17,10 @@ const createPaymentOrderSchema = z.object({
   provider: z.enum(["PORTONE"]).default("PORTONE"),
 });
 
+const completePaymentOrderSchema = z.object({
+  providerPaymentId: z.string().trim().min(1).max(120),
+});
+
 interface CreatePaymentRouterOptions {
   paymentService: PaymentService;
   requireAuth: (
@@ -68,6 +72,38 @@ export function createPaymentRouter({
       handleError(response, error);
     }
   });
+
+  router.post(
+    "/payment-orders/:paymentOrderId/complete",
+    requireAuth,
+    async (request, response) => {
+      const parsed = completePaymentOrderSchema.safeParse(request.body);
+
+      if (!parsed.success) {
+        response.status(400).json({
+          code: "VALIDATION_ERROR",
+          message: "결제 완료 정보를 확인해 주세요.",
+        });
+        return;
+      }
+
+      try {
+        const result = await paymentService.completePaymentOrder(
+          response.locals.authUser,
+          {
+            paymentOrderId:
+              typeof request.params.paymentOrderId === "string"
+                ? request.params.paymentOrderId
+                : "",
+            providerPaymentId: parsed.data.providerPaymentId,
+          },
+        );
+        response.status(200).json(result);
+      } catch (error) {
+        handleError(response, error);
+      }
+    },
+  );
 
   return router;
 }

@@ -62,3 +62,30 @@ export async function createPaymentOrderRequest(input: {
 
   return readJson<CreatePaymentOrderResponse>(response);
 }
+
+export async function completePaymentOrderRequest(input: {
+  paymentOrderId: string;
+  providerPaymentId: string;
+}): Promise<{
+  paymentOrder: CreatePaymentOrderResponse["paymentOrder"];
+}> {
+  const response = await fetch(
+    `/api/billing/payment-orders/${encodeURIComponent(
+      input.paymentOrderId,
+    )}/complete`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        providerPaymentId: input.providerPaymentId,
+      }),
+    },
+  );
+
+  return readJson<{
+    paymentOrder: CreatePaymentOrderResponse["paymentOrder"];
+  }>(response);
+}

@@ -48,11 +48,21 @@ export interface CreatePaymentOrderResult {
   portone: PortOneCheckoutReady;
 }
 
+export interface CompletePaymentOrderInput {
+  paymentOrderId: string;
+  providerPaymentId: string;
+}
+
 export interface PaymentService {
   createPaymentOrder(
     user: PublicUser,
     input: CreatePaymentOrderInput,
   ): Promise<CreatePaymentOrderResult>;
+
+  completePaymentOrder(
+    user: PublicUser,
+    input: CompletePaymentOrderInput,
+  ): Promise<{ paymentOrder: PublicPaymentOrder }>;
 }
 
 export class PaymentServiceError extends Error {
@@ -84,6 +94,101 @@ function orderName(siteName: string, plan: PaymentPlan): string {
     plan === "CASE_STUDY_DISCOUNT" ? "개선 사례 활용 동의" : "기본";
   const compactSiteName = siteName.trim().slice(0, 24) || "사이트";
   return `Site AI Score 상세 보고서 - ${compactSiteName} (${suffix})`;
+}
+
+interface PortOnePaymentLookupResponse {
+  payment?: unknown;
+  id?: unknown;
+  status?: unknown;
+  amount?: unknown;
+  currency?: unknown;
+  paidAt?: unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function paymentFromLookupResponse(
+  data: PortOnePaymentLookupResponse,
+): Record<string, unknown> {
+  const candidate = isRecord(data.payment) ? data.payment : data;
+  return isRecord(candidate) ? candidate : {};
+}
+
+function paymentAmountTotal(payment: Record<string, unknown>): number | null {
+  const amount = payment.amount;
+
+  if (typeof amount === "number") {
+    return amount;
+  }
+
+  if (!isRecord(amount)) {
+    return null;
+  }
+
+  const total = amount.total;
+  return typeof total === "number" ? total : null;
+}
+
+function normalizePaymentCurrency(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  return value === "CURRENCY_KRW" ? "KRW" : value;
+}
+
+function paymentPaidAt(payment: Record<string, unknown>): Date {
+  const paidAt = payment.paidAt;
+
+  if (typeof paidAt === "string") {
+    const parsed = new Date(paidAt);
+
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed;
+    }
+  }
+
+  return new Date();
+}
+
+async function fetchPortOnePayment(
+  providerPaymentId: string,
+): Promise<Record<string, unknown>> {
+  if (!env.PORTONE_API_SECRET) {
+    throw new PaymentServiceError(
+      "PORTONE_API_SECRET_REQUIRED",
+      "PortOne API Secret이 설정되지 않아 결제 완료 검증을 할 수 없습니다.",
+      503,
+    );
+  }
+
+  const response = await fetch(
+    `https://api.portone.io/payments/${encodeURIComponent(
+      providerPaymentId,
+    )}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `PortOne ${env.PORTONE_API_SECRET}`,
+      },
+    },
+  );
+
+  const data = (await response.json().catch(() => null)) as
+    | PortOnePaymentLookupResponse
+    | null;
+
+  if (!response.ok || !data) {
+    throw new PaymentServiceError(
+      "PORTONE_PAYMENT_LOOKUP_FAILED",
+      "PortOne 결제 정보를 확인하지 못했습니다.",
+      502,
+    );
+  }
+
+  return paymentFromLookupResponse(data);
 }
 
 function publicOrder(record: {
@@ -254,6 +359,161 @@ export function createPrismaPaymentService(): PaymentService {
           currency: "KRW",
           payMethod: "CARD",
         },
+      };
+    },
+
+    async completePaymentOrder(user, input) {
+      const paymentOrderId = normalizeId(input.paymentOrderId);
+      const providerPaymentId = normalizeId(input.providerPaymentId);
+
+      if (!paymentOrderId || !providerPaymentId) {
+        throw new PaymentServiceError(
+          "PAYMENT_COMPLETION_INVALID",
+          "결제 완료 정보를 확인해 주세요.",
+          400,
+        );
+      }
+
+      const prisma = getDatabase();
+      const order = await prisma.paymentOrder.findFirst({
+        where: {
+          id: paymentOrderId,
+          userId: user.id,
+          provider: "PORTONE",
+        },
+        include: {
+          site: {
+            select: {
+              id: true,
+              name: true,
+              baseUrl: true,
+              finalUrl: true,
+            },
+          },
+          scan: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new PaymentServiceError(
+          "PAYMENT_ORDER_NOT_FOUND",
+          "결제 주문을 찾을 수 없습니다.",
+          404,
+        );
+      }
+
+      if (order.providerPaymentId !== providerPaymentId) {
+        throw new PaymentServiceError(
+          "PAYMENT_ID_MISMATCH",
+          "결제 주문과 결제창 결과가 일치하지 않습니다.",
+          409,
+        );
+      }
+
+      if (order.status === "PAID") {
+        return {
+          paymentOrder: publicOrder(order),
+        };
+      }
+
+      const payment = await fetchPortOnePayment(providerPaymentId);
+      const paymentStatus =
+        typeof payment.status === "string" ? payment.status : "";
+      const totalAmount = paymentAmountTotal(payment);
+      const currency = normalizePaymentCurrency(payment.currency);
+
+      if (paymentStatus !== "PAID") {
+        if (
+          paymentStatus === "FAILED" ||
+          paymentStatus === "CANCELED" ||
+          paymentStatus === "CANCELLED"
+        ) {
+          await prisma.paymentOrder.update({
+            where: {
+              id: order.id,
+            },
+            data: {
+              status:
+                paymentStatus === "FAILED" ? "FAILED" : "CANCELED",
+              failedAt:
+                paymentStatus === "FAILED" ? new Date() : undefined,
+              canceledAt:
+                paymentStatus === "FAILED" ? undefined : new Date(),
+            },
+          });
+        }
+
+        throw new PaymentServiceError(
+          "PAYMENT_NOT_PAID",
+          "결제가 완료된 상태가 아닙니다.",
+          409,
+        );
+      }
+
+      if (totalAmount !== order.amount || currency !== order.currency) {
+        throw new PaymentServiceError(
+          "PAYMENT_AMOUNT_MISMATCH",
+          "결제 금액 또는 통화가 주문 정보와 일치하지 않습니다.",
+          409,
+        );
+      }
+
+      const paidAt = paymentPaidAt(payment);
+
+      const paidOrder = await prisma.$transaction(async (transaction) => {
+        const updated = await transaction.paymentOrder.update({
+          where: {
+            id: order.id,
+          },
+          data: {
+            status: "PAID",
+            paidAt,
+          },
+          include: {
+            site: {
+              select: {
+                id: true,
+                name: true,
+                baseUrl: true,
+                finalUrl: true,
+              },
+            },
+            scan: {
+              select: {
+                id: true,
+              },
+            },
+          },
+        });
+
+        await transaction.paidEntitlement.upsert({
+          where: {
+            paymentOrderId: order.id,
+          },
+          update: {
+            status: "ACTIVE",
+            revokedAt: null,
+          },
+          create: {
+            userId: order.userId,
+            siteId: order.siteId,
+            scanId: order.scanId,
+            paymentOrderId: order.id,
+            plan: order.plan,
+            status: "ACTIVE",
+            grantedAt: paidAt,
+          },
+        });
+
+        return updated;
+      });
+
+      return {
+        paymentOrder: publicOrder(paidOrder),
       };
     },
   };
