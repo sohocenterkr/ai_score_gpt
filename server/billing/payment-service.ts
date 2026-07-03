@@ -187,11 +187,19 @@ async function verifyPortOneWebhook(
     );
   }
 
-  await Webhook.verify(
-    env.PORTONE_WEBHOOK_SECRET,
-    payload,
-    headers as Parameters<typeof Webhook.verify>[2],
-  );
+  try {
+    await Webhook.verify(
+      env.PORTONE_WEBHOOK_SECRET,
+      payload,
+      headers as Parameters<typeof Webhook.verify>[2],
+    );
+  } catch {
+    throw new PaymentServiceError(
+      "PORTONE_WEBHOOK_SIGNATURE_INVALID",
+      "PortOne 웹훅 서명을 확인하지 못했습니다.",
+      401,
+    );
+  }
 }
 
 function paymentAmountTotal(payment: Record<string, unknown>): number | null {
