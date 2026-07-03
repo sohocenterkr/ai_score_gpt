@@ -107,3 +107,31 @@ export function createPaymentRouter({
 
   return router;
 }
+
+export function createPortOneWebhookRouter({
+  paymentService,
+}: {
+  paymentService: PaymentService;
+}) {
+  const router = Router();
+
+  router.post("/", async (request, response) => {
+    const payload = Buffer.isBuffer(request.body)
+      ? request.body.toString("utf8")
+      : typeof request.body === "string"
+        ? request.body
+        : "";
+
+    try {
+      const result = await paymentService.handlePortOneWebhook({
+        payload,
+        headers: request.headers,
+      });
+      response.status(200).json(result);
+    } catch (error) {
+      handleError(response, error);
+    }
+  });
+
+  return router;
+}

@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
+import type { IncomingHttpHeaders } from "node:http";
 import { Prisma } from "@prisma/client";
+import { Webhook } from "@portone/server-sdk";
 import type { PublicUser } from "../auth/auth-service";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
@@ -53,6 +55,18 @@ export interface CompletePaymentOrderInput {
   providerPaymentId: string;
 }
 
+export interface HandlePortOneWebhookInput {
+  payload: string;
+  headers: IncomingHttpHeaders;
+}
+
+export interface HandlePortOneWebhookResult {
+  received: true;
+  processed: boolean;
+  paymentId: string | null;
+  reason?: string;
+}
+
 export interface PaymentService {
   createPaymentOrder(
     user: PublicUser,
@@ -63,6 +77,10 @@ export interface PaymentService {
     user: PublicUser,
     input: CompletePaymentOrderInput,
   ): Promise<{ paymentOrder: PublicPaymentOrder }>;
+
+  handlePortOneWebhook(
+    input: HandlePortOneWebhookInput,
+  ): Promise<HandlePortOneWebhookResult>;
 }
 
 export class PaymentServiceError extends Error {
@@ -114,6 +132,66 @@ function paymentFromLookupResponse(
 ): Record<string, unknown> {
   const candidate = isRecord(data.payment) ? data.payment : data;
   return isRecord(candidate) ? candidate : {};
+}
+
+function stringField(
+  record: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = record[key];
+
+  return typeof value === "string" && value.trim()
+    ? value.trim()
+    : null;
+}
+
+function extractPaymentIdFromWebhookPayload(payload: string): string | null {
+  const parsed = JSON.parse(payload) as unknown;
+
+  if (!isRecord(parsed)) {
+    return null;
+  }
+
+  const data = isRecord(parsed.data) ? parsed.data : parsed;
+  const direct =
+    stringField(data, "paymentId") ??
+    stringField(data, "payment_id") ??
+    stringField(data, "id");
+
+  if (direct) {
+    return direct;
+  }
+
+  const payment = data.payment;
+
+  if (isRecord(payment)) {
+    return (
+      stringField(payment, "paymentId") ??
+      stringField(payment, "payment_id") ??
+      stringField(payment, "id")
+    );
+  }
+
+  return null;
+}
+
+async function verifyPortOneWebhook(
+  payload: string,
+  headers: IncomingHttpHeaders,
+): Promise<void> {
+  if (!env.PORTONE_WEBHOOK_SECRET) {
+    throw new PaymentServiceError(
+      "PORTONE_WEBHOOK_SECRET_REQUIRED",
+      "PortOne 웹훅 시크릿이 설정되지 않았습니다.",
+      503,
+    );
+  }
+
+  await Webhook.verify(
+    env.PORTONE_WEBHOOK_SECRET,
+    payload,
+    headers as Parameters<typeof Webhook.verify>[2],
+  );
 }
 
 function paymentAmountTotal(payment: Record<string, unknown>): number | null {
@@ -514,6 +592,155 @@ export function createPrismaPaymentService(): PaymentService {
 
       return {
         paymentOrder: publicOrder(paidOrder),
+      };
+    },
+
+    async handlePortOneWebhook(input) {
+      const payload = input.payload.trim();
+
+      if (!payload) {
+        throw new PaymentServiceError(
+          "PORTONE_WEBHOOK_EMPTY_PAYLOAD",
+          "PortOne 웹훅 본문이 비어 있습니다.",
+          400,
+        );
+      }
+
+      await verifyPortOneWebhook(payload, input.headers);
+
+      const providerPaymentId = extractPaymentIdFromWebhookPayload(payload);
+
+      if (!providerPaymentId) {
+        return {
+          received: true,
+          processed: false,
+          paymentId: null,
+          reason: "PAYMENT_ID_NOT_FOUND",
+        };
+      }
+
+      const prisma = getDatabase();
+      const order = await prisma.paymentOrder.findFirst({
+        where: {
+          provider: "PORTONE",
+          providerPaymentId,
+        },
+        include: {
+          site: {
+            select: {
+              id: true,
+              name: true,
+              baseUrl: true,
+              finalUrl: true,
+            },
+          },
+          scan: {
+            select: {
+              id: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        return {
+          received: true,
+          processed: false,
+          paymentId: providerPaymentId,
+          reason: "PAYMENT_ORDER_NOT_FOUND",
+        };
+      }
+
+      if (order.status === "PAID") {
+        return {
+          received: true,
+          processed: true,
+          paymentId: providerPaymentId,
+          reason: "ALREADY_PAID",
+        };
+      }
+
+      const payment = await fetchPortOnePayment(providerPaymentId);
+      const paymentStatus =
+        typeof payment.status === "string" ? payment.status : "";
+
+      if (paymentStatus !== "PAID") {
+        if (
+          paymentStatus === "FAILED" ||
+          paymentStatus === "CANCELED" ||
+          paymentStatus === "CANCELLED"
+        ) {
+          await prisma.paymentOrder.update({
+            where: {
+              id: order.id,
+            },
+            data: {
+              status:
+                paymentStatus === "FAILED" ? "FAILED" : "CANCELED",
+              failedAt:
+                paymentStatus === "FAILED" ? new Date() : undefined,
+              canceledAt:
+                paymentStatus === "FAILED" ? undefined : new Date(),
+            },
+          });
+        }
+
+        return {
+          received: true,
+          processed: false,
+          paymentId: providerPaymentId,
+          reason: "PAYMENT_NOT_PAID",
+        };
+      }
+
+      const totalAmount = paymentAmountTotal(payment);
+      const currency = normalizePaymentCurrency(payment.currency);
+
+      if (totalAmount !== order.amount || currency !== order.currency) {
+        throw new PaymentServiceError(
+          "PAYMENT_AMOUNT_MISMATCH",
+          "결제 금액 또는 통화가 주문 정보와 일치하지 않습니다.",
+          409,
+        );
+      }
+
+      const paidAt = paymentPaidAt(payment);
+
+      await prisma.$transaction(async (transaction) => {
+        await transaction.paymentOrder.update({
+          where: {
+            id: order.id,
+          },
+          data: {
+            status: "PAID",
+            paidAt,
+          },
+        });
+
+        await transaction.paidEntitlement.upsert({
+          where: {
+            paymentOrderId: order.id,
+          },
+          update: {
+            status: "ACTIVE",
+            revokedAt: null,
+          },
+          create: {
+            userId: order.userId,
+            siteId: order.siteId,
+            scanId: order.scanId,
+            paymentOrderId: order.id,
+            plan: order.plan,
+            status: "ACTIVE",
+            grantedAt: paidAt,
+          },
+        });
+      });
+
+      return {
+        received: true,
+        processed: true,
+        paymentId: providerPaymentId,
       };
     },
   };

@@ -52,7 +52,10 @@ import { getNowKST } from "../shared/kst";
 import { getRenderedDomCollectorRuntimeStatus } from "./scans/scan-worker";
 import { createAdminRouter } from "./admin/admin-router";
 import { createNoticeRouter } from "./notices/notice-router";
-import { createPaymentRouter } from "./billing/payment-router";
+import {
+  createPaymentRouter,
+  createPortOneWebhookRouter,
+} from "./billing/payment-router";
 import {
   createPrismaPaymentService,
   type PaymentService,
@@ -103,6 +106,13 @@ export function createApp(options: CreateAppOptions = {}) {
     }),
   );
   app.use(compression());
+  app.use(
+    "/api/billing/portone-webhook",
+    express.raw({ type: "application/json", limit: "1mb" }),
+    createPortOneWebhookRouter({
+      paymentService,
+    }),
+  );
   app.use(express.json({ limit: "1mb" }));
 
   app.get("/api/health", async (_request, response) => {
