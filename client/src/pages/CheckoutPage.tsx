@@ -51,6 +51,14 @@ function planLabel(plan: PaymentPlan): string {
     : "기본 가격";
 }
 
+function normalizePhoneNumber(value: string): string {
+  return value.replace(/[^0-9]/g, "");
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export function CheckoutPage() {
   const { locale = "ko" } = useParams();
   const [searchParams] = useSearchParams();
@@ -64,6 +72,9 @@ export function CheckoutPage() {
   const [submittingPlan, setSubmittingPlan] =
     useState<PaymentPlan | null>(null);
   const [message, setMessage] = useState<CheckoutMessage | null>(null);
+  const [payerName, setPayerName] = useState("Site AI Score 고객");
+  const [payerEmail, setPayerEmail] = useState("");
+  const [payerPhoneNumber, setPayerPhoneNumber] = useState("");
   const redirectHandledRef = useRef(false);
 
   const hasScanId = useMemo(() => scanId.length > 0, [scanId]);
@@ -125,6 +136,25 @@ export function CheckoutPage() {
       return;
     }
 
+    const normalizedPayerName = payerName.trim();
+    const normalizedPayerEmail = payerEmail.trim();
+    const normalizedPayerPhoneNumber = normalizePhoneNumber(payerPhoneNumber);
+
+    if (!normalizedPayerName) {
+      setMessage({ tone: "error", text: "결제자 이름을 입력해 주세요." });
+      return;
+    }
+
+    if (!isValidEmail(normalizedPayerEmail)) {
+      setMessage({ tone: "error", text: "결제자 이메일을 정확히 입력해 주세요." });
+      return;
+    }
+
+    if (normalizedPayerPhoneNumber.length < 10) {
+      setMessage({ tone: "error", text: "결제자 휴대폰번호를 정확히 입력해 주세요." });
+      return;
+    }
+
     setSubmittingPlan(plan);
     setMessage(null);
 
@@ -159,7 +189,9 @@ export function CheckoutPage() {
         currency: "CURRENCY_KRW",
         payMethod: result.portone.payMethod,
         customer: {
-          fullName: "Site AI Score 고객",
+          fullName: normalizedPayerName,
+          email: normalizedPayerEmail,
+          phoneNumber: normalizedPayerPhoneNumber,
         },
         redirectUrl: checkoutRedirectUrl(
           locale,
@@ -240,6 +272,49 @@ export function CheckoutPage() {
             </p>
           ) : null}
 
+          <div
+            className="checkout-payment-note"
+            style={{ display: "grid", gap: "0.75rem" }}
+          >
+            <strong>결제자 정보</strong>
+            <span>
+              KG이니시스 결제창 호출을 위해 이름, 이메일, 휴대폰번호가 필요합니다.
+            </span>
+
+            <label style={{ display: "grid", gap: "0.35rem" }}>
+              결제자 이름
+              <input
+                type="text"
+                value={payerName}
+                onChange={(event) => setPayerName(event.target.value)}
+                placeholder="홍길동"
+                autoComplete="name"
+              />
+            </label>
+
+            <label style={{ display: "grid", gap: "0.35rem" }}>
+              결제자 이메일
+              <input
+                type="email"
+                value={payerEmail}
+                onChange={(event) => setPayerEmail(event.target.value)}
+                placeholder="name@example.com"
+                autoComplete="email"
+              />
+            </label>
+
+            <label style={{ display: "grid", gap: "0.35rem" }}>
+              휴대폰번호
+              <input
+                type="tel"
+                value={payerPhoneNumber}
+                onChange={(event) => setPayerPhoneNumber(event.target.value)}
+                placeholder="01012345678"
+                autoComplete="tel"
+              />
+            </label>
+          </div>
+          
           <div className="checkout-price-grid">
             <article>
               <span>기본 가격</span>
