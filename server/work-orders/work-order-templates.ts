@@ -120,22 +120,22 @@ const templates: Record<string, WorkOrderTemplate> = {
       "이 항목은 CONTENT-INITIAL-001과 같은 P0 작업 묶음에서 처리해 주세요. 초기 HTML에 최소 800자 수준을 내부 목표로 삼되, 글자 수 자체보다 AI가 '무엇을 제공하나', '누가 쓰나', '어떻게 시작하나', '무료/유료 범위는 무엇인가', '입력 자료는 어떻게 처리하나'에 답할 수 있는 실제 정보를 넣는 것이 중요합니다.",
     acceptanceCriteria: [
       {
-        code: "ANSWER-01",
+        code: "CONTENT-ANSWERABILITY-001-01",
         label: "초기 HTML만으로 서비스 정의와 핵심 가치를 설명할 수 있다.",
         required: true,
       },
       {
-        code: "ANSWER-02",
+        code: "CONTENT-ANSWERABILITY-001-02",
         label: "이용 대상과 최소 2개의 대표 활용 사례가 확인된다.",
         required: true,
       },
       {
-        code: "ANSWER-03",
+        code: "CONTENT-ANSWERABILITY-001-03",
         label: "가입부터 생성, 배포, 제출 확인, 내보내기 등 3~5단계 이용 절차를 확인할 수 있다.",
         required: true,
       },
       {
-        code: "ANSWER-04",
+        code: "CONTENT-ANSWERABILITY-001-04",
         label: "요금·데이터 처리·운영 주체 또는 문의 경로가 확인된다.",
         required: true,
       },
@@ -283,11 +283,6 @@ const templates: Record<string, WorkOrderTemplate> = {
         code: "JSONLD-04",
         label: "이름·URL·설명 등 구조화 데이터가 실제 화면 정보와 일치한다.",
         required: true,
-      },
-      {
-        code: "JSONLD-05",
-        label: "FAQPage를 추가한 경우 실제 화면 FAQ와 질문·답변이 일치한다.",
-        required: false,
       },
     ],
     isRequired: true,

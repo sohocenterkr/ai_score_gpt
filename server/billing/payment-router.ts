@@ -14,7 +14,7 @@ import {
 const createPaymentOrderSchema = z.object({
   scanId: z.string().trim().min(1).max(100),
   plan: z.enum(["BASIC", "CASE_STUDY_DISCOUNT"]),
-  provider: z.enum(["PORTONE"]).default("PORTONE"),
+  provider: z.enum(["PORTONE", "POLAR"]).default("PORTONE"),
 });
 
 const completePaymentOrderSchema = z.object({
@@ -124,6 +124,35 @@ export function createPortOneWebhookRouter({
 
     try {
       const result = await paymentService.handlePortOneWebhook({
+        payload,
+        headers: request.headers,
+      });
+      response.status(200).json(result);
+    } catch (error) {
+      handleError(response, error);
+    }
+  });
+
+  return router;
+}
+
+
+export function createPolarWebhookRouter({
+  paymentService,
+}: {
+  paymentService: PaymentService;
+}) {
+  const router = Router();
+
+  router.post("/", async (request, response) => {
+    const payload = Buffer.isBuffer(request.body)
+      ? request.body.toString("utf8")
+      : typeof request.body === "string"
+        ? request.body
+        : "";
+
+    try {
+      const result = await paymentService.handlePolarWebhook({
         payload,
         headers: request.headers,
       });

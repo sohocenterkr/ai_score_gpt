@@ -164,7 +164,13 @@ export function CheckoutPage() {
         plan,
       });
 
-      if (!result.portone.configured) {
+      const portone = result.portone;
+
+      if (!portone) {
+        throw new Error("국내 결제 정보를 불러오지 못했습니다.");
+      }
+
+      if (!portone.configured) {
         setMessage({
           tone: "info",
           text: `${planLabel(plan)} ${domesticPrices[plan]} 결제 주문이 생성되었습니다. Vercel/Replit 환경변수에 PORTONE_STORE_ID와 PORTONE_CHANNEL_KEY를 넣으면 결제창이 열립니다.`,
@@ -172,7 +178,7 @@ export function CheckoutPage() {
         return;
       }
 
-      if (!result.portone.storeId || !result.portone.channelKey) {
+      if (!portone.storeId || !portone.channelKey) {
         setMessage({
           tone: "error",
           text: "PortOne 결제 설정을 확인하지 못했습니다.",
@@ -181,13 +187,13 @@ export function CheckoutPage() {
       }
 
       const paymentResponse = await PortOne.requestPayment({
-        storeId: result.portone.storeId,
-        channelKey: result.portone.channelKey,
-        paymentId: result.portone.paymentId,
+        storeId: portone.storeId,
+        channelKey: portone.channelKey,
+        paymentId: portone.paymentId,
         orderName: "Site AI Score 진단 보고서",
-        totalAmount: result.portone.totalAmount,
+        totalAmount: portone.totalAmount,
         currency: "CURRENCY_KRW",
-        payMethod: result.portone.payMethod,
+        payMethod: portone.payMethod,
         customer: {
           fullName: normalizedPayerName,
           email: normalizedPayerEmail,
@@ -212,7 +218,7 @@ export function CheckoutPage() {
 
       await completePaymentOrderRequest({
         paymentOrderId: result.paymentOrder.id,
-        providerPaymentId: result.portone.paymentId,
+        providerPaymentId: portone.paymentId,
       });
 
       setMessage({
@@ -231,6 +237,41 @@ export function CheckoutPage() {
       setSubmittingPlan(null);
     }
   }
+  async function handleCreatePolarOrder(plan: PaymentPlan) {
+    if (!hasScanId) {
+      setMessage({ tone: "error", text: "결제할 진단 결과가 연결되지 않았습니다." });
+      return;
+    }
+
+    setSubmittingPlan(plan);
+    setMessage(null);
+
+    try {
+      const result = await createPaymentOrderRequest({ scanId, plan, provider: "POLAR" });
+      const polar = result.polar;
+
+      if (!polar) throw new Error("해외 결제 정보를 불러오지 못했습니다.");
+
+      if (!polar.configured) {
+        setMessage({ tone: "info", text: "Polar 결제 설정을 확인해 주세요." });
+        return;
+      }
+
+      if (!polar.checkoutUrl) {
+        throw new Error("Polar 결제창 URL을 생성하지 못했습니다.");
+      }
+
+      window.location.assign(polar.checkoutUrl);
+    } catch (error) {
+      setMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "해외 결제 주문을 생성하지 못했습니다.",
+      });
+    } finally {
+      setSubmittingPlan(null);
+    }
+  }
+
 
   return (
     <section className="full-bleed-section legal-section">
@@ -362,9 +403,9 @@ export function CheckoutPage() {
         <section className="legal-card surface checkout-pricing-card">
           <div>
             <p className="eyebrow">해외 결제</p>
-            <h2>Polar 결제 예정</h2>
+            <h2>Polar 해외 결제</h2>
             <p>
-              해외 고객과 USD 결제는 Polar로 분리하여 연결할 예정입니다. 단,
+              해외 고객은 Polar를 통해 USD 결제를 진행할 수 있습니다. 단,
               결제 성공 후 유료 권한을 여는 로직은 국내 결제와 동일한
               paid_entitlements 구조를 사용합니다.
             </p>
@@ -376,15 +417,18 @@ export function CheckoutPage() {
               <strong>USD 100</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>해외 카드와 글로벌 SaaS 결제 방식 대응 예정</li>
+                <li>해외 카드와 글로벌 SaaS 결제 방식 지원</li>
               </ul>
-              <button
-                className="primary checkout-price-action"
-                type="button"
-                disabled
-              >
-                Polar 준비 중
-              </button>
+                <button
+                  className="primary checkout-price-action"
+                  type="button"
+                  disabled={!hasScanId || submittingPlan !== null}
+                  onClick={() => void handleCreatePolarOrder("BASIC")}
+                >
+                  {submittingPlan === "BASIC"
+                    ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
+                    : "Polar 결제"}
+                </button>
             </article>
             <article>
               <span>개선 사례 활용 동의 시</span>
@@ -393,13 +437,18 @@ export function CheckoutPage() {
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
                 <li>진단 전후 개선 사례 활용에 동의하는 경우 적용</li>
               </ul>
-              <button
-                className="primary checkout-price-action"
-                type="button"
-                disabled
-              >
-                Polar 준비 중
-              </button>
+                <button
+                  className="primary checkout-price-action"
+                  type="button"
+                  disabled={!hasScanId || submittingPlan !== null}
+                  onClick={() =>
+                    void handleCreatePolarOrder("CASE_STUDY_DISCOUNT")
+                  }
+                >
+                  {submittingPlan === "CASE_STUDY_DISCOUNT"
+                    ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
+                    : "Polar 결제"}
+                </button>
             </article>
           </div>
         </section>

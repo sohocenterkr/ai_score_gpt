@@ -54,6 +54,7 @@ import { createAdminRouter } from "./admin/admin-router";
 import { createNoticeRouter } from "./notices/notice-router";
 import {
   createPaymentRouter,
+  createPolarWebhookRouter,
   createPortOneWebhookRouter,
 } from "./billing/payment-router";
 import {
@@ -110,6 +111,13 @@ export function createApp(options: CreateAppOptions = {}) {
     "/api/billing/portone-webhook",
     express.raw({ type: "application/json", limit: "1mb" }),
     createPortOneWebhookRouter({
+      paymentService,
+    }),
+  );
+  app.use(
+    "/api/billing/polar-webhook",
+    express.raw({ type: "application/json", limit: "1mb" }),
+    createPolarWebhookRouter({
       paymentService,
     }),
   );

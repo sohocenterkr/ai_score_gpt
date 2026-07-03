@@ -1,9 +1,10 @@
 export type PaymentPlan = "BASIC" | "CASE_STUDY_DISCOUNT";
+export type PaymentProvider = "PORTONE" | "POLAR";
 
 export interface CreatePaymentOrderResponse {
   paymentOrder: {
     id: string;
-    provider: "PORTONE" | "POLAR";
+    provider: PaymentProvider;
     status: "PENDING" | "PAID" | "FAILED" | "CANCELED";
     plan: PaymentPlan;
     amount: number;
@@ -28,7 +29,14 @@ export interface CreatePaymentOrderResponse {
     totalAmount: number;
     currency: "KRW";
     payMethod: "CARD";
-  };
+  } | null;
+  polar: {
+    configured: boolean;
+    checkoutUrl: string | null;
+    checkoutId: string | null;
+    productId: string | null;
+    currency: "USD";
+  } | null;
 }
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -46,6 +54,7 @@ async function readJson<T>(response: Response): Promise<T> {
 export async function createPaymentOrderRequest(input: {
   scanId: string;
   plan: PaymentPlan;
+  provider?: PaymentProvider;
 }): Promise<CreatePaymentOrderResponse> {
   const response = await fetch("/api/billing/payment-orders", {
     method: "POST",
@@ -56,7 +65,7 @@ export async function createPaymentOrderRequest(input: {
     body: JSON.stringify({
       scanId: input.scanId,
       plan: input.plan,
-      provider: "PORTONE",
+      provider: input.provider ?? "PORTONE",
     }),
   });
 

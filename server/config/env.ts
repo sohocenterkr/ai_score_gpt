@@ -116,6 +116,14 @@ const environmentSchema = z.object({
   PORTONE_CHANNEL_KEY: optionalString,
   PORTONE_API_SECRET: optionalString,
   PORTONE_WEBHOOK_SECRET: optionalString,
+  POLAR_ACCESS_TOKEN: optionalString,
+  POLAR_BASIC_PRODUCT_ID: optionalString,
+  POLAR_CASE_STUDY_DISCOUNT_PRODUCT_ID: optionalString,
+  POLAR_WEBHOOK_SECRET: optionalString,
+  POLAR_SERVER: z.preprocess(
+    emptyStringToUndefined,
+    z.enum(["production", "sandbox"]).default("production"),
+  ),
 });
 
 const processEnvForRuntime = { ...process.env };
