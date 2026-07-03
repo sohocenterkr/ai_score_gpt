@@ -36,6 +36,15 @@ interface NoticeItem {
   updatedAt: string;
 }
 
+interface MemberSiteScanSummary {
+  scanId: string;
+  status: string;
+  score: string | null;
+  grade: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 interface MemberSiteSummary {
   siteId: string;
   siteName: string;
@@ -48,6 +57,7 @@ interface MemberSiteSummary {
   bestScore: string | null;
   improvement: string | null;
   latestDiagnosisAt: string | null;
+  scans: MemberSiteScanSummary[];
 }
 
 interface MemberItem {
@@ -257,6 +267,30 @@ function providerLabel(providers: string[]): string {
 
 function score(value: string | null): string {
   return value ?? "-";
+}
+
+function scanStatusLabel(value: string): string {
+  if (value === "COMPLETED") {
+    return "완료";
+  }
+
+  if (value === "PARTIAL") {
+    return "부분 완료";
+  }
+
+  if (value === "FAILED") {
+    return "실패";
+  }
+
+  if (value === "RUNNING") {
+    return "진행 중";
+  }
+
+  if (value === "QUEUED") {
+    return "대기";
+  }
+
+  return value;
 }
 
 export function AdminPage() {
@@ -695,6 +729,34 @@ export function AdminPage() {
                                 최근 진단일:{" "}
                                 {formatDate(site.latestDiagnosisAt)}
                               </span>
+                              {site.scans.length > 0 ? (
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gap: "6px",
+                                    marginTop: "8px",
+                                  }}
+                                >
+                                  {site.scans.map((scan) => (
+                                    <div key={scan.scanId}>
+                                      <span>
+                                        {formatDate(
+                                          scan.completedAt ?? scan.createdAt,
+                                        )}{" "}
+                                        / {scanStatusLabel(scan.status)} / 점수{" "}
+                                        {score(scan.score)}
+                                      </span>{" "}
+                                      <a
+                                        href={`/api/admin/scan-results/${scan.scanId}/export.pdf`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        관리자 PDF 보기
+                                      </a>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
                             </div>
                           ))}
                         </div>

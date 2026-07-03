@@ -14,6 +14,17 @@ import type {
 } from "../auth/auth-middleware";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
+import { scanResultPdfFilename } from "../scans/scan-result-pdf";
+import {
+  ScanReportCacheError,
+  createPrismaScanReportCacheService,
+  type ScanReportCacheService,
+} from "../scans/scan-report-cache";
+import {
+  ScanResultServiceError,
+  createPrismaScanResultService,
+  type ScanResultService,
+} from "../scans/scan-result-service";
 
 const SUPER_ADMIN_EMAIL = "sohocenter.kr@gmail.com";
 
@@ -21,6 +32,8 @@ type RequireAuthMiddleware = ReturnType<typeof createRequireAuth>;
 
 interface CreateAdminRouterOptions {
   requireAuth: RequireAuthMiddleware;
+  scanResultService?: ScanResultService;
+  scanReportCacheService?: ScanReportCacheService;
 }
 
 const noticeInputSchema = z.object({
@@ -167,6 +180,16 @@ function scoreLabel(value: number | null): string | null {
   return typeof value === "number" ? value.toFixed(1) : null;
 }
 
+function readRouteParam(
+  value: string | string[] | undefined,
+): string {
+  if (Array.isArray(value)) {
+    return value[0] ?? "";
+  }
+
+  return value ?? "";
+}
+
 function buildSiteSummaries(
   organizationMembers: Array<{
     organization: {
@@ -177,7 +200,9 @@ function buildSiteSummaries(
         finalUrl: string | null;
         scans: Array<{
           id: string;
+          status: string;
           score: number | null;
+          grade: string | null;
           createdAt: Date;
           completedAt: Date | null;
         }>;
@@ -194,7 +219,9 @@ function buildSiteSummaries(
       finalUrl: string | null;
       scans: Array<{
         id: string;
+        status: string;
         score: number | null;
+        grade: string | null;
         createdAt: Date;
         completedAt: Date | null;
       }>;
@@ -243,11 +270,29 @@ function buildSiteSummaries(
         latestScan?.completedAt?.toISOString() ??
         latestScan?.createdAt.toISOString() ??
         null,
+      scans: [...scans]
+        .sort(
+          (left, right) =>
+            right.createdAt.getTime() - left.createdAt.getTime(),
+        )
+        .slice(0, 5)
+        .map((scan) => ({
+          scanId: scan.id,
+          status: scan.status,
+          score: scoreLabel(scan.score),
+          grade: scan.grade,
+          createdAt: scan.createdAt.toISOString(),
+          completedAt: scan.completedAt?.toISOString() ?? null,
+        })),
     };
   });
 }
 
-export function createAdminRouter({ requireAuth }: CreateAdminRouterOptions) {
+export function createAdminRouter({
+  requireAuth,
+  scanResultService = createPrismaScanResultService(),
+  scanReportCacheService = createPrismaScanReportCacheService(),
+}: CreateAdminRouterOptions) {
   const router = Router();
 
   router.use(requireAuth as unknown as RequestHandler);
@@ -392,7 +437,9 @@ export function createAdminRouter({ requireAuth }: CreateAdminRouterOptions) {
                     scans: {
                       select: {
                         id: true,
+                        status: true,
                         score: true,
+                        grade: true,
                         createdAt: true,
                         completedAt: true,
                       },
@@ -446,6 +493,69 @@ export function createAdminRouter({ requireAuth }: CreateAdminRouterOptions) {
     response.json({ members });
   });
 
+  router.get(
+    "/scan-results/:scanId/export.pdf",
+    async (request, response) => {
+      const scanId = readRouteParam(request.params.scanId).trim();
+      const getScanResultForAdmin =
+        scanResultService.getScanResultForAdmin?.bind(scanResultService);
+
+      if (!scanId) {
+        response.status(400).json({
+          code: "SCAN_ID_REQUIRED",
+          message: "진단 ID를 확인해 주세요.",
+        });
+        return;
+      }
+
+      if (!getScanResultForAdmin) {
+        response.status(500).json({
+          code: "ADMIN_REPORT_UNAVAILABLE",
+          message: "관리자 리포트 조회 기능을 사용할 수 없습니다.",
+        });
+        return;
+      }
+
+      try {
+        const result = await getScanResultForAdmin(scanId);
+        const cached = await scanReportCacheService.getOrCreate(result);
+        const pdf = cached.pdf;
+        const filename = `admin-${scanResultPdfFilename(result)}`;
+
+        response
+          .status(200)
+          .type("application/pdf")
+          .set({
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": `attachment; filename="${filename}"`,
+            "Content-Length": String(pdf.length),
+            "X-Site-AI-Report-Cache": cached.cacheStatus,
+          })
+          .send(pdf);
+      } catch (error) {
+        if (error instanceof ScanResultServiceError) {
+          response.status(error.status).json({
+            code: error.code,
+            message: error.message,
+          });
+          return;
+        }
+
+        if (error instanceof ScanReportCacheError) {
+          response.status(error.status).json({
+            code: error.code,
+            message: error.message,
+          });
+          return;
+        }
+
+        response.status(500).json({
+          code: "ADMIN_REPORT_EXPORT_FAILED",
+          message: "관리자 리포트 PDF를 생성하는 중 오류가 발생했습니다.",
+        });
+      }
+    },
+  );
   router.patch("/members/:userId/status", async (request, response) => {
     const parsed = memberStatusSchema.safeParse(request.body);
 

@@ -362,7 +362,14 @@ export function CheckoutPage() {
               <strong>165,000원 (VAT 포함)</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>개선 사례 활용 동의 없이 이용하는 기본 가격</li>
+                <li>
+                  진단 결과와 리포트는 서비스 개선과 품질 향상을 위해
+                  내부적으로 활용될 수 있습니다.
+                </li>
+                <li>
+                  회사명·사이트명과 점수 향상 사례를 공개 마케팅 사례로
+                  활용하는 동의는 포함하지 않는 기본 가격입니다.
+                </li>
               </ul>
               <button
                 className="primary checkout-price-action"
@@ -380,7 +387,18 @@ export function CheckoutPage() {
               <strong>110,000원 (VAT 포함)</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>진단 전후 개선 사례 활용에 동의하는 경우 적용</li>
+                <li>
+                  진단 결과와 리포트는 서비스 개선과 품질 향상을 위해
+                  내부적으로 활용될 수 있습니다.
+                </li>
+                <li>
+                  진단 전후 점수가 향상된 사실을 회사명·사이트명과 함께
+                  공개하는 데 동의하는 경우 적용됩니다.
+                </li>
+                <li>
+                  리포트 전체, 상세 문제 목록, 원문 증거는 별도 동의 없이
+                  공개하지 않습니다.
+                </li>
               </ul>
               <button
                 className="primary checkout-price-action"
@@ -417,7 +435,15 @@ export function CheckoutPage() {
               <strong>USD 100</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
+                <li>
+                  진단 결과와 리포트는 서비스 개선과 품질 향상을 위해
+                  내부적으로 활용될 수 있습니다.
+                </li>
                 <li>해외 카드와 글로벌 SaaS 결제 방식 지원</li>
+                <li>
+                  회사명·사이트명과 점수 향상 사례를 공개 마케팅 사례로
+                  활용하는 동의는 포함하지 않는 기본 가격입니다.
+                </li>
               </ul>
                 <button
                   className="primary checkout-price-action"
@@ -435,7 +461,18 @@ export function CheckoutPage() {
               <strong>USD 70</strong>
               <ul className="checkout-price-list">
                 <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>진단 전후 개선 사례 활용에 동의하는 경우 적용</li>
+                <li>
+                  진단 결과와 리포트는 서비스 개선과 품질 향상을 위해
+                  내부적으로 활용될 수 있습니다.
+                </li>
+                <li>
+                  진단 전후 점수가 향상된 사실을 회사명·사이트명과 함께
+                  공개하는 데 동의하는 경우 적용됩니다.
+                </li>
+                <li>
+                  리포트 전체, 상세 문제 목록, 원문 증거는 별도 동의 없이
+                  공개하지 않습니다.
+                </li>
               </ul>
                 <button
                   className="primary checkout-price-action"

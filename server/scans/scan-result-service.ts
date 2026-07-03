@@ -88,6 +88,10 @@ export interface ScanResultService {
     user: PublicUser,
     scanId: string,
   ): Promise<PublicScanResult>;
+
+  getScanResultForAdmin?(
+    scanId: string,
+  ): Promise<PublicScanResult>;
 }
 
 export class ScanResultServiceError extends Error {
@@ -310,6 +314,106 @@ function buildUnderstandingSummary(
   return parts.join(" ");
 }
 
+function buildPublicScanResult(result: {
+  id: string;
+  type: string;
+  status: string;
+  rulesVersion: string;
+  score: number | null;
+  grade: string | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  errorCode: string | null;
+  createdAt: Date;
+  site: {
+    id: string;
+    name: string;
+    baseUrl: string;
+    finalUrl: string | null;
+    siteType: string | null;
+    country: string;
+    region: string | null;
+    primaryLocale: string;
+  };
+  pages: ScanPage[];
+  findings: Finding[];
+}): PublicScanResult {
+  const isOutdatedRulesVersion =
+    result.rulesVersion !== CURRENT_RULES_VERSION;
+  const scoreSummary =
+    !isOutdatedRulesVersion && result.findings.length > 0
+      ? calculateScore(result.findings)
+      : null;
+  const findings = result.findings.map(publicFinding);
+  const primaryIssues = findings
+    .filter(
+      (finding) =>
+        finding.status === "FAIL" ||
+        finding.status === "BLOCKED",
+    )
+    .sort(
+      (left, right) =>
+        right.weight - left.weight ||
+        severityOrder(right.severity) -
+          severityOrder(left.severity),
+    )
+    .slice(0, 5);
+
+  return {
+    site: {
+      id: result.site.id,
+      name: result.site.name,
+      baseUrl: result.site.baseUrl,
+      finalUrl: result.site.finalUrl,
+      siteType: result.site.siteType,
+      country: result.site.country,
+      region: result.site.region,
+      primaryLocale: result.site.primaryLocale,
+    },
+    scan: {
+      id: result.id,
+      type: result.type,
+      status: result.status,
+      rulesVersion: result.rulesVersion,
+      score: result.score,
+      grade: result.grade,
+      startedAt: result.startedAt?.toISOString() ?? null,
+      completedAt: result.completedAt?.toISOString() ?? null,
+      errorCode: result.errorCode,
+      createdAt: result.createdAt.toISOString(),
+    },
+    scoreSummary,
+    currentRulesVersion: CURRENT_RULES_VERSION,
+    isOutdatedRulesVersion,
+    contentReadiness: buildContentReadinessAssessment({
+      siteName: result.site.name,
+      siteType: result.site.siteType,
+      findings: result.findings,
+    }),
+    understandingSummary: buildUnderstandingSummary(
+      result.site.name,
+      result.findings,
+    ),
+    foundInformation: buildFoundInformation(
+      result.findings,
+      result.site.finalUrl,
+    ),
+    missingInformation: findings
+      .filter(
+        (finding) =>
+          finding.weight > 0 &&
+          (finding.status === "FAIL" ||
+            finding.status === "BLOCKED"),
+      )
+      .map((finding) => ({
+        ruleCode: finding.ruleCode,
+        title: finding.title,
+      })),
+    primaryIssues,
+    pages: result.pages.map(publicPage),
+    findings,
+  };
+}
 export function createPrismaScanResultService(): ScanResultService {
   return {
     async getScanResult(user, scanId) {
@@ -351,81 +455,42 @@ export function createPrismaScanResultService(): ScanResultService {
         );
       }
 
-      const isOutdatedRulesVersion =
-        result.rulesVersion !== CURRENT_RULES_VERSION;
-      const scoreSummary =
-        !isOutdatedRulesVersion && result.findings.length > 0
-          ? calculateScore(result.findings)
-          : null;
-      const findings = result.findings.map(publicFinding);
-      const primaryIssues = findings
-        .filter(
-          (finding) =>
-            finding.status === "FAIL" ||
-            finding.status === "BLOCKED",
-        )
-        .sort(
-          (left, right) =>
-            right.weight - left.weight ||
-            severityOrder(right.severity) -
-              severityOrder(left.severity),
-        )
-        .slice(0, 5);
+      return buildPublicScanResult(result);
+    },
 
-      return {
-        site: {
-          id: result.site.id,
-          name: result.site.name,
-          baseUrl: result.site.baseUrl,
-          finalUrl: result.site.finalUrl,
-          siteType: result.site.siteType,
-          country: result.site.country,
-          region: result.site.region,
-          primaryLocale: result.site.primaryLocale,
+    async getScanResultForAdmin(scanId) {
+      const prisma = getDatabase();
+      const result = await prisma.scan.findFirst({
+        where: {
+          id: scanId,
+          site: {
+            status: "ACTIVE",
+          },
         },
-        scan: {
-          id: result.id,
-          type: result.type,
-          status: result.status,
-          rulesVersion: result.rulesVersion,
-          score: result.score,
-          grade: result.grade,
-          startedAt: result.startedAt?.toISOString() ?? null,
-          completedAt: result.completedAt?.toISOString() ?? null,
-          errorCode: result.errorCode,
-          createdAt: result.createdAt.toISOString(),
+        include: {
+          site: true,
+          pages: {
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
+          findings: {
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
         },
-        scoreSummary,
-        currentRulesVersion: CURRENT_RULES_VERSION,
-        isOutdatedRulesVersion,
-        contentReadiness: buildContentReadinessAssessment({
-          siteName: result.site.name,
-          siteType: result.site.siteType,
-          findings: result.findings,
-        }),
-        understandingSummary: buildUnderstandingSummary(
-          result.site.name,
-          result.findings,
-        ),
-        foundInformation: buildFoundInformation(
-          result.findings,
-          result.site.finalUrl,
-        ),
-        missingInformation: findings
-          .filter(
-            (finding) =>
-              finding.weight > 0 &&
-              (finding.status === "FAIL" ||
-                finding.status === "BLOCKED"),
-          )
-          .map((finding) => ({
-            ruleCode: finding.ruleCode,
-            title: finding.title,
-          })),
-        primaryIssues,
-        pages: result.pages.map(publicPage),
-        findings,
-      };
+      });
+
+      if (!result) {
+        throw new ScanResultServiceError(
+          "SCAN_RESULT_NOT_FOUND",
+          "검사 결과를 찾을 수 없습니다.",
+          404,
+        );
+      }
+
+      return buildPublicScanResult(result);
     },
   };
 }
