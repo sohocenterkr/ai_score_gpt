@@ -7,7 +7,8 @@ import {
 import { z } from "zod";
 import type { AuthenticatedResponseLocals } from "../auth/auth-middleware";
 import {
-  hasPaidFeatureAccess,
+  hasPaidFeatureAccessForScan,
+  hasPaidFeatureAccessForWorkOrder,
   sendPaidFeatureRequired,
 } from "../billing/paid-feature-access";
 import {
@@ -102,20 +103,47 @@ function filename(orderNumber: string, version: number, extension: string) {
   );
 }
 
-function requirePaidWorkOrderFeature(
-  _request: Request,
+async function requirePaidWorkOrderFeature(
+  request: Request,
   response: Response<unknown, AuthenticatedResponseLocals>,
   next: NextFunction,
-): void {
-  if (hasPaidFeatureAccess(response.locals.authUser)) {
+): Promise<void> {
+  const workOrderId = readRouteParam(request.params.workOrderId);
+  const body = request.body as { scanId?: unknown } | undefined;
+  const scanId =
+    typeof body?.scanId === "string" ? body.scanId.trim() : "";
+
+  if (!workOrderId && !scanId) {
     next();
     return;
   }
 
-  sendPaidFeatureRequired(
-    response,
-    "수정 작업지시서는 유료 결제 후 제공됩니다. 결제 기능은 준비 중입니다.",
-  );
+  try {
+    const hasAccess = workOrderId
+      ? await hasPaidFeatureAccessForWorkOrder(
+          response.locals.authUser,
+          workOrderId,
+        )
+      : await hasPaidFeatureAccessForScan(
+          response.locals.authUser,
+          scanId,
+        );
+
+    if (hasAccess) {
+      next();
+      return;
+    }
+
+    sendPaidFeatureRequired(
+      response,
+      "수정 작업지시서는 유료 결제 후 제공됩니다. 결제 기능은 준비 중입니다.",
+    );
+  } catch {
+    response.status(500).json({
+      code: "INTERNAL_ERROR",
+      message: "유료 기능 접근 권한을 확인하는 중 오류가 발생했습니다.",
+    });
+  }
 }
 
 export function createWorkOrderRouter(

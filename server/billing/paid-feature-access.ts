@@ -1,13 +1,118 @@
 import type { Response } from "express";
 import type { PublicUser } from "../auth/auth-service";
+import { getDatabase } from "../db";
 
 export const PAID_FEATURE_REQUIRED_CODE = "PAID_FEATURE_REQUIRED";
 
-export function hasPaidFeatureAccess(user: PublicUser): boolean {
+const SUPER_ADMIN_EMAIL = "sohocenter.kr@gmail.com";
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export function hasAdministrativePaidFeatureAccess(
+  user: PublicUser,
+): boolean {
   return (
-    user.role === "SUPER_ADMIN" &&
-    user.email.trim().toLowerCase() === "sohocenter.kr@gmail.com"
+    user.role === "SUPER_ADMIN" ||
+    normalizeEmail(user.email) === SUPER_ADMIN_EMAIL
   );
+}
+
+export async function hasPaidFeatureAccessForScan(
+  user: PublicUser,
+  scanId: string,
+): Promise<boolean> {
+  if (hasAdministrativePaidFeatureAccess(user)) {
+    return true;
+  }
+
+  const normalizedScanId = scanId.trim();
+
+  if (!normalizedScanId) {
+    return false;
+  }
+
+  const prisma = getDatabase();
+  const entitlement = await prisma.paidEntitlement.findFirst({
+    where: {
+      userId: user.id,
+      status: "ACTIVE",
+      OR: [
+        {
+          scanId: normalizedScanId,
+        },
+        {
+          site: {
+            is: {
+              scans: {
+                some: {
+                  id: normalizedScanId,
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return entitlement !== null;
+}
+
+export async function hasPaidFeatureAccessForWorkOrder(
+  user: PublicUser,
+  workOrderId: string,
+): Promise<boolean> {
+  if (hasAdministrativePaidFeatureAccess(user)) {
+    return true;
+  }
+
+  const normalizedWorkOrderId = workOrderId.trim();
+
+  if (!normalizedWorkOrderId) {
+    return false;
+  }
+
+  const prisma = getDatabase();
+  const entitlement = await prisma.paidEntitlement.findFirst({
+    where: {
+      userId: user.id,
+      status: "ACTIVE",
+      OR: [
+        {
+          site: {
+            is: {
+              workOrders: {
+                some: {
+                  id: normalizedWorkOrderId,
+                },
+              },
+            },
+          },
+        },
+        {
+          scan: {
+            is: {
+              initialWorkOrders: {
+                some: {
+                  id: normalizedWorkOrderId,
+                },
+              },
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  return entitlement !== null;
 }
 
 export function sendPaidFeatureRequired(

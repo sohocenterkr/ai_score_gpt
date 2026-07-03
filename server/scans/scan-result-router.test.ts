@@ -1,6 +1,6 @@
 import express from "express";
 import request from "supertest";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublicUser } from "../auth/auth-service";
 import type { ScanReportCacheService } from "./scan-report-cache";
 import { createScanResultRouter } from "./scan-result-router";
@@ -9,6 +9,18 @@ import {
   type PublicScanResult,
   type ScanResultService,
 } from "./scan-result-service";
+
+const dbMocks = vi.hoisted(() => ({
+  paidEntitlementFindFirst: vi.fn(),
+}));
+
+vi.mock("../db", () => ({
+  getDatabase: () => ({
+    paidEntitlement: {
+      findFirst: dbMocks.paidEntitlementFindFirst,
+    },
+  }),
+}));
 
 const sampleUser: PublicUser = {
   id: "user-1",
@@ -82,6 +94,11 @@ function createApp(
 }
 
 describe("scan result router", () => {
+  beforeEach(() => {
+    dbMocks.paidEntitlementFindFirst.mockReset();
+    dbMocks.paidEntitlementFindFirst.mockResolvedValue(null);
+  });
+
   it("인증 회원의 검사 결과를 반환한다", async () => {
     const getScanResult = vi.fn().mockResolvedValue(sampleResult);
     const response = await request(
@@ -115,6 +132,45 @@ describe("scan result router", () => {
     expect(response.status).toBe(402);
     expect(response.body.code).toBe("PAID_FEATURE_REQUIRED");
     expect(getScanResult).not.toHaveBeenCalled();
+  });
+
+  it("유료 권한이 있는 일반 회원의 진단 보고서 PDF를 반환한다", async () => {
+    const regularUser = {
+      ...sampleUser,
+      email: "user@example.com",
+      role: "USER" as const,
+    };
+    dbMocks.paidEntitlementFindFirst.mockResolvedValue({
+      id: "entitlement-1",
+    });
+
+    const getScanResult = vi.fn().mockResolvedValue(sampleResult);
+    const getOrCreate = vi.fn().mockResolvedValue({
+      pdf: Buffer.from("%PDF-1.4\npaid\n%%EOF"),
+      cacheStatus: "HIT",
+    });
+
+    const response = await request(
+      createApp(
+        { getScanResult },
+        { getOrCreate },
+        regularUser,
+      ),
+    ).get("/api/scan-results/scan-1/export.pdf");
+
+    expect(response.status).toBe(200);
+    expect(getScanResult).toHaveBeenCalledWith(
+      regularUser,
+      "scan-1",
+    );
+    expect(dbMocks.paidEntitlementFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: "user-1",
+          status: "ACTIVE",
+        }),
+      }),
+    );
   });
 
   it("인증 회원의 캐시된 진단 보고서 PDF를 반환한다", async () => {

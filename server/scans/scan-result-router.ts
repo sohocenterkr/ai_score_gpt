@@ -6,7 +6,7 @@ import {
 } from "express";
 import type { AuthenticatedResponseLocals } from "../auth/auth-middleware";
 import {
-  hasPaidFeatureAccess,
+  hasPaidFeatureAccessForScan,
   sendPaidFeatureRequired,
 } from "../billing/paid-feature-access";
 import { scanResultPdfFilename } from "./scan-result-pdf";
@@ -53,7 +53,14 @@ export function createScanResultRouter(
     "/:scanId/export.pdf",
     requireAuth,
     async (request, response) => {
-      if (!hasPaidFeatureAccess(response.locals.authUser)) {
+      const scanId = readRouteParam(request.params.scanId);
+
+      if (
+        !(await hasPaidFeatureAccessForScan(
+          response.locals.authUser,
+          scanId,
+        ))
+      ) {
         sendPaidFeatureRequired(
           response,
           "상세 진단 PDF 보고서는 유료 결제 후 제공됩니다. 결제 기능은 준비 중입니다.",
@@ -64,7 +71,7 @@ export function createScanResultRouter(
       try {
         const result = await scanResultService.getScanResult(
           response.locals.authUser,
-          readRouteParam(request.params.scanId),
+          scanId,
         );
         const cached =
           await scanReportCacheService.getOrCreate(result);
