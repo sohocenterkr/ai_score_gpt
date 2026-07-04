@@ -447,6 +447,8 @@ export function CheckoutPage() {
           </section>
         ) : null}
 
+        {/* 공통 결제 메시지 */}
+        {locale !== "en" ? (
         <section className="legal-card surface checkout-pricing-card">
           <div>
             <p className="eyebrow">{copy.domesticEyebrow}</p>
@@ -546,7 +548,9 @@ export function CheckoutPage() {
             </article>
           </div>
         </section>
+        ) : null}
 
+        {locale === "en" ? (
         <section className="legal-card surface checkout-pricing-card">
           <div>
             <p className="eyebrow">{copy.polarEyebrow}</p>
@@ -598,6 +602,7 @@ export function CheckoutPage() {
             </article>
           </div>
         </section>
+        ) : null}
 
         <section className="legal-card surface">
           <h2>{copy.deliverablesTitle}</h2>
