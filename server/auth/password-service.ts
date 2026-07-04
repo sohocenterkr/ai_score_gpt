@@ -124,14 +124,13 @@ export function createPrismaPasswordService(): PasswordService {
         where: { email: normalizeEmail(email) },
       });
 
-      if (
-        !user ||
-        user.status !== "ACTIVE" ||
-        !user.passwordHash
-      ) {
+      if (!user || user.status !== "ACTIVE") {
         return null;
       }
 
+      // AUTH_PASSWORD_RESET_GOOGLE_ONLY_ALLOWED
+      // Google로 가입해 로컬 비밀번호가 아직 없는 계정도 이 링크로
+      // 비밀번호를 새로 설정하고 LOCAL 로그인 방식을 연결할 수 있습니다.
       const token = randomBytes(32).toString("base64url");
       const tokenHash = hashResetToken(token);
       const now = new Date();
@@ -174,7 +173,6 @@ export function createPrismaPasswordService(): PasswordService {
           user: {
             select: {
               status: true,
-              passwordHash: true,
             },
           },
         },
@@ -184,8 +182,7 @@ export function createPrismaPasswordService(): PasswordService {
         resetToken &&
           !resetToken.usedAt &&
           resetToken.expiresAt.getTime() > Date.now() &&
-          resetToken.user.status === "ACTIVE" &&
-          resetToken.user.passwordHash,
+          resetToken.user.status === "ACTIVE",
       );
     },
 
@@ -201,8 +198,7 @@ export function createPrismaPasswordService(): PasswordService {
         !resetToken ||
         resetToken.usedAt ||
         resetToken.expiresAt.getTime() <= Date.now() ||
-        resetToken.user.status !== "ACTIVE" ||
-        !resetToken.user.passwordHash
+        resetToken.user.status !== "ACTIVE"
       ) {
         throw new AuthError(
           "AUTH_RESET_TOKEN_INVALID",
@@ -235,6 +231,21 @@ export function createPrismaPasswordService(): PasswordService {
         await transaction.user.update({
           where: { id: resetToken.userId },
           data: { passwordHash, failedLoginAttempts: 0, lockedUntil: null },
+        });
+
+        await transaction.authAccount.upsert({
+          where: {
+            provider_providerAccountId: {
+              provider: "LOCAL",
+              providerAccountId: resetToken.user.email,
+            },
+          },
+          update: {},
+          create: {
+            userId: resetToken.userId,
+            provider: "LOCAL",
+            providerAccountId: resetToken.user.email,
+          },
         });
 
         await transaction.session.updateMany({
