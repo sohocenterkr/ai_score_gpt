@@ -30,27 +30,161 @@ const emptyForm: SiteFormState = {
   primaryLocale: "ko",
 };
 
-const scanStatusLabels: Record<SiteScan["status"], string> = {
-  QUEUED: "대기 중",
-  RUNNING: "검사 중",
-  COMPLETED: "완료",
-  PARTIAL: "일부 완료",
-  FAILED: "실패",
-  CANCELLED: "취소",
-};
+const scanStatusLabels = {
+  ko: {
+    QUEUED: "대기 중",
+    RUNNING: "검사 중",
+    COMPLETED: "완료",
+    PARTIAL: "일부 완료",
+    FAILED: "실패",
+    CANCELLED: "취소",
+  },
+  en: {
+    QUEUED: "Queued",
+    RUNNING: "Running",
+    COMPLETED: "Completed",
+    PARTIAL: "Partially completed",
+    FAILED: "Failed",
+    CANCELLED: "Cancelled",
+  },
+} satisfies Record<"ko" | "en", Record<SiteScan["status"], string>>;
 
-function formatKST(value: string): string {
-  return new Intl.DateTimeFormat("ko-KR", {
+const sitesCopy = {
+  ko: {
+    pageEyebrow: "SITE MANAGEMENT",
+    title: "사이트 대시보드",
+    intro:
+      "공개 URL만 등록할 수 있으며, 사설 IP·localhost·내부망은 자동으로 차단됩니다.",
+    notice:
+      "공개 URL의 실제 HTTP 응답과 초기 HTML 증거를 수집하고 규칙 기반 점수와 검사 결과를 제공합니다. 작업지시서 생성은 다음 단계에서 실패 항목에 연결됩니다.",
+    createTitle: "새 사이트 등록",
+    createHelp:
+      "`example.com`처럼 입력하면 HTTPS 주소로 보완하여 확인합니다.",
+    checking: "확인 중...",
+    createButton: "사이트 등록",
+    listTitle: "등록 사이트",
+    listHelp: "사이트 정보 수정·삭제와 검사 작업 등록을 관리합니다.",
+    siteCount: (count: number) => `${count}개`,
+    loading: "사이트 목록을 불러오고 있습니다.",
+    empty: "아직 등록한 사이트가 없습니다. 첫 사이트를 등록해 주세요.",
+    editTitle: "사이트 정보 수정",
+    saving: "저장 중...",
+    saveEdit: "수정 저장",
+    cancel: "취소",
+    registered: "등록 완료",
+    industry: "업종",
+    region: "지역/상권",
+    finalUrl: "최종 확인 URL",
+    createdAt: "등록일(KST)",
+    notEntered: "미입력",
+    checkedAfterScan: "간편검사 후 자동 확인",
+    latestScan: "최근 검사 작업",
+    noScan: "등록된 검사 작업 없음",
+    score: (score: number, grade: string) => `${score}점 ${grade}`,
+    scanWaiting: "검사 대기 중",
+    scanComplete: "간편검사 완료",
+    processing: "처리 중...",
+    startScan: "간편검사 시작",
+    viewResult: "결과 보기",
+    edit: "수정",
+    delete: "삭제",
+    createdMessage: "사이트가 등록되었습니다.",
+    updatedMessage: "사이트 정보가 수정되었습니다.",
+    deletedMessage: "사이트가 삭제되었습니다. 기존 검사 이력은 보존됩니다.",
+    queuedMessage:
+      "검사 작업이 대기열에 등록되었습니다. 검사 실행 후 결과 화면에서 진단 내용을 확인할 수 있습니다.",
+    deleteConfirm: (siteName: string) =>
+      `${siteName} 사이트를 목록에서 삭제하시겠습니까? 검사 이력은 보존됩니다.`,
+    unknownError: "요청을 처리하지 못했습니다. 다시 시도해 주세요.",
+    fields: {
+      name: "사이트명",
+      namePlaceholder: "예: Site AI Score",
+      baseUrl: "대표 URL",
+      baseUrlPlaceholder: "example.com",
+      siteType: "업종·사이트 유형",
+      siteTypePlaceholder: "예: 음식점, 병원, 기업 홈페이지",
+      country: "대상 국가/시장",
+      countryPlaceholder: "KR",
+      primaryLocale: "검사 기본 언어",
+      primaryLocalePlaceholder: "ko",
+      region: "지역/상권(선택)",
+      regionPlaceholder: "예: 서울, 강남구, 역삼동 (다중 입력가능)",
+    },
+  },
+  en: {
+    pageEyebrow: "SITE MANAGEMENT",
+    title: "Site Dashboard",
+    intro:
+      "Only public URLs can be registered. Private IPs, localhost, and internal network URLs are blocked automatically.",
+    notice:
+      "Site AI Score collects the real HTTP response and initial HTML evidence from public URLs, then provides rule-based scores and diagnostic results. Work order generation is connected to failed items in the next step.",
+    createTitle: "Register New Website",
+    createHelp:
+      "If you enter a domain such as `example.com`, the service will complete it as an HTTPS URL for verification.",
+    checking: "Checking...",
+    createButton: "Register Website",
+    listTitle: "Registered Websites",
+    listHelp: "Manage website details, deletion, and diagnostic scan jobs.",
+    siteCount: (count: number) => `${count} ${count === 1 ? "site" : "sites"}`,
+    loading: "Loading registered websites.",
+    empty: "No websites have been registered yet. Register your first website.",
+    editTitle: "Edit Website Information",
+    saving: "Saving...",
+    saveEdit: "Save Changes",
+    cancel: "Cancel",
+    registered: "Registered",
+    industry: "Industry",
+    region: "Region / market area",
+    finalUrl: "Final checked URL",
+    createdAt: "Registered date (KST)",
+    notEntered: "Not entered",
+    checkedAfterScan: "Automatically checked after simple diagnostic",
+    latestScan: "Latest scan job",
+    noScan: "No scan job registered",
+    score: (score: number, grade: string) => `${score} points ${grade}`,
+    scanWaiting: "Scan queued",
+    scanComplete: "Simple diagnostic completed",
+    processing: "Processing...",
+    startScan: "Start Simple Diagnostic",
+    viewResult: "View Result",
+    edit: "Edit",
+    delete: "Delete",
+    createdMessage: "The website has been registered.",
+    updatedMessage: "The website information has been updated.",
+    deletedMessage:
+      "The website has been removed from the list. Existing scan history is preserved.",
+    queuedMessage:
+      "The scan job has been added to the queue. After the scan runs, you can review the diagnostic result page.",
+    deleteConfirm: (siteName: string) =>
+      `Remove ${siteName} from the website list? Scan history will be preserved.`,
+    unknownError: "The request could not be processed. Please try again.",
+    fields: {
+      name: "Website name",
+      namePlaceholder: "e.g. Site AI Score",
+      baseUrl: "Main URL",
+      baseUrlPlaceholder: "example.com",
+      siteType: "Industry / website type",
+      siteTypePlaceholder: "e.g. restaurant, clinic, company website",
+      country: "Target country / market",
+      countryPlaceholder: "US",
+      primaryLocale: "Primary diagnostic language",
+      primaryLocalePlaceholder: "en",
+      region: "Region / market area (optional)",
+      regionPlaceholder: "e.g. Seoul, Gangnam, New York, local market",
+    },
+  },
+} as const;
+
+function formatKST(value: string, locale: "ko" | "en"): string {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ko-KR", {
     timeZone: "Asia/Seoul",
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(value));
 }
 
-function messageFromError(error: unknown): string {
-  return error instanceof SiteApiError
-    ? error.message
-    : "요청을 처리하지 못했습니다. 다시 시도해 주세요.";
+function messageFromError(error: unknown, fallback: string): string {
+  return error instanceof SiteApiError ? error.message : fallback;
 }
 
 function formFromSite(site: RegisteredSite): SiteFormState {
@@ -77,6 +211,9 @@ function toRequest(form: SiteFormState) {
 
 export function SitesPage() {
   const { locale = "ko" } = useParams();
+  const normalizedLocale = locale === "en" ? "en" : "ko";
+  const copy = normalizedLocale === "en" ? sitesCopy.en : sitesCopy.ko;
+  const scanLabels = scanStatusLabels[normalizedLocale];
   const [sites, setSites] = useState<RegisteredSite[]>([]);
   const [form, setForm] = useState<SiteFormState>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -98,7 +235,7 @@ export function SitesPage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          setErrorMessage(messageFromError(error));
+          setErrorMessage(messageFromError(error, copy.unknownError));
         }
       })
       .finally(() => {
@@ -110,7 +247,7 @@ export function SitesPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [copy.unknownError]);
 
   const hasPendingScan = sites.some(
     (site) =>
@@ -189,9 +326,9 @@ export function SitesPage() {
         ...current.filter((item) => item.id !== site.id),
       ]);
       setForm(emptyForm);
-      setMessage("사이트가 등록되었습니다.");
+      setMessage(copy.createdMessage);
     } catch (error) {
-      setErrorMessage(messageFromError(error));
+      setErrorMessage(messageFromError(error, copy.unknownError));
     } finally {
       setSubmitting(false);
     }
@@ -223,18 +360,16 @@ export function SitesPage() {
         current.map((site) => (site.id === siteId ? updated : site)),
       );
       setEditingId(null);
-      setMessage("사이트 정보가 수정되었습니다.");
+      setMessage(copy.updatedMessage);
     } catch (error) {
-      setErrorMessage(messageFromError(error));
+      setErrorMessage(messageFromError(error, copy.unknownError));
     } finally {
       setWorkingSiteId(null);
     }
   }
 
   async function handleArchive(site: RegisteredSite) {
-    const confirmed = window.confirm(
-      `${site.name} 사이트를 목록에서 삭제하시겠습니까? 검사 이력은 보존됩니다.`,
-    );
+    const confirmed = window.confirm(copy.deleteConfirm(site.name));
 
     if (!confirmed) {
       return;
@@ -249,9 +384,9 @@ export function SitesPage() {
       setSites((current) =>
         current.filter((item) => item.id !== site.id),
       );
-      setMessage("사이트가 삭제되었습니다. 기존 검사 이력은 보존됩니다.");
+      setMessage(copy.deletedMessage);
     } catch (error) {
-      setErrorMessage(messageFromError(error));
+      setErrorMessage(messageFromError(error, copy.unknownError));
     } finally {
       setWorkingSiteId(null);
     }
@@ -271,11 +406,9 @@ export function SitesPage() {
             : item,
         ),
       );
-      setMessage(
-        "검사 작업이 대기열에 등록되었습니다. 검사 실행 후 결과 화면에서 진단 내용을 확인할 수 있습니다.",
-      );
+      setMessage(copy.queuedMessage);
     } catch (error) {
-      setErrorMessage(messageFromError(error));
+      setErrorMessage(messageFromError(error, copy.unknownError));
     } finally {
       setWorkingSiteId(null);
     }
@@ -286,19 +419,14 @@ export function SitesPage() {
       <div className="content-container sites-content">
         <div className="sites-heading">
           <div>
-            <p className="eyebrow">SITE MANAGEMENT</p>
-            <h1>사이트 대시보드</h1>
-            <p>
-              공개 URL만 등록할 수 있으며, 사설 IP·localhost·내부망은
-              자동으로 차단됩니다.
-            </p>
+            <p className="eyebrow">{copy.pageEyebrow}</p>
+            <h1>{copy.title}</h1>
+            <p>{copy.intro}</p>
           </div>
         </div>
 
         <div className="sites-notice" role="note">
-          공개 URL의 실제 HTTP 응답과 초기 HTML 증거를 수집하고
-          규칙 기반 점수와 검사 결과를 제공합니다. 작업지시서 생성은
-          다음 단계에서 실패 항목에 연결됩니다.
+          {copy.notice}
         </div>
 
         {message ? (
@@ -319,16 +447,14 @@ export function SitesPage() {
             onSubmit={handleCreate}
           >
             <div className="site-form-heading">
-              <h2>새 사이트 등록</h2>
-              <p>
-                `example.com`처럼 입력하면 HTTPS 주소로 보완하여
-                확인합니다.
-              </p>
+              <h2>{copy.createTitle}</h2>
+              <p>{copy.createHelp}</p>
             </div>
 
             <SiteFields
               prefix="create"
               form={form}
+              labels={copy.fields}
               onChange={(key, value) => updateForm(key, value)}
             />
 
@@ -337,26 +463,26 @@ export function SitesPage() {
               type="submit"
               disabled={submitting}
             >
-              {submitting ? "확인 중..." : "사이트 등록"}
+              {submitting ? copy.checking : copy.createButton}
             </button>
           </form>
 
           <div className="site-list-panel">
             <div className="site-list-heading">
               <div>
-                <h2>등록 사이트</h2>
-                <p>사이트 정보 수정·삭제와 검사 작업 등록을 관리합니다.</p>
+                <h2>{copy.listTitle}</h2>
+                <p>{copy.listHelp}</p>
               </div>
-              <span>{sites.length}개</span>
+              <span>{copy.siteCount(sites.length)}</span>
             </div>
 
             {loading ? (
               <div className="surface sites-empty" role="status">
-                사이트 목록을 불러오고 있습니다.
+                {copy.loading}
               </div>
             ) : sites.length === 0 ? (
               <div className="surface sites-empty">
-                아직 등록한 사이트가 없습니다. 첫 사이트를 등록해 주세요.
+                {copy.empty}
               </div>
             ) : (
               <div className="site-list">
@@ -379,11 +505,12 @@ export function SitesPage() {
                           }
                         >
                           <div className="site-card-header">
-                            <h3>사이트 정보 수정</h3>
+                            <h3>{copy.editTitle}</h3>
                           </div>
                           <SiteFields
                             prefix={`edit-${site.id}`}
                             form={editForm}
+                            labels={copy.fields}
                             onChange={(key, value) =>
                               updateForm(key, value, true)
                             }
@@ -394,7 +521,7 @@ export function SitesPage() {
                               type="submit"
                               disabled={working}
                             >
-                              {working ? "저장 중..." : "수정 저장"}
+                              {working ? copy.saving : copy.saveEdit}
                             </button>
                             <button
                               className="site-secondary-button"
@@ -402,7 +529,7 @@ export function SitesPage() {
                               onClick={() => setEditingId(null)}
                               disabled={working}
                             >
-                              취소
+                              {copy.cancel}
                             </button>
                           </div>
                         </form>
@@ -410,7 +537,7 @@ export function SitesPage() {
                         <>
                           <div className="site-card-header">
                             <div>
-                              <span className="site-status">등록 완료</span>
+                              <span className="site-status">{copy.registered}</span>
                               <h3>{site.name}</h3>
                             </div>
                             <span className="site-locale">
@@ -429,42 +556,48 @@ export function SitesPage() {
 
                           <dl className="site-meta">
                             <div>
-                              <dt>업종</dt>
-                              <dd>{site.siteType ?? "미입력"}</dd>
+                              <dt>{copy.industry}</dt>
+                              <dd>{site.siteType ?? copy.notEntered}</dd>
                             </div>
                             <div>
-                              <dt>지역/상권</dt>
-                              <dd>{site.region ?? "미입력"}</dd>
+                              <dt>{copy.region}</dt>
+                              <dd>{site.region ?? copy.notEntered}</dd>
                             </div>
                             <div>
-                              <dt>최종 확인 URL</dt>
+                              <dt>{copy.finalUrl}</dt>
                               <dd>
-                                {site.finalUrl ??
-                                  "간편검사 후 자동 확인"}
+                                {site.finalUrl ?? copy.checkedAfterScan}
                               </dd>
                             </div>
                             <div>
-                              <dt>등록일(KST)</dt>
-                              <dd>{formatKST(site.createdAt)}</dd>
+                              <dt>{copy.createdAt}</dt>
+                              <dd>{formatKST(site.createdAt, normalizedLocale)}</dd>
                             </div>
                           </dl>
 
                           <div className="scan-summary">
-                            <strong>최근 검사 작업</strong>
+                            <strong>{copy.latestScan}</strong>
                             {site.latestScan ? (
                               <span>
-                                {scanStatusLabels[site.latestScan.status]} ·{" "}
+                                {scanLabels[site.latestScan.status]} ·{" "}
                                 {site.latestScan.type}
                                 {site.latestScan.score !== null ? (
                                   <>
-                                    {" "}· {Math.round(site.latestScan.score)}점{" "}
-                                    {site.latestScan.grade}
+                                    {" "}·{" "}
+                                    {copy.score(
+                                      Math.round(site.latestScan.score),
+                                      site.latestScan.grade ?? "-",
+                                    )}
                                   </>
                                 ) : null}
-                                {" "}· {formatKST(site.latestScan.createdAt)}
+                                {" "}·{" "}
+                                {formatKST(
+                                  site.latestScan.createdAt,
+                                  normalizedLocale,
+                                )}
                               </span>
                             ) : (
-                              <span>등록된 검사 작업 없음</span>
+                              <span>{copy.noScan}</span>
                             )}
                           </div>
 
@@ -476,12 +609,12 @@ export function SitesPage() {
                               disabled={working || scanPending || scanCompleted}
                             >
                               {scanPending
-                                ? "검사 대기 중"
+                                ? copy.scanWaiting
                                 : scanCompleted
-                                  ? "간편검사 완료"
+                                  ? copy.scanComplete
                                   : working
-                                    ? "처리 중..."
-                                    : "간편검사 시작"}
+                                    ? copy.processing
+                                    : copy.startScan}
                             </button>
                             {site.latestScan &&
                             (site.latestScan.status === "COMPLETED" ||
@@ -491,7 +624,7 @@ export function SitesPage() {
                                 className="site-secondary-button"
                                 to={`/${locale}/sites/${site.id}/scans/${site.latestScan.id}`}
                               >
-                                결과 보기
+                                {copy.viewResult}
                               </Link>
                             ) : null}
                             <button
@@ -500,7 +633,7 @@ export function SitesPage() {
                               onClick={() => beginEdit(site)}
                               disabled={working}
                             >
-                              수정
+                              {copy.edit}
                             </button>
                             <button
                               className="site-danger-button"
@@ -508,7 +641,7 @@ export function SitesPage() {
                               onClick={() => void handleArchive(site)}
                               disabled={working}
                             >
-                              삭제
+                              {copy.delete}
                             </button>
                           </div>
                         </>
@@ -528,26 +661,27 @@ export function SitesPage() {
 interface SiteFieldsProps {
   prefix: string;
   form: SiteFormState;
+  labels: typeof sitesCopy.ko.fields | typeof sitesCopy.en.fields;
   onChange: (key: keyof SiteFormState, value: string) => void;
 }
 
-function SiteFields({ prefix, form, onChange }: SiteFieldsProps) {
+function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
   return (
     <div className="site-fields">
       <label htmlFor={`${prefix}-name`}>
-        사이트명
+        {labels.name}
         <input
           id={`${prefix}-name`}
           name="name"
           value={form.name}
           onChange={(event) => onChange("name", event.target.value)}
-          placeholder="예: Site AI Score"
+          placeholder={labels.namePlaceholder}
           required
         />
       </label>
 
       <label htmlFor={`${prefix}-url`}>
-        대표 URL
+        {labels.baseUrl}
         <input
           id={`${prefix}-url`}
           name="baseUrl"
@@ -558,25 +692,25 @@ function SiteFields({ prefix, form, onChange }: SiteFieldsProps) {
           spellCheck={false}
           value={form.baseUrl}
           onChange={(event) => onChange("baseUrl", event.target.value)}
-          placeholder="example.com"
+          placeholder={labels.baseUrlPlaceholder}
           required
         />
       </label>
 
       <label htmlFor={`${prefix}-type`}>
-        업종·사이트 유형
+        {labels.siteType}
         <input
           id={`${prefix}-type`}
           name="siteType"
           value={form.siteType}
           onChange={(event) => onChange("siteType", event.target.value)}
-          placeholder="예: 음식점, 병원, 기업 홈페이지"
+          placeholder={labels.siteTypePlaceholder}
         />
       </label>
 
       <div className="site-field-row">
         <label htmlFor={`${prefix}-country`}>
-          대상 국가/시장
+          {labels.country}
           <input
             id={`${prefix}-country`}
             name="country"
@@ -585,13 +719,13 @@ function SiteFields({ prefix, form, onChange }: SiteFieldsProps) {
             onChange={(event) =>
               onChange("country", event.target.value.toUpperCase())
             }
-            placeholder="KR"
+            placeholder={labels.countryPlaceholder}
             required
           />
         </label>
 
         <label htmlFor={`${prefix}-locale`}>
-          검사 기본 언어
+          {labels.primaryLocale}
           <input
             id={`${prefix}-locale`}
             name="primaryLocale"
@@ -599,20 +733,20 @@ function SiteFields({ prefix, form, onChange }: SiteFieldsProps) {
             onChange={(event) =>
               onChange("primaryLocale", event.target.value)
             }
-            placeholder="ko"
+            placeholder={labels.primaryLocalePlaceholder}
             required
           />
         </label>
       </div>
 
       <label htmlFor={`${prefix}-region`}>
-        지역/상권(선택)
+        {labels.region}
         <input
           id={`${prefix}-region`}
           name="region"
           value={form.region}
           onChange={(event) => onChange("region", event.target.value)}
-          placeholder="예: 서울, 강남구, 역삼동 (다중 입력가능)"
+          placeholder={labels.regionPlaceholder}
         />
       </label>
     </div>
