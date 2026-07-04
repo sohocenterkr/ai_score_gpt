@@ -588,15 +588,60 @@ export function createPrismaAuthService(): AuthService {
 
       const existingUser = await prisma.user.findUnique({
         where: { email },
-        select: { id: true },
+        select: {
+          id: true,
+          status: true,
+          emailVerifiedAt: true,
+        },
       });
 
       if (existingUser) {
-        throw new AuthError(
-          "AUTH_EMAIL_EXISTS",
-          "이미 가입된 이메일입니다. 이메일/비밀번호로 로그인해 주세요.",
-          409,
-        );
+        if (existingUser.status === "SUSPENDED") {
+          throw new AuthError(
+            "AUTH_ACCOUNT_SUSPENDED",
+            "정지된 계정입니다. 관리자에게 문의해 주세요.",
+            403,
+          );
+        }
+
+        const session = createSessionValues();
+        const updatedUser = await prisma.$transaction(async (transaction) => {
+          await transaction.authAccount.create({
+            data: {
+              userId: existingUser.id,
+              provider: "GOOGLE",
+              providerAccountId,
+            },
+          });
+
+          const nextUser = await transaction.user.update({
+            where: { id: existingUser.id },
+            data: {
+              emailVerifiedAt: existingUser.emailVerifiedAt ?? now,
+              loginCount: { increment: 1 },
+              lastLoginAt: now,
+              failedLoginAttempts: 0,
+              lockedUntil: null,
+            },
+          });
+
+          await transaction.session.create({
+            data: {
+              userId: existingUser.id,
+              sessionTokenHash: session.tokenHash,
+              expiresAt: session.expiresAt,
+            },
+          });
+
+          return nextUser;
+        });
+
+        return {
+          user: toPublicUser(updatedUser),
+          token: session.token,
+          expiresAt: session.expiresAt,
+          // AUTH_GOOGLE_EXISTING_EMAIL_LINKED
+        };
       }
 
       if (input.mode === "login") {
