@@ -752,6 +752,13 @@ export function AdminPage() {
                                         rel="noreferrer"
                                       >
                                         관리자 PDF 보기
+                                      </a>{" "}
+                                      <a
+                                        href={`/api/admin/scan-results/${scan.scanId}/work-order/export.pdf`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        관리자 작업지시서 PDF 보기
                                       </a>
                                     </div>
                                   ))}

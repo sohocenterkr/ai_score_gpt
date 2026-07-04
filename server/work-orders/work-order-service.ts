@@ -201,6 +201,9 @@ export interface WorkOrderService {
     user: PublicUser,
     workOrderId: string,
   ): Promise<PublicWorkOrder>;
+  getLatestWorkOrderForAdminByScan?(
+    scanId: string,
+  ): Promise<PublicWorkOrder>;
   issueWorkOrder(
     user: PublicUser,
     workOrderId: string,
@@ -757,6 +760,27 @@ export function createPrismaWorkOrderService(
       return publicWorkOrder(
         await accessibleRecord(user, workOrderId),
       );
+    },
+
+    async getLatestWorkOrderForAdminByScan(scanId) {
+      const prisma = getDatabase();
+      const record = await prisma.workOrder.findFirst({
+        where: {
+          initialScanId: scanId,
+        },
+        include: workOrderInclude,
+        orderBy: [{ version: "desc" }, { createdAt: "desc" }],
+      });
+
+      if (!record) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_NOT_FOUND",
+          "해당 진단으로 생성된 작업지시서를 찾을 수 없습니다.",
+          404,
+        );
+      }
+
+      return publicWorkOrder(record);
     },
 
     async issueWorkOrder(user, workOrderId) {

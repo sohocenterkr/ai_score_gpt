@@ -8,6 +8,14 @@ import {
   type Response,
 } from "express";
 import { z } from "zod";
+import {
+  renderWorkOrderPdf,
+  workOrderPdfFilename,
+} from "../work-orders/work-order-pdf";
+import {
+  createPrismaWorkOrderService,
+  WorkOrderServiceError,
+} from "../work-orders/work-order-service";
 import type {
   AuthenticatedResponseLocals,
   createRequireAuth,
@@ -294,6 +302,7 @@ export function createAdminRouter({
   scanReportCacheService = createPrismaScanReportCacheService(),
 }: CreateAdminRouterOptions) {
   const router = Router();
+  const workOrderService = createPrismaWorkOrderService();
 
   router.use(requireAuth as unknown as RequestHandler);
   router.use(requireSuperAdmin);
@@ -552,6 +561,61 @@ export function createAdminRouter({
         response.status(500).json({
           code: "ADMIN_REPORT_EXPORT_FAILED",
           message: "관리자 리포트 PDF를 생성하는 중 오류가 발생했습니다.",
+        });
+      }
+    },
+  );
+  router.get(
+    "/scan-results/:scanId/work-order/export.pdf",
+    async (request, response) => {
+      const scanId = readRouteParam(request.params.scanId).trim();
+      const getLatestWorkOrderForAdminByScan =
+        workOrderService.getLatestWorkOrderForAdminByScan?.bind(
+          workOrderService,
+        );
+
+      if (!scanId) {
+        response.status(400).json({
+          code: "SCAN_ID_REQUIRED",
+          message: "진단 ID를 확인해 주세요.",
+        });
+        return;
+      }
+
+      if (!getLatestWorkOrderForAdminByScan) {
+        response.status(500).json({
+          code: "ADMIN_WORK_ORDER_UNAVAILABLE",
+          message: "관리자 작업지시서 조회 기능을 사용할 수 없습니다.",
+        });
+        return;
+      }
+
+      try {
+        const workOrder = await getLatestWorkOrderForAdminByScan(scanId);
+        const pdf = await renderWorkOrderPdf(workOrder);
+        const outputFilename = `admin-${workOrderPdfFilename(workOrder)}`;
+
+        response
+          .status(200)
+          .type("application/pdf")
+          .set({
+            "Cache-Control": "private, no-store",
+            "Content-Disposition": `attachment; filename="${outputFilename}"`,
+            "Content-Length": String(pdf.length),
+          })
+          .send(pdf);
+      } catch (error) {
+        if (error instanceof WorkOrderServiceError) {
+          response.status(error.status).json({
+            code: error.code,
+            message: error.message,
+          });
+          return;
+        }
+
+        response.status(500).json({
+          code: "ADMIN_WORK_ORDER_EXPORT_FAILED",
+          message: "관리자 작업지시서 PDF를 생성하는 중 오류가 발생했습니다.",
         });
       }
     },
