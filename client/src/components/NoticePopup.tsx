@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 
 interface NoticePopupItem {
   id: string;
@@ -55,10 +56,17 @@ function isHiddenToday(noticeId: string): boolean {
 }
 
 export function NoticePopup() {
+  const { locale = "ko" } = useParams();
   const [notice, setNotice] = useState<NoticePopupItem | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (locale === "en") {
+      setNotice(null);
+      setLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     async function loadNotice() {
@@ -91,9 +99,9 @@ export function NoticePopup() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [locale]);
 
-  if (loading || !notice) {
+  if (locale === "en" || loading || !notice) {
     return null;
   }
 

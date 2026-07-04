@@ -540,6 +540,7 @@ export function ScanResultPage() {
     siteId = "",
     scanId = "",
   } = useParams();
+  const isEnglish = locale === "en";
   const navigate = useNavigate();
   const [refreshingRulesVersion, setRefreshingRulesVersion] =
     useState(false);
@@ -722,7 +723,7 @@ export function ScanResultPage() {
           className="content-container scan-result-loading"
           role="status"
         >
-          검사 결과를 불러오고 있습니다.
+          {isEnglish ? "Loading scan result." : "검사 결과를 불러오고 있습니다."}
         </div>
       </section>
     );
@@ -733,10 +734,10 @@ export function ScanResultPage() {
       <section className="full-bleed-section scan-result-section">
         <div className="content-container scan-result-loading">
           <p className="scan-result-error" role="alert">
-            {errorMessage || "검사 결과가 없습니다."}
+            {errorMessage || (isEnglish ? "No scan result was found." : "검사 결과가 없습니다.")}
           </p>
           <Link className="scan-result-back" to={`/${locale}/sites`}>
-            사이트 관리로 돌아가기
+            {isEnglish ? "Back to site dashboard" : "사이트 관리로 돌아가기"}
           </Link>
         </div>
       </section>
@@ -754,16 +755,18 @@ export function ScanResultPage() {
         <header className="scan-result-header">
           <div>
             <p className="eyebrow">SCAN RESULT</p>
-            <h1>{result.site.name} 간편진단 결과</h1>
+            <h1>
+              {result.site.name}{" "}
+              {isEnglish ? "Simple Diagnostic Result" : "간편진단 결과"}
+            </h1>
             <p>
-              공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 QUICK 점수를 계산합니다.
-              JavaScript 렌더링 결과는 점수에 직접 반영하지 않고 AI 수집 개선안과
-              렌더링 비교에 활용하며, 모바일·PC 별도 비교·업종별 기준정보·질문
-              정답률은 정밀진단 단계에서 추가됩니다.
+              {isEnglish
+                ? "The QUICK score is calculated from the real HTTP response and initial HTML of the public URL. JavaScript rendering results are not directly included in the score; they are used for AI collection improvement suggestions and rendering comparison. Mobile/desktop comparison, industry-specific reference data, and question-answer accuracy are added in the deep diagnostic stage."
+                : "공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 QUICK 점수를 계산합니다. JavaScript 렌더링 결과는 점수에 직접 반영하지 않고 AI 수집 개선안과 렌더링 비교에 활용하며, 모바일·PC 별도 비교·업종별 기준정보·질문 정답률은 정밀진단 단계에서 추가됩니다."}
             </p>
           </div>
           <Link className="scan-result-back" to={`/${locale}/sites`}>
-            사이트 관리로
+            {isEnglish ? "Site dashboard" : "사이트 관리로"}
           </Link>
         </header>
 
@@ -790,8 +793,12 @@ export function ScanResultPage() {
               disabled={refreshingRulesVersion}
             >
               {refreshingRulesVersion
-                ? "새 기준 진단 시작 중..."
-                : "새 기준으로 다시 진단하기"}
+                  ? isEnglish
+                    ? "Starting new diagnostic..."
+                    : "새 기준 진단 시작 중..."
+                  : isEnglish
+                    ? "Re-diagnose with current rules"
+                    : "새 기준으로 다시 진단하기"}
             </button>
           </section>
         ) : null}
@@ -803,24 +810,24 @@ export function ScanResultPage() {
               {score === null ? "—" : Math.round(score)}
               <small>/100</small>
             </strong>
-            <em>{grade ?? "미계산"}</em>
+            <em>{grade ?? (isEnglish ? "Not calculated" : "미계산")}</em>
           </div>
 
           <dl className="scan-score-meta">
             <div>
-              <dt>검사 상태</dt>
+              <dt>{isEnglish ? "Scan status" : "검사 상태"}</dt>
               <dd>{result.scan.status}</dd>
             </div>
             <div>
-              <dt>규칙 버전</dt>
+              <dt>{isEnglish ? "Rule version" : "규칙 버전"}</dt>
               <dd>{result.scan.rulesVersion}</dd>
             </div>
             <div>
-              <dt>완료 시각(KST)</dt>
+              <dt>{isEnglish ? "Completed at (KST)" : "완료 시각(KST)"}</dt>
               <dd>{formatKST(result.scan.completedAt)}</dd>
             </div>
             <div>
-              <dt>최종 URL</dt>
+              <dt>{isEnglish ? "Final URL" : "최종 URL"}</dt>
               <dd>
                 <a
                   href={result.site.finalUrl ?? result.site.baseUrl}
@@ -838,8 +845,12 @@ export function ScanResultPage() {
           <section className="surface scan-category-section">
             <div className="scan-section-heading">
               <div>
-                <h2>영역별 점수</h2>
-                <p>기획서의 7개 영역, 총 100점 배점입니다.</p>
+                <h2>{isEnglish ? "Scores by Category" : "영역별 점수"}</h2>
+                <p>
+                    {isEnglish
+                      ? "The score is based on seven planned categories with a total of 100 points."
+                      : "기획서의 7개 영역, 총 100점 배점입니다."}
+                  </p>
               </div>
               <span>측정 범위 {scoreSummary.coverage}%</span>
             </div>
@@ -891,11 +902,12 @@ export function ScanResultPage() {
         <section className="surface scan-understanding-section">
           <div className="scan-section-heading">
             <div>
-              <h2>AI가 읽은 사이트</h2>
+              <h2>{isEnglish ? "What AI Read from the Site" : "AI가 읽은 사이트"}</h2>
               <p>
-                LLM의 추측이 아니라 저장된 초기 HTML 증거를
-                요약했습니다.
-              </p>
+                  {isEnglish
+                    ? "This is a summary of stored initial HTML evidence, not an LLM guess."
+                    : "LLM의 추측이 아니라 저장된 초기 HTML 증거를 요약했습니다."}
+                </p>
             </div>
           </div>
           <p className="scan-understanding-text">
@@ -904,7 +916,7 @@ export function ScanResultPage() {
 
           <div className="scan-information-grid">
             <div>
-              <h3>찾은 정보</h3>
+              <h3>{isEnglish ? "Found Information" : "찾은 정보"}</h3>
               {result.foundInformation.length > 0 ? (
                 <dl className="scan-information-list">
                   {result.foundInformation.map((item) => (
@@ -915,12 +927,12 @@ export function ScanResultPage() {
                   ))}
                 </dl>
               ) : (
-                <p>표시할 핵심정보가 없습니다.</p>
+                <p>{isEnglish ? "No key information to display." : "표시할 핵심정보가 없습니다."}</p>
               )}
             </div>
 
             <div>
-              <h3>찾지 못했거나 확인하지 못한 정보</h3>
+              <h3>{isEnglish ? "Missing or Unverified Information" : "찾지 못했거나 확인하지 못한 정보"}</h3>
               {result.missingInformation.length > 0 ? (
                 <ul className="scan-missing-list">
                   {result.missingInformation.map((item) => (
@@ -932,7 +944,7 @@ export function ScanResultPage() {
                   ))}
                 </ul>
               ) : (
-                <p>현재 가중 규칙에서 누락된 항목이 없습니다.</p>
+                <p>{isEnglish ? "No missing items were found under the current weighted rules." : "현재 가중 규칙에서 누락된 항목이 없습니다."}</p>
               )}
             </div>
           </div>
@@ -957,25 +969,25 @@ export function ScanResultPage() {
           <div
             className="scan-finding-guide"
             role="note"
-            aria-label="진단 배지 안내"
+            aria-label={isEnglish ? "Diagnostic badge guide" : "진단 배지 안내"}
           >
-            <strong>진단 배지 읽는 법</strong>
+            <strong>{isEnglish ? "How to Read Diagnostic Badges" : "진단 배지 읽는 법"}</strong>
             <dl>
               <div>
-                <dt>판정</dt>
+                <dt>{isEnglish ? "Status" : "판정"}</dt>
                 <dd>
                   통과·실패·확인 불가 등 실제 검사 결과입니다.
                 </dd>
               </div>
               <div>
-                <dt>중요도</dt>
+                <dt>{isEnglish ? "Severity" : "중요도"}</dt>
                 <dd>
                   참고·낮음·주의·높음·매우 높음 순으로 해결
                   우선순위를 나타냅니다.
                 </dd>
               </div>
               <div>
-                <dt>점수 영향</dt>
+                <dt>{isEnglish ? "Score impact" : "점수 영향"}</dt>
                 <dd>
                   통과한 항목은 배점, 실패·확인 불가 항목은
                   감점으로 표시합니다.
@@ -1015,7 +1027,11 @@ export function ScanResultPage() {
           <section className="surface scan-rendered-section">
             <div className="scan-section-heading">
               <div>
-                <h2>추가 기술 참고: JavaScript 렌더링 비교</h2>
+                <h2>
+                    {isEnglish
+                      ? "Additional Technical Reference: JavaScript Rendering Comparison"
+                      : "추가 기술 참고: JavaScript 렌더링 비교"}
+                  </h2>
                 <p>
                   브라우저에서 JavaScript를 실행한 뒤 실제 DOM이
                   얼마나 확장되는지 비교했습니다.
@@ -1070,7 +1086,7 @@ export function ScanResultPage() {
                       <h3>{item.label}</h3>
                       <div className="scan-rendered-values">
                         <div>
-                          <span>초기 HTML</span>
+                          <span>{isEnglish ? "Initial HTML" : "초기 HTML"}</span>
                           <strong>
                             {metricValue(
                               item.metric.initial,
@@ -1080,7 +1096,7 @@ export function ScanResultPage() {
                         </div>
                         <b aria-hidden="true">→</b>
                         <div>
-                          <span>렌더링 DOM</span>
+                          <span>{isEnglish ? "Rendered DOM" : "렌더링 DOM"}</span>
                           <strong>
                             {metricValue(
                               item.metric.rendered,
@@ -1101,14 +1117,14 @@ export function ScanResultPage() {
 
                 <dl className="scan-rendered-meta">
                   <div>
-                    <dt>브라우저</dt>
+                    <dt>{isEnglish ? "Browser" : "브라우저"}</dt>
                     <dd>
                       {renderedDomComparison.browserVersion ??
                         "미확인"}
                     </dd>
                   </div>
                   <div>
-                    <dt>렌더링 시간</dt>
+                    <dt>{isEnglish ? "Rendering time" : "렌더링 시간"}</dt>
                     <dd>
                       {renderedDomComparison.durationMs === null
                         ? "미확인"
@@ -1119,7 +1135,7 @@ export function ScanResultPage() {
                     </dd>
                   </div>
                   <div>
-                    <dt>페이지 JavaScript 오류</dt>
+                    <dt>{isEnglish ? "Page JavaScript errors" : "페이지 JavaScript 오류"}</dt>
                     <dd>
                       {metricValue(
                         renderedDomComparison.pageErrorCount,
@@ -1132,7 +1148,7 @@ export function ScanResultPage() {
                 <div className="scan-rendered-improvements">
                   <div>
                     <p className="eyebrow">RENDERING SUMMARY</p>
-                    <h3>JavaScript 렌더링 비교 참고 의견</h3>
+                    <h3>{isEnglish ? "JavaScript Rendering Comparison Notes" : "JavaScript 렌더링 비교 참고 의견"}</h3>
                     <p>
                       위 비교 수치가 뜻하는 바와 필요한 경우의
                       개선 방향을 함께 설명합니다.
@@ -1158,15 +1174,15 @@ export function ScanResultPage() {
 
                           <div className="scan-rendered-explanation">
                             <section>
-                              <strong>현재 어떤 상태인가요?</strong>
+                              <strong>{isEnglish ? "Current state" : "현재 어떤 상태인가요?"}</strong>
                               <p>{plan.currentState}</p>
                             </section>
                             <section>
-                              <strong>무슨 뜻인가요?</strong>
+                              <strong>{isEnglish ? "What it means" : "무슨 뜻인가요?"}</strong>
                               <p>{plan.meaning}</p>
                             </section>
                             <section>
-                              <strong>개선 방향 요약</strong>
+                              <strong>{isEnglish ? "Improvement summary" : "개선 방향 요약"}</strong>
                               <p>
                                 {publicRenderedPlanChange(
                                   plan.code,
@@ -1178,7 +1194,7 @@ export function ScanResultPage() {
 
                           <div className="scan-rendered-action-grid">
                             <section>
-                              <h5>진단 보고서 제공 범위</h5>
+                              <h5>{isEnglish ? "Diagnostic report scope" : "진단 보고서 제공 범위"}</h5>
                               <p>
                                 이 보고서는 현재 상태, 영향, 개선 방향만
                                 요약합니다. 세부 구현 순서와 완료 기준은
@@ -1233,18 +1249,18 @@ export function ScanResultPage() {
         <section className="surface scan-page-section">
           <div className="scan-section-heading">
             <div>
-              <h2>상세 보고서와 작업지시서</h2>
+              <h2>{isEnglish ? "Detailed Report and Work Order" : "상세 보고서와 작업지시서"}</h2>
               <p>
-                간편진단 결과 화면은 핵심 점수와 주요 문제 예시만 제공합니다.
-                결제 후에는 상세 진단 PDF 보고서와 수정 작업지시서를 확인하고
-                저장할 수 있습니다.
-              </p>
+                  {isEnglish
+                    ? "The simple diagnostic result page provides only the core score and key issue examples. After payment, you can access and save the detailed diagnostic PDF report and improvement work order."
+                    : "간편진단 결과 화면은 핵심 점수와 주요 문제 예시만 제공합니다. 결제 후에는 상세 진단 PDF 보고서와 수정 작업지시서를 확인하고 저장할 수 있습니다."}
+                </p>
             </div>
           </div>
 
           <div className="scan-paid-products-grid">
             <div className="work-order-selection scan-paid-product-card" role="note">
-              <strong>상세 진단 PDF 보고서</strong>
+              <strong>{isEnglish ? "Detailed Diagnostic PDF Report" : "상세 진단 PDF 보고서"}</strong>
               <p>
                 현재 사이트 상태를 기준으로 아래 항목을 상세 보고서로
                 제공합니다.
@@ -1258,7 +1274,7 @@ export function ScanResultPage() {
             </div>
 
             <div className="work-order-selection scan-paid-product-card" role="note">
-              <strong>수정 작업지시서</strong>
+              <strong>{isEnglish ? "Improvement Work Order" : "수정 작업지시서"}</strong>
               <p>
                 사이트를 실제로 수정할 수 있도록 아래 항목을 실행용
                 문서로 정리합니다.
@@ -1275,7 +1291,7 @@ export function ScanResultPage() {
               className="work-order-selection scan-paid-product-card scan-paid-followup-card"
               role="note"
             >
-              <strong>개선 후 추가 제공</strong>
+              <strong>{isEnglish ? "Additional Post-Improvement Guidance" : "개선 후 추가 제공"}</strong>
               <p>
                 사이트 수정·업그레이드 후 재진단 결과를 바탕으로 AI가
                 더 구체적으로 답변할 수 있도록 보완 콘텐츠 제안을
@@ -1294,16 +1310,14 @@ export function ScanResultPage() {
               <div
                 className="scan-admin-actions"
                 role="group"
-                aria-label="수퍼관리자 산출물"
+                aria-label={isEnglish ? "Super admin deliverables" : "수퍼관리자 산출물"}
               >
                 <a
                   className="scan-report-link"
                   href={scanResultPdfUrl(result.scan.id)}
                   target="_blank"
                   rel="noreferrer"
-                >
-                  상세 진단 보고서
-                </a>
+                >{isEnglish ? "Detailed Diagnostic Report" : "상세 진단 보고서"}</a>
                 <button
                   className="scan-report-link secondary"
                   type="button"
@@ -1314,44 +1328,36 @@ export function ScanResultPage() {
                   }
                 >
                   {creatingWorkOrder
-                    ? "작업지시서 생성 중..."
+                    ? isEnglish ? "Creating work order..." : "작업지시서 생성 중..."
                     : selectedWorkOrderItemCount > 0
-                      ? "작업지시서 생성"
-                      : "작업지시서 대상 없음"}
+                      ? isEnglish ? "Create Work Order" : "작업지시서 생성"
+                      : isEnglish ? "No work order items" : "작업지시서 대상 없음"}
                 </button>
                 <Link
                   className="scan-report-link ghost"
                   to={`/${locale}/work-orders`}
-                >
-                  작업지시서 목록
-                </Link>
+                >{isEnglish ? "Work Orders" : "작업지시서 목록"}</Link>
               </div>
             ) : (
               <div
                 className="scan-admin-actions"
                 role="group"
-                aria-label="유료 산출물 안내"
+                aria-label={isEnglish ? "Paid deliverables guide" : "유료 산출물 안내"}
               >
                 <button
                   className="scan-report-link scan-paid-locked-action"
                   type="button"
                   disabled
-                >
-                  상세 진단 보고서
-                </button>
+                >{isEnglish ? "Detailed Diagnostic Report" : "상세 진단 보고서"}</button>
                 <button
                   className="scan-report-link secondary scan-paid-locked-action"
                   type="button"
                   disabled
-                >
-                  작업지시서 생성
-                </button>
+                >{isEnglish ? "Create Work Order" : "작업지시서 생성"}</button>
                 <Link
                   className="scan-report-link ghost"
                   to={`/${locale}/work-orders`}
-                >
-                  작업지시서 목록
-                </Link>
+                >{isEnglish ? "Work Orders" : "작업지시서 목록"}</Link>
               </div>
             )}
 
@@ -1360,9 +1366,7 @@ export function ScanResultPage() {
               to={`/${locale}/checkout?scanId=${encodeURIComponent(
                 result.scan.id,
               )}`}
-            >
-              결제하기
-            </Link>
+            >{isEnglish ? "Proceed to Payment" : "결제하기"}</Link>
           </div>
         </section>
 
