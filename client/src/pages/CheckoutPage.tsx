@@ -40,6 +40,155 @@ type CheckoutMessage = {
   text: string;
 };
 
+const checkoutCopy = {
+  ko: {
+    eyebrow: "PAYMENT GUIDE",
+    title: "요금/결제 안내",
+    hero:
+      "Site AI Score의 간편진단 결과 화면은 핵심 점수와 주요 문제 예시를 제공합니다. 무료 간편진단은 계정당 최대 10개 사이트까지 제공되며, 10개를 초과하는 사이트 진단이 필요한 경우 별도 문의 바랍니다. 상세 진단 PDF 보고서와 수정 작업지시서는 유료 산출물로 제공됩니다.",
+    noScanTitle: "아직 결제할 진단 결과가 연결되지 않았습니다.",
+    noScanBody:
+      "아직 간편진단을 하지 않은 경우 결제가 진행되지 않습니다. 먼저 본인 사이트에 대한 무료 간편진단을 실행하고 점수와 주요 문제를 확인한 뒤, 상세 진단 PDF 보고서와 수정 작업지시서 구매 여부를 판단해 주세요.",
+    noScanAction: "간편진단 시작하기",
+    domesticEyebrow: "국내 결제",
+    domesticTitle: "PortOne + KG이니시스 결제",
+    domesticBody:
+      "국내 고객은 원화 결제, 국내 카드전표, 세금계산서 대응을 기준으로 PortOne 결제 흐름을 준비합니다. 결제 성공 후에는 상세 PDF 보고서와 수정 작업지시서 접근 권한이 자동으로 열리도록 연결합니다.",
+    missingScan:
+      "결제할 진단 결과가 연결되지 않았습니다. 진단 결과 화면에서 결제하기 버튼을 눌러 주세요.",
+    payerInfoTitle: "결제자 정보",
+    payerInfoBody:
+      "KG이니시스 결제창 호출을 위해 이름, 이메일, 휴대폰번호가 필요합니다.",
+    payerName: "결제자 이름",
+    payerNamePlaceholder: "홍길동",
+    payerEmail: "결제자 이메일",
+    payerEmailPlaceholder: "name@example.com",
+    payerPhone: "휴대폰번호",
+    payerPhonePlaceholder: "01012345678",
+    basicPriceLabel: "기본 가격",
+    domesticBasicPrice: "165,000원 (VAT 포함)",
+    caseStudyLabel: "개선 사례 활용 동의 시",
+    domesticCasePrice: "110,000원 (VAT 포함)",
+    deliverableShort: "상세 진단 PDF 보고서와 수정 작업지시서 제공",
+    internalUse:
+      "진단 결과, 리포트, 작업지시서와 스캔 데이터는 서비스 개선과 품질 향상을 위해 내부적으로 활용될 수 있습니다.",
+    basicNoCase:
+      "적용 전 점수와 개선 후 점수 등 제한된 전후 비교 결과를 공개하는 동의는 포함하지 않는 기본 가격입니다.",
+    caseScope:
+      "공개 범위는 적용 전 점수와 개선 후 점수 등 제한된 전후 비교 결과로 한정됩니다.",
+    nonDisclosure:
+      "상세 보고서 전체, 작업지시서, 상세 문제 목록, 원문 증거, 스캔 데이터와 내부 분석 자료는 공개하지 않습니다.",
+    domesticButton: "국내 결제 준비",
+    loading: "결제창을 여는 중입니다... 잠시만 기다려 주세요..",
+    globalPayment: "해외 카드와 글로벌 SaaS 결제 방식 지원",
+    polarEyebrow: "해외 결제",
+    polarTitle: "Polar 해외 결제",
+    polarBody:
+      "해외 고객은 Polar를 통해 USD 결제를 진행할 수 있습니다. 결제 성공 후 유료 권한을 여는 로직은 국내 결제와 동일한 paid_entitlements 구조를 사용합니다.",
+    polarButton: "Polar 결제",
+    deliverablesTitle: "제공 항목",
+    reportTitle: "상세 진단 PDF 보고서",
+    reportItems: [
+      "전체 진단 항목",
+      "수집 페이지의 측정 증거",
+      "초기 HTML과 JavaScript 렌더링 비교",
+      "주요 문제와 개선 방향",
+    ],
+    workOrderTitle: "수정 작업지시서",
+    workOrderItems: [
+      "작업 우선순위",
+      "개발자 전달 문구",
+      "완료 판정 기준",
+      "회귀 방지 기준과 자동검수 기준",
+    ],
+    improvementTitle: "개선 후 추가 제공",
+    improvementItems: [
+      "AI 답변을 위한 추가 콘텐츠 제안",
+      "운영자가 선택적으로 보완할 콘텐츠 제안",
+      "개선 전후 비교를 위한 재진단 기준 안내",
+    ],
+    noticeTitle: "결제 전 확인 사항",
+    noticeBody:
+      "상세 진단 PDF 보고서와 수정 작업지시서는 결제 완료 후 해당 진단 결과에 대한 접근 권한이 열립니다. 사례 할인 상품은 적용 전 점수와 개선 후 점수 등 제한된 전후 비교 결과 공개에 동의하는 경우 선택할 수 있습니다. 상세 보고서 전체, 작업지시서, 상세 문제 목록, 원문 증거, 스캔 데이터와 내부 분석 자료는 공개하지 않습니다.",
+    kakao: "카카오톡 문의",
+    email: "이메일 문의",
+    faq: "FAQ 보기",
+  },
+  en: {
+    eyebrow: "PAYMENT GUIDE",
+    title: "Pricing and Payment",
+    hero:
+      "The simple diagnostic result page provides the core score and examples of key issues. Free simple diagnostics are available for up to 10 websites per account. If you need to diagnose more than 10 websites, please contact us separately. Detailed diagnostic PDF reports and improvement work orders are paid digital deliverables.",
+    noScanTitle: "No diagnostic result is connected for payment yet.",
+    noScanBody:
+      "Payment cannot proceed if you have not run a simple diagnostic yet. Please run a free diagnostic for your own website first, review the score and key issues, and then decide whether to purchase the detailed diagnostic PDF report and improvement work order.",
+    noScanAction: "Start free diagnostic",
+    domesticEyebrow: "Domestic Payment",
+    domesticTitle: "PortOne + KG Inicis Payment",
+    domesticBody:
+      "Domestic Korean payments are prepared for KRW payment, domestic card receipts, and tax invoice support through PortOne. After successful payment, access to the detailed PDF report and improvement work order is granted automatically.",
+    missingScan:
+      "No diagnostic result is connected for payment. Please use the payment button from the diagnostic result page.",
+    payerInfoTitle: "Payer Information",
+    payerInfoBody:
+      "Name, email, and mobile phone number are required to open the KG Inicis payment window.",
+    payerName: "Payer name",
+    payerNamePlaceholder: "John Doe",
+    payerEmail: "Payer email",
+    payerEmailPlaceholder: "name@example.com",
+    payerPhone: "Mobile phone number",
+    payerPhonePlaceholder: "01012345678",
+    basicPriceLabel: "Standard price",
+    domesticBasicPrice: "KRW 165,000 including VAT",
+    caseStudyLabel: "With case study consent",
+    domesticCasePrice: "KRW 110,000 including VAT",
+    deliverableShort: "Detailed diagnostic PDF report and improvement work order",
+    internalUse:
+      "Diagnostic results, reports, work orders, and scan data may be used internally for service improvement and quality enhancement.",
+    basicNoCase:
+      "This standard price does not include consent to publicly share limited before-and-after comparison results such as the initial score and improved score.",
+    caseScope:
+      "The public scope is limited to before-and-after comparison results such as the initial score and improved score.",
+    nonDisclosure:
+      "Full detailed reports, work orders, detailed issue lists, source evidence, scan data, and internal analysis materials will not be publicly disclosed.",
+    domesticButton: "Prepare domestic payment",
+    loading: "Opening the payment window... Please wait.",
+    globalPayment: "Supports international cards and global SaaS payment flow",
+    polarEyebrow: "International Payment",
+    polarTitle: "Polar International Payment",
+    polarBody:
+      "International customers can pay in USD through Polar. After successful payment, paid access is granted using the same paid_entitlements structure as domestic payments.",
+    polarButton: "Pay with Polar",
+    deliverablesTitle: "Deliverables",
+    reportTitle: "Detailed Diagnostic PDF Report",
+    reportItems: [
+      "Full diagnostic items",
+      "Measurement evidence from collected pages",
+      "Initial HTML and JavaScript rendering comparison",
+      "Key issues and improvement direction",
+    ],
+    workOrderTitle: "Improvement Work Order",
+    workOrderItems: [
+      "Work priorities",
+      "Developer handoff instructions",
+      "Completion criteria",
+      "Regression prevention and automated review criteria",
+    ],
+    improvementTitle: "Additional Post-Improvement Guidance",
+    improvementItems: [
+      "Additional content suggestions for AI answers",
+      "Optional content improvements for the website operator",
+      "Re-diagnostic criteria for before-and-after comparison",
+    ],
+    noticeTitle: "Before Payment",
+    noticeBody:
+      "Access to the detailed diagnostic PDF report and improvement work order is granted after payment for the connected diagnostic result. The case study discount may be selected only when you agree to limited public sharing of before-and-after comparison results such as the initial score and improved score. Full detailed reports, work orders, detailed issue lists, source evidence, scan data, and internal analysis materials will not be publicly disclosed.",
+    kakao: "KakaoTalk inquiry",
+    email: "Email inquiry",
+    faq: "View FAQ",
+  },
+} as const;
+
 const domesticPrices: Record<PaymentPlan, string> = {
   BASIC: "165,000원 (VAT 포함)",
   CASE_STUDY_DISCOUNT: "110,000원 (VAT 포함)",
@@ -78,6 +227,7 @@ export function CheckoutPage() {
   const redirectHandledRef = useRef(false);
 
   const hasScanId = useMemo(() => scanId.length > 0, [scanId]);
+  const copy = locale === "en" ? checkoutCopy.en : checkoutCopy.ko;
 
   useEffect(() => {
     if (redirectHandledRef.current) {
@@ -277,32 +427,36 @@ export function CheckoutPage() {
     <section className="full-bleed-section legal-section">
       <div className="content-container legal-content">
         <header className="legal-card surface checkout-hero">
-          <p className="eyebrow">PAYMENT GUIDE</p>
-          <h1>요금/결제 안내</h1>
-          <p>
-            Site AI Score의 간편진단 결과 화면은 핵심 점수와 주요 문제 예시를
-              제공합니다. 무료 간편진단은 계정당 최대 10개 사이트까지 제공되며,
-              10개를 초과하는 사이트 진단이 필요한 경우 별도 문의 바랍니다.
-              상세 진단 PDF 보고서와 수정 작업지시서는 유료 산출물로
-              제공됩니다.
-          </p>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h1>{copy.title}</h1>
+          <p>{copy.hero}</p>
         </header>
+
+        {!hasScanId ? (
+          <section className="legal-card surface checkout-notice-card">
+            <h2>{copy.noScanTitle}</h2>
+            <p>{copy.noScanBody}</p>
+            <div className="checkout-contact-actions">
+              <Link className="primary" to={`/${locale}/sites`}>
+                {copy.noScanAction}
+              </Link>
+              <Link className="secondary" to={`/${locale}/guide`}>
+                {locale === "en" ? "Read guide" : "이용가이드 보기"}
+              </Link>
+            </div>
+          </section>
+        ) : null}
 
         <section className="legal-card surface checkout-pricing-card">
           <div>
-            <p className="eyebrow">국내 결제</p>
-            <h2>PortOne + KG이니시스 결제</h2>
-            <p>
-              국내 고객은 원화 결제, 국내 카드전표, 세금계산서 대응을 기준으로
-              PortOne 결제 흐름을 준비합니다. 결제 성공 후에는 상세 PDF 보고서와
-              수정 작업지시서 접근 권한이 자동으로 열리도록 연결합니다.
-            </p>
+            <p className="eyebrow">{copy.domesticEyebrow}</p>
+            <h2>{copy.domesticTitle}</h2>
+            <p>{copy.domesticBody}</p>
           </div>
 
           {!hasScanId ? (
             <p className="checkout-payment-note" role="alert">
-              결제할 진단 결과가 연결되지 않았습니다. 진단 결과 화면에서
-              결제하기 버튼을 눌러 주세요.
+              {copy.missingScan}
             </p>
           ) : null}
 
@@ -319,59 +473,51 @@ export function CheckoutPage() {
             className="checkout-payment-note"
             style={{ display: "grid", gap: "0.75rem" }}
           >
-            <strong>결제자 정보</strong>
-            <span>
-              KG이니시스 결제창 호출을 위해 이름, 이메일, 휴대폰번호가 필요합니다.
-            </span>
+            <strong>{copy.payerInfoTitle}</strong>
+            <span>{copy.payerInfoBody}</span>
 
             <label style={{ display: "grid", gap: "0.35rem" }}>
-              결제자 이름
+              {copy.payerName}
               <input
                 type="text"
                 value={payerName}
                 onChange={(event) => setPayerName(event.target.value)}
-                placeholder="홍길동"
+                placeholder={copy.payerNamePlaceholder}
                 autoComplete="name"
               />
             </label>
 
             <label style={{ display: "grid", gap: "0.35rem" }}>
-              결제자 이메일
+              {copy.payerEmail}
               <input
                 type="email"
                 value={payerEmail}
                 onChange={(event) => setPayerEmail(event.target.value)}
-                placeholder="name@example.com"
+                placeholder={copy.payerEmailPlaceholder}
                 autoComplete="email"
               />
             </label>
 
             <label style={{ display: "grid", gap: "0.35rem" }}>
-              휴대폰번호
+              {copy.payerPhone}
               <input
                 type="tel"
                 value={payerPhoneNumber}
                 onChange={(event) => setPayerPhoneNumber(event.target.value)}
-                placeholder="01012345678"
+                placeholder={copy.payerPhonePlaceholder}
                 autoComplete="tel"
               />
             </label>
           </div>
-          
+
           <div className="checkout-price-grid">
             <article>
-              <span>기본 가격</span>
-              <strong>165,000원 (VAT 포함)</strong>
+              <span>{copy.basicPriceLabel}</span>
+              <strong>{copy.domesticBasicPrice}</strong>
               <ul className="checkout-price-list">
-                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>
-                  진단 결과, 리포트, 작업지시서와 스캔 데이터는 서비스 개선과
-                    품질 향상을 위해 내부적으로 활용될 수 있습니다.
-                </li>
-                <li>
-                  적용 전 점수와 개선 후 점수 등 제한된 전후 비교 결과를
-                    공개하는 동의는 포함하지 않는 기본 가격입니다.
-                </li>
+                <li>{copy.deliverableShort}</li>
+                <li>{copy.internalUse}</li>
+                <li>{copy.basicNoCase}</li>
               </ul>
               <button
                 className="primary checkout-price-action"
@@ -379,42 +525,30 @@ export function CheckoutPage() {
                 disabled={!hasScanId || submittingPlan !== null}
                 onClick={() => void handleCreateDomesticOrder("BASIC")}
               >
-                {submittingPlan === "BASIC"
-                  ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
-                  : "국내 결제 준비"}
+                {submittingPlan === "BASIC" ? copy.loading : copy.domesticButton}
               </button>
             </article>
+
             <article>
-              <span>개선 사례 활용 동의 시</span>
-              <strong>110,000원 (VAT 포함)</strong>
+              <span>{copy.caseStudyLabel}</span>
+              <strong>{copy.domesticCasePrice}</strong>
               <ul className="checkout-price-list">
-                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>
-                  진단 결과, 리포트, 작업지시서와 스캔 데이터는 서비스 개선과
-                    품질 향상을 위해 내부적으로 활용될 수 있습니다.
-                </li>
-                <li>
-                  공개 범위는 적용 전 점수와 개선 후 점수 등 제한된 전후 비교
-                    결과로 한정됩니다.
-                </li>
-                <li>
-                  상세 보고서 전체, 작업지시서, 상세 문제 목록, 원문 증거,
-                    스캔 데이터와 내부 분석 자료는 공개하지 않습니다.
-                </li>
+                <li>{copy.deliverableShort}</li>
+                <li>{copy.internalUse}</li>
+                <li>{copy.caseScope}</li>
+                <li>{copy.nonDisclosure}</li>
               </ul>
               <button
                 className="primary checkout-price-action"
                 type="button"
                 disabled={!hasScanId || submittingPlan !== null}
                 onClick={() =>
-                  void handleCreateDomesticOrder(
-                    "CASE_STUDY_DISCOUNT",
-                  )
+                  void handleCreateDomesticOrder("CASE_STUDY_DISCOUNT")
                 }
               >
                 {submittingPlan === "CASE_STUDY_DISCOUNT"
-                  ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
-                  : "국내 결제 준비"}
+                  ? copy.loading
+                  : copy.domesticButton}
               </button>
             </article>
           </div>
@@ -422,119 +556,91 @@ export function CheckoutPage() {
 
         <section className="legal-card surface checkout-pricing-card">
           <div>
-            <p className="eyebrow">해외 결제</p>
-            <h2>Polar 해외 결제</h2>
-            <p>
-              해외 고객은 Polar를 통해 USD 결제를 진행할 수 있습니다. 단,
-              결제 성공 후 유료 권한을 여는 로직은 국내 결제와 동일한
-              paid_entitlements 구조를 사용합니다.
-            </p>
+            <p className="eyebrow">{copy.polarEyebrow}</p>
+            <h2>{copy.polarTitle}</h2>
+            <p>{copy.polarBody}</p>
           </div>
 
           <div className="checkout-price-grid">
             <article>
-              <span>기본 가격</span>
+              <span>{copy.basicPriceLabel}</span>
               <strong>USD 100</strong>
               <ul className="checkout-price-list">
-                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>
-                  진단 결과, 리포트, 작업지시서와 스캔 데이터는 서비스 개선과
-                    품질 향상을 위해 내부적으로 활용될 수 있습니다.
-                </li>
-                <li>해외 카드와 글로벌 SaaS 결제 방식 지원</li>
-                <li>
-                  적용 전 점수와 개선 후 점수 등 제한된 전후 비교 결과를
-                    공개하는 동의는 포함하지 않는 기본 가격입니다.
-                </li>
+                <li>{copy.deliverableShort}</li>
+                <li>{copy.internalUse}</li>
+                <li>{copy.globalPayment}</li>
+                <li>{copy.basicNoCase}</li>
               </ul>
-                <button
-                  className="primary checkout-price-action"
-                  type="button"
-                  disabled={!hasScanId || submittingPlan !== null}
-                  onClick={() => void handleCreatePolarOrder("BASIC")}
-                >
-                  {submittingPlan === "BASIC"
-                    ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
-                    : "Polar 결제"}
-                </button>
+              <button
+                className="primary checkout-price-action"
+                type="button"
+                disabled={!hasScanId || submittingPlan !== null}
+                onClick={() => void handleCreatePolarOrder("BASIC")}
+              >
+                {submittingPlan === "BASIC" ? copy.loading : copy.polarButton}
+              </button>
             </article>
+
             <article>
-              <span>개선 사례 활용 동의 시</span>
+              <span>{copy.caseStudyLabel}</span>
               <strong>USD 70</strong>
               <ul className="checkout-price-list">
-                <li>상세 진단 PDF 보고서와 수정 작업지시서 제공</li>
-                <li>
-                  진단 결과, 리포트, 작업지시서와 스캔 데이터는 서비스 개선과
-                    품질 향상을 위해 내부적으로 활용될 수 있습니다.
-                </li>
-                <li>
-                  공개 범위는 적용 전 점수와 개선 후 점수 등 제한된 전후 비교
-                    결과로 한정됩니다.
-                </li>
-                <li>
-                  상세 보고서 전체, 작업지시서, 상세 문제 목록, 원문 증거,
-                    스캔 데이터와 내부 분석 자료는 공개하지 않습니다.
-                </li>
+                <li>{copy.deliverableShort}</li>
+                <li>{copy.internalUse}</li>
+                <li>{copy.caseScope}</li>
+                <li>{copy.nonDisclosure}</li>
               </ul>
-                <button
-                  className="primary checkout-price-action"
-                  type="button"
-                  disabled={!hasScanId || submittingPlan !== null}
-                  onClick={() =>
-                    void handleCreatePolarOrder("CASE_STUDY_DISCOUNT")
-                  }
-                >
-                  {submittingPlan === "CASE_STUDY_DISCOUNT"
-                    ? "결제창을 여는 중입니다... 잠시만 기다려 주세요.."
-                    : "Polar 결제"}
-                </button>
+              <button
+                className="primary checkout-price-action"
+                type="button"
+                disabled={!hasScanId || submittingPlan !== null}
+                onClick={() =>
+                  void handleCreatePolarOrder("CASE_STUDY_DISCOUNT")
+                }
+              >
+                {submittingPlan === "CASE_STUDY_DISCOUNT"
+                  ? copy.loading
+                  : copy.polarButton}
+              </button>
             </article>
           </div>
         </section>
 
         <section className="legal-card surface">
-          <h2>제공 항목</h2>
+          <h2>{copy.deliverablesTitle}</h2>
           <div className="checkout-deliverable-grid">
             <article>
-              <h3>상세 진단 PDF 보고서</h3>
+              <h3>{copy.reportTitle}</h3>
               <ul>
-                <li>전체 진단 항목</li>
-                <li>수집 페이지의 측정 증거</li>
-                <li>초기 HTML과 JavaScript 렌더링 비교</li>
-                <li>주요 문제와 개선 방향</li>
+                {copy.reportItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             </article>
 
             <article>
-              <h3>수정 작업지시서</h3>
+              <h3>{copy.workOrderTitle}</h3>
               <ul>
-                <li>작업 우선순위</li>
-                <li>개발자 전달 문구</li>
-                <li>완료 판정 기준</li>
-                <li>회귀 방지 기준과 자동검수 기준</li>
+                {copy.workOrderItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             </article>
 
             <article>
-              <h3>개선 후 추가 제공</h3>
+              <h3>{copy.improvementTitle}</h3>
               <ul>
-                <li>AI 답변을 위한 추가 콘텐츠 제안</li>
-                <li>운영자가 선택적으로 보완할 콘텐츠 제안</li>
-                <li>개선 전후 비교를 위한 재진단 기준 안내</li>
+                {copy.improvementItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
               </ul>
             </article>
           </div>
         </section>
 
         <section className="legal-card surface checkout-notice-card">
-          <h2>결제 전 확인 사항</h2>
-            <p>
-              상세 진단 PDF 보고서와 수정 작업지시서는 결제 완료 후 해당 진단
-              결과에 대한 접근 권한이 열립니다. 사례 할인 상품은 적용 전 점수와
-              개선 후 점수 등 제한된 전후 비교 결과 공개에 동의하는 경우 선택할
-              수 있습니다. 상세 보고서 전체, 작업지시서, 상세 문제 목록, 원문
-              증거, 스캔 데이터와 내부 분석 자료는 공개하지 않습니다.
-            </p>
+          <h2>{copy.noticeTitle}</h2>
+          <p>{copy.noticeBody}</p>
           <div className="checkout-contact-actions">
             <a
               className="primary"
@@ -542,13 +648,13 @@ export function CheckoutPage() {
               target="_blank"
               rel="noreferrer"
             >
-              카카오톡 문의
+              {copy.kakao}
             </a>
             <a className="secondary" href="mailto:sohocenter.kr@gmail.com">
-              이메일 문의
+              {copy.email}
             </a>
             <Link className="secondary" to={`/${locale}/faq`}>
-              FAQ 보기
+              {copy.faq}
             </Link>
           </div>
         </section>
