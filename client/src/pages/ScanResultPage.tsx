@@ -943,10 +943,14 @@ export function ScanResultPage() {
         <section className="surface scan-issues-section">
           <div className="scan-section-heading">
             <div>
-              <h2>상세보고서 예시</h2>
-              <p>
-                상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 3개만 미리 보여드립니다.
-              </p>
+              <h2>
+                  {locale === "en" ? "Detailed report example" : "상세보고서 예시"}
+                </h2>
+                <p>
+                  {locale === "en"
+                    ? "The detailed PDF report presents key issues and inspection evidence in this format. This page shows only one high-priority example before payment."
+                    : "상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 1개만 미리 보여드립니다."}
+                </p>
             </div>
 </div>
 
@@ -982,7 +986,7 @@ export function ScanResultPage() {
 
           {result.primaryIssues.length > 0 ? (
             <div className="scan-issue-list">
-              {result.primaryIssues.slice(0, 3).map((finding) => (
+              {result.primaryIssues.slice(0, 1).map((finding) => (
                 <FindingCard
                   finding={finding}
                   key={finding.id}
@@ -1137,7 +1141,7 @@ export function ScanResultPage() {
 
                   {renderedImprovementPlans.length > 0 ? (
                     <div className="scan-rendered-improvement-list">
-                      {renderedImprovementPlans.map((plan) => (
+                      {renderedImprovementPlans.slice(0, 1).map((plan) => (
                         <article
                           className={`scan-rendered-improvement-card${
                             selectedRenderedImprovementCodes.includes(
@@ -1182,11 +1186,13 @@ export function ScanResultPage() {
                               </p>
                             </section>
                             <section>
-                              <h5>다음 단계</h5>
-                              <p>
-                                
-                              </p>
-                            </section>
+                                <h5>{locale === "en" ? "Next step" : "다음 단계"}</h5>
+                                <p>
+                                  {locale === "en"
+                                    ? "Detailed next-step instructions and completion criteria are available in the paid diagnostic report and improvement work order after payment."
+                                    : "세부 다음 단계와 완료 기준은 결제 후 제공되는 상세 보고서와 작업지시서에서 확인할 수 있습니다."}
+                                </p>
+                              </section>
                           </div>
                         </article>
                       ))}

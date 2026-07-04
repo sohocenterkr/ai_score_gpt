@@ -453,13 +453,6 @@ export function CheckoutPage() {
             <h2>{copy.domesticTitle}</h2>
             <p>{copy.domesticBody}</p>
           </div>
-
-          {!hasScanId ? (
-            <p className="checkout-payment-note" role="alert">
-              {copy.missingScan}
-            </p>
-          ) : null}
-
           {message ? (
             <p
               className="checkout-payment-note"
