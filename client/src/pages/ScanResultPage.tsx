@@ -84,6 +84,8 @@ const categoryEnglishLabels: Record<string, string> = {
   "콘텐츠 이해 및 답변 가능성": "Content understanding and answerability",
   "AI에이전트 사용 가능성": "AI agent usability",
   "신뢰성 및 추적 환경": "Trust and tracking environment",
+  "AI 에이전트 사용 가능성": "AI agent usability",
+  "최신성 및 추적 환경": "Freshness and tracking environment",
 };
 
 function translateCategoryLabel(value: string, isEnglish: boolean): string {
@@ -143,6 +145,41 @@ function translateFoundLabel(value: string, isEnglish: boolean): string {
 
 function translateFindingTitle(value: string, isEnglish: boolean): string {
   return isEnglish ? findingTitleEnglishLabels[value] ?? value : value;
+}
+
+function translateStoredEvidenceText(value: string, isEnglish: boolean): string {
+  if (!isEnglish) return value;
+
+  const exact: Record<string, string> = {
+    "Site AI Score | AI 검색 친화도 진단": "Site AI Score | AI Search Readiness Diagnostic",
+    "Site AI Score는 웹사이트가 AI 검색과 검색엔진에 잘 이해되는지 진단하고, 개선 방향과 작업지시서를 제공하는 서비스입니다.": "Site AI Score diagnoses whether a website is well understood by AI search and search engines, and provides improvement direction and work orders.",
+  };
+
+  if (exact[value]) return exact[value];
+
+  return value
+    .replace(
+      /Site AI Score \| AI 검색 친화도 진단/g,
+      "Site AI Score | AI Search Readiness Diagnostic",
+    )
+    .replace(
+      /Site AI Score는 웹사이트가 AI 검색과 검색엔진에 잘 이해되는지 진단하고, 개선 방향과 작업지시서를 제공하는 서비스입니다\./g,
+      "Site AI Score diagnoses whether a website is well understood by AI search and search engines, and provides improvement direction and work orders.",
+    )
+    .replace(
+      /"([^"]+)" 페이지는 ([a-z-]+) 문서로 확인되었고 초기 HTML에서 약 ([0-9,]+)자의 본문을 읽었습니다\./g,
+      (_match, title: string, language: string, characters: string) =>
+        `The page "${translateStoredEvidenceText(title, true)}" was identified as a ${language} document, and about ${characters} characters of body text were read from the initial HTML.`,
+    )
+    .replace(
+      /사이트 설명은 "([^"]+)"로 확인됩니다\./g,
+      (_match, description: string) =>
+        `The site description was identified as "${translateStoredEvidenceText(description, true)}".`,
+    )
+    .replace(
+      /식별 가능한 JSON-LD 유형은 확인되지 않았습니다\./g,
+      "No identifiable JSON-LD type was found.",
+    );
 }
 
 function translateDiagnosticText(value: string | null | undefined, isEnglish: boolean): string {
@@ -1153,7 +1190,7 @@ export function ScanResultPage() {
             </div>
           </div>
           <p className="scan-understanding-text">
-            {result.understandingSummary}
+            {translateStoredEvidenceText(result.understandingSummary, isEnglish)}
           </p>
 
           <div className="scan-information-grid">
@@ -1162,9 +1199,9 @@ export function ScanResultPage() {
               {result.foundInformation.length > 0 ? (
                 <dl className="scan-information-list">
                   {result.foundInformation.map((item) => (
-                    <div key={`${item.label}-${item.value}`}>
+                    <div key={`${item.label}-${translateStoredEvidenceText(item.value, isEnglish)}`}>
                       <dt>{translateFoundLabel(item.label, isEnglish)}</dt>
-                      <dd>{item.value}</dd>
+                      <dd>{translateStoredEvidenceText(item.value, isEnglish)}</dd>
                     </div>
                   ))}
                 </dl>
