@@ -34,11 +34,30 @@ const STATUS_LABELS: Record<PublicWorkOrder["status"], string> = {
   CANCELLED: "취소",
 };
 
+const STATUS_LABELS_EN: Record<PublicWorkOrder["status"], string> = {
+  DRAFT: "Draft",
+  ISSUED: "Issued",
+  ASSIGNED: "Assigned",
+  IN_PROGRESS: "In progress",
+  SUBMITTED: "Submitted",
+  VERIFYING: "Verifying",
+  REWORK_REQUIRED: "Rework required",
+  PASSED: "Passed",
+  CANCELLED: "Cancelled",
+};
+
 const FINDING_STATUS_LABELS: Record<string, string> = {
   PASS: "통과",
   FAIL: "실패",
   BLOCKED: "확인 불가",
   NA: "감점 제외",
+};
+
+const FINDING_STATUS_LABELS_EN: Record<string, string> = {
+  PASS: "Pass",
+  FAIL: "Fail",
+  BLOCKED: "Blocked",
+  NA: "Not scored",
 };
 
 const SEVERITY_LABELS: Record<string, string> = {
@@ -47,6 +66,14 @@ const SEVERITY_LABELS: Record<string, string> = {
   MEDIUM: "주의",
   HIGH: "높음",
   CRITICAL: "매우 높음",
+};
+
+const SEVERITY_LABELS_EN: Record<string, string> = {
+  INFO: "Info",
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
 };
 
 function fontPaths(filename: string): string[] {
@@ -125,12 +152,12 @@ function pdfCriterionCode(value: string): string {
     );
 }
 
-function formatKST(value: string | null): string {
+function formatKST(value: string | null, isEnglish = false): string {
   if (!value) {
-    return "기록 없음";
+    return isEnglish ? "No record" : "기록 없음";
   }
 
-  return new Intl.DateTimeFormat("ko-KR", {
+  return new Intl.DateTimeFormat(isEnglish ? "en-US" : "ko-KR", {
     timeZone: "Asia/Seoul",
     year: "numeric",
     month: "2-digit",
@@ -476,7 +503,7 @@ function writeCover(
     `${cleanText(workOrder.orderNumber)} / v${workOrder.version} / ${
       isEnglish
         ? workOrder.status.replaceAll("_", " ").toLowerCase()
-        : STATUS_LABELS[workOrder.status]
+        : isEnglish ? STATUS_LABELS_EN[workOrder.status] : STATUS_LABELS[workOrder.status]
     }`,
     x + 22,
     top + 89,
@@ -566,11 +593,11 @@ function writeCover(
     workOrder.site.finalUrl ?? workOrder.site.baseUrl,
   );
   writeLabelValue(document, isEnglish ? "Rules version" : "규칙 버전", workOrder.rulesVersion);
-  writeLabelValue(document, isEnglish ? "Issued at (KST)" : "발급 시각(KST)", formatKST(workOrder.issuedAt));
+  writeLabelValue(document, isEnglish ? "Issued at (KST)" : "발급 시각(KST)", formatKST(workOrder.issuedAt, isEnglish));
   writeLabelValue(
     document,
     isEnglish ? "PDF generated at (KST)" : "PDF 생성 시각(KST)",
-    formatKST(new Date().toISOString()),
+    formatKST(new Date().toISOString(), isEnglish),
   );
 
   writeSectionTitle(document, isEnglish ? "Work item summary" : "작업 항목 요약");
@@ -819,11 +846,11 @@ function writeItemPage(
     },
   );
   const findingStatus = item.finding?.status
-    ? FINDING_STATUS_LABELS[item.finding.status] ??
+    ? (isEnglish ? FINDING_STATUS_LABELS_EN : FINDING_STATUS_LABELS)[item.finding.status] ??
       cleanText(item.finding.status)
     : isEnglish ? "Additional improvement recommended" : "추가 개선 권장";
   const findingSeverity = item.finding?.severity
-    ? SEVERITY_LABELS[item.finding.severity] ??
+    ? (isEnglish ? SEVERITY_LABELS_EN : SEVERITY_LABELS)[item.finding.severity] ??
       cleanText(item.finding.severity)
     : isEnglish ? "AI collection stability" : "AI 수집 안정성";
 
