@@ -843,13 +843,14 @@ export function WorkOrderPage() {
         <section className="work-order-items-section">
           <div className="work-order-section-heading">
             <div>
-              <h2>1차 진단에서 발견된 수정 항목</h2>
+              <h2>{isEnglish ? "Improvement items found in the initial diagnostic" : "1차 진단에서 발견된 수정 항목"}</h2>
               <p>
-                소스코드가 아니라 배포된 공개 URL에서 완료 여부를
-                확인합니다.
+                {isEnglish
+                  ? "Completion is verified against the deployed public URL, not the source code."
+                  : "소스코드가 아니라 배포된 공개 URL에서 완료 여부를 확인합니다."}
               </p>
             </div>
-            <span>{workOrder.items.length}개</span>
+            <span>{workOrder.items.length} {isEnglish ? "items" : "개"}</span>
           </div>
 
           <div className="work-order-items">
@@ -867,49 +868,47 @@ export function WorkOrderPage() {
                     <span>
                       {item.finding
                         ? item.isRequired
-                          ? "필수"
-                          : "일반"
-                        : "권장 개선"}
+                          ? isEnglish ? "Required" : "필수"
+                          : isEnglish ? "General" : "일반"
+                        : isEnglish ? "Recommended improvement" : "권장 개선"}
                     </span>
                     <span>
-                      {item.weight > 0
-                        ? `예상 ${item.weight}점`
-                        : "점수 외 개선"}
+                      {item.weight > 0 ? (isEnglish ? `Expected +${item.weight} pts` : `예상 ${item.weight}점`) : (isEnglish ? "Non-score improvement" : "점수 외 개선")}
                     </span>
                   </div>
                 </header>
 
                 <dl className="work-order-item-meta">
                   <div>
-                    <dt>대상 URL</dt>
+                    <dt>{isEnglish ? "Target URL" : "대상 URL"}</dt>
                     <dd>{item.targetUrl}</dd>
                   </div>
                   <div>
-                    <dt>1차 판정</dt>
+                    <dt>{isEnglish ? "Initial finding" : "1차 판정"}</dt>
                     <dd>
-                      {item.finding?.status ?? "추가 개선 권장"}
+                      {item.finding?.status ?? (isEnglish ? "Additional improvement recommended" : "추가 개선 권장")}
                     </dd>
                   </div>
                   <div>
-                    <dt>중요도</dt>
+                    <dt>{isEnglish ? "Severity" : "중요도"}</dt>
                     <dd>
-                      {item.finding?.severity ?? "AI 수집 안정성"}
+                      {item.finding?.severity ?? (isEnglish ? "AI collection stability" : "AI 수집 안정성")}
                     </dd>
                   </div>
                 </dl>
 
                 <div className="work-order-requirement">
-                  <strong>수정 요구사항</strong>
+                  <strong>{isEnglish ? "Required change" : "수정 요구사항"}</strong>
                   <p>{item.requirement}</p>
                 </div>
 
                 <div className="work-order-developer-message">
-                  <strong>개발자 전달용 문구</strong>
+                  <strong>{isEnglish ? "Developer instructions" : "개발자 전달용 문구"}</strong>
                   <p>{item.developerMessage}</p>
                 </div>
 
                 <div className="work-order-criteria">
-                  <strong>완료 판정 기준</strong>
+                  <strong>{isEnglish ? "Completion criteria" : "완료 판정 기준"}</strong>
                   <ul>
                     {item.acceptanceCriteria.map((criterion) => (
                       <li key={criterion.code}>
@@ -925,7 +924,7 @@ export function WorkOrderPage() {
 
                 {item.finding ? (
                   <details>
-                    <summary>최초 검사 증거 보기</summary>
+                    <summary>{isEnglish ? "View initial diagnostic evidence" : "최초 검사 증거 보기"}</summary>
                     <pre>{evidenceText(item.finding.evidence)}</pre>
                   </details>
                 ) : null}
@@ -935,10 +934,9 @@ export function WorkOrderPage() {
         </section>
 
         <p className="work-order-disclaimer">
-          예상 점수 범위는 선택한 점수 규칙의 배점만을 기준으로
-          계산한 참고값입니다. 점수 외 AI 수집 개선안은 예상 점수에
-          포함되지 않으며 실제 상승 폭이나 AI 검색 노출은 보장되지
-          않습니다.
+          {isEnglish
+            ? "The expected score range is only a reference based on the selected scoring rule weights. Non-score AI collection improvements are not included, and actual score increases or AI search visibility are not guaranteed."
+            : "예상 점수 범위는 선택한 점수 규칙의 배점만을 기준으로 계산한 참고값입니다. 점수 외 AI 수집 개선안은 예상 점수에 포함되지 않으며 실제 상승 폭이나 AI 검색 노출은 보장되지 않습니다."}
         </p>
       </div>
     </section>
