@@ -315,7 +315,61 @@ const templates: Record<string, WorkOrderTemplate> = {
   },
 };
 
-const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {};
+const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
+  "STRUCT-H1-001": {
+    requirement:
+      "Add exactly one representative H1 to the initial HTML as part of the P0 SSR/SSG work.",
+    developerMessage:
+      "Do not fix this item in isolation. Handle it together with the initial HTML SSR/SSG, body content, and internal link improvements. The server-rendered initial HTML should include exactly one H1 that describes the core topic of the page, and the same core topic should remain after JavaScript rendering.",
+    acceptanceCriteria: [
+      {
+        code: "H1-01",
+        label: "The initial HTML contains exactly one H1.",
+        required: true,
+      },
+      {
+        code: "H1-02",
+        label: "The H1 matches the actual service topic of the page.",
+        required: true,
+      },
+      {
+        code: "H1-03",
+        label: "The representative H1 is not duplicated after rendering.",
+        required: true,
+      },
+      {
+        code: "H1-04",
+        label: "The change is verifiable on the production URL and does not break existing passing items.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-HEADINGS-001": {
+    requirement:
+      "Build the H1/H2 heading hierarchy together with the P0 initial HTML SSR/SSG work.",
+    developerMessage:
+      "Do not only add an H1. Divide the main sections, such as service overview, target users, usage flow, pricing/security, and FAQ, into H2 sections so the heading hierarchy is visible in the initial HTML. The heading structure should match the actual user-facing page sections.",
+    acceptanceCriteria: [
+      {
+        code: "HEADINGS-01",
+        label: "The initial HTML exposes a clear H1 and H2 heading hierarchy.",
+        required: true,
+      },
+      {
+        code: "HEADINGS-02",
+        label: "The H2 sections match the main content sections shown to users.",
+        required: true,
+      },
+      {
+        code: "HEADINGS-03",
+        label: "Adding the heading hierarchy does not break the existing design or key features.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+};
 
 function genericCriteria(
   ruleCode: string,
