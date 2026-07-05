@@ -440,6 +440,7 @@ function writeEvidence(
 function writeCover(
   document: PDFKit.PDFDocument,
   workOrder: PublicWorkOrder,
+  isEnglish: boolean,
 ): void {
   const x = document.page.margins.left;
   const width = contentWidth(document);
@@ -460,7 +461,7 @@ function writeCover(
   );
 
   setBold(document, 24, COLORS.white).text(
-    `${cleanText(workOrder.site.name)} 수정 작업지시서`,
+    isEnglish ? `${cleanText(workOrder.site.name)} Improvement Work Order` : `${cleanText(workOrder.site.name)} 수정 작업지시서`,
     x + 22,
     top + 43,
     {
@@ -471,7 +472,9 @@ function writeCover(
 
   setRegular(document, 9.2, "#DDE5FF").text(
     `${cleanText(workOrder.orderNumber)} / v${workOrder.version} / ${
-      STATUS_LABELS[workOrder.status]
+      isEnglish
+        ? workOrder.status.replaceAll("_", " ").toLowerCase()
+        : STATUS_LABELS[workOrder.status]
     }`,
     x + 22,
     top + 89,
@@ -501,7 +504,7 @@ function writeCover(
     .fillAndStroke(COLORS.primarySoft, "#C7D2FE");
 
   setBold(document, 8.4, COLORS.muted).text(
-    "현재 점수",
+    isEnglish ? "Current score" : "현재 점수",
     x + 14,
     scoreY + 13,
     {
@@ -520,7 +523,7 @@ function writeCover(
     },
   );
   setRegular(document, 8.2, COLORS.muted).text(
-    cleanText(workOrder.gradeBefore ?? "미계산"),
+    cleanText(workOrder.gradeBefore ?? (isEnglish ? "Not calculated" : "미계산")),
     x + 70,
     scoreY + 44,
     {
@@ -529,7 +532,7 @@ function writeCover(
   );
 
   setBold(document, 8.4, COLORS.primaryDark).text(
-    "예상 점수 범위",
+    isEnglish ? "Expected score range" : "예상 점수 범위",
     x + scoreWidth + gap + 14,
     scoreY + 13,
     {
@@ -548,27 +551,27 @@ function writeCover(
 
   document.y = scoreY + scoreHeight + 22;
 
-  writeSectionTitle(document, "작업지시서 정보");
-  writeLabelValue(document, "고객", workOrder.customerOrganization.name);
+  writeSectionTitle(document, isEnglish ? "Work order information" : "작업지시서 정보");
+  writeLabelValue(document, isEnglish ? "Customer" : "고객", workOrder.customerOrganization.name);
   writeLabelValue(
     document,
-    "사이트",
+    isEnglish ? "Site" : "사이트",
     `${workOrder.site.name} (${workOrder.site.baseUrl})`,
   );
   writeLabelValue(
     document,
-    "검사 URL",
+    isEnglish ? "Diagnostic URL" : "검사 URL",
     workOrder.site.finalUrl ?? workOrder.site.baseUrl,
   );
-  writeLabelValue(document, "규칙 버전", workOrder.rulesVersion);
-  writeLabelValue(document, "발급 시각(KST)", formatKST(workOrder.issuedAt));
+  writeLabelValue(document, isEnglish ? "Rules version" : "규칙 버전", workOrder.rulesVersion);
+  writeLabelValue(document, isEnglish ? "Issued at (KST)" : "발급 시각(KST)", formatKST(workOrder.issuedAt));
   writeLabelValue(
     document,
-    "PDF 생성 시각(KST)",
+    isEnglish ? "PDF generated at (KST)" : "PDF 생성 시각(KST)",
     formatKST(new Date().toISOString()),
   );
 
-  writeSectionTitle(document, "작업 항목 요약");
+  writeSectionTitle(document, isEnglish ? "Work item summary" : "작업 항목 요약");
 
   workOrder.items.forEach((item, index) => {
     ensureSpace(document, 27);
@@ -917,7 +920,9 @@ export function workOrderPdfFilename(
 
 export async function renderWorkOrderPdf(
   workOrder: PublicWorkOrder,
+  options: { locale?: "ko" | "en" } = {},
 ): Promise<Buffer> {
+  const isEnglish = options.locale === "en";
   const regularFontPath = requireFontPath(
     "Pretendard-Regular.ttf",
   );
@@ -935,10 +940,10 @@ export async function renderWorkOrderPdf(
       left: 46,
     },
     info: {
-      Title: `${cleanText(workOrder.site.name)} 수정 작업지시서`,
+      Title: isEnglish ? `${cleanText(workOrder.site.name)} Improvement Work Order` : `${cleanText(workOrder.site.name)} 수정 작업지시서`,
       Author: "Site AI Score",
       Subject: `${cleanText(workOrder.orderNumber)} v${workOrder.version}`,
-      Keywords: "Site AI Score, AEO, 작업지시서",
+      Keywords: isEnglish ? "Site AI Score, AEO, work order" : "Site AI Score, AEO, 작업지시서",
       CreationDate: new Date(),
     },
   });
@@ -963,7 +968,7 @@ export async function renderWorkOrderPdf(
     document.on("error", reject);
   });
 
-  writeCover(document, workOrder);
+  writeCover(document, workOrder, isEnglish);
 
   writeExecutionPlanPage(document, workOrder);
 

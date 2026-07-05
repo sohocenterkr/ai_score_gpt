@@ -315,7 +315,8 @@ export function createWorkOrderRouter(
           response.locals.authUser,
           readRouteParam(request.params.workOrderId),
         );
-        const pdf = await renderWorkOrderPdf(workOrder);
+        const locale = request.query.locale === "en" ? "en" : "ko";
+        const pdf = await renderWorkOrderPdf(workOrder, { locale });
 
         response
           .status(200)
