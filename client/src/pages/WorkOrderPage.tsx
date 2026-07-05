@@ -37,12 +37,12 @@ const statusLabels: Record<string, string> = {
   CANCELLED: "취소",
 };
 
-function formatKST(value: string | null): string {
+function formatKST(value: string | null, isEnglish = false): string {
   if (!value) {
-    return "기록 없음";
+    return isEnglish ? "No record" : "기록 없음";
   }
 
-  return new Intl.DateTimeFormat("ko-KR", {
+  return new Intl.DateTimeFormat(isEnglish ? "en-US" : "ko-KR", {
     timeZone: "Asia/Seoul",
     dateStyle: "medium",
     timeStyle: "medium",
@@ -400,22 +400,22 @@ export function WorkOrderPage() {
                 <>
                   <div className="work-order-score-comparison">
                     <div className="work-order-score-card">
-                      <span>1차 점수</span>
+                      <span>{isEnglish ? "Initial score" : "1차 점수"}</span>
                       <strong>{workOrder.scoreBefore ?? "—"}</strong>
-                      <small>1차 검수완료</small>
+                      <small>{isEnglish ? "Initial diagnostic completed" : "1차 검수완료"}</small>
                     </div>
 
                     <dl className="work-order-score-comparison-meta">
                       <div>
-                        <dt>1차 규칙 버전</dt>
+                        <dt>{isEnglish ? "Initial rules version" : "1차 규칙 버전"}</dt>
                         <dd>{workOrder.initialScan.rulesVersion}</dd>
                       </div>
                       <div>
-                        <dt>1차 검수 완료 시각(KST)</dt>
-                        <dd>{formatKST(workOrder.initialScan.completedAt)}</dd>
+                        <dt>{isEnglish ? "Initial diagnostic completed at (KST)" : "1차 검수 완료 시각(KST)"}</dt>
+                        <dd>{formatKST(workOrder.initialScan.completedAt, isEnglish)}</dd>
                       </div>
                       <div>
-                        <dt>1차 검사 URL</dt>
+                        <dt>{isEnglish ? "Initial diagnostic URL" : "1차 검사 URL"}</dt>
                         <dd>
                           <a
                             href={
@@ -442,7 +442,7 @@ export function WorkOrderPage() {
                     </div>
 
                     <div className="work-order-score-card verification">
-                      <span>최근 재검수</span>
+                      <span>{isEnglish ? "Latest recheck" : "최근 재검수"}</span>
                       <strong>
                         {latestScoredVerificationAttempt.scoreAfter}
                         {latestScoredVerificationAttempt.gradeAfter ? (
@@ -453,8 +453,9 @@ export function WorkOrderPage() {
                         ) : null}
                       </strong>
                       <small>
-                        {latestScoredVerificationAttempt.attemptNumber + 1}차
-                        검수완료
+                        {isEnglish
+                          ? `Verification ${latestScoredVerificationAttempt.attemptNumber + 1} completed`
+                          : `${latestScoredVerificationAttempt.attemptNumber + 1}차 검수완료`}
                       </small>
                     </div>
                   </div>
@@ -463,32 +464,32 @@ export function WorkOrderPage() {
               ) : (
                 <>
                   <div className="work-order-score-range">
-                    <span>1차 점수</span>
+                    <span>{isEnglish ? "Initial score" : "1차 점수"}</span>
                     <strong>{workOrder.scoreBefore ?? "—"}</strong>
-                    <small>1차 검수완료</small>
+                    <small>{isEnglish ? "Initial diagnostic completed" : "1차 검수완료"}</small>
                   </div>
                   <div className="work-order-arrow" aria-hidden="true">
                     →
                   </div>
                   <div className="work-order-score-range expected">
-                    <span>예상 점수 범위</span>
+                    <span>{isEnglish ? "Expected score range" : "예상 점수 범위"}</span>
                     <strong>
                       {workOrder.expectedScoreMin}~
                       {workOrder.expectedScoreMax}
                     </strong>
-                    <small>보장값이 아닌 규칙 배점 기준</small>
+                    <small>{isEnglish ? "Based on rule points, not a guarantee" : "보장값이 아닌 규칙 배점 기준"}</small>
                   </div>
                   <dl>
                     <div>
-                      <dt>1차 규칙 버전</dt>
+                      <dt>{isEnglish ? "Initial rules version" : "1차 규칙 버전"}</dt>
                       <dd>{workOrder.initialScan.rulesVersion}</dd>
                     </div>
                     <div>
-                      <dt>1차 검수 완료 시각(KST)</dt>
-                      <dd>{formatKST(workOrder.initialScan.completedAt)}</dd>
+                      <dt>{isEnglish ? "Initial diagnostic completed at (KST)" : "1차 검수 완료 시각(KST)"}</dt>
+                      <dd>{formatKST(workOrder.initialScan.completedAt, isEnglish)}</dd>
                     </div>
                     <div>
-                      <dt>1차 검사 URL</dt>
+                      <dt>{isEnglish ? "Initial diagnostic URL" : "1차 검사 URL"}</dt>
                       <dd>
                         <a
                           href={
