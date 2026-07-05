@@ -237,13 +237,13 @@ export function WorkOrderPage() {
       );
       setWorkOrder(value);
       setMessage(
-        "공개 URL을 접수했습니다. 검수를 시작합니다.",
+        isEnglish ? "The public URL has been submitted. Verification has started." : "공개 URL을 접수했습니다. 검수를 시작합니다.",
       );
     } catch (error) {
       setErrorMessage(
         error instanceof WorkOrderApiError
           ? error.message
-          : "수정 URL을 접수하지 못했습니다.",
+          : isEnglish ? "Could not submit the updated URL." : "수정 URL을 접수하지 못했습니다.",
       );
     } finally {
       setSubmittingVerification(false);
@@ -324,7 +324,7 @@ export function WorkOrderPage() {
           </Link>
         </header>
 
-        {message && !message.startsWith("공개 URL") ? (
+        {message && !(message.startsWith("공개 URL") || message.startsWith("The public URL")) ? (
           <p className="work-order-message work-order-success" role="status">
             {message}
           </p>
@@ -516,15 +516,16 @@ export function WorkOrderPage() {
           <div className="work-order-verification-heading">
             <div>
               <p className="eyebrow">AUTOMATIC VERIFICATION</p>
-              <h2>사이트 개선 후 검수진행</h2>
+              <h2>{isEnglish ? "Verify after site improvements" : "사이트 개선 후 검수진행"}</h2>
               <p>
-                개발자가 사이트를 수정한 후 사이트 주소를 바꾸지 않고
-                다시한번 검수를 진행합니다.
-              </p>
+                  {isEnglish
+                    ? "After the developer updates the site, run verification again against the same public site address."
+                    : "개발자가 사이트를 수정한 후 사이트 주소를 바꾸지 않고 다시한번 검수를 진행합니다."}
+                </p>
             </div>
             {workOrder.status === "VERIFYING" ? (
               <span className="work-order-verification-live">
-                자동검수 진행 중
+                {isEnglish ? "Automatic verification in progress" : "자동검수 진행 중"}
               </span>
             ) : null}
           </div>
@@ -544,8 +545,8 @@ export function WorkOrderPage() {
               }}
             >
               <label htmlFor="verification-url">
-                공개 URL
-              </label>
+                  {isEnglish ? "Public URL" : "공개 URL"}
+                </label>
               <div>
                 <input
                   id="verification-url"
@@ -567,28 +568,35 @@ export function WorkOrderPage() {
                   }
                 >
                   {submittingVerification
-                    ? "검수 요청 중..."
-                    : "검수시작"}
+                      ? isEnglish
+                        ? "Requesting verification..."
+                        : "검수 요청 중..."
+                      : isEnglish
+                        ? "Start verification"
+                        : "검수시작"}
                 </button>
               </div>
               <small>
-                로그인이나 사내망 없이 외부에서 접속 가능한 HTTP(S)
-                주소만 제출할 수 있습니다.
-              </small>
+                  {isEnglish
+                    ? "Only externally accessible HTTP(S) URLs can be submitted. URLs requiring login or an internal network are not supported."
+                    : "로그인이나 사내망 없이 외부에서 접속 가능한 HTTP(S) 주소만 제출할 수 있습니다."}
+                </small>
             </form>
           ) : workOrder.status === "DRAFT" ? (
             <p className="work-order-verification-notice">
-              작업지시서를 먼저 발급하면 수정된 URL을 제출할 수
-              있습니다.
-            </p>
+                {isEnglish
+                  ? "Issue the work order first to submit the updated URL."
+                  : "작업지시서를 먼저 발급하면 수정된 URL을 제출할 수 있습니다."}
+              </p>
           ) : workOrder.status === "VERIFYING" ? (
             <p className="work-order-verification-notice">
-              현재 제출된 URL을 검사하고 있습니다. 이 화면은 자동으로
-              상태를 갱신합니다.
-            </p>
+                {isEnglish
+                  ? "The submitted URL is being checked. This page will refresh its status automatically."
+                  : "현재 제출된 URL을 검사하고 있습니다. 이 화면은 자동으로 상태를 갱신합니다."}
+              </p>
           ) : null}
 
-          {message && message.startsWith("공개 URL") ? (
+          {message && (message.startsWith("공개 URL") || message.startsWith("The public URL")) ? (
             <p className="work-order-message work-order-success" role="status">
               {message}
             </p>
@@ -598,12 +606,12 @@ export function WorkOrderPage() {
           workOrder.status !== "CANCELLED" ? (
             <div className="work-order-revision-panel" role="note">
               <div>
-                <strong>사이트 수정 후 재검수 가능</strong>
+                <strong>{isEnglish ? "Recheck after site updates" : "사이트 수정 후 재검수 가능"}</strong>
                 <p>
-                  재검수는 개선된 사이트를 검수한 뒤 점수가 충분히
-                  오르지 않았거나 남은 문제가 있을 때 후속 작업지시서를
-                  만들 때 사용합니다.
-                </p>
+                    {isEnglish
+                      ? "Use rechecks after verifying the improved site, especially when the score did not improve enough or remaining issues require a follow-up work order."
+                      : "재검수는 개선된 사이트를 검수한 뒤 점수가 충분히 오르지 않았거나 남은 문제가 있을 때 후속 작업지시서를 만들 때 사용합니다."}
+                  </p>
               </div>
               <button
                 className="secondary work-order-revision-button"
@@ -621,9 +629,7 @@ export function WorkOrderPage() {
                     )
                   }
               >
-                {workOrder.verificationAttempts.length === 0
-                  ? "후속 작업지시서 발급"
-                  : "후속 작업지시서 발급"}
+                {isEnglish ? "Issue follow-up work order" : "후속 작업지시서 발급"}
               </button>
             </div>
           ) : null}
