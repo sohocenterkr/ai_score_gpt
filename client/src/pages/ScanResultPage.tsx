@@ -45,33 +45,230 @@ const severityDescriptions: Record<
   CRITICAL: "검사 결과 전체를 제한할 수 있어 가장 먼저 해결해야 하는 항목입니다.",
 };
 
-function pointImpactLabel(finding: ScanResultFinding): string {
+const englishStatusLabels: Record<ScanResultFinding["status"], string> = {
+  PASS: "Pass",
+  FAIL: "Fail",
+  BLOCKED: "Blocked",
+  NA: "Not scored",
+};
+
+const englishSeverityLabels: Record<ScanResultFinding["severity"], string> = {
+  INFO: "Info",
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
+};
+
+const englishSeverityDescriptions: Record<ScanResultFinding["severity"], string> = {
+  INFO: "Informational guidance for prioritizing improvements.",
+  LOW: "A relatively low-risk improvement item with limited score impact.",
+  MEDIUM: "An item that may affect score and AI understanding and should be reviewed.",
+  HIGH: "An item that may significantly affect core accessibility or understanding accuracy.",
+  CRITICAL: "A critical item that may limit the entire diagnostic result and should be addressed first.",
+};
+
+const categoryEnglishLabels: Record<string, string> = {
+  "접근 및 수집 정책": "Access and crawl policy",
+  "콘텐츠 공개 및 맥락": "Content visibility and context",
+  "정보·구조화 데이터 맥락": "Information and structured data context",
+  "정보 구조와 메타데이터": "Information structure and metadata",
+  "브랜드·서비스 식별": "Brand and service identification",
+  "핵심정보 인식 명확도": "Key information clarity",
+  "구조화 데이터 및 검색 기능성": "Structured data and search functionality",
+  "AI 에이전트 서버 가능성": "AI agent/server readiness",
+  "사용자 신뢰와 정책": "User trust and policies",
+};
+
+function translateCategoryLabel(value: string, isEnglish: boolean): string {
+  return isEnglish ? categoryEnglishLabels[value] ?? value : value;
+}
+
+const foundLabelEnglishLabels: Record<string, string> = {
+  "사이트명": "Site name",
+  "문서 제목": "Document title",
+  "제목": "Title",
+  "설명": "Description",
+  "기본 언어": "Primary language",
+  "대표 URL": "Main URL",
+  "최종 URL": "Final URL",
+  "JSON-LD 유형": "JSON-LD types",
+  "구조화 데이터 유형": "Structured data types",
+};
+
+const findingTitleEnglishLabels: Record<string, string> = {
+  "HTTP 접근": "HTTP access",
+  "robots.txt 접근": "robots.txt access",
+  "robots.txt 검색 봇 정책": "robots.txt search bot policy",
+  "OAI-SearchBot 검색 접근": "OAI-SearchBot search access",
+  "ChatGPT-User 사용자 요청 접근": "ChatGPT-User request access",
+  "GPTBot 학습 접근 정책": "GPTBot training access policy",
+  "HTTPS 리디렉션": "HTTPS redirect",
+  "대표 URL(canonical)": "Canonical URL",
+  "페이지 제목": "Page title",
+  "페이지 설명": "Page description",
+  "대표 제목(H1)": "Main heading (H1)",
+  "초기 HTML 텍스트": "Initial HTML text",
+  "초기 HTML 내부 링크": "Initial HTML internal links",
+  "JSON-LD 구조화 데이터": "JSON-LD structured data",
+  "JSON-LD 유형 식별": "JSON-LD type identification",
+  "사이트맵": "Sitemap",
+  "메타 로봇 정책": "Meta robots policy",
+  "초기 콘텐츠 답변 기반": "Initial content answer basis",
+};
+
+function translateFoundLabel(value: string, isEnglish: boolean): string {
+  return isEnglish ? foundLabelEnglishLabels[value] ?? value : value;
+}
+
+function translateFindingTitle(value: string, isEnglish: boolean): string {
+  return isEnglish ? findingTitleEnglishLabels[value] ?? value : value;
+}
+
+function translateDiagnosticText(value: string | null | undefined, isEnglish: boolean): string {
+  if (!value || !isEnglish) return value ?? "";
+
+  const exact: Record<string, string> = {
+    "유효한 JSON-LD 구조화 데이터를 확인했습니다.": "Valid JSON-LD structured data was found.",
+    "유효한 JSON-LD 구조화 데이터를 확인하지 못했습니다.": "Valid JSON-LD structured data was not found.",
+    "초기 HTML에서 유효한 JSON-LD 구조화 데이터를 찾지 못했습니다.": "No valid JSON-LD structured data was found in the initial HTML.",
+    "사이트의 업종과 핵심정보에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.": "Add Schema.org JSON-LD that matches the website type and key information to the initial HTML.",
+    "사이트에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.": "Add Schema.org JSON-LD that fits the website to the initial HTML.",
+    "JSON-LD에서 Schema.org 유형을 식별했습니다.": "A Schema.org type was identified in the JSON-LD.",
+    "식별 가능한 JSON-LD @type이 없습니다.": "No identifiable JSON-LD @type was found.",
+    "초기 HTML에서 탐색 가능한 내부 링크를 확인했습니다.": "Navigable internal links were found in the initial HTML.",
+    "초기 HTML에서 탐색 가능한 내부 링크를 찾지 못했습니다.": "Navigable internal links were not found in the initial HTML.",
+    "초기 HTML의 내부 링크가 관련 콘텐츠 탐색 단서를 제공합니다.": "Internal links in the initial HTML provide navigation signals to related content.",
+    "관련 콘텐츠로 이어지는 내부 링크 단서가 부족합니다.": "There are not enough internal link signals leading to related content.",
+  };
+
+  return exact[value] ?? value;
+}
+
+function translateRenderedText(value: string, isEnglish: boolean): string {
+  if (!isEnglish) return value;
+
+  const exact: Record<string, string> = {
+    "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다": "Some information is visible on screen but may be missed by some AI systems",
+    "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다.": "Body content or navigation links are added after the page opens.",
+    "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.": "It may look normal to users, but some AI search bots that do not fully process JavaScript may miss information and links added later.",
+    "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다": "The information first received by AI differs from what is displayed on screen",
+    "AI가 처음 받는 페이지에 핵심 정보가 부족합니다": "The page first received by AI lacks core information",
+    "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.": "Reduce rendering dependency so the initial HTML contains enough core body text and key navigation paths.",
+    "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.": "Check consistency so the initial HTML and rendered page communicate the same core title, description, and structured information.",
+    "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.": "Add core information so AI can understand the page topic and main service even from the first response.",
+  };
+
+  if (exact[value]) return exact[value];
+
+  let translated = value
+    .replace(
+      /본문 글자 수가 ([0-9,]+)자에서 ([0-9,]+)자로 늘었습니다\./g,
+      "Body text length increased from $1 chars to $2 chars.",
+    )
+    .replace(
+      /내부 링크가 ([0-9,]+)개에서 ([0-9,]+)개로 늘었습니다\./g,
+      "Internal links increased from $1 to $2.",
+    );
+
+  const fieldLabels: Record<string, string> = {
+    "페이지 제목": "page title",
+    "페이지 설명": "page description",
+    "대표 제목(H1)": "main heading (H1)",
+    "구조화 정보(JSON-LD)": "structured data (JSON-LD)",
+    "핵심 본문": "core body text",
+  };
+
+  const translateFieldList = (value: string) =>
+    value
+      .split(", ")
+      .map((item) => fieldLabels[item] ?? item)
+      .join(", ");
+
+  const mismatch = translated.match(
+    /^(.+) 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다\.$/,
+  );
+
+  if (mismatch) {
+    return `${translateFieldList(
+      mismatch[1],
+    )} differs between the initial response and the completed rendered page.`;
+  }
+
+  const missing = translated.match(
+    /^(.+) 항목을 초기 HTML에서 충분히 확인하지 못했습니다\.$/,
+  );
+
+  if (missing) {
+    return `${translateFieldList(
+      missing[1],
+    )} was not sufficiently found in the initial HTML.`;
+  }
+
+  return translated;
+}
+
+function pointImpactLabel(
+  finding: ScanResultFinding,
+  locale: "ko" | "en" = "ko",
+): string {
+  const isEnglish = locale === "en";
+
   if (finding.weight <= 0 || finding.status === "NA") {
-    return "점수 영향 없음";
+    return isEnglish ? "No score impact" : "점수 영향 없음";
   }
 
   return finding.status === "PASS"
-    ? `배점 ${finding.weight}점`
-    : `감점 ${finding.weight}점`;
+    ? isEnglish
+      ? `Earned ${finding.weight} pts`
+      : `배점 ${finding.weight}점`
+    : isEnglish
+      ? `Lost ${finding.weight} pts`
+      : `감점 ${finding.weight}점`;
 }
 
 function pointImpactDescription(
   finding: ScanResultFinding,
+  locale: "ko" | "en" = "ko",
 ): string {
+  const isEnglish = locale === "en";
+
   if (finding.weight <= 0 || finding.status === "NA") {
-    return "이 항목은 현재 종합 점수 계산에 영향을 주지 않습니다.";
+    return isEnglish
+      ? "This item does not affect the current overall score."
+      : "이 항목은 현재 종합 점수 계산에 영향을 주지 않습니다.";
   }
 
   if (finding.status === "PASS") {
-    return `통과하여 이 규칙의 배점 ${finding.weight}점을 획득했습니다.`;
+    return isEnglish
+      ? `This item passed and earned ${finding.weight} points for this rule.`
+      : `통과하여 이 규칙의 배점 ${finding.weight}점을 획득했습니다.`;
   }
 
-  return `통과하지 못해 이 규칙의 배점 ${finding.weight}점이 반영되지 않았습니다.`;
+  return isEnglish
+    ? `This item did not pass, so ${finding.weight} points for this rule were not earned.`
+    : `통과하지 못해 이 규칙의 배점 ${finding.weight}점이 반영되지 않았습니다.`;
 }
 
-function formatKST(value: string | null): string {
+
+function translateUiErrorMessage(message: string, isEnglish: boolean): string {
+  if (!isEnglish) return message;
+
+  const exact: Record<string, string> = {
+    "검사 결과를 불러오지 못했습니다.": "Could not load the scan result.",
+    "검사 번호가 없습니다.": "No scan ID was provided.",
+    "사이트와 검사 결과가 일치하지 않습니다.": "The site and scan result do not match.",
+    "현재 기준으로 다시 진단하지 못했습니다.": "Could not run a new diagnostic with the current rules.",
+    "상세 산출물 이용을 위해 결제 기능 연결이 필요합니다.": "Payment integration is required to access detailed deliverables.",
+    "작업지시서를 만들지 못했습니다.": "Could not create the work order.",
+  };
+
+  return exact[message] ?? message;
+}
+
+function formatKST(value: string | null, isEnglish = false): string {
   if (!value) {
-    return "기록 없음";
+    return isEnglish ? "No record" : "기록 없음";
   }
 
   return new Intl.DateTimeFormat("ko-KR", {
@@ -87,9 +284,9 @@ function messageFromError(error: unknown): string {
     : "검사 결과를 불러오지 못했습니다.";
 }
 
-function evidenceText(value: unknown): string {
+function evidenceText(value: unknown, isEnglish = false): string {
   if (value === null || value === undefined) {
-    return "저장된 증거 없음";
+    return isEnglish ? "No saved evidence" : "저장된 증거 없음";
   }
 
   try {
@@ -505,25 +702,30 @@ function publicRenderedPlanChange(
   }
 }
 
-function metricValue(
-  value: number | null,
-  suffix: string,
-): string {
-  return value === null
-    ? "미확인"
-    : `${value.toLocaleString("ko-KR")}${suffix}`;
+function metricValue(value: number | null, suffix = ""): string {
+  const isEnglishMetric = suffix.startsWith(" ");
+
+  if (value === null) {
+    return isEnglishMetric ? "Unknown" : "미확인";
+  }
+
+  return `${value.toLocaleString(isEnglishMetric ? "en-US" : "ko-KR")}${suffix}`;
 }
 
 function metricDelta(
   value: number | null,
   suffix: string,
 ): string {
+  const isEnglishMetric = suffix.startsWith(" ");
+
   if (value === null) {
-    return "변화 미확인";
+    return isEnglishMetric ? "Change unknown" : "변화 미확인";
   }
 
   const sign = value > 0 ? "+" : "";
-  return `변화 ${sign}${value.toLocaleString("ko-KR")}${suffix}`;
+  return isEnglishMetric
+    ? `Change ${sign}${value.toLocaleString("en-US")}${suffix}`
+    : `변화 ${sign}${value.toLocaleString("ko-KR")}${suffix}`;
 }
 
 export function ScanResultPage() {
@@ -564,7 +766,9 @@ export function ScanResultPage() {
     let cancelled = false;
 
     if (!scanId) {
-      setErrorMessage("검사 번호가 없습니다.");
+      setErrorMessage(
+        isEnglish ? "No scan ID was provided." : "검사 번호가 없습니다.",
+      );
       setLoading(false);
       return;
     }
@@ -576,7 +780,11 @@ export function ScanResultPage() {
         }
 
         if (siteId && response.site.id !== siteId) {
-          setErrorMessage("사이트와 검사 결과가 일치하지 않습니다.");
+          setErrorMessage(
+            isEnglish
+              ? "The site and scan result do not match."
+              : "사이트와 검사 결과가 일치하지 않습니다.",
+          );
           return;
         }
 
@@ -597,7 +805,7 @@ export function ScanResultPage() {
       })
       .catch((error) => {
         if (!cancelled) {
-          setErrorMessage(messageFromError(error));
+          setErrorMessage(translateUiErrorMessage(messageFromError(error), isEnglish));
         }
       })
       .finally(() => {
@@ -626,7 +834,9 @@ export function ScanResultPage() {
       setRulesRefreshError(
         error instanceof SiteApiError
           ? error.message
-          : "현재 기준으로 다시 진단하지 못했습니다.",
+          : isEnglish
+            ? "Could not run a new diagnostic with the current rules."
+            : "현재 기준으로 다시 진단하지 못했습니다.",
       );
     } finally {
       setRefreshingRulesVersion(false);
@@ -640,7 +850,9 @@ export function ScanResultPage() {
 
     if (!result || selectedCount === 0) {
       setWorkOrderError(
-        "상세 산출물 이용을 위해 결제 기능 연결이 필요합니다.",
+        isEnglish
+          ? "Payment integration is required to access detailed deliverables."
+          : "상세 산출물 이용을 위해 결제 기능 연결이 필요합니다.",
       );
       return;
     }
@@ -660,7 +872,9 @@ export function ScanResultPage() {
       setWorkOrderError(
         error instanceof WorkOrderApiError
           ? error.message
-          : "작업지시서를 만들지 못했습니다.",
+          : isEnglish
+            ? "Could not create the work order."
+            : "작업지시서를 만들지 못했습니다.",
       );
     } finally {
       setCreatingWorkOrder(false);
@@ -773,12 +987,15 @@ export function ScanResultPage() {
         {isOutdatedRulesVersion ? (
           <section className="surface scan-rules-version-alert" role="status">
             <div>
-              <strong>이전 판단 기준으로 진단된 결과입니다.</strong>
+              <strong>
+                {isEnglish
+                  ? "This result was diagnosed with an older rule version."
+                  : "이전 판단 기준으로 진단된 결과입니다."}
+              </strong>
               <p>
-                이 결과는 {result.scan.rulesVersion} 기준으로 계산되었습니다.
-                현재 기준은 {result.currentRulesVersion}입니다. 판단 기준이
-                업데이트되어 점수와 개선 항목이 달라질 수 있으므로 현재
-                기준으로 다시 진단하는 것을 권장합니다.
+                {isEnglish
+                  ? `This result was calculated with ${result.scan.rulesVersion}. The current version is ${result.currentRulesVersion}. Because the evaluation rules have been updated, scores and improvement items may differ. We recommend running a new diagnostic with the current rules.`
+                  : `이 결과는 ${result.scan.rulesVersion} 기준으로 계산되었습니다. 현재 기준은 ${result.currentRulesVersion}입니다. 판단 기준이 업데이트되어 점수와 개선 항목이 달라질 수 있으므로 현재 기준으로 다시 진단하는 것을 권장합니다.`}
               </p>
               {rulesRefreshError ? (
                 <p className="scan-rules-version-error" role="alert">
@@ -824,7 +1041,7 @@ export function ScanResultPage() {
             </div>
             <div>
               <dt>{isEnglish ? "Completed at (KST)" : "완료 시각(KST)"}</dt>
-              <dd>{formatKST(result.scan.completedAt)}</dd>
+              <dd>{formatKST(result.scan.completedAt, isEnglish)}</dd>
             </div>
             <div>
               <dt>{isEnglish ? "Final URL" : "최종 URL"}</dt>
@@ -852,7 +1069,9 @@ export function ScanResultPage() {
                       : "기획서의 7개 영역, 총 100점 배점입니다."}
                   </p>
               </div>
-              <span>측정 범위 {scoreSummary.coverage}%</span>
+              <span>
+                  {isEnglish ? "Coverage" : "측정 범위"} {scoreSummary.coverage}%
+                </span>
             </div>
 
             <div className="scan-category-grid">
@@ -862,15 +1081,16 @@ export function ScanResultPage() {
                   key={category.category}
                 >
                   <div>
-                    <strong>{category.category}</strong>
+                    <strong>{translateCategoryLabel(category.category, isEnglish)}</strong>
                     <span>
-                      {category.score}/{category.maxScore}점
+                      {category.score}/{category.maxScore}
+                        {isEnglish ? " pts" : "점"}
                     </span>
                   </div>
                   <div
                     className="scan-category-bar"
                     role="progressbar"
-                    aria-label={`${category.category} 점수`}
+                    aria-label={`${translateCategoryLabel(category.category, isEnglish)} ${isEnglish ? "score" : "점수"}`}
                     aria-valuemin={0}
                     aria-valuemax={category.maxScore}
                     aria-valuenow={category.score}
@@ -887,16 +1107,18 @@ export function ScanResultPage() {
 
             {scoreSummary.cap !== null ? (
               <p className="scan-cap-notice">
-                치명적 조건으로 최종 점수가 {scoreSummary.cap}점
-                이하로 제한되었습니다.
-              </p>
+                  {isEnglish
+                    ? `A critical condition limited the final score to ${scoreSummary.cap} points or lower.`
+                    : `치명적 조건으로 최종 점수가 ${scoreSummary.cap}점 이하로 제한되었습니다.`}
+                </p>
             ) : null}
           </section>
         ) : (
           <section className="surface scan-legacy-notice">
-            이 결과는 이전 규칙 버전으로 생성되어 점수가 없습니다.
-            새 간편검사를 실행하면 현재 규칙으로 점수를 계산합니다.
-          </section>
+              {isEnglish
+                ? "This result was created with an older rule version and has no score. Run a new simple diagnostic to calculate a score with the current rules."
+                : "이 결과는 이전 규칙 버전으로 생성되어 점수가 없습니다. 새 간편검사를 실행하면 현재 규칙으로 점수를 계산합니다."}
+            </section>
         )}
 
         <section className="surface scan-understanding-section">
@@ -921,7 +1143,7 @@ export function ScanResultPage() {
                 <dl className="scan-information-list">
                   {result.foundInformation.map((item) => (
                     <div key={`${item.label}-${item.value}`}>
-                      <dt>{item.label}</dt>
+                      <dt>{translateFoundLabel(item.label, isEnglish)}</dt>
                       <dd>{item.value}</dd>
                     </div>
                   ))}
@@ -938,7 +1160,7 @@ export function ScanResultPage() {
                   {result.missingInformation.map((item) => (
                     <li key={item.ruleCode}>
                       <a href={`#${findingAnchor(item.ruleCode)}`}>
-                        {item.title}
+                        {translateFindingTitle(item.title, isEnglish)}
                       </a>
                     </li>
                   ))}
@@ -976,22 +1198,26 @@ export function ScanResultPage() {
               <div>
                 <dt>{isEnglish ? "Status" : "판정"}</dt>
                 <dd>
-                  통과·실패·확인 불가 등 실제 검사 결과입니다.
-                </dd>
+                    {isEnglish
+                      ? "The actual inspection result, such as pass, fail, or blocked."
+                      : "통과·실패·확인 불가 등 실제 검사 결과입니다."}
+                  </dd>
               </div>
               <div>
                 <dt>{isEnglish ? "Severity" : "중요도"}</dt>
                 <dd>
-                  참고·낮음·주의·높음·매우 높음 순으로 해결
-                  우선순위를 나타냅니다.
-                </dd>
+                    {isEnglish
+                      ? "Shows the resolution priority from info to critical."
+                      : "참고·낮음·주의·높음·매우 높음 순으로 해결 우선순위를 나타냅니다."}
+                  </dd>
               </div>
               <div>
                 <dt>{isEnglish ? "Score impact" : "점수 영향"}</dt>
                 <dd>
-                  통과한 항목은 배점, 실패·확인 불가 항목은
-                  감점으로 표시합니다.
-                </dd>
+                    {isEnglish
+                      ? "Passed items show earned points, while failed or blocked items show lost points."
+                      : "통과한 항목은 배점, 실패·확인 불가 항목은 감점으로 표시합니다."}
+                  </dd>
               </div>
             </dl>
           </div>
@@ -1000,9 +1226,10 @@ export function ScanResultPage() {
             <div className="scan-issue-list">
               {result.primaryIssues.slice(0, 1).map((finding) => (
                 <FindingCard
-                  finding={finding}
-                  key={finding.id}
-                  primary
+                    finding={finding}
+                    key={finding.id}
+                    locale={isEnglish ? "en" : "ko"}
+                    primary
                   selectable={finding.weight > 0}
                   selected={selectedFindingIds.includes(finding.id)}
                   onToggle={toggleWorkOrderFinding}
@@ -1011,8 +1238,8 @@ export function ScanResultPage() {
             </div>
           ) : (
             <p className="scan-empty-message">
-              주요 문제로 분류된 항목이 없습니다.
-            </p>
+                {isEnglish ? "No items were classified as primary issues." : "주요 문제로 분류된 항목이 없습니다."}
+              </p>
           )}
 
           {workOrderError ? (
@@ -1033,18 +1260,25 @@ export function ScanResultPage() {
                       : "추가 기술 참고: JavaScript 렌더링 비교"}
                   </h2>
                 <p>
-                  브라우저에서 JavaScript를 실행한 뒤 실제 DOM이
-                  얼마나 확장되는지 비교했습니다.
-                </p>
+                    {isEnglish
+                      ? "This compares how much the actual DOM expands after JavaScript runs in the browser."
+                      : "브라우저에서 JavaScript를 실행한 뒤 실제 DOM이 얼마나 확장되는지 비교했습니다."}
+                  </p>
               </div>
               <span
                 className={`scan-rendered-status scan-rendered-status-${renderedDomComparison.status.toLowerCase()}`}
               >
                 {renderedDomComparison.status === "SUCCESS"
-                  ? "비교 완료"
-                  : renderedDomComparison.status === "FAILED"
-                    ? "비교 실패"
-                    : "비교 미실행"}
+                    ? isEnglish
+                      ? "Comparison complete"
+                      : "비교 완료"
+                    : renderedDomComparison.status === "FAILED"
+                      ? isEnglish
+                        ? "Comparison failed"
+                        : "비교 실패"
+                      : isEnglish
+                        ? "Not compared"
+                        : "비교 미실행"}
               </span>
             </div>
 
@@ -1053,30 +1287,30 @@ export function ScanResultPage() {
                 <div className="scan-rendered-grid">
                   {[
                     {
-                      label: "본문 글자 수",
+                      label: isEnglish ? "Body text length" : "본문 글자 수",
                       metric: renderedDomComparison.textLength,
-                      suffix: "자",
+                      suffix: isEnglish ? " chars" : "자",
                     },
                     {
-                      label: "내부 링크",
+                      label: isEnglish ? "Internal links" : "내부 링크",
                       metric: renderedDomComparison.internalLinks,
-                      suffix: "개",
+                      suffix: isEnglish ? " items" : "개",
                     },
                     {
                       label: "H1",
                       metric: renderedDomComparison.h1Count,
-                      suffix: "개",
+                      suffix: isEnglish ? " items" : "개",
                     },
                     {
                       label: "H2",
                       metric: renderedDomComparison.h2Count,
-                      suffix: "개",
+                      suffix: isEnglish ? " items" : "개",
                     },
                     {
-                      label: "유효 JSON-LD",
+                      label: isEnglish ? "Valid JSON-LD" : "유효 JSON-LD",
                       metric:
                         renderedDomComparison.jsonLdValidCount,
-                      suffix: "개",
+                      suffix: isEnglish ? " items" : "개",
                     },
                   ].map((item) => (
                     <article
@@ -1119,19 +1353,23 @@ export function ScanResultPage() {
                   <div>
                     <dt>{isEnglish ? "Browser" : "브라우저"}</dt>
                     <dd>
-                      {renderedDomComparison.browserVersion ??
-                        "미확인"}
+                      {renderedDomComparison.browserVersion ?? (isEnglish ? "Unknown" : "미확인")}
                     </dd>
                   </div>
                   <div>
                     <dt>{isEnglish ? "Rendering time" : "렌더링 시간"}</dt>
                     <dd>
                       {renderedDomComparison.durationMs === null
-                        ? "미확인"
-                        : `${(
-                            renderedDomComparison.durationMs /
-                            1_000
-                          ).toFixed(1)}초`}
+                          ? isEnglish
+                            ? "Unknown"
+                            : "미확인"
+                          : isEnglish
+                            ? `${(
+                                renderedDomComparison.durationMs / 1_000
+                              ).toFixed(1)} sec`
+                            : `${(
+                                renderedDomComparison.durationMs / 1_000
+                              ).toFixed(1)}초`}
                     </dd>
                   </div>
                   <div>
@@ -1139,7 +1377,7 @@ export function ScanResultPage() {
                     <dd>
                       {metricValue(
                         renderedDomComparison.pageErrorCount,
-                        "건",
+                          isEnglish ? " errors" : "건",
                       )}
                     </dd>
                   </div>
@@ -1150,8 +1388,9 @@ export function ScanResultPage() {
                     <p className="eyebrow">RENDERING SUMMARY</p>
                     <h3>{isEnglish ? "JavaScript Rendering Comparison Notes" : "JavaScript 렌더링 비교 참고 의견"}</h3>
                     <p>
-                      위 비교 수치가 뜻하는 바와 필요한 경우의
-                      개선 방향을 함께 설명합니다.
+                      {isEnglish
+                        ? "This explains what the comparison numbers mean and, when needed, summarizes improvement direction."
+                        : "위 비교 수치가 뜻하는 바와 필요한 경우의 개선 방향을 함께 설명합니다."}
                     </p>
                   </div>
 
@@ -1169,26 +1408,26 @@ export function ScanResultPage() {
                           key={plan.code}
                         >
                           <div className="scan-rendered-improvement-header">
-                            <h4>{plan.title}</h4>
+                            <h4>{translateRenderedText(plan.title, isEnglish)}</h4>
                           </div>
 
                           <div className="scan-rendered-explanation">
                             <section>
                               <strong>{isEnglish ? "Current state" : "현재 어떤 상태인가요?"}</strong>
-                              <p>{plan.currentState}</p>
+                              <p>{translateRenderedText(plan.currentState, isEnglish)}</p>
                             </section>
                             <section>
                               <strong>{isEnglish ? "What it means" : "무슨 뜻인가요?"}</strong>
-                              <p>{plan.meaning}</p>
+                              <p>{translateRenderedText(plan.meaning, isEnglish)}</p>
                             </section>
                             <section>
                               <strong>{isEnglish ? "Improvement summary" : "개선 방향 요약"}</strong>
                               <p>
-                                {publicRenderedPlanChange(
-                                  plan.code,
-                                  plan.change,
-                                )}
-                              </p>
+                                  {translateRenderedText(
+                                    publicRenderedPlanChange(plan.code, plan.change),
+                                    isEnglish,
+                                  )}
+                                </p>
                             </section>
                           </div>
 
@@ -1196,10 +1435,10 @@ export function ScanResultPage() {
                             <section>
                               <h5>{isEnglish ? "Diagnostic report scope" : "진단 보고서 제공 범위"}</h5>
                               <p>
-                                이 보고서는 현재 상태, 영향, 개선 방향만
-                                요약합니다. 세부 구현 순서와 완료 기준은
-                                작업지시서에서 제공합니다.
-                              </p>
+                                  {isEnglish
+                                    ? "This preview summarizes only the current state, impact, and improvement direction. Detailed implementation steps and completion criteria are provided in the work order."
+                                    : "이 보고서는 현재 상태, 영향, 개선 방향만 요약합니다. 세부 구현 순서와 완료 기준은 작업지시서에서 제공합니다."}
+                                </p>
                             </section>
                             <section>
                                 <h5>{locale === "en" ? "Next step" : "다음 단계"}</h5>
@@ -1215,10 +1454,10 @@ export function ScanResultPage() {
                     </div>
                   ) : (
                     <p className="scan-rendered-no-improvement">
-                      초기 HTML과 화면 완성 후의 핵심 구조가
-                      비교적 비슷합니다. 현재 비교 결과에서 별도
-                      개선안이 생성되지 않았습니다.
-                    </p>
+                        {isEnglish
+                          ? "The core structure of the initial HTML and the completed rendered page is relatively similar. No separate improvement plan was generated from this comparison."
+                          : "초기 HTML과 화면 완성 후의 핵심 구조가 비교적 비슷합니다. 현재 비교 결과에서 별도 개선안이 생성되지 않았습니다."}
+                      </p>
                   )}
                 </div>
               </>
@@ -1230,17 +1469,18 @@ export function ScanResultPage() {
                 </strong>
                 <p>
                   {renderedDomComparison.message ??
-                    "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다."}
+                      (isEnglish
+                        ? "JavaScript rendering changes were not compared in this simple diagnostic. This is an auxiliary technical reference and not a required scoring item."
+                        : "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다.")}
                 </p>
               </div>
             )}
 
             <p className="scan-rendered-note">
-              Site AI Score는 처음 전달되는 초기 HTML을
-              기준으로 점수를 계산합니다. JavaScript 렌더링
-              결과는 추가 콘텐츠를 읽을 수 있는 AI 환경까지
-              고려해 위 비교 총평과 필요한 개선 제안을 만드는 데 활용합니다.
-            </p>
+                {isEnglish
+                  ? "Site AI Score calculates the score based on the initial HTML delivered first. JavaScript rendering results are used to create the comparison summary and improvement suggestions for AI environments that can read additional rendered content."
+                  : "Site AI Score는 처음 전달되는 초기 HTML을 기준으로 점수를 계산합니다. JavaScript 렌더링 결과는 추가 콘텐츠를 읽을 수 있는 AI 환경까지 고려해 위 비교 총평과 필요한 개선 제안을 만드는 데 활용합니다."}
+              </p>
           </section>
         ) : null}
 
@@ -1262,28 +1502,30 @@ export function ScanResultPage() {
             <div className="work-order-selection scan-paid-product-card" role="note">
               <strong>{isEnglish ? "Detailed Diagnostic PDF Report" : "상세 진단 PDF 보고서"}</strong>
               <p>
-                현재 사이트 상태를 기준으로 아래 항목을 상세 보고서로
-                제공합니다.
-              </p>
+                  {isEnglish
+                    ? "The following items are provided in the detailed report based on the current site state."
+                    : "현재 사이트 상태를 기준으로 아래 항목을 상세 보고서로 제공합니다."}
+                </p>
               <ul className="scan-paid-feature-list">
-                <li>전체 진단 항목</li>
-                <li>수집 페이지의 측정 증거</li>
-                <li>초기 HTML과 JavaScript 렌더링 비교</li>
-                <li>주요 문제와 개선 방향</li>
+                <li>{isEnglish ? "Full diagnostic items" : "전체 진단 항목"}</li>
+                <li>{isEnglish ? "Measurement evidence from collected pages" : "수집 페이지의 측정 증거"}</li>
+                <li>{isEnglish ? "Initial HTML and JavaScript rendering comparison" : "초기 HTML과 JavaScript 렌더링 비교"}</li>
+                <li>{isEnglish ? "Key issues and improvement direction" : "주요 문제와 개선 방향"}</li>
               </ul>
             </div>
 
             <div className="work-order-selection scan-paid-product-card" role="note">
               <strong>{isEnglish ? "Improvement Work Order" : "수정 작업지시서"}</strong>
               <p>
-                사이트를 실제로 수정할 수 있도록 아래 항목을 실행용
-                문서로 정리합니다.
-              </p>
+                  {isEnglish
+                    ? "The following items are organized into an actionable document for actually improving the website."
+                    : "사이트를 실제로 수정할 수 있도록 아래 항목을 실행용 문서로 정리합니다."}
+                </p>
               <ul className="scan-paid-feature-list">
-                <li>작업 우선순위</li>
-                <li>개발자 전달 문구</li>
-                <li>완료 판정 기준</li>
-                <li>회귀 방지 기준과 자동검수 기준</li>
+                <li>{isEnglish ? "Work priorities" : "작업 우선순위"}</li>
+                <li>{isEnglish ? "Developer handoff instructions" : "개발자 전달 문구"}</li>
+                <li>{isEnglish ? "Completion criteria" : "완료 판정 기준"}</li>
+                <li>{isEnglish ? "Regression prevention and automated review criteria" : "회귀 방지 기준과 자동검수 기준"}</li>
               </ul>
             </div>
 
@@ -1293,14 +1535,14 @@ export function ScanResultPage() {
             >
               <strong>{isEnglish ? "Additional Post-Improvement Guidance" : "개선 후 추가 제공"}</strong>
               <p>
-                사이트 수정·업그레이드 후 재진단 결과를 바탕으로 AI가
-                더 구체적으로 답변할 수 있도록 보완 콘텐츠 제안을
-                추가로 제공합니다.
-              </p>
+                  {isEnglish
+                    ? "After site improvements and re-diagnosis, additional content suggestions may be provided so AI can answer more specific questions."
+                    : "사이트 수정·업그레이드 후 재진단 결과를 바탕으로 AI가 더 구체적으로 답변할 수 있도록 보완 콘텐츠 제안을 추가로 제공합니다."}
+                </p>
               <ul className="scan-paid-feature-list">
-                <li>AI 답변을 위한 추가 콘텐츠 제안</li>
-                <li>운영자가 선택적으로 보완할 콘텐츠 제안</li>
-                <li>개선 전후 비교를 위한 재진단 기준 안내</li>
+                <li>{isEnglish ? "Additional content suggestions for AI answers" : "AI 답변을 위한 추가 콘텐츠 제안"}</li>
+                <li>{isEnglish ? "Optional content improvements for the website operator" : "운영자가 선택적으로 보완할 콘텐츠 제안"}</li>
+                <li>{isEnglish ? "Re-diagnostic criteria for before-and-after comparison" : "개선 전후 비교를 위한 재진단 기준 안내"}</li>
               </ul>
             </div>
           </div>
@@ -1377,17 +1619,30 @@ export function ScanResultPage() {
 
 function FindingCard({
   finding,
+  locale = "ko",
   primary = false,
   selectable = false,
   selected = false,
   onToggle,
 }: {
   finding: ScanResultFinding;
+  locale?: "ko" | "en";
   primary?: boolean;
   selectable?: boolean;
   selected?: boolean;
   onToggle?: (findingId: string, checked: boolean) => void;
 }) {
+  const isEnglish = locale === "en";
+  const statusLabel = isEnglish
+    ? englishStatusLabels[finding.status]
+    : statusLabels[finding.status];
+  const severityLabel = isEnglish
+    ? englishSeverityLabels[finding.severity]
+    : severityLabels[finding.severity];
+  const severityDescription = isEnglish
+    ? englishSeverityDescriptions[finding.severity]
+    : severityDescriptions[finding.severity];
+
   return (
     <article
       className={`scan-finding-card scan-status-${finding.status.toLowerCase()}${
@@ -1398,23 +1653,23 @@ function FindingCard({
       <div className="scan-finding-header">
         <div>
           <span>{finding.ruleCode}</span>
-          <h4>{finding.title}</h4>
+          <h4>{translateFindingTitle(finding.title, isEnglish)}</h4>
         </div>
         <div
           className="scan-finding-badges"
-          aria-label="진단 판정과 점수 영향"
+          aria-label={isEnglish ? "Diagnostic status and score impact" : "진단 판정과 점수 영향"}
         >
           <span
             className={`scan-badge scan-badge-status scan-badge-status-${finding.status.toLowerCase()}`}
-            title={`판정: ${statusLabels[finding.status]}`}
+            title={`${isEnglish ? "Status" : "판정"}: ${statusLabel}`}
           >
-            판정 · {statusLabels[finding.status]}
+            {isEnglish ? "Status" : "판정"} · {statusLabel}
           </span>
           <span
             className={`scan-badge scan-badge-severity scan-badge-severity-${finding.severity.toLowerCase()}`}
-            title={severityDescriptions[finding.severity]}
+            title={severityDescription}
           >
-            중요도 · {severityLabels[finding.severity]}
+            {isEnglish ? "Severity" : "중요도"} · {severityLabel}
           </span>
           <span
             className={`scan-badge scan-badge-points ${
@@ -1424,25 +1679,25 @@ function FindingCard({
                   ? "scan-badge-points-earned"
                   : "scan-badge-points-lost"
             }`}
-            title={pointImpactDescription(finding)}
+            title={pointImpactDescription(finding, locale)}
           >
-            {pointImpactLabel(finding)}
+            {pointImpactLabel(finding, locale)}
           </span>
         </div>
       </div>
 
-      <p>{finding.description}</p>
+      <p>{translateDiagnosticText(finding.description, isEnglish)}</p>
 
       {finding.recommendation ? (
         <div className="scan-recommendation">
-          <strong>수정 권장사항</strong>
-          <p>{finding.recommendation}</p>
+          <strong>{isEnglish ? "Recommended fix" : "수정 권장사항"}</strong>
+          <p>{translateDiagnosticText(finding.recommendation, isEnglish)}</p>
         </div>
       ) : null}
 
       <div className="scan-evidence-inline">
-        <strong>검사 증거</strong>
-        <pre>{evidenceText(finding.evidence)}</pre>
+        <strong>{isEnglish ? "Inspection evidence" : "검사 증거"}</strong>
+        <pre>{evidenceText(finding.evidence, isEnglish)}</pre>
       </div>
     </article>
   );
