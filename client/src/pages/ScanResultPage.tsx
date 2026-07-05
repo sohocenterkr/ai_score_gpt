@@ -78,6 +78,12 @@ const categoryEnglishLabels: Record<string, string> = {
   "구조화 데이터 및 검색 기능성": "Structured data and search functionality",
   "AI 에이전트 서버 가능성": "AI agent/server readiness",
   "사용자 신뢰와 정책": "User trust and policies",
+  "콘텐츠 읽기 용이성": "Content readability",
+  "정보 구조와 의미 전달": "Information structure and meaning",
+  "핵심정보 인식 정확도": "Core information recognition accuracy",
+  "콘텐츠 이해 및 답변 가능성": "Content understanding and answerability",
+  "AI에이전트 사용 가능성": "AI agent usability",
+  "신뢰성 및 추적 환경": "Trust and tracking environment",
 };
 
 function translateCategoryLabel(value: string, isEnglish: boolean): string {
@@ -94,6 +100,13 @@ const foundLabelEnglishLabels: Record<string, string> = {
   "최종 URL": "Final URL",
   "JSON-LD 유형": "JSON-LD types",
   "구조화 데이터 유형": "Structured data types",
+  "메타 설명": "Meta description",
+  "문서 언어": "Document language",
+  "최상위 제목(H1)": "Top-level heading (H1)",
+  "제목 계층 구조": "Heading hierarchy",
+  "제공 계층 구조": "Heading hierarchy",
+  "페이지 링크 구조": "Page link structure",
+  "관련 콘텐츠 탐색 단서": "Related content discovery signals",
 };
 
 const findingTitleEnglishLabels: Record<string, string> = {
@@ -115,6 +128,13 @@ const findingTitleEnglishLabels: Record<string, string> = {
   "사이트맵": "Sitemap",
   "메타 로봇 정책": "Meta robots policy",
   "초기 콘텐츠 답변 기반": "Initial content answer basis",
+  "메타 설명": "Meta description",
+  "문서 언어": "Document language",
+  "최상위 제목(H1)": "Top-level heading (H1)",
+  "제목 계층 구조": "Heading hierarchy",
+  "제공 계층 구조": "Heading hierarchy",
+  "페이지 링크 구조": "Page link structure",
+  "관련 콘텐츠 탐색 단서": "Related content discovery signals",
 };
 
 function translateFoundLabel(value: string, isEnglish: boolean): string {

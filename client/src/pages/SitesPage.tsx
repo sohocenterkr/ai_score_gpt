@@ -187,6 +187,34 @@ function messageFromError(error: unknown, fallback: string): string {
   return error instanceof SiteApiError ? error.message : fallback;
 }
 
+const siteTypeEnglishLabels: Record<string, string> = {
+  "AI 점수 확인": "AI score check",
+  "음식점": "Restaurant",
+  "병원": "Clinic",
+  "기업 홈페이지": "Company website",
+  "학원": "Academy",
+  "카페": "Cafe",
+  "미용실": "Hair salon",
+  "쇼핑몰": "Online store",
+};
+
+function formatSiteType(
+  siteType: string | null | undefined,
+  locale: "ko" | "en",
+): string | null {
+  const normalized = siteType?.trim();
+
+  if (!normalized) {
+    return null;
+  }
+
+  if (locale === "ko") {
+    return normalized;
+  }
+
+  return siteTypeEnglishLabels[normalized] ?? normalized;
+}
+
 function formFromSite(site: RegisteredSite): SiteFormState {
   return {
     name: site.name,
@@ -557,7 +585,7 @@ export function SitesPage() {
                           <dl className="site-meta">
                             <div>
                               <dt>{copy.industry}</dt>
-                              <dd>{site.siteType ?? copy.notEntered}</dd>
+                              <dd>{formatSiteType(site.siteType, normalizedLocale) ?? copy.notEntered}</dd>
                             </div>
                             <div>
                               <dt>{copy.region}</dt>
