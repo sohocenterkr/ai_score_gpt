@@ -41,6 +41,7 @@ const createSchema = z
       .array(renderedImprovementCodeSchema)
       .max(3)
       .default([]),
+    locale: z.enum(["ko", "en"]).default("ko"),
   })
   .superRefine((value, context) => {
     const total =

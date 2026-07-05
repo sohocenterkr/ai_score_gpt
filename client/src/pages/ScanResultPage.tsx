@@ -923,6 +923,7 @@ export function ScanResultPage() {
         findingIds: selectedFindingIds,
         renderedImprovementCodes:
           selectedRenderedImprovementCodes,
+          locale: isEnglish ? "en" : "ko",
       });
       navigate(`/${locale}/work-orders/${workOrder.id}`);
     } catch (error) {

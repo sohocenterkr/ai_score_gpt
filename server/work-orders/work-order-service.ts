@@ -178,6 +178,7 @@ export interface CreateWorkOrderInput {
   scanId: string;
   findingIds: string[];
   renderedImprovementCodes: string[];
+  locale?: "ko" | "en";
 }
 
 export interface SubmitVerificationInput {

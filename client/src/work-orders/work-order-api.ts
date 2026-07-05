@@ -179,6 +179,7 @@ export async function createWorkOrderRequest(input: {
   scanId: string;
   findingIds: string[];
   renderedImprovementCodes: string[];
+  locale?: "ko" | "en";
 }): Promise<WorkOrderDetail> {
   const response = await fetch("/api/work-orders", {
     method: "POST",
