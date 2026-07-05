@@ -119,6 +119,7 @@ function verificationCriteria(
 
 export function WorkOrderPage() {
   const { locale = "ko", workOrderId = "" } = useParams();
+  const isEnglish = locale === "en";
   const navigate = useNavigate();
   const [workOrder, setWorkOrder] =
     useState<WorkOrderDetail | null>(null);
@@ -153,7 +154,7 @@ export function WorkOrderPage() {
           setErrorMessage(
             error instanceof WorkOrderApiError
               ? error.message
-              : "작업지시서를 불러오지 못했습니다.",
+              : isEnglish ? "Could not load the work order." : "작업지시서를 불러오지 못했습니다.",
           );
         }
       })
@@ -218,7 +219,7 @@ export function WorkOrderPage() {
     if (!workOrder) return;
     await runAction(
       () => issueWorkOrderRequest(workOrder.id),
-      "작업지시서를 발급 상태로 변경했습니다.",
+      isEnglish ? "The work order has been issued." : "작업지시서를 발급 상태로 변경했습니다.",
     );
   }
 
@@ -279,7 +280,7 @@ export function WorkOrderPage() {
       setErrorMessage(
         error instanceof WorkOrderApiError
           ? error.message
-          : "작업지시서를 취소하지 못했습니다.",
+          : isEnglish ? "Could not cancel the work order." : "작업지시서를 취소하지 못했습니다.",
       );
     } finally {
       setWorking(false);
@@ -290,7 +291,7 @@ export function WorkOrderPage() {
     return (
       <section className="full-bleed-section work-orders-section">
         <div className="content-container work-order-empty" role="status">
-          작업지시서를 불러오고 있습니다.
+          {isEnglish ? "Loading the work order." : "작업지시서를 불러오고 있습니다."}
         </div>
       </section>
     );
@@ -300,8 +301,8 @@ export function WorkOrderPage() {
     return (
       <section className="full-bleed-section work-orders-section">
         <div className="content-container work-order-empty">
-          <p role="alert">{errorMessage || "작업지시서가 없습니다."}</p>
-          <Link to={`/${locale}/work-orders`}>목록으로 돌아가기</Link>
+          <p role="alert">{errorMessage || (isEnglish ? "Work order not found." : "작업지시서가 없습니다.")}</p>
+          <Link to={`/${locale}/work-orders`}>{isEnglish ? "Back to list" : "목록으로 돌아가기"}</Link>
         </div>
       </section>
     );
@@ -313,13 +314,13 @@ export function WorkOrderPage() {
         <header className="work-orders-heading">
           <div>
             <p className="eyebrow">WORK ORDER</p>
-            <h1>{workOrder.site.name} 수정 작업지시서</h1>
+            <h1>{isEnglish ? `${workOrder.site.name} Improvement Work Order` : `${workOrder.site.name} 수정 작업지시서`}</h1>
             <p>
               {workOrder.orderNumber} · v{workOrder.version}
             </p>
           </div>
           <Link className="work-order-back" to={`/${locale}/work-orders`}>
-            작업지시서 목록
+              {isEnglish ? "Work order list" : "작업지시서 목록"}
           </Link>
         </header>
 
@@ -342,7 +343,7 @@ export function WorkOrderPage() {
                 onClick={handleIssue}
                 disabled={working}
               >
-                {working ? "처리 중..." : "작업지시서 발급"}
+                {working ? (isEnglish ? "Processing..." : "처리 중...") : isEnglish ? "Issue work order" : "작업지시서 발급"}
               </button>
               <button
                 className="secondary"
@@ -350,41 +351,41 @@ export function WorkOrderPage() {
                 onClick={handleCancel}
                 disabled={working}
               >
-                초안 취소
+                {isEnglish ? "Cancel draft" : "초안 취소"}
               </button>
             </>
           ) : (
             <>
               <a
                 className="work-order-primary-link"
-                href={workOrderExportUrl(workOrder.id, "pdf")}
+                href={`${workOrderExportUrl(workOrder.id, "pdf")}${isEnglish ? "?locale=en" : ""}`}
               >
-                PDF 저장
-              </a>
+                  {isEnglish ? "Save PDF" : "PDF 저장"}
+                </a>
               <a
                 className="secondary"
-                href={workOrderExportUrl(workOrder.id, "json")}
+                href={`${workOrderExportUrl(workOrder.id, "json")}${isEnglish ? "?locale=en" : ""}`}
               >
-                JSON 저장
-              </a>
+                  {isEnglish ? "Save JSON" : "JSON 저장"}
+                </a>
               <a
                 className="secondary"
-                href={workOrderExportUrl(workOrder.id, "csv")}
+                href={`${workOrderExportUrl(workOrder.id, "csv")}${isEnglish ? "?locale=en" : ""}`}
               >
-                CSV 저장
-              </a>
+                  {isEnglish ? "Save CSV" : "CSV 저장"}
+                </a>
             </>
           )}
         </div>
 
         {workOrder.status !== "DRAFT" ? (
           <div className="work-order-process-guide" role="note">
-            <strong>현재 단계: 작업지시서로 사이트 수정 진행</strong>
-            <p>
-              이 문서를 PDF로 저장하거나 개발자에게 전달해 사이트 수정을
-              진행하세요. 수정 사항을 배포한 뒤 아래 자동검수 영역에 공개
-              URL을 제출하면 작업 반영 여부를 확인할 수 있습니다.
-            </p>
+            <strong>{isEnglish ? "Current step: update the site using this work order" : "현재 단계: 작업지시서로 사이트 수정 진행"}</strong>
+              <p>
+                {isEnglish
+                  ? "Save this document as a PDF or send it to the developer to update the site. After deployment, submit the public URL below to verify whether the work was applied."
+                  : "이 문서를 PDF로 저장하거나 개발자에게 전달해 사이트 수정을 진행하세요. 수정 사항을 배포한 뒤 아래 자동검수 영역에 공개 URL을 제출하면 작업 반영 여부를 확인할 수 있습니다."}
+              </p>
           </div>
         ) : null}
 
