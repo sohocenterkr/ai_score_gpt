@@ -1,0 +1,1 @@
+ALTER TABLE "scans" ADD COLUMN "locale" TEXT NOT NULL DEFAULT 'ko';

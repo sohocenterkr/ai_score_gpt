@@ -38,6 +38,7 @@ const sampleScan: PublicScan = {
   type: "QUICK",
   status: "QUEUED",
   rulesVersion: "2026.06-core-v1",
+  locale: "ko",
   score: null,
   grade: null,
   startedAt: null,
@@ -239,6 +240,7 @@ describe("site API", () => {
       sampleUser,
       "site-1",
       "QUICK",
+      "ko",
     );
   });
 

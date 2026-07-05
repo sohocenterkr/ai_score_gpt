@@ -71,6 +71,7 @@ const updateSiteSchema = z
 
 const scanSchema = z.object({
   type: z.enum(["QUICK", "DEEP"]).default("QUICK"),
+  locale: z.enum(["ko", "en"]).default("ko"),
 });
 
 interface CreateSiteRouterOptions {
@@ -222,6 +223,7 @@ export function createSiteRouter(options: CreateSiteRouterOptions) {
           response.locals.authUser,
           readRouteParam(request.params.siteId),
           parsed.data.type,
+            parsed.data.locale,
         );
 
         if (process.env.VERCEL === "1" && scan.type === "QUICK") {

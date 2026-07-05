@@ -10,6 +10,7 @@ export interface SiteScan {
     | "FAILED"
     | "CANCELLED";
   rulesVersion: string;
+  locale: "ko" | "en";
   score: number | null;
   grade: string | null;
   startedAt: string | null;
@@ -138,6 +139,7 @@ export async function archiveSiteRequest(siteId: string): Promise<void> {
 export async function queueSiteScanRequest(
   siteId: string,
   type: "QUICK" | "DEEP" = "QUICK",
+  locale: "ko" | "en" = "ko",
 ): Promise<SiteScan> {
   const response = await fetch(
     `/api/sites/${encodeURIComponent(siteId)}/scans`,

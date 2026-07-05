@@ -43,6 +43,7 @@ export interface PublicScan {
     | "FAILED"
     | "CANCELLED";
   rulesVersion: string;
+  locale: "ko" | "en";
   score: number | null;
   grade: string | null;
   startedAt: string | null;
@@ -83,6 +84,7 @@ export interface SiteService {
     user: PublicUser,
     siteId: string,
     type: ScanType,
+    locale?: "ko" | "en",
   ): Promise<PublicScan>;
 }
 
@@ -134,6 +136,7 @@ function toPublicScan(scan: Scan): PublicScan {
     type: scan.type,
     status: scan.status,
     rulesVersion: scan.rulesVersion,
+    locale: scan.locale === "en" ? "en" : "ko",
     score: scan.score,
     grade: scan.grade,
     startedAt: scan.startedAt?.toISOString() ?? null,
@@ -495,7 +498,7 @@ export function createPrismaSiteService(
       return scans.map(toPublicScan);
     },
 
-    async queueScan(user, siteId, type) {
+    async queueScan(user, siteId, type, locale = "ko") {
       const prisma = getDatabase();
       const site = await findAccessibleSite(user.id, siteId);
 
@@ -524,6 +527,7 @@ export function createPrismaSiteService(
         data: {
           siteId: site.id,
           type,
+            locale,
           status: "QUEUED",
           rulesVersion: CURRENT_RULES_VERSION,
           createdBy: user.id,

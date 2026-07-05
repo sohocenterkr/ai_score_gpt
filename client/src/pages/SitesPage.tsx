@@ -426,7 +426,11 @@ export function SitesPage() {
     setWorkingSiteId(site.id);
 
     try {
-      const scan = await queueSiteScanRequest(site.id);
+      const scan = await queueSiteScanRequest(
+        site.id,
+        "QUICK",
+        normalizedLocale === "en" ? "en" : "ko",
+      );
       setSites((current) =>
         current.map((item) =>
           item.id === site.id

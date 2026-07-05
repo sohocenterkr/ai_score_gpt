@@ -364,6 +364,7 @@ model Scan {
   siteId              String               @map("site_id")
   targetUrl           String?              @map("target_url")
   type                ScanType
+  locale              String               @default("ko")
   status              ScanStatus           @default(QUEUED)
   rulesVersion        String               @map("rules_version")
   score               Float?
