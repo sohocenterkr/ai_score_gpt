@@ -427,6 +427,64 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
     ],
     isRequired: true,
   },
+  "STRUCT-LINKS-001": {
+    requirement:
+      "Expose key internal pages in the initial HTML as standard anchor links instead of JavaScript-only clicks.",
+    developerMessage:
+      "Along with the P0 initial HTML improvement work, output key links such as pricing, features, terms, privacy policy, help, and contact pages as standard <a> tags with href attributes in the initial HTML. Use descriptive link text rather than generic text such as 'Learn more' so AI systems and crawlers can understand the destination.",
+    acceptanceCriteria: [
+      {
+        code: "LINKS-01",
+        label: "Key internal links are visible in the initial HTML.",
+        required: true,
+      },
+      {
+        code: "LINKS-02",
+        label: "Key internal links use standard anchor tags with href attributes.",
+        required: true,
+      },
+      {
+        code: "LINKS-03",
+        label: "The initial HTML contains at least 75% of the rendered DOM internal links or differs by no more than two links.",
+        required: true,
+      },
+      {
+        code: "LINKS-04",
+        label: "Link text describes the destination content.",
+        required: false,
+      },
+    ],
+    isRequired: true,
+  },
+  "ACCESS-SITEMAP-001": {
+    requirement:
+      "Declare the actual sitemap URL in robots.txt and make sure it returns a public 2xx XML response without authentication.",
+    developerMessage:
+      "Align the Sitemap directive in robots.txt with the actual sitemap response. After any redirects, the sitemap URL should still return a publicly accessible XML sitemap or sitemap index document.",
+    acceptanceCriteria: [
+      {
+        code: "SITEMAP-01",
+        label: "A sitemap URL can be found in robots.txt.",
+        required: true,
+      },
+      {
+        code: "SITEMAP-02",
+        label: "The declared sitemap URL returns a 2xx response.",
+        required: true,
+      },
+      {
+        code: "SITEMAP-03",
+        label: "The response is an XML sitemap or sitemap index.",
+        required: true,
+      },
+      {
+        code: "SITEMAP-04",
+        label: "The sitemap URLs stay within the registered site domain scope.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
 };
 
 function genericCriteria(
