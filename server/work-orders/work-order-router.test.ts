@@ -175,6 +175,7 @@ describe("work order router", () => {
       renderedImprovementCodes: [
         "RENDERED-ADDED-CONTENT",
       ],
+      locale: "ko",
     });
   });
 
