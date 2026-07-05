@@ -485,6 +485,64 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
     ],
     isRequired: true,
   },
+  "META-CANONICAL-001": {
+    requirement:
+      "Add a canonical link in the initial HTML head that points to the final representative URL.",
+    developerMessage:
+      "Output a canonical link element in the initial HTML head, and make sure its href matches the actual final public URL. Avoid duplicate canonical declarations and make sure the canonical URL resolves to a normal 2xx representative page.",
+    acceptanceCriteria: [
+      {
+        code: "CANONICAL-01",
+        label: "A canonical link can be found in the initial HTML head.",
+        required: true,
+      },
+      {
+        code: "CANONICAL-02",
+        label: "The canonical href is an absolute HTTPS URL.",
+        required: true,
+      },
+      {
+        code: "CANONICAL-03",
+        label: "The canonical URL points to a normal 2xx representative page.",
+        required: true,
+      },
+      {
+        code: "CANONICAL-04",
+        label: "There are no duplicate canonical declarations.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "META-OG-001": {
+    requirement:
+      "Add og:title and og:description to the initial HTML and keep their meaning consistent with the visible page title and description.",
+    developerMessage:
+      "Output og:title and og:description in the initial HTML head. They should not conflict with the regular title and meta description, and they should summarize the same service and value proposition shown on the page.",
+    acceptanceCriteria: [
+      {
+        code: "OG-01",
+        label: "og:title can be found in the initial HTML.",
+        required: true,
+      },
+      {
+        code: "OG-02",
+        label: "og:description can be found in the initial HTML.",
+        required: true,
+      },
+      {
+        code: "OG-03",
+        label: "The Open Graph title and description are not empty.",
+        required: true,
+      },
+      {
+        code: "OG-04",
+        label: "The Open Graph values are semantically consistent with the visible representative title and description.",
+        required: false,
+      },
+    ],
+    isRequired: true,
+  },
 };
 
 function genericCriteria(
