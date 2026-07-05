@@ -369,6 +369,64 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
     ],
     isRequired: true,
   },
+  "CONTENT-INITIAL-001": {
+    requirement:
+      "Provide meaningful body content in the initial HTML by using SSR, SSG, or prerendering for the landing page.",
+    developerMessage:
+      "The core issue is that the initial HTML body is empty because of CSR. For React-based sites, review Next.js SSR/SSG, react-snap-style prerendering, Prerender.io, or a custom prerendering middleware that fits the current architecture. Do not merely add filler text; provide real user-facing content such as the service definition, target customers, representative use cases, usage flow, and pricing/data handling summary.",
+    acceptanceCriteria: [
+      {
+        code: "INITIAL-TEXT-01",
+        label: "The initial HTML body contains at least 200 characters.",
+        required: true,
+      },
+      {
+        code: "INITIAL-TEXT-02",
+        label: "The initial HTML body includes at least 75% of the rendered DOM body or the key-information gap is within the allowed range.",
+        required: true,
+      },
+      {
+        code: "INITIAL-TEXT-03",
+        label: "The service definition, target customers, representative use cases, usage flow, and pricing/data handling summary are visible in the initial HTML.",
+        required: true,
+      },
+      {
+        code: "INITIAL-TEXT-04",
+        label: "The content has the same meaning as the real user-facing page and is not hidden text for search exposure.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-ANSWERABILITY-001": {
+    requirement:
+      "Add initial HTML content that lets AI answer questions about the service purpose, target users, usage flow, pricing, and data handling.",
+    developerMessage:
+      "Handle this item together with the CONTENT-INITIAL-001 P0 work bundle. Use 800 characters as an internal target for the initial HTML, but prioritize real information over character count. AI should be able to answer what the service provides, who uses it, how to start, what the free/paid scope is, and how submitted data is handled.",
+    acceptanceCriteria: [
+      {
+        code: "CONTENT-ANSWERABILITY-001-01",
+        label: "The service definition and core value can be explained from the initial HTML alone.",
+        required: true,
+      },
+      {
+        code: "CONTENT-ANSWERABILITY-001-02",
+        label: "Target users and at least two representative use cases are visible.",
+        required: true,
+      },
+      {
+        code: "CONTENT-ANSWERABILITY-001-03",
+        label: "A 3–5 step usage flow, such as sign-up, creation, deployment, submission check, and export, is visible.",
+        required: true,
+      },
+      {
+        code: "CONTENT-ANSWERABILITY-001-04",
+        label: "Pricing, data handling, operator information, or a contact path is visible.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
 };
 
 function genericCriteria(
