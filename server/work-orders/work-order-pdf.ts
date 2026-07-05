@@ -317,8 +317,9 @@ function writeTextBox(
 function writeCriteria(
   document: PDFKit.PDFDocument,
   item: PublicWorkOrderItem,
+  isEnglish: boolean,
 ): void {
-  writeSectionTitle(document, "완료 판정 기준");
+  writeSectionTitle(document, isEnglish ? "Completion criteria" : "완료 판정 기준");
 
   for (const criterion of item.acceptanceCriteria) {
     const x = document.page.margins.left;
@@ -366,7 +367,7 @@ function writeCriteria(
       7.4,
       criterion.required ? COLORS.primaryDark : COLORS.muted,
     ).text(
-      criterion.required ? "필수" : "권장",
+      criterion.required ? (isEnglish ? "Required" : "필수") : (isEnglish ? "Recommended" : "권장"),
       x + width - requiredWidth - padding,
       y + padding,
       {
@@ -381,9 +382,9 @@ function writeCriteria(
   document.moveDown(0.4);
 }
 
-function evidenceText(value: unknown): string {
+function evidenceText(value: unknown, isEnglish = false): string {
   if (value === null || value === undefined) {
-    return "저장된 최초 검사 증거가 없습니다.";
+    return isEnglish ? "No saved initial diagnostic evidence." : "저장된 최초 검사 증거가 없습니다.";
   }
 
   try {
@@ -396,10 +397,11 @@ function evidenceText(value: unknown): string {
 function writeEvidence(
   document: PDFKit.PDFDocument,
   item: PublicWorkOrderItem,
+  isEnglish: boolean,
 ): void {
   const text = item.finding
-    ? evidenceText(item.finding.evidence)
-    : "이 항목은 같은 검사의 초기 HTML과 JavaScript 렌더링 비교 결과에서 자동 생성되었습니다. 원본 비교 수치는 진단 보고서에서 확인하세요.";
+    ? evidenceText(item.finding.evidence, isEnglish)
+    : isEnglish ? "This item was automatically generated from the same diagnostic's initial HTML and JavaScript-rendered DOM comparison. Check the diagnostic report for the original comparison values." : "이 항목은 같은 검사의 초기 HTML과 JavaScript 렌더링 비교 결과에서 자동 생성되었습니다. 원본 비교 수치는 진단 보고서에서 확인하세요.";
   const width = contentWidth(document);
 
   setRegular(document, 7.4, COLORS.muted);
@@ -421,7 +423,7 @@ function writeEvidence(
     document.addPage();
   }
 
-  writeSectionTitle(document, "최초 검사 증거");
+  writeSectionTitle(document, isEnglish ? "Initial diagnostic evidence" : "최초 검사 증거");
 
   const x = document.page.margins.left;
   document.x = x;
@@ -748,13 +750,14 @@ function writeItemPage(
   workOrder: PublicWorkOrder,
   item: PublicWorkOrderItem,
   index: number,
+  isEnglish: boolean,
 ): void {
   document.addPage();
   const x = document.page.margins.left;
   const width = contentWidth(document);
 
   setBold(document, 8.2, COLORS.primary).text(
-    `작업 항목 ${index + 1} / ${workOrder.items.length}`,
+    isEnglish ? `Work item ${index + 1} / ${workOrder.items.length}` : `작업 항목 ${index + 1} / ${workOrder.items.length}`,
     {
       width,
       characterSpacing: 0.7,
@@ -772,11 +775,11 @@ function writeItemPage(
     `${cleanText(item.itemCode)} / ${
       item.finding
         ? item.isRequired
-          ? "필수 항목"
-          : "일반 항목"
-        : "권장 개선"
+          ? isEnglish ? "Required item" : "필수 항목"
+          : isEnglish ? "General item" : "일반 항목"
+        : isEnglish ? "Recommended improvement" : "권장 개선"
     } / ${
-      item.weight > 0 ? `예상 ${item.weight}점` : "점수 외 개선"
+      item.weight > 0 ? (isEnglish ? `Expected +${item.weight} pts` : `예상 ${item.weight}점`) : (isEnglish ? "Non-score improvement" : "점수 외 개선")
     }`,
     {
       width,
@@ -789,7 +792,7 @@ function writeItemPage(
     .fillAndStroke(COLORS.surface, COLORS.border);
   const metaY = document.y + 12;
 
-  setBold(document, 7.6, COLORS.muted).text("대상 URL", x + 13, metaY, {
+  setBold(document, 7.6, COLORS.muted).text(isEnglish ? "Target URL" : "대상 URL", x + 13, metaY, {
     width: 70,
   });
   setRegular(document, 8.2, COLORS.text).text(
@@ -803,7 +806,7 @@ function writeItemPage(
   );
 
   setBold(document, 7.6, COLORS.muted).text(
-    "최초 판정",
+    isEnglish ? "Initial finding" : "최초 판정",
     x + 13,
     metaY + 32,
     {
@@ -813,11 +816,11 @@ function writeItemPage(
   const findingStatus = item.finding?.status
     ? FINDING_STATUS_LABELS[item.finding.status] ??
       cleanText(item.finding.status)
-    : "추가 개선 권장";
+    : isEnglish ? "Additional improvement recommended" : "추가 개선 권장";
   const findingSeverity = item.finding?.severity
     ? SEVERITY_LABELS[item.finding.severity] ??
       cleanText(item.finding.severity)
-    : "AI 수집 안정성";
+    : isEnglish ? "AI collection stability" : "AI 수집 안정성";
 
   setRegular(document, 8.2, COLORS.text).text(
     `${findingStatus} / ${findingSeverity}`,
@@ -833,7 +836,7 @@ function writeItemPage(
   if (item.finding?.description) {
     writeTextBox(
       document,
-      "현재 문제",
+      isEnglish ? "Current issue" : "현재 문제",
       item.finding.description,
       {
         background: "#FFF7ED",
@@ -843,7 +846,7 @@ function writeItemPage(
     );
   }
 
-  writeTextBox(document, "수정 요구사항", item.requirement, {
+  writeTextBox(document, isEnglish ? "Required change" : "수정 요구사항", item.requirement, {
     background: COLORS.white,
     border: COLORS.border,
     accent: COLORS.primary,
@@ -851,7 +854,7 @@ function writeItemPage(
 
   writeTextBox(
     document,
-    "개발자 전달용 문구",
+    isEnglish ? "Developer instructions" : "개발자 전달용 문구",
     item.developerMessage,
     {
       background: COLORS.primarySoft,
@@ -860,8 +863,8 @@ function writeItemPage(
     },
   );
 
-  writeCriteria(document, item);
-  writeEvidence(document, item);
+  writeCriteria(document, item, isEnglish);
+  writeEvidence(document, item, isEnglish);
 }
 
 function addFooters(
@@ -973,7 +976,7 @@ export async function renderWorkOrderPdf(
   writeExecutionPlanPage(document, workOrder);
 
   workOrder.items.forEach((item, index) => {
-    writeItemPage(document, workOrder, item, index);
+    writeItemPage(document, workOrder, item, index, isEnglish);
   });
 
   document.addPage();
