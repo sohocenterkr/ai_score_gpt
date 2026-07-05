@@ -58,6 +58,7 @@ export interface PublicScanResult {
     type: string;
     status: string;
     rulesVersion: string;
+    locale: "ko" | "en";
     score: number | null;
     grade: string | null;
     startedAt: string | null;
@@ -319,6 +320,7 @@ function buildPublicScanResult(result: {
   type: string;
   status: string;
   rulesVersion: string;
+  locale: string;
   score: number | null;
   grade: string | null;
   startedAt: Date | null;
@@ -375,6 +377,7 @@ function buildPublicScanResult(result: {
       type: result.type,
       status: result.status,
       rulesVersion: result.rulesVersion,
+      locale: result.locale === "en" ? "en" : "ko",
       score: result.score,
       grade: result.grade,
       startedAt: result.startedAt?.toISOString() ?? null,

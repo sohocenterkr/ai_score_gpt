@@ -10,7 +10,7 @@ import type {
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.06-scan-report-v14";
+  "2026.07-scan-locale-v1";
 
 let cachedFontHash: string | undefined;
 
@@ -421,9 +421,9 @@ export function sanitizeScanResultForPdf(
   };
 }
 
-function evidenceText(value: unknown): string {
+function evidenceText(value: unknown, locale: "ko" | "en" = "ko"): string {
   if (value === null || value === undefined) {
-    return "저장된 검사 증거가 없습니다.";
+    return locale === "en" ? "No stored diagnostic evidence." : "저장된 검사 증거가 없습니다.";
   }
 
   try {
@@ -641,15 +641,21 @@ function normalizedComparisonList(values: string[]): string {
 function displayMetric(
   value: number | null,
   suffix: string,
+  locale: "ko" | "en" = "ko",
 ): string {
+  const isEnglish = locale === "en";
+
   return value === null
-    ? "미확인"
-    : `${value.toLocaleString("ko-KR")}${suffix}`;
+    ? isEnglish ? "Not confirmed" : "미확인"
+    : `${value.toLocaleString(isEnglish ? "en-US" : "ko-KR")}${suffix}`;
 }
 
 export function buildRenderedDomImprovementPlans(
   comparison: ScanResultRenderedDomComparison | null,
+  locale: "ko" | "en" = "ko",
 ): RenderedDomImprovementPlan[] {
+  const isEnglish = locale === "en";
+
   if (!comparison || comparison.status !== "SUCCESS") {
     return [];
   }
@@ -679,38 +685,58 @@ export function buildRenderedDomImprovementPlans(
       (linkCoverage < 0.75 && Math.abs(linkDelta) > 2));
 
   if (textGapNeedsWork || linkGapNeedsWork) {
-    const stateParts = [
-      comparison.metrics.textLength.initial !== null &&
-      comparison.metrics.textLength.rendered !== null
-        ? `본문 글자 수가 ${displayMetric(
-            comparison.metrics.textLength.initial,
-            "자",
-          )}에서 ${displayMetric(
-            comparison.metrics.textLength.rendered,
-            "자",
-          )}로 늘었습니다.`
-        : null,
-      comparison.metrics.internalLinks.initial !== null &&
-      comparison.metrics.internalLinks.rendered !== null
-        ? `내부 링크가 ${displayMetric(
-            comparison.metrics.internalLinks.initial,
-            "개",
-          )}에서 ${displayMetric(
-            comparison.metrics.internalLinks.rendered,
-            "개",
-          )}로 늘었습니다.`
-        : null,
-      textRendered > 0
-        ? `초기 HTML 본문 포함 비율은 ${(
-            textCoverage * 100
-          ).toFixed(1)}%입니다.`
-        : null,
-      linkRendered > 0
-        ? `초기 HTML 내부 링크 포함 비율은 ${(
-            linkCoverage * 100
-          ).toFixed(1)}%입니다.`
-        : null,
-    ].filter((value): value is string => Boolean(value));
+      const stateParts = [
+        comparison.metrics.textLength.initial !== null &&
+        comparison.metrics.textLength.rendered !== null
+          ? isEnglish
+            ? `Body text length increased from ${displayMetric(
+                comparison.metrics.textLength.initial,
+                " chars",
+                locale,
+              )} to ${displayMetric(
+                comparison.metrics.textLength.rendered,
+                " chars",
+                locale,
+              )}.`
+            : `본문 글자 수가 ${displayMetric(
+                comparison.metrics.textLength.initial,
+                "자",
+              )}에서 ${displayMetric(
+                comparison.metrics.textLength.rendered,
+                "자",
+              )}로 늘었습니다.`
+          : null,
+        comparison.metrics.internalLinks.initial !== null &&
+        comparison.metrics.internalLinks.rendered !== null
+          ? isEnglish
+            ? `Internal links increased from ${displayMetric(
+                comparison.metrics.internalLinks.initial,
+                " items",
+                locale,
+              )} to ${displayMetric(
+                comparison.metrics.internalLinks.rendered,
+                " items",
+                locale,
+              )}.`
+            : `내부 링크가 ${displayMetric(
+                comparison.metrics.internalLinks.initial,
+                "개",
+              )}에서 ${displayMetric(
+                comparison.metrics.internalLinks.rendered,
+                "개",
+              )}로 늘었습니다.`
+          : null,
+        textRendered > 0
+          ? isEnglish
+            ? `Initial HTML body coverage is ${(textCoverage * 100).toFixed(1)}%.`
+            : `초기 HTML 본문 포함 비율은 ${(textCoverage * 100).toFixed(1)}%입니다.`
+          : null,
+        linkRendered > 0
+          ? isEnglish
+            ? `Initial HTML internal link coverage is ${(linkCoverage * 100).toFixed(1)}%.`
+            : `초기 HTML 내부 링크 포함 비율은 ${(linkCoverage * 100).toFixed(1)}%입니다.`
+          : null,
+      ].filter((value): value is string => Boolean(value));
 
     plans.push({
       code: "RENDERED-ADDED-CONTENT",
@@ -756,28 +782,28 @@ export function buildRenderedDomImprovementPlans(
     normalizedComparisonText(comparison.initialTitle) !==
     normalizedComparisonText(comparison.renderedTitle)
   ) {
-    mismatchedFields.push("페이지 제목");
+    mismatchedFields.push(isEnglish ? "page title" : "페이지 제목");
   }
 
   if (
     normalizedComparisonText(comparison.initialDescription) !==
     normalizedComparisonText(comparison.renderedDescription)
   ) {
-    mismatchedFields.push("페이지 설명");
+    mismatchedFields.push(isEnglish ? "page description" : "페이지 설명");
   }
 
   if (
     normalizedComparisonList(comparison.initialH1) !==
     normalizedComparisonList(comparison.renderedH1)
   ) {
-    mismatchedFields.push("대표 제목(H1)");
+    mismatchedFields.push(isEnglish ? "primary heading (H1)" : "대표 제목(H1)");
   }
 
   if (
     normalizedComparisonList(comparison.initialJsonLdTypes) !==
     normalizedComparisonList(comparison.renderedJsonLdTypes)
   ) {
-    mismatchedFields.push("구조화 정보(JSON-LD)");
+    mismatchedFields.push(isEnglish ? "structured data (JSON-LD)" : "구조화 정보(JSON-LD)");
   }
 
   if (mismatchedFields.length > 0) {
@@ -787,7 +813,7 @@ export function buildRenderedDomImprovementPlans(
         "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다",
       currentState: `${mismatchedFields.join(
         ", ",
-      )} 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다.${
+      )}${isEnglish ? " differ between the initial response and the fully rendered page." : " 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다."}${
         renderedH1Duplicate
           ? ` 렌더링 DOM에는 H1이 ${comparison.renderedH1.length}개(${comparison.renderedH1.join(
               " / ",
@@ -820,32 +846,38 @@ export function buildRenderedDomImprovementPlans(
   const missingInitial: string[] = [];
 
   if (!comparison.initialTitle) {
-    missingInitial.push("페이지 제목");
+    missingInitial.push(isEnglish ? "page title" : "페이지 제목");
   }
 
   if (!comparison.initialDescription) {
-    missingInitial.push("페이지 설명");
+    missingInitial.push(isEnglish ? "page description" : "페이지 설명");
   }
 
   if (comparison.metrics.h1Count.initial === 0) {
-    missingInitial.push("대표 제목(H1)");
+    missingInitial.push(isEnglish ? "primary heading (H1)" : "대표 제목(H1)");
   }
 
   if ((comparison.metrics.textLength.initial ?? 0) < 300) {
-    missingInitial.push("핵심 본문");
+    missingInitial.push(isEnglish ? "core body content" : "핵심 본문");
   }
 
   if (missingInitial.length > 0) {
     plans.push({
       code: "INITIAL-HTML-MISSING-CORE",
-      title: "AI가 처음 받는 페이지에 핵심 정보가 부족합니다",
-      currentState: `${missingInitial.join(
-        ", ",
-      )} 항목을 초기 HTML에서 충분히 확인하지 못했습니다.`,
-      meaning:
-        "사람은 화면을 둘러보며 내용을 이해할 수 있지만, 일부 AI 검색 봇은 처음 전달된 제목·설명·본문을 중심으로 사이트의 주제를 판단합니다.",
-      change:
-        "페이지를 처음 불러왔을 때도 사이트가 누구를 위한 곳이며 무엇을 제공하는지, 어떤 절차로 이용하는지, 요금·데이터 처리·FAQ는 어디서 확인할 수 있는지 알 수 있도록 핵심 소개와 주요 정보를 보완합니다.",
+        title: isEnglish
+          ? "The initial HTML lacks core information"
+          : "AI가 처음 받는 페이지에 핵심 정보가 부족합니다",
+        currentState: isEnglish
+          ? `${missingInitial.join(", ")} was not sufficiently confirmed in the initial HTML.`
+          : `${missingInitial.join(
+              ", ",
+            )} 항목을 초기 HTML에서 충분히 확인하지 못했습니다.`,
+        meaning: isEnglish
+          ? "Users can understand the page by looking through the rendered screen, but some AI search crawlers judge the topic mainly from the title, description, and body text delivered in the initial response."
+          : "사람은 화면을 둘러보며 내용을 이해할 수 있지만, 일부 AI 검색 봇은 처음 전달된 제목·설명·본문을 중심으로 사이트의 주제를 판단합니다.",
+        change: isEnglish
+          ? "Add core introduction and key information so the initial page response explains who the site is for, what it provides, how it is used, and where pricing, data handling, and FAQ information can be found."
+          : "페이지를 처음 불러왔을 때도 사이트가 누구를 위한 곳이며 무엇을 제공하는지, 어떤 절차로 이용하는지, 요금·데이터 처리·FAQ는 어디서 확인할 수 있는지 알 수 있도록 핵심 소개와 주요 정보를 보완합니다.",
       developerInstructions: [
         "페이지별로 고유하고 구체적인 title과 meta description을 초기 HTML에 제공해 주세요.",
         "페이지의 주제를 설명하는 명확한 H1과 핵심 본문을 초기 HTML에 포함해 주세요.",
@@ -869,14 +901,23 @@ export function buildRenderedDomImprovementPlans(
 function publicRenderedPlanChange(
   code: string,
   fallback: string,
+  locale: "ko" | "en" = "ko",
 ): string {
+  const isEnglish = locale === "en";
+
   switch (code) {
     case "RENDERED-ADDED-CONTENT":
-      return "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.";
+      return isEnglish
+        ? "Reduce rendering dependency so the initial HTML includes enough core body text and important navigation paths."
+        : "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.";
     case "RENDERED-INCONSISTENT-INFORMATION":
-      return "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.";
+      return isEnglish
+        ? "Check consistency so the initial HTML and the JavaScript-rendered page communicate the same core title, description, and structured data."
+        : "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.";
     case "INITIAL-HTML-MISSING-CORE":
-      return "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.";
+      return isEnglish
+        ? "Add core information so AI can understand the page topic and main service from the first response."
+        : "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.";
     default:
       return fallback;
   }
@@ -890,18 +931,20 @@ function comparisonMetricText(
   },
   suffix: string,
 ): string {
+  const isEnglish = suffix === "chars" || suffix === "items";
+  const locale = isEnglish ? "en-US" : "ko-KR";
+
   const display = (value: number | null) =>
     value === null
-      ? "미확인"
-      : `${value.toLocaleString("ko-KR")}${suffix}`;
+      ? isEnglish ? "Not confirmed" : "미확인"
+      : `${value.toLocaleString(locale)}${suffix}`;
+
   const delta =
     metric.initial === null || metric.rendered === null
-      ? "변화 미확인"
-      : `변화 ${
+      ? isEnglish ? "change unknown" : "변화 미확인"
+      : `${isEnglish ? "change" : "변화"} ${
           metric.rendered - metric.initial > 0 ? "+" : ""
-        }${(
-          metric.rendered - metric.initial
-        ).toLocaleString("ko-KR")}${suffix}`;
+        }${(metric.rendered - metric.initial).toLocaleString(locale)}${suffix}`;
 
   return `${label}: ${display(metric.initial)} → ${display(
     metric.rendered,
@@ -931,7 +974,9 @@ function writeCover(
   );
 
   setText(document, 24, COLORS.white).text(
-    `${cleanText(result.site.name)} 진단 보고서`,
+      result.scan.locale === "en"
+        ? `${cleanText(result.site.name)} Diagnostic Report`
+        : `${cleanText(result.site.name)} 진단 보고서`,
     x + 22,
     top + 43,
     {
@@ -1005,7 +1050,7 @@ function writeCover(
   );
 
   setText(document, 8.3, COLORS.primaryDark).text(
-    "측정 범위와 개선 가능성",
+    result.scan.locale === "en" ? "Scope and improvement potential" : "측정 범위와 개선 가능성",
     x + cardWidth + gap + 14,
     cardY + 14,
     {
@@ -1021,8 +1066,8 @@ function writeCover(
 
   setText(document, 15, COLORS.primary).text(
     coverage === undefined
-      ? "현재 규칙 점수 없음"
-      : `측정 ${coverage}% / +${improvementMin}~${improvementMax}점`,
+      ? result.scan.locale === "en" ? "No current rule score" : "현재 규칙 점수 없음"
+      : result.scan.locale === "en" ? `Measured ${coverage}% / +${improvementMin}~${improvementMax} pts` : `측정 ${coverage}% / +${improvementMin}~${improvementMax}점`,
     x + cardWidth + gap + 14,
     cardY + 42,
     {
@@ -1033,42 +1078,42 @@ function writeCover(
 
   document.y = cardY + cardHeight + 22;
 
-  writeSectionTitle(document, "검사 기본정보");
-  writeLabelValue(document, "사이트", result.site.name);
-  writeLabelValue(document, "등록 URL", result.site.baseUrl);
+  writeSectionTitle(document, result.scan.locale === "en" ? "Diagnostic basics" : "검사 기본정보");
+  writeLabelValue(document, result.scan.locale === "en" ? "Site" : "사이트", result.site.name);
+  writeLabelValue(document, result.scan.locale === "en" ? "Registered URL" : "등록 URL", result.site.baseUrl);
   writeLabelValue(
     document,
-    "최종 URL",
+    result.scan.locale === "en" ? "Final URL" : "최종 URL",
     result.site.finalUrl ?? result.site.baseUrl,
   );
   writeLabelValue(
     document,
-    "사이트 유형",
-    result.site.siteType ?? "미입력",
+    result.scan.locale === "en" ? "Site type" : "사이트 유형",
+    result.site.siteType ?? (result.scan.locale === "en" ? "Not provided" : "미입력"),
   );
   writeLabelValue(
     document,
-    "지역·언어",
+    result.scan.locale === "en" ? "Region / language" : "지역·언어",
     `${result.site.region ?? result.site.country} / ${
       result.site.primaryLocale
     }`,
   );
-  writeLabelValue(document, "검사 유형", result.scan.type);
-  writeLabelValue(document, "검사 상태", result.scan.status);
+  writeLabelValue(document, result.scan.locale === "en" ? "Diagnostic type" : "검사 유형", result.scan.type);
+  writeLabelValue(document, result.scan.locale === "en" ? "Status" : "검사 상태", result.scan.status);
   writeLabelValue(
     document,
-    "완료 시각(KST)",
+    result.scan.locale === "en" ? "Completed at (KST)" : "완료 시각(KST)",
     formatKST(result.scan.completedAt),
   );
   writeLabelValue(
     document,
-    "보고서 생성 시각(KST)",
+    result.scan.locale === "en" ? "Report generated at (KST)" : "보고서 생성 시각(KST)",
     formatKST(new Date().toISOString()),
   );
 
   document.moveDown(0.5);
   setText(document, 7.9, COLORS.muted).text(
-    "현재 QUICK 점수는 공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 계산합니다. JavaScript 실행 후 DOM 비교는 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 정밀진단 단계에서 추가됩니다.",
+    result.scan.locale === "en" ? "The current QUICK score is calculated from the public URL HTTP response and initial HTML. JavaScript-rendered DOM comparison is used for rendering notes and improvement suggestions. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are added in the detailed diagnostic stage." : "현재 QUICK 점수는 공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 계산합니다. JavaScript 실행 후 DOM 비교는 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 정밀진단 단계에서 추가됩니다.",
     {
       width,
       lineGap: 3,
@@ -1083,15 +1128,15 @@ function writeCategoryScores(
   document.addPage();
   writeSectionTitle(
     document,
-    "영역별 점수",
-    "현재 규칙 버전의 7개 영역 총 100점 배점을 기준으로 계산했습니다.",
+    result.scan.locale === "en" ? "Category scores" : "영역별 점수",
+    result.scan.locale === "en" ? "Calculated from the current rule version across 7 categories and 100 total points." : "현재 규칙 버전의 7개 영역 총 100점 배점을 기준으로 계산했습니다.",
   );
 
   if (!result.scoreSummary) {
     writeTextBox(
       document,
-      "점수 안내",
-      "이 결과는 현재 규칙 버전과 달라 영역별 점수를 다시 계산하지 않았습니다.",
+      result.scan.locale === "en" ? "Score note" : "점수 안내",
+      result.scan.locale === "en" ? "This result uses a different rule version, so category scores were not recalculated." : "이 결과는 현재 규칙 버전과 달라 영역별 점수를 다시 계산하지 않았습니다.",
     );
     return;
   }
@@ -1159,7 +1204,7 @@ function writeCategoryScores(
   if (result.scoreSummary.cap !== null) {
     writeTextBox(
       document,
-      "점수 상한 적용",
+      result.scan.locale === "en" ? "Score cap applied" : "점수 상한 적용",
       `치명적 조건으로 최종 점수가 ${result.scoreSummary.cap}점 이하로 제한되었습니다.`,
       {
         background: COLORS.neutralSoft,
@@ -1171,7 +1216,7 @@ function writeCategoryScores(
 
   writeTextBox(
     document,
-    "예상 개선 범위",
+    result.scan.locale === "en" ? "Expected improvement range" : "예상 개선 범위",
     `현재 규칙 배점 기준으로 +${result.scoreSummary.expectedImprovementMin}~${result.scoreSummary.expectedImprovementMax}점의 개선 가능 범위가 계산되었습니다. 이 수치는 Site AI Score 내부 규칙 기준의 참고값이며 실제 상승 점수, AI 검색 노출, 추천 결과를 보장하지 않습니다. 핵심 목표는 AI가 사이트를 더 정확히 인식하고 인용할 수 있게 만드는 것입니다.`,
     {
       background: COLORS.primarySoft,
@@ -1188,15 +1233,19 @@ function writeUnderstanding(
   document.addPage();
   writeSectionTitle(
     document,
-    "AI가 읽은 사이트",
-    scanResultRenderedDomComparison(result)
-      ? "저장된 초기 HTML 검사 증거를 요약했습니다. JavaScript 렌더링 비교는 뒤쪽의 추가 기술 참고에 별도로 표시합니다."
-      : "LLM의 추측이 아니라 저장된 초기 HTML 검사 증거를 요약했습니다.",
+    result.scan.locale === "en" ? "How AI reads the site" : "AI가 읽은 사이트",
+      result.scan.locale === "en"
+        ? scanResultRenderedDomComparison(result)
+          ? "Stored initial HTML diagnostic evidence is summarized here. JavaScript rendering comparison is shown separately in the later technical note."
+          : "This summarizes stored initial HTML diagnostic evidence, not LLM guesses."
+        : scanResultRenderedDomComparison(result)
+          ? "저장된 초기 HTML 검사 증거를 요약했습니다. JavaScript 렌더링 비교는 뒤쪽의 추가 기술 참고에 별도로 표시합니다."
+          : "LLM의 추측이 아니라 저장된 초기 HTML 검사 증거를 요약했습니다.",
   );
 
   writeTextBox(
     document,
-    "사이트 이해 요약",
+    result.scan.locale === "en" ? "Site understanding summary" : "사이트 이해 요약",
     result.understandingSummary,
     {
       background: COLORS.primarySoft,
@@ -1205,11 +1254,11 @@ function writeUnderstanding(
     },
   );
 
-  writeSectionTitle(document, "찾은 핵심정보");
+  writeSectionTitle(document, result.scan.locale === "en" ? "Key information found" : "찾은 핵심정보");
 
   if (result.foundInformation.length === 0) {
     setText(document, 9, COLORS.muted).text(
-      "표시할 핵심정보가 없습니다.",
+      result.scan.locale === "en" ? "No key information to display." : "표시할 핵심정보가 없습니다.",
     );
   } else {
     for (const item of result.foundInformation) {
@@ -1218,11 +1267,11 @@ function writeUnderstanding(
   }
 
   document.moveDown(0.6);
-  writeSectionTitle(document, "찾지 못했거나 확인하지 못한 정보");
+  writeSectionTitle(document, result.scan.locale === "en" ? "Missing or unconfirmed information" : "찾지 못했거나 확인하지 못한 정보");
 
   if (result.missingInformation.length === 0) {
     setText(document, 9, COLORS.pass).text(
-      "현재 가중 규칙에서 누락된 항목이 없습니다.",
+      result.scan.locale === "en" ? "No missing items were found in the current weighted rules." : "현재 가중 규칙에서 누락된 항목이 없습니다.",
     );
   } else {
     for (const item of result.missingInformation) {
@@ -1252,14 +1301,14 @@ function writeContentReadiness(
   document.addPage();
   writeSectionTitle(
     document,
-    "AI 답변을 위한 추가 콘텐츠 제안",
-    "현재 QUICK 점수와 별개로, AI가 더 구체적인 질문에 답하는 데 도움이 될 추가 콘텐츠를 안내합니다. 이 제안은 감점이나 미완료 판정이 아닙니다.",
+    result.scan.locale === "en" ? "Additional content suggestions for AI answers" : "AI 답변을 위한 추가 콘텐츠 제안",
+    result.scan.locale === "en" ? "Separate from the current QUICK score, this section suggests content that can help AI answer more specific questions. These suggestions are not score deductions or failure judgments." : "현재 QUICK 점수와 별개로, AI가 더 구체적인 질문에 답하는 데 도움이 될 추가 콘텐츠를 안내합니다. 이 제안은 감점이나 미완료 판정이 아닙니다.",
   );
 
   writeTextBox(
     document,
-    `추가 콘텐츠 안내 · 점수 외 참고`,
-    "이 영역은 자동진단 점수와 별개로 제공되는 추가 콘텐츠 가이드입니다. 자동검사만으로 사실 여부를 확정하기 어려운 이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·자료 처리·운영 주체, 자주 묻는 질문 등을 사이트 운영자가 선택적으로 보완하면 AI가 사이트를 바탕으로 더 구체적인 질문에 답하는 데 도움이 될 수 있습니다.",
+    result.scan.locale === "en" ? "Additional content note · score-independent" : `추가 콘텐츠 안내 · 점수 외 참고`,
+    result.scan.locale === "en" ? "This score-independent guide suggests optional content that may help AI answer more specific questions about the site, such as target users, use cases, process, support scope, pricing, data handling, operator information, and FAQs." : "이 영역은 자동진단 점수와 별개로 제공되는 추가 콘텐츠 가이드입니다. 자동검사만으로 사실 여부를 확정하기 어려운 이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·자료 처리·운영 주체, 자주 묻는 질문 등을 사이트 운영자가 선택적으로 보완하면 AI가 사이트를 바탕으로 더 구체적인 질문에 답하는 데 도움이 될 수 있습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",
@@ -1269,7 +1318,7 @@ function writeContentReadiness(
 
   writeTextBox(
     document,
-    "이 제안의 활용 방법",
+    result.scan.locale === "en" ? "How to use these suggestions" : "이 제안의 활용 방법",
     [assessment.benchmarkNote, assessment.disclaimer].join(
       "\n\n",
     ),
@@ -1282,7 +1331,7 @@ function writeContentReadiness(
 
   writeSectionTitle(
     document,
-    "자동검사에서 확인한 참고 단서",
+    result.scan.locale === "en" ? "Reference signals found by the automated check" : "자동검사에서 확인한 참고 단서",
   );
   setText(document, 8.8, COLORS.text).text(
     assessment.confirmedSignals
@@ -1297,26 +1346,26 @@ function writeContentReadiness(
   document.moveDown(0.8);
   writeSectionTitle(
     document,
-    "운영자가 선택적으로 보완할 콘텐츠",
+    result.scan.locale === "en" ? "Optional content to add" : "운영자가 선택적으로 보완할 콘텐츠",
   );
 
   assessment.topics.forEach((topic, index) => {
     const statusLabel =
       topic.status === "PARTIAL"
-        ? "관련 단서 일부 확인"
-        : "추가 정보 제안";
+        ? result.scan.locale === "en" ? "Partial signal found" : "관련 단서 일부 확인"
+        : result.scan.locale === "en" ? "Additional information suggested" : "추가 정보 제안";
 
     writeTextBox(
       document,
       `${index + 1}. ${topic.title} · ${statusLabel}`,
       [
-        `현재 확인 단서: ${topic.reason}`,
-        `AI가 답하기 어려울 수 있는 질문: ${topic.questions.join(
-          " / ",
-        )}`,
-        `개선 방향: ${topic.suggestedSections.join(
-          " · ",
-        )} 같은 콘텐츠 보강이 필요합니다.`,
+        result.scan.locale === "en" ? `Current signal: ${topic.reason}` : `현재 확인 단서: ${topic.reason}`,
+          result.scan.locale === "en"
+            ? `Questions AI may struggle to answer: ${topic.questions.join(" / ")}`
+            : `AI가 답하기 어려울 수 있는 질문: ${topic.questions.join(" / ")}`,
+          result.scan.locale === "en"
+            ? `Suggested direction: ${topic.suggestedSections.join(" · ")} content may need to be added.`
+            : `개선 방향: ${topic.suggestedSections.join(" · ")} 같은 콘텐츠 보강이 필요합니다.`,
         "",
       ].join("\n\n"),
       {
@@ -1338,7 +1387,7 @@ function writeRenderedDomComparison(
 ): void {
   const comparison = scanResultRenderedDomComparison(result);
   const improvementPlans =
-    buildRenderedDomImprovementPlans(comparison);
+    buildRenderedDomImprovementPlans(comparison, result.scan.locale);
 
   if (!comparison) {
     return;
@@ -1347,21 +1396,20 @@ function writeRenderedDomComparison(
   document.addPage();
   writeSectionTitle(
     document,
-    "추가 기술 참고: JavaScript 렌더링 비교",
-    "JavaScript 실행 후 화면 변화는 점수 산정 필수 항목이 아니라 보조 참고 자료로 제공합니다. 필요한 경우 추가 콘텐츠 보완과 기술 검토에 활용합니다.",
+    result.scan.locale === "en" ? "Technical note: JavaScript rendering comparison" : "추가 기술 참고: JavaScript 렌더링 비교",
+    result.scan.locale === "en" ? "Changes after JavaScript execution are provided as supporting reference, not as required scoring items. Use this for content improvement and technical review when needed." : "JavaScript 실행 후 화면 변화는 점수 산정 필수 항목이 아니라 보조 참고 자료로 제공합니다. 필요한 경우 추가 콘텐츠 보완과 기술 검토에 활용합니다.",
   );
 
   if (comparison.status !== "SUCCESS") {
     writeTextBox(
       document,
-      "렌더링 비교 상태",
+      result.scan.locale === "en" ? "Rendering comparison status" : "렌더링 비교 상태",
       [
-        `상태: ${comparison.status}`,
-        `오류 코드: ${comparison.errorCode ?? "미기록"}`,
-        `안내: ${
-          comparison.message ??
-          "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다."
-        }`,
+        result.scan.locale === "en" ? `Status: ${comparison.status}` : `상태: ${comparison.status}`,
+        result.scan.locale === "en" ? `Error code: ${comparison.errorCode ?? "Not recorded"}` : `오류 코드: ${comparison.errorCode ?? "미기록"}`,
+          result.scan.locale === "en"
+            ? `Note: ${comparison.message ?? "Changes after JavaScript execution were not compared in this simple diagnostic. This is supporting reference, not a required scoring item."}`
+            : `안내: ${comparison.message ?? "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다."}`,
       ].join("\n"),
       {
         background: COLORS.neutralSoft,
@@ -1372,32 +1420,32 @@ function writeRenderedDomComparison(
   } else {
     writeTextBox(
       document,
-      "비교 요약",
+      result.scan.locale === "en" ? "Comparison summary" : "비교 요약",
       [
         comparisonMetricText(
-          "본문 글자 수",
+          result.scan.locale === "en" ? "Body text length" : "본문 글자 수",
           comparison.metrics.textLength,
-          "자",
+          result.scan.locale === "en" ? "chars" : "자",
         ),
         comparisonMetricText(
-          "내부 링크",
+          result.scan.locale === "en" ? "Internal links" : "내부 링크",
           comparison.metrics.internalLinks,
-          "개",
+          result.scan.locale === "en" ? "items" : "개",
         ),
         comparisonMetricText(
           "H1",
           comparison.metrics.h1Count,
-          "개",
+          result.scan.locale === "en" ? "items" : "개",
         ),
         comparisonMetricText(
           "H2",
           comparison.metrics.h2Count,
-          "개",
+          result.scan.locale === "en" ? "items" : "개",
         ),
         comparisonMetricText(
-          "유효 JSON-LD",
+          result.scan.locale === "en" ? "Valid JSON-LD" : "유효 JSON-LD",
           comparison.metrics.jsonLdValidCount,
-          "개",
+          result.scan.locale === "en" ? "items" : "개",
         ),
       ].join("\n"),
       {
@@ -1407,40 +1455,42 @@ function writeRenderedDomComparison(
       },
     );
 
-    writeSectionTitle(document, "렌더링 실행 정보");
+    writeSectionTitle(document, result.scan.locale === "en" ? "Rendering execution details" : "렌더링 실행 정보");
     writeLabelValue(
       document,
-      "브라우저",
-      comparison.browserVersion ?? "미확인",
+      result.scan.locale === "en" ? "Browser" : "브라우저",
+      comparison.browserVersion ?? (result.scan.locale === "en" ? "Not confirmed" : "미확인"),
     );
     writeLabelValue(
       document,
-      "렌더링 시간",
+      result.scan.locale === "en" ? "Rendering time" : "렌더링 시간",
       comparison.durationMs === null
-        ? "미확인"
-        : `${(comparison.durationMs / 1_000).toFixed(1)}초`,
+        ? (result.scan.locale === "en" ? "Not confirmed" : "미확인")
+        : result.scan.locale === "en"
+          ? `${(comparison.durationMs / 1_000).toFixed(1)} sec`
+          : `${(comparison.durationMs / 1_000).toFixed(1)}초`,
     );
     writeLabelValue(
       document,
-      "페이지 JavaScript 오류",
+      result.scan.locale === "en" ? "Page JavaScript errors" : "페이지 JavaScript 오류",
       comparison.pageErrorCount === null
-        ? "미확인"
-        : `${comparison.pageErrorCount.toLocaleString(
-            "ko-KR",
-          )}건`,
+        ? (result.scan.locale === "en" ? "Not confirmed" : "미확인")
+        : result.scan.locale === "en"
+          ? `${comparison.pageErrorCount.toLocaleString("en-US")} errors`
+          : `${comparison.pageErrorCount.toLocaleString("ko-KR")}건`,
     );
 
     writeSectionTitle(
       document,
-      "JavaScript 렌더링 비교 참고 의견",
-      "위 비교 수치가 뜻하는 바와 필요한 경우의 개선 방향을 함께 설명합니다.",
+      result.scan.locale === "en" ? "JavaScript rendering comparison notes" : "JavaScript 렌더링 비교 참고 의견",
+      result.scan.locale === "en" ? "Explains what the comparison metrics mean and, when needed, suggests improvement directions." : "위 비교 수치가 뜻하는 바와 필요한 경우의 개선 방향을 함께 설명합니다.",
     );
 
     if (improvementPlans.length === 0) {
       writeTextBox(
         document,
-        "현재 판단",
-        "초기 HTML과 화면 완성 후의 핵심 구조가 비교적 비슷합니다. 현재 비교 결과에서 별도 개선안이 생성되지 않았습니다.",
+        result.scan.locale === "en" ? "Current assessment" : "현재 판단",
+        result.scan.locale === "en" ? "The initial HTML and the fully rendered page structure are relatively similar. No separate improvement plan was generated from this comparison." : "초기 HTML과 화면 완성 후의 핵심 구조가 비교적 비슷합니다. 현재 비교 결과에서 별도 개선안이 생성되지 않았습니다.",
         {
           background: COLORS.passSoft,
           border: "#BBF7D0",
@@ -1451,15 +1501,24 @@ function writeRenderedDomComparison(
       for (const [index, plan] of improvementPlans.entries()) {
         writeTextBox(
           document,
-          `개선안 ${index + 1} · ${plan.title}`,
+          result.scan.locale === "en" ? `Improvement ${index + 1} · ${plan.title}` : `개선안 ${index + 1} · ${plan.title}`,
           [
-            `현재 어떤 상태인가요?\n${plan.currentState}`,
-            `무슨 뜻인가요?\n${plan.meaning}`,
-            `개선 방향 요약\n${publicRenderedPlanChange(
-              plan.code,
-              plan.change,
-            )}`,
-            "상세 개발자 작업 지시와 완료 확인 기준은 별도 수정 작업지시서에서 제공합니다.",
+            result.scan.locale === "en" ? `Current state\n${plan.currentState}` : `현재 어떤 상태인가요?\n${plan.currentState}`,
+            result.scan.locale === "en" ? `What this means\n${plan.meaning}` : `무슨 뜻인가요?\n${plan.meaning}`,
+              result.scan.locale === "en"
+                ? `Improvement summary\n${publicRenderedPlanChange(
+                    plan.code,
+                    plan.change,
+                    result.scan.locale,
+                  )}`
+                : `개선 방향 요약\n${publicRenderedPlanChange(
+                    plan.code,
+                    plan.change,
+                    result.scan.locale,
+                  )}`,
+              result.scan.locale === "en"
+                ? "Detailed developer instructions and completion criteria are provided in the separate work order."
+                : "상세 개발자 작업 지시와 완료 확인 기준은 별도 수정 작업지시서에서 제공합니다.",
           ].join("\n\n"),
           {
             background: COLORS.primarySoft,
@@ -1480,6 +1539,7 @@ function writeFindingDetail(
   finding: PublicScanResultFinding,
   index: number,
   total: number,
+  locale: "ko" | "en",
 ): void {
   document.addPage();
   const colors = statusColors(finding.status);
@@ -1487,7 +1547,7 @@ function writeFindingDetail(
   const width = contentWidth(document);
 
   setText(document, 8.1, COLORS.primary).text(
-    `주요 문제 ${index + 1} / ${total}`,
+    locale === "en" ? `Primary issue ${index + 1} / ${total}` : `주요 문제 ${index + 1} / ${total}`,
     {
       width,
       characterSpacing: 0.6,
@@ -1518,7 +1578,7 @@ function writeFindingDetail(
   const metaY = document.y + 12;
 
   setText(document, 8.4, colors.text).text(
-    `판정 · ${STATUS_LABELS[finding.status]}`,
+    locale === "en" ? `Status · ${STATUS_LABELS[finding.status]}` : `판정 · ${STATUS_LABELS[finding.status]}`,
     x + 13,
     metaY,
     {
@@ -1527,7 +1587,7 @@ function writeFindingDetail(
   );
 
   setText(document, 8.4, colors.text).text(
-    `중요도 · ${SEVERITY_LABELS[finding.severity]}`,
+    locale === "en" ? `Severity · ${SEVERITY_LABELS[finding.severity]}` : `중요도 · ${SEVERITY_LABELS[finding.severity]}`,
     x + width * 0.34,
     metaY,
     {
@@ -1547,7 +1607,7 @@ function writeFindingDetail(
 
   document.y = metaY + 58;
 
-  writeTextBox(document, "진단 내용", finding.description, {
+  writeTextBox(document, locale === "en" ? "Diagnostic details" : "진단 내용", finding.description, {
     background: COLORS.white,
     border: COLORS.border,
     accent: colors.text,
@@ -1556,7 +1616,7 @@ function writeFindingDetail(
   if (finding.recommendation) {
     writeTextBox(
       document,
-      "수정 권장사항",
+      locale === "en" ? "Recommended fix" : "수정 권장사항",
       finding.recommendation,
       {
         background: COLORS.primarySoft,
@@ -1568,8 +1628,8 @@ function writeFindingDetail(
 
   writeTextBox(
     document,
-    "검사 증거",
-    evidenceText(finding.evidence),
+    locale === "en" ? "Evidence" : "검사 증거",
+    evidenceText(finding.evidence, locale),
     {
       background: COLORS.surface,
       border: COLORS.border,
@@ -1593,6 +1653,7 @@ function writePrimaryIssues(
       finding,
       index,
       result.primaryIssues.length,
+        result.scan.locale,
     );
   });
 }
@@ -1600,14 +1661,15 @@ function writePrimaryIssues(
 function writeCompactFinding(
   document: PDFKit.PDFDocument,
   finding: PublicScanResultFinding,
+  locale: "ko" | "en",
 ): void {
   const colors = statusColors(finding.status);
   const x = document.page.margins.left;
   const width = contentWidth(document);
   const padding = 12;
-  const evidence = evidenceText(finding.evidence).trim();
+  const evidence = evidenceText(finding.evidence, locale).trim();
   const evidenceLabel =
-    finding.status === "PASS" ? "검사 근거" : "증거 요약";
+    finding.status === "PASS" ? (locale === "en" ? "Evidence" : "검사 근거") : (locale === "en" ? "Evidence summary" : "증거 요약");
   const evidenceLimit = finding.status === "PASS" ? 260 : 600;
   const evidenceSummary =
     evidence.length > evidenceLimit
@@ -1631,7 +1693,7 @@ function writeCompactFinding(
   );
   const recommendationHeight = finding.recommendation
     ? document.heightOfString(
-        `권장: ${cleanText(finding.recommendation)}`,
+        locale === "en" ? `Recommended: ${cleanText(finding.recommendation)}` : `권장: ${cleanText(finding.recommendation)}`,
         {
           width: width - padding * 2,
           lineGap: 2,
@@ -1701,7 +1763,7 @@ function writeCompactFinding(
 
   if (finding.recommendation) {
     setText(document, 7.9, COLORS.primaryDark).text(
-      `권장: ${cleanText(finding.recommendation)}`,
+      locale === "en" ? `Recommended: ${cleanText(finding.recommendation)}` : `권장: ${cleanText(finding.recommendation)}`,
       x + padding,
       currentY,
       {
@@ -1734,8 +1796,8 @@ function writeAllFindings(
   document.addPage();
   writeSectionTitle(
     document,
-    "전체 진단 항목",
-    `통과·실패·확인 불가·감점 제외를 포함한 ${result.findings.length}개 항목이며, 각 항목에 검사 근거를 함께 표시합니다.`,
+    result.scan.locale === "en" ? "All diagnostic checks" : "전체 진단 항목",
+    result.scan.locale === "en" ? `Includes ${result.findings.length} checks, including pass, fail, blocked, and not-applicable items. Evidence is shown with each item.` : `통과·실패·확인 불가·감점 제외를 포함한 ${result.findings.length}개 항목이며, 각 항목에 검사 근거를 함께 표시합니다.`,
   );
 
   const groups = new Map<string, PublicScanResultFinding[]>();
@@ -1757,7 +1819,7 @@ function writeAllFindings(
     document.moveDown(0.5);
 
     for (const finding of findings) {
-      writeCompactFinding(document, finding);
+      writeCompactFinding(document, finding, result.scan.locale);
     }
 
     document.moveDown(0.5);
@@ -1768,16 +1830,21 @@ function writeCollectedPages(
   document: PDFKit.PDFDocument,
   result: PublicScanResult,
 ): void {
+  const isEnglish = result.scan.locale === "en";
+  const notConfirmed = isEnglish ? "Not confirmed" : "미확인";
+
   document.addPage();
   writeSectionTitle(
     document,
-    "수집 페이지",
-    "원본 HTML은 저장하지 않고 해시와 측정값만 보관합니다.",
+    isEnglish ? "Collected pages" : "수집 페이지",
+    isEnglish
+      ? "Raw HTML is not stored. Only hashes and measured values are retained."
+      : "원본 HTML은 저장하지 않고 해시와 측정값만 보관합니다.",
   );
 
   if (result.pages.length === 0) {
     setText(document, 9, COLORS.muted).text(
-      "저장된 수집 페이지가 없습니다.",
+      isEnglish ? "No collected pages are stored." : "저장된 수집 페이지가 없습니다.",
     );
     return;
   }
@@ -1786,18 +1853,25 @@ function writeCollectedPages(
     ensureSpace(document, 190);
     writeTextBox(
       document,
-      `수집 페이지 ${index + 1}`,
+      isEnglish ? `Collected page ${index + 1}` : `수집 페이지 ${index + 1}`,
       [
-        `검사 URL: ${page.url}`,
-        `최종 URL: ${page.finalUrl ?? "미확인"}`,
-        `HTTP 상태: ${page.statusCode ?? "미확인"}`,
-        `Content-Type: ${page.contentType ?? "미확인"}`,
-        `초기 텍스트: ${
-          page.initialTextLength?.toLocaleString("ko-KR") ??
-          "미확인"
-        }자`,
-        `iframe: ${page.iframeCount ?? "미확인"}개`,
-        `HTML SHA-256: ${page.rawHtmlHash ?? "미저장"}`,
+        isEnglish ? `Scan URL: ${page.url}` : `검사 URL: ${page.url}`,
+        isEnglish
+          ? `Final URL: ${page.finalUrl ?? notConfirmed}`
+          : `최종 URL: ${page.finalUrl ?? notConfirmed}`,
+        isEnglish
+          ? `HTTP status: ${page.statusCode ?? notConfirmed}`
+          : `HTTP 상태: ${page.statusCode ?? notConfirmed}`,
+        `Content-Type: ${page.contentType ?? notConfirmed}`,
+        isEnglish
+          ? `Initial text: ${page.initialTextLength?.toLocaleString("en-US") ?? notConfirmed} chars`
+          : `초기 텍스트: ${page.initialTextLength?.toLocaleString("ko-KR") ?? notConfirmed}자`,
+        isEnglish
+          ? `iframe: ${page.iframeCount ?? notConfirmed} items`
+          : `iframe: ${page.iframeCount ?? notConfirmed}개`,
+        isEnglish
+          ? `HTML SHA-256: ${page.rawHtmlHash ?? "Not stored"}`
+          : `HTML SHA-256: ${page.rawHtmlHash ?? "미저장"}`,
       ].join("\n"),
       {
         background: COLORS.surface,
@@ -1813,38 +1887,63 @@ function writeMethodology(
   document: PDFKit.PDFDocument,
   result: PublicScanResult,
 ): void {
-  document.addPage();
-  writeSectionTitle(document, "검사 범위·이용 안내·면책");
+  const isEnglish = result.scan.locale === "en";
 
-  setText(document, 9.1, COLORS.text).text(
-    [
-      "1. 이 보고서는 명시된 공개 URL과 검사 시점에 관찰된 실제 HTTP 응답·초기 HTML 증거를 기준으로 작성되며, 사용 가능한 경우 JavaScript 실행 후 DOM 비교 증거를 함께 제공합니다.",
-      "2. 종합점수와 판정은 규칙 버전에 정의된 배점과 완료 조건으로 계산하며 LLM이 임의로 결정하지 않습니다.",
-      "3. OAI-SearchBot은 검색용, ChatGPT-User는 사용자 요청용, GPTBot은 학습용 접근으로 구분하여 표시합니다.",
-      "4. 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 검사 증거를 보관합니다.",
-      "5. 현재 QUICK 점수는 초기 HTML 기준 25개 규칙으로 계산합니다. JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 포함되지 않습니다.",
-      "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·데이터 처리·FAQ의 정확성이 중요합니다.",
-      "7. 이 보고서는 AI 검색 노출, 추천 결과, 사이트 전체 보안성, 모든 기능의 무결성을 보증하지 않습니다.",
-      "8. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 재검사해야 하며, 가능하면 실제 AI 질의응답 수동 확인도 함께 진행해야 합니다.",
-    ].join("\n\n"),
-    {
-      width: contentWidth(document),
-      lineGap: 4,
-    },
+  document.addPage();
+  writeSectionTitle(
+    document,
+    isEnglish ? "Scope, usage notes, and disclaimer" : "검사 범위·이용 안내·면책",
   );
 
+  const notes = isEnglish
+    ? [
+        "1. This report is based on the specified public URL and the actual HTTP response and initial HTML evidence observed at scan time. JavaScript-rendered DOM comparison evidence is included when available.",
+        "2. The total score and judgment are calculated from the scoring rules and completion criteria defined in the rule version. They are not arbitrarily decided by an LLM.",
+        "3. OAI-SearchBot is marked as search access, ChatGPT-User as user-requested access, and GPTBot as training-related access.",
+        "4. Raw HTML is not stored. SHA-256 hashes and structured diagnostic evidence are retained.",
+        "5. The current QUICK score is calculated from 25 rules based on initial HTML. JavaScript-rendered DOM comparison is not directly reflected in the score; it is used for rendering notes and improvement suggestions. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are not included.",
+        "6. Values such as 800 characters and 75% coverage are Site AI Score internal reference criteria. They are not official standards of every search engine or AI service. Accuracy of service definition, target users, process, pricing, data handling, and FAQs matters more than character count alone.",
+        "7. This report does not guarantee AI search exposure, recommendation results, overall site security, or the integrity of every site function.",
+        "8. Before-and-after comparison should be performed under the same rule version and scan conditions. When possible, manual AI question-and-answer checks should also be performed.",
+      ]
+    : [
+        "1. 이 보고서는 명시된 공개 URL과 검사 시점에 관찰된 실제 HTTP 응답·초기 HTML 증거를 기준으로 작성되며, 사용 가능한 경우 JavaScript 실행 후 DOM 비교 증거를 함께 제공합니다.",
+        "2. 종합점수와 판정은 규칙 버전에 정의된 배점과 완료 조건으로 계산하며 LLM이 임의로 결정하지 않습니다.",
+        "3. OAI-SearchBot은 검색용, ChatGPT-User는 사용자 요청용, GPTBot은 학습용 접근으로 구분하여 표시합니다.",
+        "4. 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 검사 증거를 보관합니다.",
+        "5. 현재 QUICK 점수는 초기 HTML 기준 25개 규칙으로 계산합니다. JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 포함되지 않습니다.",
+        "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·데이터 처리·FAQ의 정확성이 중요합니다.",
+        "7. 이 보고서는 AI 검색 노출, 추천 결과, 사이트 전체 보안성, 모든 기능의 무결성을 보증하지 않습니다.",
+        "8. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 재검사해야 하며, 가능하면 실제 AI 질의응답 수동 확인도 함께 진행해야 합니다.",
+      ];
+
+  setText(document, 9.1, COLORS.text).text(notes.join("\n\n"), {
+    width: contentWidth(document),
+    lineGap: 4,
+  });
+
   document.moveDown(1.2);
-  writeLabelValue(document, "규칙 버전", result.scan.rulesVersion);
-  writeLabelValue(document, "검사 ID", result.scan.id);
   writeLabelValue(
     document,
-    "검사 완료(KST)",
+    isEnglish ? "Rule version" : "규칙 버전",
+    result.scan.rulesVersion,
+  );
+  writeLabelValue(
+    document,
+    isEnglish ? "Scan ID" : "검사 ID",
+    result.scan.id,
+  );
+  writeLabelValue(
+    document,
+    isEnglish ? "Completed at (KST)" : "검사 완료(KST)",
     formatKST(result.scan.completedAt),
   );
 
   document.moveDown(1.1);
   setText(document, 9, COLORS.primaryDark).text(
-    "Site AI Score - 공개 URL 진단, 수정 작업지시서, 독립 자동검수",
+    isEnglish
+      ? "Site AI Score - Public URL diagnostics, work orders, and independent automated verification"
+      : "Site AI Score - 공개 URL 진단, 수정 작업지시서, 독립 자동검수",
     {
       width: contentWidth(document),
     },
@@ -1940,12 +2039,18 @@ export async function renderScanResultPdf(
       left: 46,
     },
     info: {
-      Title: `${cleanText(safeResult.site.name)} 진단 보고서`,
+        Title:
+          safeResult.scan.locale === "en"
+            ? `${cleanText(safeResult.site.name)} Diagnostic Report`
+            : `${cleanText(safeResult.site.name)} 진단 보고서`,
       Author: "Site AI Score",
       Subject: `${cleanText(safeResult.scan.id)} / ${cleanText(
         safeResult.scan.rulesVersion,
       )}`,
-      Keywords: "Site AI Score, AEO, 진단 보고서",
+        Keywords:
+          safeResult.scan.locale === "en"
+            ? "Site AI Score, AEO, Diagnostic Report"
+            : "Site AI Score, AEO, 진단 보고서",
       CreationDate: creationDate,
     },
   });

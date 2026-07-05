@@ -50,6 +50,7 @@ const sampleResult: PublicScanResult = {
     type: "QUICK",
     status: "COMPLETED",
     rulesVersion: "2026.06-core-v2",
+    locale: "ko",
     score: 77,
     grade: "B",
     startedAt: "2026-06-15T00:00:00.000Z",

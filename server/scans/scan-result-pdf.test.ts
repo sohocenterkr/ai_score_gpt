@@ -26,6 +26,7 @@ const sampleResult: PublicScanResult = {
     type: "QUICK",
     status: "COMPLETED",
     rulesVersion: "2026.06-core-v2",
+    locale: "ko",
     score: 77,
     grade: "B",
     startedAt: "2026-06-15T00:00:00.000Z",
@@ -281,7 +282,7 @@ describe("scan result PDF", () => {
     ).toBe(true);
     expect(plans[0]?.acceptanceCriteria.length).toBeGreaterThanOrEqual(4);
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.06-scan-report-v14",
+      "2026.07-scan-locale-v1",
     );
   });
 
