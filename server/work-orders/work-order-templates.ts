@@ -543,6 +543,59 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
     ],
     isRequired: true,
   },
+  "STRUCT-JSONLD-001": {
+    requirement:
+      "Add valid Schema.org JSON-LD to the initial HTML and keep it consistent with the visible page information.",
+    developerMessage:
+      "Output a <script type=\"application/ld+json\"> block in the initial HTML. Check JSON syntax, required properties, and consistency with the visible page. For SaaS or web services, prioritize WebApplication or a WebSite/Organization combination. If the visible page includes FAQ content, also consider FAQPage JSON-LD.",
+    acceptanceCriteria: [
+      {
+        code: "JSONLD-01",
+        label: "A JSON-LD script can be found in the initial HTML.",
+        required: true,
+      },
+      {
+        code: "JSONLD-02",
+        label: "The JSON-LD parses as valid JSON without errors.",
+        required: true,
+      },
+      {
+        code: "JSONLD-03",
+        label: "Schema.org context and a site-appropriate type are present.",
+        required: true,
+      },
+      {
+        code: "JSONLD-04",
+        label: "Structured data such as name, URL, and description matches the visible page information.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "STRUCT-JSONLD-TYPES-001": {
+    requirement:
+      "Specify Schema.org @type values that match the site, such as WebSite, Organization, WebApplication, or LocalBusiness.",
+    developerMessage:
+      "Choose Schema.org @type values that match the actual operator and service type of the site. Do not use exaggerated or misleading types. Make sure the selected type has meaningful required or core properties.",
+    acceptanceCriteria: [
+      {
+        code: "JSONLD-TYPE-01",
+        label: "An identifiable @type exists in the JSON-LD.",
+        required: true,
+      },
+      {
+        code: "JSONLD-TYPE-02",
+        label: "The @type matches the actual nature of the site.",
+        required: true,
+      },
+      {
+        code: "JSONLD-TYPE-03",
+        label: "Core properties for the selected type are not empty.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
 };
 
 function genericCriteria(
