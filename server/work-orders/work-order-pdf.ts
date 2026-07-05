@@ -980,9 +980,9 @@ export async function renderWorkOrderPdf(
   });
 
   document.addPage();
-  writeSectionTitle(document, "이용 안내 및 면책");
+  writeSectionTitle(document, isEnglish ? "Usage notes and disclaimer" : "이용 안내 및 면책");
   setRegular(document, 9.2, COLORS.text).text(
-    "이 작업지시서는 명시된 검사 URL과 규칙 버전에서 발견된 문제를 기준으로 작성되었습니다. 고객 사이트의 소스코드를 제출할 필요는 없으며, 수정 후 배포된 공개 URL에서 완료 기준을 자동검수할 수 있어야 합니다.",
+    isEnglish ? "This work order is based on issues found for the specified diagnostic URL and rules version. The customer site source code does not need to be submitted; after changes are deployed, the completion criteria must be verifiable on the public URL." : "이 작업지시서는 명시된 검사 URL과 규칙 버전에서 발견된 문제를 기준으로 작성되었습니다. 고객 사이트의 소스코드를 제출할 필요는 없으며, 수정 후 배포된 공개 URL에서 완료 기준을 자동검수할 수 있어야 합니다.",
     {
       width: contentWidth(document),
       lineGap: 4,
@@ -990,7 +990,7 @@ export async function renderWorkOrderPdf(
   );
   document.moveDown(0.9);
   setRegular(document, 9.2, COLORS.text).text(
-    "예상 점수 범위는 현재 규칙 배점을 기준으로 계산한 참고값입니다. 800자, 75% 같은 수치는 Site AI Score 내부 기준이며 모든 검색엔진이나 AI 서비스의 공식 기준이 아닙니다. 실제 점수 상승, AI 검색 노출, 추천 결과, 사이트 전체 보안성과 모든 기능의 무결성을 보장하지 않습니다.",
+    isEnglish ? "The expected score range is a reference calculated from the current rule weights. Values such as 800 characters or 75% are internal Site AI Score criteria, not official standards of any search engine or AI service. Actual score increases, AI search visibility, recommendation results, overall site security, and the integrity of all features are not guaranteed." : "예상 점수 범위는 현재 규칙 배점을 기준으로 계산한 참고값입니다. 800자, 75% 같은 수치는 Site AI Score 내부 기준이며 모든 검색엔진이나 AI 서비스의 공식 기준이 아닙니다. 실제 점수 상승, AI 검색 노출, 추천 결과, 사이트 전체 보안성과 모든 기능의 무결성을 보장하지 않습니다.",
     {
       width: contentWidth(document),
       lineGap: 4,
@@ -998,7 +998,7 @@ export async function renderWorkOrderPdf(
   );
   document.moveDown(1.2);
   setBold(document, 9, COLORS.primaryDark).text(
-    "Site AI Score - 진단, 작업지시서, 독립 자동검수",
+    isEnglish ? "Site AI Score - Diagnostics, work orders, and independent automatic verification" : "Site AI Score - 진단, 작업지시서, 독립 자동검수",
     {
       width: contentWidth(document),
     },
