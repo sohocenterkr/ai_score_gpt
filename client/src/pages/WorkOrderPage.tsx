@@ -636,7 +636,7 @@ export function WorkOrderPage() {
 
           {workOrder.verificationAttempts.length > 0 ? (
             <div className="work-order-verification-history">
-              <h3>검수 요청 이력</h3>
+              <h3>{isEnglish ? "Verification request history" : "검수 요청 이력"}</h3>
               <ol>
                 {workOrder.verificationAttempts.map((attempt) => {
                   const passCount = attempt.itemResults.filter(
@@ -658,15 +658,16 @@ export function WorkOrderPage() {
                     <li key={attempt.id}>
                       <div>
                         <strong>
-                          {attempt.attemptNumber + 1}차 검수
+                          {isEnglish ? `Verification ${attempt.attemptNumber + 1}` : `${attempt.attemptNumber + 1}차 검수`}
                         </strong>
                         <span
                           className={`verification-attempt-status verification-attempt-status-${verificationStatusClass(
                             attempt.status,
                           )}`}
                         >
-                          {verificationStatusLabels[attempt.status] ??
-                            attempt.status}
+                          {isEnglish
+                            ? attempt.status.replaceAll("_", " ").toLowerCase()
+                            : verificationStatusLabels[attempt.status] ?? attempt.status}
                         </span>
                       </div>
                       <a
@@ -678,18 +679,19 @@ export function WorkOrderPage() {
                       </a>
                       <dl>
                         <div>
-                          <dt>요청 시각</dt>
-                          <dd>{formatKST(attempt.createdAt)}</dd>
+                          <dt>{isEnglish ? "Requested at" : "요청 시각"}</dt>
+                          <dd>{formatKST(attempt.createdAt, isEnglish)}</dd>
                         </div>
                         <div>
-                          <dt>검사 상태</dt>
+                          <dt>{isEnglish ? "Verification status" : "검사 상태"}</dt>
                           <dd>
-                            {statusLabels[attempt.scan.status] ??
-                              attempt.scan.status}
+                            {isEnglish
+                              ? attempt.scan.status.replaceAll("_", " ").toLowerCase()
+                              : statusLabels[attempt.scan.status] ?? attempt.scan.status}
                           </dd>
                         </div>
                         <div>
-                          <dt>검사 후 점수</dt>
+                          <dt>{isEnglish ? "Score after verification" : "검사 후 점수"}</dt>
                           <dd>
                             {attempt.scoreAfter ?? "—"}{" "}
                             {attempt.gradeAfter ?? ""}
@@ -699,19 +701,19 @@ export function WorkOrderPage() {
 
                       {attempt.itemResults.length > 0 ? (
                         <div className="verification-result-summary">
-                          <strong>항목별 자동검수 결과</strong>
+                          <strong>{isEnglish ? "Item-level automatic verification results" : "항목별 자동검수 결과"}</strong>
                           <div>
                             <span className="verification-count-pass">
-                              통과 {passCount}
+                              {isEnglish ? "Pass" : "통과"} {passCount}
                             </span>
                             <span className="verification-count-fail">
-                              실패 {failCount}
+                              {isEnglish ? "Fail" : "실패"} {failCount}
                             </span>
                             <span className="verification-count-blocked">
-                              확인 불가 {blockedCount}
+                              {isEnglish ? "Blocked" : "확인 불가"} {blockedCount}
                             </span>
                             <span className="verification-count-na">
-                              해당 없음 {notApplicableCount}
+                              {isEnglish ? "Not applicable" : "해당 없음"} {notApplicableCount}
                             </span>
                           </div>
                         </div>
@@ -745,13 +747,13 @@ export function WorkOrderPage() {
                                     </span>
                                     <h4>
                                       {item?.title ??
-                                        "작업 항목 검수 결과"}
+                                        (isEnglish ? "Work item verification result" : "작업 항목 검수 결과")}
                                     </h4>
                                   </div>
                                   <b>
-                                    {verificationItemStatusLabels[
-                                      result.status
-                                    ] ?? result.status}
+                                    {isEnglish
+                                      ? result.status.replaceAll("_", " ").toLowerCase()
+                                      : verificationItemStatusLabels[result.status] ?? result.status}
                                   </b>
                                 </header>
 
@@ -763,7 +765,7 @@ export function WorkOrderPage() {
 
                                 {criterionResults.length > 0 ? (
                                   <div className="verification-criteria-results">
-                                    <strong>완료 기준별 판정</strong>
+                                    <strong>{isEnglish ? "Completion criteria decisions" : "완료 기준별 판정"}</strong>
                                     <ul>
                                       {criterionResults.map(
                                         (criterion) => (
@@ -778,10 +780,9 @@ export function WorkOrderPage() {
                                                 {criterion.code}
                                               </span>
                                               <b>
-                                                {verificationItemStatusLabels[
-                                                  criterion.status
-                                                ] ??
-                                                  criterion.status}
+                                                {isEnglish
+                                                  ? criterion.status.replaceAll("_", " ").toLowerCase()
+                                                  : verificationItemStatusLabels[criterion.status] ?? criterion.status}
                                               </b>
                                             </div>
                                             <p>{criterion.label}</p>
@@ -791,13 +792,11 @@ export function WorkOrderPage() {
                                               </small>
                                             ) : null}
                                             <em>
-                                              {criterion.required
-                                                ? "필수"
-                                                : "권장"}
+                                              {criterion.required ? (isEnglish ? "Required" : "필수") : (isEnglish ? "Recommended" : "권장")}
                                               {" · "}
                                               {criterion.automated
-                                                ? "자동 판정"
-                                                : "수동 확인"}
+                                                ? isEnglish ? "Automatic decision" : "자동 판정"
+                                                : isEnglish ? "Manual review" : "수동 확인"}
                                             </em>
                                           </li>
                                         ),
@@ -809,7 +808,7 @@ export function WorkOrderPage() {
                                 {result.evidence ? (
                                   <details>
                                     <summary>
-                                      자동검수 증거 보기
+                                      {isEnglish ? "View automatic verification evidence" : "자동검수 증거 보기"}
                                     </summary>
                                     <pre>
                                       {evidenceText(result.evidence)}
@@ -823,13 +822,13 @@ export function WorkOrderPage() {
                       ) : attempt.status === "PASSED" ||
                         attempt.status === "REWORK_REQUIRED" ? (
                         <p className="work-order-verification-error">
-                          저장된 항목별 검수 결과가 없습니다.
+                          {isEnglish ? "No saved item-level verification results." : "저장된 항목별 검수 결과가 없습니다."}
                         </p>
                       ) : null}
 
                       {attempt.errorCode ? (
                         <p className="work-order-verification-error">
-                          오류 코드: {attempt.errorCode}
+                          {isEnglish ? "Error code" : "오류 코드"}: {attempt.errorCode}
                         </p>
                       ) : null}
                     </li>
@@ -917,7 +916,7 @@ export function WorkOrderPage() {
                         <span>{criterion.code}</span>
                         <p>{criterion.label}</p>
                         <em>
-                          {criterion.required ? "필수" : "권장"}
+                          {criterion.required ? (isEnglish ? "Required" : "필수") : (isEnglish ? "Recommended" : "권장")}
                         </em>
                       </li>
                     ))}
