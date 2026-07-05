@@ -594,7 +594,7 @@ function writeCover(
       },
     );
     setBold(document, 8.1, COLORS.primaryDark).text(
-      item.weight > 0 ? `${item.weight}점` : "점수 외",
+      item.weight > 0 ? (isEnglish ? `${item.weight} pts` : `${item.weight}점`) : (isEnglish ? "Non-score" : "점수 외"),
       x + width - 66,
       y,
       {
@@ -607,7 +607,7 @@ function writeCover(
 
   document.moveDown(0.5);
   setRegular(document, 7.8, COLORS.muted).text(
-    "예상 점수 범위는 선택된 점수 규칙 배점만으로 계산합니다. 점수 외 AI 수집 개선안은 예상 점수에 포함되지 않으며 실제 점수 상승이나 AI 검색 노출을 보장하지 않습니다. 핵심 목표는 AI가 서비스를 더 정확히 인식하고 인용할 수 있게 만드는 것입니다.",
+    isEnglish ? "The expected score range is calculated only from the selected scoring rule weights. Non-score AI collection improvements are not included, and actual score increases or AI search visibility are not guaranteed. The core goal is to help AI systems understand and cite the service more accurately." : "예상 점수 범위는 선택된 점수 규칙 배점만으로 계산합니다. 점수 외 AI 수집 개선안은 예상 점수에 포함되지 않으며 실제 점수 상승이나 AI 검색 노출을 보장하지 않습니다. 핵심 목표는 AI가 서비스를 더 정확히 인식하고 인용할 수 있게 만드는 것입니다.",
     {
       width,
       lineGap: 2,
