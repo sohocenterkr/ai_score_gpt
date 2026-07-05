@@ -682,7 +682,7 @@ export function createPrismaWorkOrderService(
           );
         }
 
-        const template = buildWorkOrderTemplate(finding);
+        const template = buildWorkOrderTemplate(finding, input.locale ?? "ko");
         const targetUrl =
           finding.scanPage?.finalUrl ??
           finding.scanPage?.url ??
@@ -705,7 +705,7 @@ export function createPrismaWorkOrderService(
 
       const renderedItemInputs = selectedPlans.map((plan) => {
         const template =
-          buildRenderedImprovementWorkOrderTemplate(plan);
+          buildRenderedImprovementWorkOrderTemplate(plan, input.locale ?? "ko");
 
         return {
           findingId: null,

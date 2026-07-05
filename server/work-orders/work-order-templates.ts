@@ -21,6 +21,8 @@ interface FindingTemplateInput {
   severity: FindingSeverity;
 }
 
+type WorkOrderTemplateLocale = "ko" | "en";
+
 interface RenderedImprovementTemplateInput {
   code: string;
   currentState: string;
@@ -313,23 +315,35 @@ const templates: Record<string, WorkOrderTemplate> = {
   },
 };
 
-function genericCriteria(ruleCode: string): AcceptanceCriterion[] {
+function genericCriteria(
+  ruleCode: string,
+  locale: WorkOrderTemplateLocale = "ko",
+): AcceptanceCriterion[] {
   const prefix = ruleCode.replace(/[^A-Z0-9]+/g, "-");
 
   return [
     {
       code: `${prefix}-01`,
-      label: "초기 HTML 또는 공개 응답에서 수정 결과를 확인할 수 있다.",
+      label:
+        locale === "en"
+          ? "The change can be verified in the initial HTML or public response."
+          : "초기 HTML 또는 공개 응답에서 수정 결과를 확인할 수 있다.",
       required: true,
     },
     {
       code: `${prefix}-02`,
-      label: "검사에서 사용한 대상 URL과 동일한 운영 URL에 반영되어 있다.",
+      label:
+        locale === "en"
+          ? "The change is deployed to the same production URL used in the diagnostic."
+          : "검사에서 사용한 대상 URL과 동일한 운영 URL에 반영되어 있다.",
       required: true,
     },
     {
       code: `${prefix}-03`,
-      label: "기존 정상 항목을 제거하거나 차단하는 회귀가 없다.",
+      label:
+        locale === "en"
+          ? "There is no regression that removes or blocks previously passing items."
+          : "기존 정상 항목을 제거하거나 차단하는 회귀가 없다.",
       required: true,
     },
   ];
@@ -337,6 +351,7 @@ function genericCriteria(ruleCode: string): AcceptanceCriterion[] {
 
 export function buildRenderedImprovementWorkOrderTemplate(
   plan: RenderedImprovementTemplateInput,
+  locale: WorkOrderTemplateLocale = "ko",
 ): WorkOrderTemplate {
   const prefixByCode: Record<string, string> = {
     "RENDERED-ADDED-CONTENT": "JS-CONTENT",
@@ -349,13 +364,23 @@ export function buildRenderedImprovementWorkOrderTemplate(
 
   return {
     requirement: [
-      `현재 상태: ${plan.currentState}`,
-      `무슨 뜻인가요: ${plan.meaning}`,
-      `무엇을 바꾸나요: ${plan.change}`,
+      locale === "en"
+        ? `Current state: ${plan.currentState}`
+        : `현재 상태: ${plan.currentState}`,
+      locale === "en"
+        ? `What it means: ${plan.meaning}`
+        : `무슨 뜻인가요: ${plan.meaning}`,
+      locale === "en"
+        ? `What to change: ${plan.change}`
+        : `무엇을 바꾸나요: ${plan.change}`,
     ].join("\n\n"),
     developerMessage: [
-      "- 점수만 올리기 위한 숨김 텍스트가 아니라, 실제 사용자 화면과 같은 의미의 콘텐츠를 초기 HTML과 구조화 데이터에 반영해 주세요.",
-      "- AI 검색 노출 보장이 아니라 AI가 서비스를 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.",
+      locale === "en"
+        ? "- Do not add hidden text just to raise the score. Reflect content with the same meaning as the real user-facing page in the initial HTML and structured data."
+        : "- 점수만 올리기 위한 숨김 텍스트가 아니라, 실제 사용자 화면과 같은 의미의 콘텐츠를 초기 HTML과 구조화 데이터에 반영해 주세요.",
+      locale === "en"
+        ? "- Treat this as work that helps AI systems understand and cite the service more accurately, not as a guarantee of AI search visibility."
+        : "- AI 검색 노출 보장이 아니라 AI가 서비스를 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.",
       ...plan.developerInstructions.map((instruction) => `- ${instruction}`),
     ].join("\n"),
     acceptanceCriteria: plan.acceptanceCriteria.map(
@@ -371,6 +396,7 @@ export function buildRenderedImprovementWorkOrderTemplate(
 
 export function buildWorkOrderTemplate(
   finding: FindingTemplateInput,
+  locale: WorkOrderTemplateLocale = "ko",
 ): WorkOrderTemplate {
   const defined = templates[finding.ruleCode];
 
@@ -379,8 +405,10 @@ export function buildWorkOrderTemplate(
   }
 
   const requirement =
-    finding.recommendation?.trim() ||
-    `${finding.title} 문제를 해결하여 같은 규칙으로 재검사했을 때 통과할 수 있도록 수정합니다.`;
+    locale === "en"
+      ? `Fix the ${finding.ruleCode} issue so that the same rule can pass when the production URL is rechecked.`
+      : finding.recommendation?.trim() ||
+        `${finding.title} 문제를 해결하여 같은 규칙으로 재검사했을 때 통과할 수 있도록 수정합니다.`;
 
   return {
     requirement,
