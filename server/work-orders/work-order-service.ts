@@ -24,6 +24,31 @@ import {
   type AcceptanceCriterion,
 } from "./work-order-templates";
 
+const WORK_ORDER_ITEM_TITLES_EN: Record<string, string> = {
+  "STRUCT-H1-001": "Add one representative H1 to the initial HTML",
+  "CONTENT-HEADINGS-001": "Build a clear H1/H2 heading hierarchy",
+  "CONTENT-INITIAL-001": "Provide meaningful body content in the initial HTML",
+  "CONTENT-ANSWERABILITY-001": "Add answerable service information to the initial HTML",
+  "STRUCT-LINKS-001": "Expose key internal pages as standard links",
+  "ACCESS-SITEMAP-001": "Declare and serve a public XML sitemap",
+  "META-CANONICAL-001": "Add a canonical link to the initial HTML head",
+  "META-OG-001": "Add Open Graph title and description",
+  "STRUCT-JSONLD-001": "Add valid Schema.org JSON-LD",
+  "STRUCT-JSONLD-TYPES-001": "Specify appropriate Schema.org @type values",
+};
+
+function workOrderItemTitle(
+  ruleCode: string,
+  fallbackTitle: string,
+  locale: "ko" | "en" = "ko",
+): string {
+  if (locale === "en") {
+    return WORK_ORDER_ITEM_TITLES_EN[ruleCode] ?? ruleCode;
+  }
+
+  return fallbackTitle;
+}
+
 const workOrderInclude = {
   site: true,
   initialScan: true,
@@ -693,7 +718,11 @@ export function createPrismaWorkOrderService(
           findingId: finding.id,
           itemCode: finding.ruleCode,
           targetUrl,
-          title: finding.title,
+          title: workOrderItemTitle(
+            finding.ruleCode,
+            finding.title,
+            input.locale ?? "ko",
+          ),
           requirement: template.requirement,
           developerMessage: template.developerMessage,
           acceptanceCriteriaJson:

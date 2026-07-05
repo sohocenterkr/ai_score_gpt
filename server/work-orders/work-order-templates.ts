@@ -315,6 +315,8 @@ const templates: Record<string, WorkOrderTemplate> = {
   },
 };
 
+const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {};
+
 function genericCriteria(
   ruleCode: string,
   locale: WorkOrderTemplateLocale = "ko",
@@ -398,7 +400,10 @@ export function buildWorkOrderTemplate(
   finding: FindingTemplateInput,
   locale: WorkOrderTemplateLocale = "ko",
 ): WorkOrderTemplate {
-  const defined = templates[finding.ruleCode];
+  const defined =
+    locale === "en"
+      ? templatesEn[finding.ruleCode]
+      : templates[finding.ruleCode];
 
   if (defined) {
     return defined;
