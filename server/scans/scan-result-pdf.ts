@@ -10,7 +10,7 @@ import type {
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.07-scan-locale-v3";
+  "2026.07-scan-locale-v4";
 
 let cachedFontHash: string | undefined;
 
@@ -287,6 +287,112 @@ function translatePdfUnderstandingText(
     )
     .replace(/언어 미확인/g, "language not confirmed");
 }
+
+const PDF_CONTENT_READINESS_TEXT_EN: Record<string, string> = {
+  "800자와 75% 포함 비율은 Site AI Score가 기본 설명량과 렌더링 의존도를 비교하기 위해 사용하는 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공통 공식 기준은 아니며, 핵심 목표는 글자 수 자체가 아니라 AI가 서비스의 정의·대상·이용 절차·요금·데이터 처리·FAQ를 정확히 인식하고 인용할 수 있게 하는 것입니다.": "The 800-character and 75% coverage values are internal Site AI Score reference criteria used to compare basic explanation volume and rendering dependency. They are not official universal standards for all search engines or AI services. The main goal is not the character count itself, but helping AI accurately recognize and cite the service definition, target users, usage process, pricing, data handling, and FAQs.",
+  "위 항목은 현재 QUICK 증거에서 확인하지 못했거나 추가 검토가 필요한 후보입니다. 실제로 없다고 단정하지 않으며, 운영자가 사실관계를 확인한 뒤 사용자에게도 보이는 내용으로 작성해야 합니다.": "The items above are candidates that were not confirmed in the current QUICK evidence or need additional review. They do not mean the information is definitely absent. The site operator should verify the facts and publish the content in a form visible to users.",
+  "서비스 정의와 핵심 가치": "Service definition and core value",
+  "이용 대상과 활용 사례": "Target users and use cases",
+  "이용 절차와 결과물": "Usage process and deliverables",
+  "지원 범위와 제한 사항": "Supported scope and limitations",
+  "요금·데이터 처리·운영 주체": "Pricing, data handling, and operator information",
+  "자주 묻는 질문과 추가 탐색 경로": "FAQs and additional discovery paths",
+  "문서 제목과 메타 설명에서 개요 일부를 확인했지만 실제 화면 본문의 충분성은 확인이 필요합니다.": "Some overview information was found in the document title and meta description, but the visible page body still needs to be reviewed for sufficiency.",
+  "사이트가 무엇을 제공하는지 설명하는 본문을 현재 증거에서 충분히 확인하지 못했습니다.": "The current evidence did not sufficiently confirm body content explaining what the site provides.",
+  "누구에게 적합한 서비스인지와 실제 활용 상황은 현재 QUICK 증거로 확인하지 못했습니다.": "The current QUICK evidence did not confirm who the service is for or how it is used in real situations.",
+  "이용 방법 관련 단서 일부가 있으나 단계별 설명과 결과물 범위는 확인이 필요합니다.": "Some signals related to usage instructions were found, but the step-by-step process and deliverable scope need review.",
+  "서비스 시작부터 결과 획득까지의 과정을 설명하는 단서를 충분히 확인하지 못했습니다.": "The evidence did not sufficiently confirm the process from starting the service to receiving the result.",
+  "메타 설명에서 기능 또는 지원 범위 일부가 보이지만 상세 범위와 제한은 확인이 필요합니다.": "Some functions or support scope appear in the meta description, but the detailed scope and limitations need review.",
+  "지원 기능·입력·출력·플랫폼과 제한을 현재 증거에서 확인하지 못했습니다.": "The current evidence did not confirm supported features, inputs, outputs, platforms, or limitations.",
+  "관련 링크 단서는 있으나 실제 요금·자료 처리·운영 정보의 충분성은 확인이 필요합니다.": "Related link signals were found, but pricing, data handling, and operator information need to be reviewed for sufficiency.",
+  "요금, 사용자 자료 처리, 운영 주체와 문의 방법을 현재 증거에서 충분히 확인하지 못했습니다.": "The current evidence did not sufficiently confirm pricing, user data handling, operator information, or contact methods.",
+  "FAQ·도움말 관련 단서는 있으나 주요 질문에 실제로 답하는지는 확인이 필요합니다.": "FAQ or help-related signals were found, but it still needs to be checked whether they answer key questions.",
+  "FAQ·가이드·문의 경로를 현재 증거에서 충분히 확인하지 못했습니다.": "The current evidence did not sufficiently confirm FAQ, guide, or contact paths.",
+  "사용자가 어떤 문제를 해결할 수 있나요?": "What problem can users solve?",
+  "어떤 결과물을 얻나요?": "What deliverables or outcomes do users receive?",
+  "어떤 사람이 사용하면 좋은가요?": "Who is this service best for?",
+  "어떤 상황에서 도움이 되나요?": "In what situations is it useful?",
+  "대표 이용 사례는 무엇인가요?": "What are representative use cases?",
+  "어떤 순서로 이용하나요?": "What is the usage flow?",
+  "사용자가 준비할 것은 무엇인가요?": "What should users prepare?",
+  "최종 결과물은 무엇인가요?": "What is the final deliverable?",
+  "어떤 기능과 입력 자료를 지원하나요?": "What features and input materials are supported?",
+  "지원 플랫폼·언어·출력 형식은 무엇인가요?": "Which platforms, languages, and output formats are supported?",
+  "제한되는 경우는 무엇인가요?": "What are the limitations?",
+  "무료·유료 범위는 어떻게 되나요?": "What is included in the free and paid plans?",
+  "입력 자료는 어떻게 처리되나요?": "How is submitted data handled?",
+  "누가 운영하고 어디로 문의하나요?": "Who operates the service and where can users ask questions?",
+  "처음 사용하는 사람이 자주 묻는 질문은 무엇인가요?": "What questions do first-time users commonly ask?",
+  "예외 상황은 어떻게 처리하나요?": "How are exceptions handled?",
+  "더 자세한 설명은 어디에 있나요?": "Where can users find more detailed information?",
+  "핵심 기능과 제공 가치": "Core features and value",
+  "사용자가 얻는 결과": "User outcomes",
+  "이런 분께 추천합니다": "Recommended for",
+  "대표 활용 사례": "Representative use cases",
+  "사용 전후 변화": "Before-and-after outcomes",
+  "이용 방법": "How to use",
+  "단계별 사용 과정": "Step-by-step usage process",
+  "완성되는 결과물": "Final deliverables",
+  "지원 기능과 범위": "Supported features and scope",
+  "지원 플랫폼·형식": "Supported platforms and formats",
+  "제한 사항": "Limitations",
+  "요금과 이용 범위": "Pricing and usage scope",
+  "개인정보·자료 처리": "Privacy and data handling",
+  "운영 주체와 문의": "Operator and contact information",
+  "자주 묻는 질문": "Frequently asked questions",
+  "도움말과 이용 가이드": "Help and usage guide",
+  "문의 및 지원": "Contact and support",
+};
+
+function translatePdfContentReadinessText(
+  value: string,
+  locale: "ko" | "en",
+): string {
+  if (locale !== "en") {
+    return value;
+  }
+
+  const exact = PDF_CONTENT_READINESS_TEXT_EN[value];
+  if (exact) {
+    return exact;
+  }
+
+  return value
+    .replace(
+      /초기 HTML 본문: ([0-9,]+)자/g,
+      "Initial HTML body: $1 chars",
+    )
+    .replace(/문서 제목: /g, "Document title: ")
+    .replace(/메타 설명: /g, "Meta description: ")
+    .replace(/대표 H1: /g, "Primary H1: ")
+    .replace(
+      /H2 ([0-9,]+)개: /g,
+      "H2 headings: $1 items: ",
+    )
+    .replace(
+      /초기 HTML 내부 링크: ([0-9,]+)개/g,
+      "Initial HTML internal links: $1 items",
+    )
+    .replace(/JSON-LD 유형: /g, "JSON-LD types: ")
+    .replace(
+      /^(.+) 서비스는 무엇을 제공하나요\?$/g,
+      "What does the $1 service provide?",
+    )
+    .replace(
+      /^(.+) 서비스란\?$/g,
+      "What is the $1 service?",
+    );
+}
+
+function translatePdfContentReadinessList(
+  values: readonly string[],
+  locale: "ko" | "en",
+): string[] {
+  return values.map((value) =>
+    translatePdfContentReadinessText(value, locale),
+  );
+}
+
 
 
 function fontPaths(filename: string): string[] {
@@ -1599,9 +1705,16 @@ function writeContentReadiness(
   writeTextBox(
     document,
     result.scan.locale === "en" ? "How to use these suggestions" : "이 제안의 활용 방법",
-    [assessment.benchmarkNote, assessment.disclaimer].join(
-      "\n\n",
-    ),
+    [
+      translatePdfContentReadinessText(
+        assessment.benchmarkNote,
+        result.scan.locale,
+      ),
+      translatePdfContentReadinessText(
+        assessment.disclaimer,
+        result.scan.locale,
+      ),
+    ].join("\n\n"),
     {
       background: "#FFFBEB",
       border: "#FDE68A",
@@ -1615,7 +1728,12 @@ function writeContentReadiness(
   );
   setText(document, 8.8, COLORS.text).text(
     assessment.confirmedSignals
-      .map((signal) => `- ${cleanText(signal)}`)
+      .map(
+        (signal) =>
+          `- ${cleanText(
+            translatePdfContentReadinessText(signal, result.scan.locale),
+          )}`,
+      )
       .join("\n"),
     {
       width: contentWidth(document),
@@ -1637,14 +1755,28 @@ function writeContentReadiness(
 
     writeTextBox(
       document,
-      `${index + 1}. ${topic.title} · ${statusLabel}`,
+      `${index + 1}. ${translatePdfContentReadinessText(
+        topic.title,
+        result.scan.locale,
+      )} · ${statusLabel}`,
       [
-        result.scan.locale === "en" ? `Current signal: ${topic.reason}` : `현재 확인 단서: ${topic.reason}`,
+        result.scan.locale === "en"
+          ? `Current signal: ${translatePdfContentReadinessText(
+              topic.reason,
+              result.scan.locale,
+            )}`
+          : `현재 확인 단서: ${topic.reason}`,
           result.scan.locale === "en"
-            ? `Questions AI may struggle to answer: ${topic.questions.join(" / ")}`
+            ? `Questions AI may struggle to answer: ${translatePdfContentReadinessList(
+                topic.questions,
+                result.scan.locale,
+              ).join(" / ")}`
             : `AI가 답하기 어려울 수 있는 질문: ${topic.questions.join(" / ")}`,
           result.scan.locale === "en"
-            ? `Suggested direction: ${topic.suggestedSections.join(" · ")} content may need to be added.`
+            ? `Suggested direction: ${translatePdfContentReadinessList(
+                topic.suggestedSections,
+                result.scan.locale,
+              ).join(" · ")} content may need to be added.`
             : `개선 방향: ${topic.suggestedSections.join(" · ")} 같은 콘텐츠 보강이 필요합니다.`,
         "",
       ].join("\n\n"),
