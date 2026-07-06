@@ -28,7 +28,8 @@ const WORK_ORDER_ITEM_TITLES_EN: Record<string, string> = {
   "STRUCT-H1-001": "Add one representative H1 to the initial HTML",
   "CONTENT-HEADINGS-001": "Build a clear H1/H2 heading hierarchy",
   "CONTENT-INITIAL-001": "Provide meaningful body content in the initial HTML",
-  "CONTENT-ANSWERABILITY-001": "Add answerable service information to the initial HTML",
+  "CONTENT-ANSWERABILITY-001":
+    "Add answerable service information to the initial HTML",
   "STRUCT-LINKS-001": "Expose key internal pages as standard links",
   "ACCESS-SITEMAP-001": "Declare and serve a public XML sitemap",
   "META-CANONICAL-001": "Add a canonical link to the initial HTML head",
@@ -223,13 +224,8 @@ export interface WorkOrderService {
     user: PublicUser,
     input: CreateWorkOrderInput,
   ): Promise<PublicWorkOrder>;
-  getWorkOrder(
-    user: PublicUser,
-    workOrderId: string,
-  ): Promise<PublicWorkOrder>;
-  getLatestWorkOrderForAdminByScan?(
-    scanId: string,
-  ): Promise<PublicWorkOrder>;
+  getWorkOrder(user: PublicUser, workOrderId: string): Promise<PublicWorkOrder>;
+  getLatestWorkOrderForAdminByScan?(scanId: string): Promise<PublicWorkOrder>;
   issueWorkOrder(
     user: PublicUser,
     workOrderId: string,
@@ -243,18 +239,9 @@ export interface WorkOrderService {
     user: PublicUser,
     workOrderId: string,
   ): Promise<PublicWorkOrder>;
-  cancelWorkOrder(
-    user: PublicUser,
-    workOrderId: string,
-  ): Promise<void>;
-  exportJson(
-    user: PublicUser,
-    workOrderId: string,
-  ): Promise<WorkOrderExport>;
-  exportCsv(
-    user: PublicUser,
-    workOrderId: string,
-  ): Promise<string>;
+  cancelWorkOrder(user: PublicUser, workOrderId: string): Promise<void>;
+  exportJson(user: PublicUser, workOrderId: string): Promise<WorkOrderExport>;
+  exportCsv(user: PublicUser, workOrderId: string): Promise<string>;
 }
 
 export class WorkOrderServiceError extends Error {
@@ -280,20 +267,13 @@ function acceptanceCriteria(value: Prisma.JsonValue): AcceptanceCriterion[] {
   }
 
   return value.flatMap((item) => {
-    if (
-      !item ||
-      typeof item !== "object" ||
-      Array.isArray(item)
-    ) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
       return [];
     }
 
     const record = item as Record<string, unknown>;
 
-    if (
-      typeof record.code !== "string" ||
-      typeof record.label !== "string"
-    ) {
+    if (typeof record.code !== "string" || typeof record.label !== "string") {
       return [];
     }
 
@@ -331,10 +311,9 @@ function publicWorkOrder(record: WorkOrderRecord): PublicWorkOrder {
       id: record.initialScan.id,
       score: record.initialScan.score,
       grade: record.initialScan.grade,
-        rulesVersion: record.initialScan.rulesVersion,
-        targetUrl: record.initialScan.targetUrl,
-      completedAt:
-        record.initialScan.completedAt?.toISOString() ?? null,
+      rulesVersion: record.initialScan.rulesVersion,
+      targetUrl: record.initialScan.targetUrl,
+      completedAt: record.initialScan.completedAt?.toISOString() ?? null,
     },
     customerOrganization: {
       id: record.customerOrganization.id,
@@ -354,9 +333,7 @@ function publicWorkOrder(record: WorkOrderRecord): PublicWorkOrder {
       title: item.title,
       requirement: item.requirement,
       developerMessage: item.developerMessage,
-      acceptanceCriteria: acceptanceCriteria(
-        item.acceptanceCriteriaJson,
-      ),
+      acceptanceCriteria: acceptanceCriteria(item.acceptanceCriteriaJson),
       isRequired: item.isRequired,
       weight: item.weight,
       status: item.status,
@@ -372,42 +349,38 @@ function publicWorkOrder(record: WorkOrderRecord): PublicWorkOrder {
           }
         : null,
     })),
-    verificationAttempts: record.verificationAttempts.map(
-      (attempt) => ({
-        id: attempt.id,
-        attemptNumber: attempt.attemptNumber,
-        submittedUrl: attempt.submittedUrl,
-        status: attempt.status,
-        scoreAfter: attempt.scoreAfter,
-        gradeAfter: attempt.gradeAfter,
-        startedAt: attempt.startedAt?.toISOString() ?? null,
-        completedAt: attempt.completedAt?.toISOString() ?? null,
-        errorCode: attempt.errorCode,
-        createdAt: attempt.createdAt.toISOString(),
-        scan: {
-          id: attempt.scan.id,
-          type: attempt.scan.type,
-          status: attempt.scan.status,
-          targetUrl: attempt.scan.targetUrl,
-          score: attempt.scan.score,
-          grade: attempt.scan.grade,
-          startedAt:
-            attempt.scan.startedAt?.toISOString() ?? null,
-          completedAt:
-            attempt.scan.completedAt?.toISOString() ?? null,
-          errorCode: attempt.scan.errorCode,
-        },
-        itemResults: attempt.itemResults.map((result) => ({
-          id: result.id,
-          workOrderItemId: result.workOrderItemId,
-          status: result.status,
-          criteriaResults: result.criteriaResultsJson,
-          evidence: result.evidenceJson,
-          message: result.message,
-          createdAt: result.createdAt.toISOString(),
-        })),
-      }),
-    ),
+    verificationAttempts: record.verificationAttempts.map((attempt) => ({
+      id: attempt.id,
+      attemptNumber: attempt.attemptNumber,
+      submittedUrl: attempt.submittedUrl,
+      status: attempt.status,
+      scoreAfter: attempt.scoreAfter,
+      gradeAfter: attempt.gradeAfter,
+      startedAt: attempt.startedAt?.toISOString() ?? null,
+      completedAt: attempt.completedAt?.toISOString() ?? null,
+      errorCode: attempt.errorCode,
+      createdAt: attempt.createdAt.toISOString(),
+      scan: {
+        id: attempt.scan.id,
+        type: attempt.scan.type,
+        status: attempt.scan.status,
+        targetUrl: attempt.scan.targetUrl,
+        score: attempt.scan.score,
+        grade: attempt.scan.grade,
+        startedAt: attempt.scan.startedAt?.toISOString() ?? null,
+        completedAt: attempt.scan.completedAt?.toISOString() ?? null,
+        errorCode: attempt.scan.errorCode,
+      },
+      itemResults: attempt.itemResults.map((result) => ({
+        id: result.id,
+        workOrderItemId: result.workOrderItemId,
+        status: result.status,
+        criteriaResults: result.criteriaResultsJson,
+        evidence: result.evidenceJson,
+        message: result.message,
+        createdAt: result.createdAt.toISOString(),
+      })),
+    })),
   };
 }
 
@@ -452,19 +425,29 @@ function expectedScoreRange(
   scoreBefore: number | null,
   totalWeight: number,
 ): { min: number; max: number } {
-  const current = Math.max(0, Math.min(100, scoreBefore ?? 0));
-  const minimumGain =
-    totalWeight <= 0 ? 0 : Math.max(1, Math.ceil(totalWeight * 0.5));
+  const current = Math.max(0, Math.min(100, Math.round(scoreBefore ?? 0)));
 
-  return {
-    min: Math.min(100, Math.round(current + minimumGain)),
-    max: Math.min(100, Math.round(current + totalWeight)),
-  };
+  if (totalWeight <= 0) {
+    return { min: current, max: current };
+  }
+
+  if (current < 70) {
+    return { min: 70, max: 100 };
+  }
+
+  if (current < 80) {
+    return { min: 80, max: 100 };
+  }
+
+  if (current < 90) {
+    return { min: 90, max: 100 };
+  }
+
+  return { min: current, max: 100 };
 }
 
 function csvCell(value: unknown): string {
-  const text =
-    value === null || value === undefined ? "" : String(value);
+  const text = value === null || value === undefined ? "" : String(value);
 
   return `"${text.replaceAll('"', '""')}"`;
 }
@@ -603,8 +586,7 @@ export function createPrismaWorkOrderService(
       const renderedImprovementCodes = [
         ...new Set(input.renderedImprovementCodes),
       ];
-      const selectedCount =
-        findingIds.length + renderedImprovementCodes.length;
+      const selectedCount = findingIds.length + renderedImprovementCodes.length;
 
       if (
         selectedCount === 0 ||
@@ -672,13 +654,9 @@ export function createPrismaWorkOrderService(
         })),
       });
       const availablePlans = new Map(
-        buildRenderedDomImprovementPlans(
-          comparison,
-          input.locale ?? "ko",
-        ).map((plan) => [
-          plan.code,
-          plan,
-        ]),
+        buildRenderedDomImprovementPlans(comparison, input.locale ?? "ko").map(
+          (plan) => [plan.code, plan],
+        ),
       );
       const selectedPlans = renderedImprovementCodes.map((code) => {
         const plan = availablePlans.get(code);
@@ -700,8 +678,7 @@ export function createPrismaWorkOrderService(
         if (
           !definition ||
           definition.weight <= 0 ||
-          (finding.status !== "FAIL" &&
-            finding.status !== "BLOCKED")
+          (finding.status !== "FAIL" && finding.status !== "BLOCKED")
         ) {
           throw new WorkOrderServiceError(
             "WORK_ORDER_INVALID_FINDINGS",
@@ -736,14 +713,15 @@ export function createPrismaWorkOrderService(
       });
 
       const renderedItemInputs = selectedPlans.map((plan) => {
-        const template =
-          buildRenderedImprovementWorkOrderTemplate(plan, input.locale ?? "ko");
+        const template = buildRenderedImprovementWorkOrderTemplate(
+          plan,
+          input.locale ?? "ko",
+        );
 
         return {
           findingId: null,
           itemCode: plan.code,
-          targetUrl:
-            scan.site.finalUrl ?? scan.site.baseUrl,
+          targetUrl: scan.site.finalUrl ?? scan.site.baseUrl,
           title: plan.title,
           requirement: template.requirement,
           developerMessage: template.developerMessage,
@@ -753,10 +731,7 @@ export function createPrismaWorkOrderService(
           weight: 0,
         };
       });
-      const itemInputs = [
-        ...findingItemInputs,
-        ...renderedItemInputs,
-      ];
+      const itemInputs = [...findingItemInputs, ...renderedItemInputs];
 
       const totalWeight = itemInputs.reduce(
         (total, item) => total + item.weight,
@@ -790,9 +765,7 @@ export function createPrismaWorkOrderService(
     },
 
     async getWorkOrder(user, workOrderId) {
-      return publicWorkOrder(
-        await accessibleRecord(user, workOrderId),
-      );
+      return publicWorkOrder(await accessibleRecord(user, workOrderId));
     },
 
     async getLatestWorkOrderForAdminByScan(scanId) {
@@ -907,44 +880,41 @@ export function createPrismaWorkOrderService(
           attemptNumber: true,
         },
       });
-      const attemptNumber =
-        (latest._max.attemptNumber ?? 0) + 1;
+      const attemptNumber = (latest._max.attemptNumber ?? 0) + 1;
 
-      const updated = await prisma.$transaction(
-        async (transaction) => {
-          const scan = await transaction.scan.create({
-            data: {
-              siteId: current.siteId,
-              targetUrl: submittedUrl,
-              type: "VERIFICATION",
-              status: "QUEUED",
-              rulesVersion: current.rulesVersion,
-              createdBy: user.id,
-            },
-          });
+      const updated = await prisma.$transaction(async (transaction) => {
+        const scan = await transaction.scan.create({
+          data: {
+            siteId: current.siteId,
+            targetUrl: submittedUrl,
+            type: "VERIFICATION",
+            status: "QUEUED",
+            rulesVersion: current.rulesVersion,
+            createdBy: user.id,
+          },
+        });
 
-          await transaction.verificationAttempt.create({
-            data: {
-              workOrderId: current.id,
-              scanId: scan.id,
-              attemptNumber,
-              submittedUrl,
-              status: "QUEUED",
-              createdBy: user.id,
-            },
-          });
+        await transaction.verificationAttempt.create({
+          data: {
+            workOrderId: current.id,
+            scanId: scan.id,
+            attemptNumber,
+            submittedUrl,
+            status: "QUEUED",
+            createdBy: user.id,
+          },
+        });
 
-          return transaction.workOrder.update({
-            where: {
-              id: current.id,
-            },
-            data: {
-              status: "VERIFYING",
-            },
-            include: workOrderInclude,
-          });
-        },
-      );
+        return transaction.workOrder.update({
+          where: {
+            id: current.id,
+          },
+          data: {
+            status: "VERIFYING",
+          },
+          include: workOrderInclude,
+        });
+      });
 
       return publicWorkOrder(updated);
     },
@@ -1043,11 +1013,7 @@ export function createPrismaWorkOrderService(
     },
 
     async exportCsv(user, workOrderId) {
-      return toCsv(
-        publicWorkOrder(
-          await accessibleRecord(user, workOrderId),
-        ),
-      );
+      return toCsv(publicWorkOrder(await accessibleRecord(user, workOrderId)));
     },
   };
 }

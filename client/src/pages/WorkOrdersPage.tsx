@@ -53,7 +53,7 @@ const workOrdersCopy = {
     currentScore: "현재 점수",
     notCalculated: "미계산",
     pointSuffix: "점",
-    expectedRange: "예상 범위",
+    expectedRange: "개선 목표",
     viewWorkOrder: "작업지시서 보기",
   },
   en: {
@@ -74,7 +74,7 @@ const workOrdersCopy = {
     currentScore: "Current score",
     notCalculated: "Not calculated",
     pointSuffix: "points",
-    expectedRange: "Expected range",
+    expectedRange: "Improvement target",
     viewWorkOrder: "View work order",
   },
 } as const;
@@ -87,11 +87,23 @@ function formatKST(value: string, locale: Locale): string {
   }).format(new Date(value));
 }
 
+function workOrderGoalRange(scoreBefore: number | null | undefined) {
+  const current = Math.max(0, Math.min(100, Math.round(scoreBefore ?? 0)));
+  const min =
+    current < 70 ? 70 : current < 80 ? 80 : current < 90 ? 90 : current;
+
+  return {
+    min: Math.max(80, Math.min(100, min)),
+    max: 100,
+  };
+}
+
 function translateWorkOrderError(message: string, locale: Locale): string {
   if (locale === "ko") return message;
 
   const exact: Record<string, string> = {
-    "작업지시서 목록을 불러오지 못했습니다.": "Could not load the work order list.",
+    "작업지시서 목록을 불러오지 못했습니다.":
+      "Could not load the work order list.",
   };
 
   return exact[message] ?? message;
@@ -169,15 +181,16 @@ export function WorkOrdersPage() {
 
         <div className="work-order-list">
           {workOrders.map((workOrder) => (
-            <article className="surface work-order-summary-card" key={workOrder.id}>
+            <article
+              className="surface work-order-summary-card"
+              key={workOrder.id}
+            >
               <div className="work-order-summary-top">
                 <div>
                   <span>{workOrder.orderNumber}</span>
                   <h2>{workOrder.site.name}</h2>
                 </div>
-                <strong>
-                  {labels[workOrder.status] ?? workOrder.status}
-                </strong>
+                <strong>{labels[workOrder.status] ?? workOrder.status}</strong>
               </div>
               <dl>
                 <div>
@@ -199,7 +212,8 @@ export function WorkOrdersPage() {
                 <div>
                   <dt>{copy.expectedRange}</dt>
                   <dd>
-                    {workOrder.expectedScoreMin}~{workOrder.expectedScoreMax}{" "}
+                    {workOrderGoalRange(workOrder.scoreBefore).min}~
+                    {workOrderGoalRange(workOrder.scoreBefore).max}{" "}
                     {copy.pointSuffix}
                   </dd>
                 </div>

@@ -137,7 +137,10 @@
 
 .work-order-overview {
   display: grid;
-  grid-template-columns: minmax(130px, 0.65fr) auto minmax(220px, 1fr) minmax(260px, 1.2fr);
+  grid-template-columns: minmax(130px, 0.65fr) auto minmax(220px, 1fr) minmax(
+      260px,
+      1.2fr
+    );
   align-items: center;
   gap: 24px;
   padding: 28px;
@@ -881,7 +884,6 @@
   }
 }
 
-
 /* work order issued flow guidance */
 .work-order-primary-link {
   display: inline-flex;
@@ -1059,3 +1061,14 @@
   }
 }
 
+.work-order-target-note {
+  grid-column: 1 / -1;
+  margin: -0.2rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.work-order-score-range.final-target strong {
+  color: var(--foreground);
+}
