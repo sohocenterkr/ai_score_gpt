@@ -198,6 +198,19 @@ function readRouteParam(
   return value ?? "";
 }
 
+function readLocaleQuery(
+  value: unknown,
+): "ko" | "en" | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+
+  if (raw === "ko" || raw === "en") {
+    return raw;
+  }
+
+  return undefined;
+}
+
+
 function buildSiteSummaries(
   organizationMembers: Array<{
     organization: {
@@ -527,9 +540,19 @@ export function createAdminRouter({
 
       try {
         const result = await getScanResultForAdmin(scanId);
-        const cached = await scanReportCacheService.getOrCreate(result);
+        const requestedLocale = readLocaleQuery(request.query.locale);
+        const pdfResult = requestedLocale
+          ? {
+              ...result,
+              scan: {
+                ...result.scan,
+                locale: requestedLocale,
+              },
+            }
+          : result;
+        const cached = await scanReportCacheService.getOrCreate(pdfResult);
         const pdf = cached.pdf;
-        const filename = `admin-${scanResultPdfFilename(result)}`;
+        const filename = `admin-${scanResultPdfFilename(pdfResult)}`;
 
         response
           .status(200)

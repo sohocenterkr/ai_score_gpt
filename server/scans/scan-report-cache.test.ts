@@ -235,6 +235,23 @@ describe("scan report cache", () => {
     expect(renderer).toHaveBeenCalledTimes(2);
   });
 
+  it("같은 검사라도 PDF locale이 다르면 캐시를 분리한다", () => {
+    const englishResult: PublicScanResult = {
+      ...sampleResult,
+      scan: {
+        ...sampleResult.scan,
+        locale: "en",
+      },
+    };
+
+    const koreanIdentity = buildScanReportCacheIdentity(sampleResult);
+    const englishIdentity = buildScanReportCacheIdentity(englishResult);
+
+    expect(koreanIdentity.reportType).toBe("DIAGNOSTIC_KO");
+    expect(englishIdentity.reportType).toBe("DIAGNOSTIC_EN");
+    expect(koreanIdentity.cacheKey).not.toBe(englishIdentity.cacheKey);
+  });
+
   it("동시에 같은 보고서를 요청해도 한 번만 생성한다", async () => {
     const repository = createMemoryRepository();
     const service = createScanReportCacheService(repository, {

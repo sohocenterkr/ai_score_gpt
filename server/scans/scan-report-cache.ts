@@ -10,7 +10,11 @@ import {
 } from "./scan-result-pdf";
 import type { PublicScanResult } from "./scan-result-service";
 
-const REPORT_TYPE = "DIAGNOSTIC";
+const REPORT_TYPE_PREFIX = "DIAGNOSTIC";
+
+function reportTypeForLocale(locale: string): string {
+  return locale === "en" ? `${REPORT_TYPE_PREFIX}_EN` : `${REPORT_TYPE_PREFIX}_KO`;
+}
 const DEFAULT_LOCK_TTL_MS = 90_000;
 const DEFAULT_WAIT_TIMEOUT_MS = 45_000;
 const DEFAULT_POLL_INTERVAL_MS = 250;
@@ -152,8 +156,9 @@ export function buildScanReportCacheIdentity(
   const fontHash = scanResultPdfFontHash();
   const cacheKey = sha256(
     [
-      REPORT_TYPE,
+      reportTypeForLocale(result.scan.locale),
       result.scan.id,
+      result.scan.locale,
       result.scan.rulesVersion,
       result.scan.completedAt ?? "not-completed",
       sourceHash,
@@ -164,7 +169,7 @@ export function buildScanReportCacheIdentity(
 
   return {
     scanId: result.scan.id,
-    reportType: REPORT_TYPE,
+    reportType: reportTypeForLocale(result.scan.locale),
     cacheKey,
     sourceHash,
     rendererVersion,

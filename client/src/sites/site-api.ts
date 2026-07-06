@@ -300,8 +300,13 @@ export async function getScanResultRequest(
   return data.result;
 }
 
-export function scanResultPdfUrl(scanId: string): string {
-  return `/api/scan-results/${encodeURIComponent(
+export function scanResultPdfUrl(
+  scanId: string,
+  locale?: "ko" | "en",
+): string {
+  const baseUrl = `/api/scan-results/${encodeURIComponent(
     scanId,
   )}/export.pdf`;
+
+  return locale === "en" ? `${baseUrl}?locale=en` : baseUrl;
 }

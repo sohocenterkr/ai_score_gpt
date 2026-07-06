@@ -199,6 +199,28 @@ describe("scan result router", () => {
     expect(getOrCreate).toHaveBeenCalledWith(sampleResult);
   });
 
+  it("영문 PDF 요청 시 locale=en을 PDF 생성 입력에 반영한다", async () => {
+    const getScanResult = vi.fn().mockResolvedValue(sampleResult);
+    const getOrCreate = vi.fn().mockResolvedValue({
+      pdf: Buffer.from("%PDF-1.4\nenglish\n%%EOF"),
+      cacheStatus: "MISS",
+    });
+
+    const response = await request(
+      createApp({ getScanResult }, { getOrCreate }),
+    ).get("/api/scan-results/scan-1/export.pdf?locale=en");
+
+    expect(response.status).toBe(200);
+    expect(getOrCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scan: expect.objectContaining({
+          id: "scan-1",
+          locale: "en",
+        }),
+      }),
+    );
+  });
+
   it("접근할 수 없는 검사 결과를 404로 반환한다", async () => {
     const getScanResult = vi.fn().mockRejectedValue(
       new ScanResultServiceError(

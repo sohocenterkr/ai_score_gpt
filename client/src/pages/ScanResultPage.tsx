@@ -1614,7 +1614,10 @@ export function ScanResultPage() {
               >
                 <a
                   className="scan-report-link"
-                  href={scanResultPdfUrl(result.scan.id)}
+                  href={scanResultPdfUrl(
+                    result.scan.id,
+                    isEnglish ? "en" : "ko",
+                  )}
                   target="_blank"
                   rel="noreferrer"
                 >{isEnglish ? "Detailed Diagnostic Report" : "상세 진단 보고서"}</a>

@@ -39,6 +39,19 @@ function readRouteParam(
   return value ?? "";
 }
 
+function readLocaleQuery(
+  value: unknown,
+): "ko" | "en" | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+
+  if (raw === "ko" || raw === "en") {
+    return raw;
+  }
+
+  return undefined;
+}
+
+
 export function createScanResultRouter(
   options: CreateScanResultRouterOptions,
 ) {
@@ -73,8 +86,18 @@ export function createScanResultRouter(
           response.locals.authUser,
           scanId,
         );
+        const requestedLocale = readLocaleQuery(request.query.locale);
+        const pdfResult = requestedLocale
+          ? {
+              ...result,
+              scan: {
+                ...result.scan,
+                locale: requestedLocale,
+              },
+            }
+          : result;
         const cached =
-          await scanReportCacheService.getOrCreate(result);
+          await scanReportCacheService.getOrCreate(pdfResult);
         const pdf = cached.pdf;
 
         response
@@ -83,7 +106,7 @@ export function createScanResultRouter(
           .set({
             "Cache-Control": "private, no-store",
             "Content-Disposition": `attachment; filename="${scanResultPdfFilename(
-              result,
+              pdfResult,
             )}"`,
               "Content-Length": String(pdf.length),
               "X-Site-AI-Report-Cache": cached.cacheStatus,
