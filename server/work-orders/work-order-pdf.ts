@@ -148,6 +148,10 @@ const WORK_ORDER_RENDERED_TEXT_EN: Record<string, string> = {
   "title, meta description, H1과 핵심 본문의 의미가 서로 일관됩니다.": "The title, meta description, H1, and core body content are semantically consistent.",
   "사용자에게 보이는 내용과 AI에 제공되는 핵심 정보가 일치합니다.": "The content visible to users matches the core information provided to AI.",
   "재검사에서 누락된 초기 HTML 핵심 항목이 확인됩니다.": "A recheck confirms that the previously missing initial HTML core items are now present.",
+  "초기 HTML에는 단순 글자 채우기가 아니라 서비스 정의와 핵심 가치, 이용 대상과 대표 활용 사례, 3~5단계 이용 절차를 자연스러운 본문 섹션으로 포함해 주세요.": "Do not add filler text to the initial HTML. Include the service definition and core value, target users and representative use cases, and a 3-5 step usage flow as natural body sections.",
+  "초기 HTML 본문이 200자 이상이며 렌더링 DOM 본문의 75% 이상을 포함합니다.": "The initial HTML body has at least 200 characters and contains at least 75% of the rendered DOM body.",
+  "초기 HTML만 확인해도 서비스 정의, 대상 고객, 대표 활용 사례, 이용 절차, 요금·데이터 처리 요약을 이해할 수 있습니다.": "The service definition, target customers, representative use cases, usage process, and pricing/data handling summary can be understood from the initial HTML alone.",
+  "재검사에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.": "A recheck confirms that initial HTML body and link coverage meet the criteria.",
 };
 
 function workOrderRenderedText(value: string, isEnglish: boolean): string {
