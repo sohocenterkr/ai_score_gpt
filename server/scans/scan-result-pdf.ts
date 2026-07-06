@@ -10,7 +10,7 @@ import type {
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.07-scan-locale-v2";
+  "2026.07-scan-locale-v3";
 
 let cachedFontHash: string | undefined;
 
@@ -84,6 +84,210 @@ function severityLabel(
     ? SEVERITY_LABELS_EN[severity]
     : SEVERITY_LABELS_KO[severity];
 }
+
+const PDF_CATEGORY_LABELS_EN: Record<string, string> = {
+  "접근 및 수집 정책": "Access and crawl policy",
+  "콘텐츠 공개 및 맥락": "Content visibility and context",
+  "정보·구조화 데이터 맥락": "Information and structured data context",
+  "정보 구조와 메타데이터": "Information structure and metadata",
+  "브랜드·서비스 식별": "Brand and service identification",
+  "핵심정보 인식 명확도": "Key information clarity",
+  "구조화 데이터 및 검색 기능성": "Structured data and search functionality",
+  "AI 에이전트 서버 가능성": "AI agent/server readiness",
+  "사용자 신뢰와 정책": "User trust and policies",
+  "콘텐츠 읽기 용이성": "Content readability",
+  "정보 구조와 의미 전달": "Information structure and meaning",
+  "핵심정보 인식 정확도": "Core information recognition accuracy",
+  "콘텐츠 이해 및 답변 가능성": "Content understanding and answerability",
+  "AI에이전트 사용 가능성": "AI agent usability",
+  "AI 에이전트 사용 가능성": "AI agent usability",
+  "신뢰성 및 추적 환경": "Trust and tracking environment",
+  "최신성 및 추적 환경": "Freshness and tracking environment",
+  "최신성 및 측정 환경": "Freshness and measurement environment",
+};
+
+const PDF_FOUND_LABELS_EN: Record<string, string> = {
+  "사이트명": "Site name",
+  "문서 제목": "Document title",
+  "제목": "Title",
+  "설명": "Description",
+  "기본 언어": "Primary language",
+  "대표 URL": "Main URL",
+  "최종 URL": "Final URL",
+  "JSON-LD 유형": "JSON-LD types",
+  "구조화 데이터 유형": "Structured data types",
+  "메타 설명": "Meta description",
+  "문서 언어": "Document language",
+  "대표 H1": "Primary H1",
+  "최상위 제목(H1)": "Top-level heading (H1)",
+  "제목 계층 구조": "Heading hierarchy",
+  "제공 계층 구조": "Heading hierarchy",
+  "페이지 링크 구조": "Page link structure",
+  "관련 콘텐츠 탐색 단서": "Related content discovery signals",
+};
+
+const PDF_FINDING_TITLES_EN: Record<string, string> = {
+  "HTTP 접근": "HTTP access",
+  "대표 페이지 HTTP 응답": "Main page HTTP response",
+  "HTTPS 사용": "HTTPS usage",
+  "robots.txt": "robots.txt",
+  "robots.txt 접근": "robots.txt access",
+  "robots.txt 기초 증거": "robots.txt baseline evidence",
+  "robots.txt 검색 봇 정책": "robots.txt search bot policy",
+  "OAI-SearchBot 검색 접근": "OAI-SearchBot search access",
+  "ChatGPT-User 사용자 요청 접근": "ChatGPT-User request access",
+  "GPTBot 학습 접근 정책": "GPTBot training access policy",
+  "sitemap": "Sitemap",
+  "사이트맵": "Sitemap",
+  "HTML 콘텐츠": "HTML content",
+  "문서 제목(title)": "Document title",
+  "페이지 제목": "Page title",
+  "메타 설명": "Meta description",
+  "페이지 설명": "Page description",
+  "대표 URL(canonical)": "Canonical URL",
+  "Open Graph 핵심 메타데이터": "Core Open Graph metadata",
+  "대표 제목(H1)": "Main heading (H1)",
+  "최상위 제목(H1)": "Top-level heading (H1)",
+  "제목 계층 구조": "Heading hierarchy",
+  "문서 기본 언어": "Document language",
+  "문서 언어": "Document language",
+  "JSON-LD 구조화 데이터": "JSON-LD structured data",
+  "JSON-LD 유형 식별": "JSON-LD type identification",
+  "초기 HTML 텍스트": "Initial HTML text",
+  "초기 콘텐츠 답변 기반": "Initial content answer basis",
+  "초기 HTML 내부 링크": "Initial HTML internal links",
+  "페이지 링크 구조": "Page link structure",
+  "관련 콘텐츠 탐색 단서": "Related content discovery signals",
+  "초기 HTML의 iframe 비의존성": "Initial HTML iframe independence",
+  "색인 허용 상태": "Indexability status",
+  "메타 로봇 정책": "Meta robots policy",
+  "HTTPS 리디렉션": "HTTPS redirect",
+  "실제 공개 URL 측정 환경": "Live public URL measurement environment",
+};
+
+const PDF_TEXT_EN: Record<string, string> = {
+  "공개 URL이 정상 응답했습니다.": "The public URL responded successfully.",
+  "대표 페이지가 정상 HTTP 상태로 응답했습니다.": "The main page responded with a successful HTTP status.",
+  "대표 페이지 HTTP 응답 상태를 확인해야 합니다.": "The main page HTTP response status should be reviewed.",
+  "대표 페이지가 안정적으로 2xx 상태를 반환하도록 서버·리디렉션·WAF 설정을 확인하세요.": "Review server, redirect, and WAF settings so the main page reliably returns a 2xx status.",
+  "최종 URL이 HTTPS를 사용합니다.": "The final URL uses HTTPS.",
+  "최종 URL이 HTTPS를 사용하지 않습니다.": "The final URL does not use HTTPS.",
+  "대표 URL과 모든 리디렉션을 HTTPS로 통일하세요.": "Use HTTPS consistently for the canonical URL and all redirects.",
+  "사이트 루트에 접근 가능한 robots.txt를 제공하고 검색용 AI 봇 정책을 명시하세요.": "Provide an accessible robots.txt at the site root and specify policies for AI search bots.",
+  "robots.txt의 sitemap 선언과 봇별 정책 분석을 위한 기초 증거를 수집했습니다.": "Baseline evidence was collected for sitemap declarations and bot-specific policy analysis in robots.txt.",
+  "robots.txt 선언 또는 사이트 루트에서 유효한 sitemap을 확인했습니다.": "A valid sitemap was found from robots.txt declarations or the site root.",
+  "확인한 sitemap 후보에서 유효한 XML sitemap을 찾지 못했습니다.": "No valid XML sitemap was found among the checked sitemap candidates.",
+  "robots.txt에 실제 sitemap URL을 선언하고 해당 주소가 2xx XML 응답을 반환하도록 설정하세요.": "Declare the actual sitemap URL in robots.txt and make sure it returns a 2xx XML response.",
+  "대표 페이지에서 HTML 문서를 확인했습니다.": "An HTML document was found on the main page.",
+  "대표 페이지 응답을 HTML 문서로 확인하지 못했습니다.": "The main page response could not be confirmed as an HTML document.",
+  "대표 URL이 사람이 읽을 수 있는 HTML 문서를 반환하는지 확인하세요.": "Make sure the main URL returns a human-readable HTML document.",
+  "초기 HTML에서 문서 제목을 확인했습니다.": "The document title was found in the initial HTML.",
+  "초기 HTML에서 문서 제목을 찾지 못했습니다.": "The document title was not found in the initial HTML.",
+  "각 페이지의 주제를 분명히 설명하는 고유한 title 요소를 초기 HTML에 추가하세요.": "Add a unique title element to the initial HTML that clearly describes each page topic.",
+  "초기 HTML에서 메타 설명을 확인했습니다.": "The meta description was found in the initial HTML.",
+  "초기 HTML에서 메타 설명을 찾지 못했습니다.": "The meta description was not found in the initial HTML.",
+  "페이지의 핵심 내용을 요약하는 meta description을 초기 HTML에 추가하세요.": "Add a meta description to the initial HTML that summarizes the page's core content.",
+  "canonical URL을 확인했습니다.": "The canonical URL was found.",
+  "canonical URL을 찾지 못했습니다.": "The canonical URL was not found.",
+  "중복 URL 판단을 돕도록 대표 URL을 가리키는 canonical 링크를 추가하세요.": "Add a canonical link pointing to the representative URL to help identify duplicate URLs.",
+  "og:title과 og:description을 확인했습니다.": "og:title and og:description were found.",
+  "og:title 또는 og:description이 누락되었습니다.": "og:title or og:description is missing.",
+  "공유·요약 문맥을 돕도록 og:title과 og:description을 초기 HTML에 추가하세요.": "Add og:title and og:description to the initial HTML to support sharing and summary context.",
+  "초기 HTML에서 H1 제목을 확인했습니다.": "An H1 heading was found in the initial HTML.",
+  "초기 HTML에서 H1 제목을 찾지 못했습니다.": "No H1 heading was found in the initial HTML.",
+  "페이지의 핵심 주제를 나타내는 H1 제목을 초기 HTML에 추가하세요.": "Add an H1 heading to the initial HTML that represents the page's core topic.",
+  "H1과 H2를 사용한 기본 제목 계층을 확인했습니다.": "A basic heading hierarchy using H1 and H2 was found.",
+  "H1과 H2를 함께 사용한 기본 제목 계층이 부족합니다.": "The page lacks a basic heading hierarchy using both H1 and H2.",
+  "페이지 주제와 하위 내용을 H1·H2 계층으로 명확히 구분하세요.": "Clearly separate the page topic and subtopics using an H1/H2 hierarchy.",
+  "HTML lang 속성을 확인했습니다.": "The HTML lang attribute was found.",
+  "HTML lang 속성을 찾지 못했습니다.": "The HTML lang attribute was not found.",
+  "html 요소에 페이지의 기본 언어를 나타내는 lang 속성을 추가하세요.": "Add a lang attribute to the html element to indicate the page's primary language.",
+  "유효한 JSON-LD 구조화 데이터를 확인했습니다.": "Valid JSON-LD structured data was found.",
+  "유효한 JSON-LD 구조화 데이터를 확인하지 못했습니다.": "Valid JSON-LD structured data was not found.",
+  "초기 HTML에서 유효한 JSON-LD 구조화 데이터를 찾지 못했습니다.": "No valid JSON-LD structured data was found in the initial HTML.",
+  "사이트의 업종과 핵심정보에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.": "Add Schema.org JSON-LD to the initial HTML that matches the site's type and key information.",
+  "사이트에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.": "Add Schema.org JSON-LD that fits the site to the initial HTML.",
+  "JSON-LD에서 Schema.org 유형을 식별했습니다.": "A Schema.org type was identified in the JSON-LD.",
+  "식별 가능한 JSON-LD @type이 없습니다.": "No identifiable JSON-LD @type was found.",
+  "WebSite, Organization, LocalBusiness 등 사이트에 맞는 @type을 명시하세요.": "Specify an @type that fits the site, such as WebSite, Organization, or LocalBusiness.",
+  "초기 HTML에서 읽을 수 있는 본문 텍스트를 확인했습니다.": "Readable body text was found in the initial HTML.",
+  "초기 HTML의 읽을 수 있는 본문 텍스트가 매우 적습니다.": "The initial HTML contains very little readable body text.",
+  "핵심 설명과 주요 정보를 JavaScript 실행 전 초기 HTML에서도 읽을 수 있게 제공하세요.": "Make core descriptions and key information readable in the initial HTML before JavaScript runs.",
+  "초기 HTML에 기초 질문 답변에 사용할 수 있는 본문량이 있습니다.": "The initial HTML contains enough body text to support basic question answering.",
+  "초기 HTML 본문량이 적어 사이트 기반 답변 생성이 제한될 수 있습니다.": "The initial HTML has too little body text, which may limit site-based answer generation.",
+  "서비스·장소·이용방법 등 주요 질문에 답할 수 있는 설명을 초기 HTML에 보강하세요.": "Add explanations to the initial HTML that can answer key questions about the service, location, and usage process.",
+  "초기 HTML에서 탐색 가능한 내부 링크를 확인했습니다.": "Navigable internal links were found in the initial HTML.",
+  "초기 HTML에서 탐색 가능한 내부 링크를 찾지 못했습니다.": "Navigable internal links were not found in the initial HTML.",
+  "주요 페이지로 이동할 수 있는 표준 a 링크를 초기 HTML에 제공하세요.": "Provide standard anchor links in the initial HTML so important pages can be reached.",
+  "초기 HTML의 내부 링크가 관련 콘텐츠 탐색 단서를 제공합니다.": "Internal links in the initial HTML provide signals for discovering related content.",
+  "관련 콘텐츠로 이어지는 내부 링크 단서가 부족합니다.": "There are not enough internal-link signals leading to related content.",
+  "핵심 주제와 관련 페이지를 설명적인 링크 텍스트로 연결하세요.": "Connect the core topic and related pages using descriptive link text.",
+  "초기 HTML만으로도 충분한 본문을 읽을 수 있습니다.": "Enough body text can be read from the initial HTML alone.",
+  "iframe이 존재하고 초기 HTML 본문이 적어 핵심정보 의존 가능성이 있습니다.": "The page uses iframes and has little initial HTML body text, so key information may depend on iframe content.",
+  "iframe 내부에만 있는 핵심정보를 상위 페이지 초기 HTML에도 제공하세요.": "Also provide key information from inside iframes in the parent page's initial HTML.",
+  "robots meta와 X-Robots-Tag에서 noindex를 확인하지 못했습니다.": "No noindex directive was found in robots meta or X-Robots-Tag.",
+  "robots meta 또는 X-Robots-Tag에 noindex가 있습니다.": "A noindex directive exists in robots meta or X-Robots-Tag.",
+  "검사 시점의 공개 URL에서 초기 HTML과 JavaScript 실행 후 DOM을 함께 비교했습니다.": "The initial HTML and JavaScript-rendered DOM were compared on the public URL at scan time.",
+  "검사 시점의 공개 URL에서 DNS·리디렉션·HTTP 응답과 초기 HTML을 새로 수집했습니다.": "DNS, redirects, HTTP response, and initial HTML were freshly collected from the public URL at scan time.",
+  "초기 HTML과 JavaScript 실행 후 DOM을 함께 비교했습니다.": "The initial HTML and JavaScript-rendered DOM were compared.",
+};
+
+function translatePdfCategory(value: string, locale: "ko" | "en"): string {
+  return locale === "en" ? PDF_CATEGORY_LABELS_EN[value] ?? value : value;
+}
+
+function translatePdfFoundLabel(value: string, locale: "ko" | "en"): string {
+  return locale === "en" ? PDF_FOUND_LABELS_EN[value] ?? value : value;
+}
+
+function translatePdfFindingTitle(value: string, locale: "ko" | "en"): string {
+  return locale === "en" ? PDF_FINDING_TITLES_EN[value] ?? value : value;
+}
+
+function translatePdfDiagnosticText(
+  value: string | null | undefined,
+  locale: "ko" | "en",
+): string {
+  if (!value) {
+    return "";
+  }
+
+  if (locale !== "en") {
+    return value;
+  }
+
+  return PDF_TEXT_EN[value] ?? value;
+}
+
+function translatePdfUnderstandingText(
+  value: string,
+  locale: "ko" | "en",
+): string {
+  if (locale !== "en") {
+    return value;
+  }
+
+  return value
+    .replace(
+      /"([^"]+)" 페이지는 ([a-zA-Z-]+) 문서로 확인되었고 초기 HTML에서 약 ([0-9,]+)자의 본문을 읽었습니다\./g,
+      (_match, title: string, language: string, characters: string) =>
+        `The page "${title}" was identified as a ${language} document, and about ${characters} characters of body text were read from the initial HTML.`,
+    )
+    .replace(
+      /사이트 설명은 "([^"]+)"로 확인됩니다\./g,
+      'The site description was identified as "$1".',
+    )
+    .replace(
+      /구조화 데이터 유형은 ([^.]+)입니다\./g,
+      "Structured data types found: $1.",
+    )
+    .replace(
+      /식별 가능한 JSON-LD 유형은 확인되지 않았습니다\./g,
+      "No identifiable JSON-LD type was found.",
+    )
+    .replace(/언어 미확인/g, "language not confirmed");
+}
+
 
 function fontPaths(filename: string): string[] {
   return [
@@ -1214,7 +1418,7 @@ function writeCategoryScores(
     );
 
     setText(document, 9.2, COLORS.text).text(
-      cleanText(category.category),
+      cleanText(translatePdfCategory(category.category, result.scan.locale)),
       x,
       y,
       {
@@ -1313,7 +1517,10 @@ function writeUnderstanding(
   writeTextBox(
     document,
     result.scan.locale === "en" ? "Site understanding summary" : "사이트 이해 요약",
-    result.understandingSummary,
+    translatePdfUnderstandingText(
+      result.understandingSummary,
+      result.scan.locale,
+    ),
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",
@@ -1329,7 +1536,11 @@ function writeUnderstanding(
     );
   } else {
     for (const item of result.foundInformation) {
-      writeLabelValue(document, item.label, item.value);
+      writeLabelValue(
+        document,
+        translatePdfFoundLabel(item.label, result.scan.locale),
+        item.value,
+      );
     }
   }
 
@@ -1344,7 +1555,9 @@ function writeUnderstanding(
     for (const item of result.missingInformation) {
       ensureSpace(document, 25);
       setText(document, 8.8, COLORS.fail).text(
-        `${cleanText(item.ruleCode)} / ${cleanText(item.title)}`,
+        `${cleanText(item.ruleCode)} / ${cleanText(
+          translatePdfFindingTitle(item.title, result.scan.locale),
+        )}`,
         {
           width: contentWidth(document),
           lineGap: 2,
@@ -1627,7 +1840,7 @@ function writeFindingDetail(
   );
   document.moveDown(0.4);
 
-  setText(document, 18, COLORS.text).text(cleanText(finding.title), {
+  setText(document, 18, COLORS.text).text(cleanText(translatePdfFindingTitle(finding.title, locale)), {
     width,
     lineGap: 3,
   });
@@ -1635,7 +1848,7 @@ function writeFindingDetail(
 
   setText(document, 8.2, COLORS.muted).text(
     `${cleanText(finding.ruleCode)} / ${cleanText(
-      finding.category,
+      translatePdfCategory(finding.category, locale),
     )}`,
     {
       width,
@@ -1679,7 +1892,7 @@ function writeFindingDetail(
 
   document.y = metaY + 58;
 
-  writeTextBox(document, locale === "en" ? "Diagnostic details" : "진단 내용", finding.description, {
+  writeTextBox(document, locale === "en" ? "Diagnostic details" : "진단 내용", translatePdfDiagnosticText(finding.description, locale), {
     background: COLORS.white,
     border: COLORS.border,
     accent: colors.text,
@@ -1689,7 +1902,7 @@ function writeFindingDetail(
     writeTextBox(
       document,
       locale === "en" ? "Recommended fix" : "수정 권장사항",
-      finding.recommendation,
+      translatePdfDiagnosticText(finding.recommendation, locale),
       {
         background: COLORS.primarySoft,
         border: "#C7D2FE",
@@ -1750,14 +1963,14 @@ function writeCompactFinding(
 
   setText(document, 9);
   const title = `${cleanText(finding.ruleCode)} / ${cleanText(
-    finding.title,
+    translatePdfFindingTitle(finding.title, locale),
   )}`;
   const titleHeight = document.heightOfString(title, {
     width: width - padding * 2,
     lineGap: 2,
   });
   const descriptionHeight = document.heightOfString(
-    cleanText(finding.description),
+    cleanText(translatePdfDiagnosticText(finding.description, locale)),
     {
       width: width - padding * 2,
       lineGap: 2,
@@ -1765,7 +1978,11 @@ function writeCompactFinding(
   );
   const recommendationHeight = finding.recommendation
     ? document.heightOfString(
-        locale === "en" ? `Recommended: ${cleanText(finding.recommendation)}` : `권장: ${cleanText(finding.recommendation)}`,
+        locale === "en"
+          ? `Recommended: ${cleanText(
+              translatePdfDiagnosticText(finding.recommendation, locale),
+            )}`
+          : `권장: ${cleanText(finding.recommendation)}`,
         {
           width: width - padding * 2,
           lineGap: 2,
@@ -1823,7 +2040,7 @@ function writeCompactFinding(
   currentY += 18;
 
   setText(document, 8.3, COLORS.text).text(
-    cleanText(finding.description),
+    cleanText(translatePdfDiagnosticText(finding.description, locale)),
     x + padding,
     currentY,
     {
@@ -1836,7 +2053,11 @@ function writeCompactFinding(
 
   if (finding.recommendation) {
     setText(document, 7.9, COLORS.primaryDark).text(
-      locale === "en" ? `Recommended: ${cleanText(finding.recommendation)}` : `권장: ${cleanText(finding.recommendation)}`,
+      locale === "en"
+        ? `Recommended: ${cleanText(
+            translatePdfDiagnosticText(finding.recommendation, locale),
+          )}`
+        : `권장: ${cleanText(finding.recommendation)}`,
       x + padding,
       currentY,
       {
@@ -1876,9 +2097,13 @@ function writeAllFindings(
   const groups = new Map<string, PublicScanResultFinding[]>();
 
   for (const finding of result.findings) {
-    const values = groups.get(finding.category) ?? [];
+    const category = translatePdfCategory(
+      finding.category,
+      result.scan.locale,
+    );
+    const values = groups.get(category) ?? [];
     values.push(finding);
-    groups.set(finding.category, values);
+    groups.set(category, values);
   }
 
   for (const [category, findings] of groups) {
