@@ -635,11 +635,34 @@ export function createPrismaWorkOrderService(
         );
       }
 
+      const autoIncludedFindingIds = scan.findings
+        .filter((finding) => {
+          const definition = getRuleDefinition(finding.ruleCode);
+
+          return (
+            definition !== undefined &&
+            definition.weight > 0 &&
+            (finding.status === "FAIL" || finding.status === "BLOCKED")
+          );
+        })
+        .map((finding) => finding.id);
+      const effectiveFindingIds = [
+        ...new Set([...findingIds, ...autoIncludedFindingIds]),
+      ];
+
+      if (effectiveFindingIds.length + renderedImprovementCodes.length > 50) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_INVALID_FINDINGS",
+          "작업지시서 대상 항목은 최대 50개입니다.",
+          400,
+        );
+      }
+
       const selectedFindings = scan.findings.filter((finding) =>
-        findingIds.includes(finding.id),
+        effectiveFindingIds.includes(finding.id),
       );
 
-      if (selectedFindings.length !== findingIds.length) {
+      if (selectedFindings.length !== effectiveFindingIds.length) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_FINDINGS",
           "선택한 문제 중 현재 검사에 속하지 않는 항목이 있습니다.",

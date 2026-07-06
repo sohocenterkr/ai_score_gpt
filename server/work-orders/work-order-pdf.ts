@@ -880,8 +880,8 @@ function writeExecutionPlanPage(
         ? "The work bundles below are an implementation guide for fixing items that share the same root cause together, not for hiding or removing scoring items."
         : "아래 작업 묶음은 점수 항목을 숨기거나 제거하는 것이 아니라, 같은 원인에서 나온 항목을 한 번에 구현하도록 정리한 실행 가이드입니다.",
       isEnglish
-        ? "Automatic verification and scoring still follow the detailed items later in this document. Developers can implement the P0, P1, and P2 bundles first, then review the detailed completion criteria."
-        : "자동검수와 점수 계산은 뒤쪽 상세 항목 기준으로 유지되며, 개발자는 먼저 P0·P1·P2 묶음 단위로 구현한 뒤 상세 완료 기준을 확인하면 됩니다.",
+        ? "Automatic verification and scoring still follow the detailed items later in this document. Developers should implement the P0 to P4 bundles in order, then review the detailed completion criteria for each linked automatic verification item."
+        : "자동검수와 점수 계산은 뒤쪽 상세 항목 기준으로 유지되며, 개발자는 P0~P4 묶음을 순서대로 구현한 뒤 각 연결 자동검수 항목의 상세 완료 기준을 확인하면 됩니다.",
     ].join("\n\n"),
     {
       width: contentWidth(document),
@@ -895,69 +895,97 @@ function writeExecutionPlanPage(
     {
       priority: "P0",
       title: isEnglish
-        ? "Adopt SSR/SSG for initial HTML — content, H1, and internal links"
-        : "초기 HTML SSR/SSG 도입 — 본문·H1·내부 링크 보강",
+        ? "Initial HTML/SSR/SSG technical recovery gate"
+        : "초기 HTML/SSR/SSG 필수 복구 게이트",
       owner: isEnglish ? "Frontend / full-stack" : "프론트엔드 / 풀스택",
       body: [
         isEnglish
-          ? "Include the service definition, target customers, representative use cases, a 3–5 step usage flow, and pricing/data handling summary in the landing page initial HTML."
-          : "랜딩 페이지의 최초 HTML에 서비스 정의, 대상 고객, 대표 활용 사례, 3~5단계 이용 절차, 요금·데이터 처리 요약을 포함합니다.",
+          ? "Linked items: STRUCT-H1, CONTENT-HEADINGS, CONTENT-INITIAL, CONTENT-ANSWERABILITY, STRUCT-LINKS, CONTENT-NAVIGATION, META-CANONICAL."
+          : "연결 항목: H1, 제목 계층, 초기 HTML 본문, 초기 콘텐츠 답변 기반, 내부 링크, 관련 콘텐츠 탐색 단서, canonical.",
         isEnglish
-          ? "Use exactly one H1, and structure H2 sections around service overview, target users, usage flow, pricing/security, and FAQ."
-          : "H1은 정확히 1개, H2는 서비스 소개·이용 대상·이용 절차·요금/보안·FAQ 등 주요 섹션으로 구성합니다.",
+          ? "Before P0 is complete, content and schema work in P1 to P4 may not be visible to AI collectors or reflected in the score."
+          : "P0가 완료되지 않으면 P1~P4의 콘텐츠와 구조화 데이터 작업도 AI 수집과 점수에 충분히 반영되지 않을 수 있습니다.",
         isEnglish
-          ? "Provide pricing, feature overview, terms, privacy policy, help, and contact links as standard anchor tags with href attributes."
-          : "요금제, 기능 소개, 이용약관, 개인정보처리방침, 도움말/문의 링크는 href가 있는 표준 a 태그로 제공합니다.",
+          ? "Expose one H1, meaningful H2 sections, core body content, canonical, and standard internal links in the initial HTML."
+          : "초기 HTML에서 대표 H1 1개, 의미 있는 H2 섹션, 핵심 본문, canonical, 표준 내부 링크가 확인되도록 합니다.",
         isEnglish
-          ? "For React-based sites, review Next.js SSR/SSG, react-snap-style prerendering, Prerender.io, or a custom prerendering approach that fits the current architecture."
-          : "React 기반이면 Next.js SSR/SSG, react-snap류 사전 렌더링, Prerender.io 또는 자체 사전 렌더링 방식을 현재 구조에 맞게 검토합니다.",
+          ? "For React-based sites, use SSR, SSG, prerendering, or an equivalent approach that fits the current architecture."
+          : "React 기반이면 SSR, SSG, 사전 렌더링 또는 현재 구조에 맞는 동등한 방식을 적용합니다.",
         isEnglish
-          ? "Completion criteria: initial HTML body has at least 200 characters, internal target is 800 characters, body/links cover at least 75% of rendered DOM or differ by no more than two links, and existing UI/features do not regress."
-          : "완료 기준: 초기 HTML 본문 200자 이상, 내부 목표 800자, 렌더링 DOM 대비 본문·링크 75% 이상 또는 차이 2개 이하, 기존 UI/기능 회귀 없음.",
+          ? "Required gate: initial HTML body has at least 200 characters, internal target is 800 characters, initial body/link coverage reaches the reference threshold, and existing UI/features do not regress."
+          : "필수 게이트: 초기 HTML 본문 200자 이상, 내부 목표 800자, 본문·링크 포함 비율 기준 충족, 기존 UI와 주요 기능 회귀 없음.",
       ],
     },
     {
       priority: "P1",
       title: isEnglish
-        ? "Check consistency between initial HTML and rendered DOM"
-        : "초기 HTML ↔ 렌더링 DOM 정보 일치성 점검",
-      owner: isEnglish ? "Frontend" : "프론트엔드",
+        ? "Base JSON-LD structured data"
+        : "기본 JSON-LD 구조화 데이터",
+      owner: isEnglish ? "Frontend / SEO engineer" : "프론트엔드 / SEO 담당",
       body: [
         isEnglish
-          ? "Compare title, meta description, H1, and JSON-LD values between initial HTML and the JavaScript-rendered DOM."
-          : "초기 HTML과 JavaScript 렌더링 후 DOM의 title, meta description, H1, JSON-LD 값을 비교합니다.",
+          ? "Linked items: STRUCT-JSONLD and STRUCT-JSONLD-TYPES."
+          : "연결 항목: JSON-LD 구조화 데이터, JSON-LD 유형 식별.",
         isEnglish
-          ? "Make sure client-side code does not overwrite correct initial values with stale or different values."
-          : "클라이언트 코드가 올바른 초기값을 오래된 값이나 다른 값으로 덮어쓰지 않게 정리합니다.",
+          ? "Add valid Schema.org JSON-LD to the initial HTML, prioritizing WebSite, Organization, and WebApplication for SaaS/web services."
+          : "초기 HTML에 유효한 Schema.org JSON-LD를 추가하고 SaaS·웹서비스는 WebSite, Organization, WebApplication 조합을 우선 검토합니다.",
         isEnglish
-          ? "Information that affects purchase evaluation, such as pricing, security, privacy, and support scope, should convey the same meaning in page content, metadata, and JSON-LD."
-          : "요금, 보안, 개인정보, 지원 범위처럼 구매 검토에 영향을 주는 정보는 화면 본문·메타데이터·JSON-LD가 같은 의미를 전달해야 합니다.",
-        isEnglish
-          ? "Completion criteria: one representative H1, no conflicting metadata, and no key-information mismatch before and after rendering in recheck results."
-          : "완료 기준: 대표 H1 1개, 충돌 메타데이터 없음, 재검사에서 렌더링 전후 핵심정보 불일치 없음.",
+          ? "Keep the JSON-LD name, URL, description, and FAQ values consistent with the visible page and metadata."
+          : "JSON-LD의 이름, URL, 설명, FAQ 값이 화면 본문과 메타데이터의 의미와 일치해야 합니다.",
       ],
     },
     {
       priority: "P2",
-      title: isEnglish
-        ? "Add FAQ content and FAQPage JSON-LD"
-        : "FAQ 콘텐츠 및 FAQPage JSON-LD 추가",
+      title: isEnglish ? "AI answer-readiness content" : "AI 답변 준비 콘텐츠",
       owner: isEnglish
         ? "Content planning + frontend"
         : "콘텐츠 기획 + 프론트엔드",
       body: [
         isEnglish
-          ? "Write 3–4 key FAQ items that are visible on the actual page."
-          : "실제 화면에 보이는 핵심 FAQ 3~4개를 작성합니다.",
+          ? "Linked items: service definition, target users/use cases, usage flow/outcome, pricing/free-paid scope, and support/contact."
+          : "연결 항목: 서비스 정의, 이용 대상·활용 사례, 이용 절차·결과물, 요금·무료/유료 범위, 고객지원·문의 채널.",
         isEnglish
-          ? "Prioritize questions real users ask, such as free/paid scope, data handling, how to get started, and support coverage."
-          : "무료/유료 범위, 데이터 처리 방식, 시작 방법, 지원 범위 등 실제 사용자가 묻는 질문을 우선합니다.",
+          ? "Write official user-facing copy that lets AI answer what the service provides, who it is for, how it works, what it costs, and how to get support."
+          : "AI가 무엇을 제공하는지, 누구에게 적합한지, 어떻게 이용하는지, 비용은 어떻게 되는지, 어디로 문의하는지 답할 수 있도록 공식 문구를 작성합니다.",
         isEnglish
-          ? "Declare the same questions and answers as FAQPage JSON-LD, and keep the visible FAQ and structured data consistent."
-          : "같은 질문·답변을 FAQPage JSON-LD로 선언하되, 화면 FAQ와 구조화 데이터가 항상 일치해야 합니다.",
+          ? "The content must be visible to users and also present in the initial HTML after P0."
+          : "이 콘텐츠는 사용자에게 보이는 화면에 있어야 하며 P0 이후 초기 HTML에서도 확인되어야 합니다.",
+      ],
+    },
+    {
+      priority: "P3",
+      title: isEnglish ? "Trust schema expansion" : "신뢰 스키마 확장",
+      owner: isEnglish ? "Frontend / SEO engineer" : "프론트엔드 / SEO 담당",
+      body: [
         isEnglish
-          ? "Completion criteria: visible FAQ exists, FAQPage JSON-LD is valid, and help/contact links are visible in the initial HTML."
-          : "완료 기준: 화면 FAQ 존재, FAQPage JSON-LD 유효, 도움말·문의 링크가 초기 HTML에서 확인됨.",
+          ? "Linked items: sameAs, contactPoint, SearchAction, and entity trust structured signals."
+          : "연결 항목: sameAs, contactPoint, SearchAction, 운영 주체·문의 구조화 신호.",
+        isEnglish
+          ? "Do not split these into unrelated edits. Extend the same Organization/WebSite/WebApplication JSON-LD graph consistently."
+          : "이 항목들을 따로따로 흩어서 수정하지 말고 Organization/WebSite/WebApplication JSON-LD 그래프를 일관되게 확장합니다.",
+        isEnglish
+          ? "If the site has no internal search feature, SearchAction can be handled as a low-priority review item rather than inventing a fake search URL."
+          : "사이트 내부 검색 기능이 없다면 SearchAction은 가짜 검색 URL을 만들지 말고 낮은 우선순위 검토 항목으로 처리합니다.",
+      ],
+    },
+    {
+      priority: "P4",
+      title: isEnglish
+        ? "Policy, proof, and conversion-policy content"
+        : "정책·차별점·전환 기준 콘텐츠",
+      owner: isEnglish
+        ? "Planning/legal review + frontend"
+        : "기획/정책 검토 + 프론트엔드",
+      body: [
+        isEnglish
+          ? "Linked items: data policy, differentiation/proof, and transaction/contact policy."
+          : "연결 항목: 개인정보·입력자료 처리, 차별점·신뢰 근거, 거래·예약·문의 정책.",
+        isEnglish
+          ? "Confirm the conversion intent: direct payment, reservation/inquiry conversion, or informational. The completion criteria differ by this type."
+          : "전환 유형이 직접 결제형, 예약·문의 전환형, 정보 제공형 중 무엇인지 확인합니다. 유형에 따라 완료 기준이 달라집니다.",
+        isEnglish
+          ? "Add privacy/data handling, operator/contact policy, refund/cancellation or inquiry policy where relevant, and factual proof such as examples, testimonials, or results."
+          : "개인정보·자료 처리, 운영 주체와 문의 정책, 필요 시 환불·취소·변경 기준, 사례·후기·실적 같은 사실 기반 신뢰 근거를 보강합니다.",
       ],
     },
   ];
@@ -994,8 +1022,8 @@ function writeExecutionPlanPage(
     document,
     isEnglish ? "Verification principles" : "검증 원칙",
     isEnglish
-      ? "After deploying P0, run a Site AI Score recheck against the same production URL. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
-      : "P0 배포 후 같은 운영 URL로 Site AI Score 재검사를 실행하고, 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
+      ? "P0 is the technical gate. After deploying P0, run a Site AI Score recheck against the same production URL before treating P1 to P4 as complete. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
+      : "P0는 기술 게이트입니다. P0 배포 후 같은 운영 URL로 Site AI Score 재검사를 실행한 뒤 P1~P4 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",

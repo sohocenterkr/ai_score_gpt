@@ -901,8 +901,12 @@ export function ScanResultPage() {
         setRulesRefreshError("");
         setResult(response);
         setSelectedFindingIds(
-          response.primaryIssues
-            .filter((finding) => finding.weight > 0)
+          response.findings
+            .filter(
+              (finding) =>
+                finding.weight > 0 &&
+                (finding.status === "FAIL" || finding.status === "BLOCKED"),
+            )
             .map((finding) => finding.id),
         );
         setSelectedRenderedImprovementCodes(

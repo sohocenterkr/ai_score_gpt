@@ -456,6 +456,210 @@ const templates: Record<string, WorkOrderTemplate> = {
     ],
     isRequired: false,
   },
+  "CONTENT-CORE-DEFINITION-001": {
+    requirement:
+      "서비스 정의, 해결하는 문제, 핵심 기능, 사용자가 얻는 결과를 사용자 화면과 초기 HTML에 함께 추가합니다.",
+    developerMessage:
+      "이 항목은 P2 AI 답변 준비 콘텐츠 작업에 해당하지만, P0 초기 HTML SSR/SSG가 먼저 충족되어야 점수와 AI 수집에 안정적으로 반영됩니다. 랜딩 페이지 본문에 이 서비스가 무엇을 제공하는지, 어떤 문제를 해결하는지, 사용자가 최종적으로 어떤 결과물을 얻는지 공식 문구로 작성해 주세요.",
+    acceptanceCriteria: [
+      {
+        code: "CORE-DEFINITION-01",
+        label: "초기 HTML과 사용자 화면에서 서비스 정의를 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "CORE-DEFINITION-02",
+        label:
+          "해결하는 문제, 핵심 기능, 사용자가 얻는 결과가 1~2문단 이상으로 설명되어 있다.",
+        required: true,
+      },
+      {
+        code: "CORE-DEFINITION-03",
+        label:
+          "title, meta description, H1, JSON-LD의 서비스 설명과 의미가 충돌하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-AUDIENCE-USECASE-001": {
+    requirement:
+      "이용 대상과 대표 활용 사례를 초기 HTML과 사용자 화면에 명확히 추가합니다.",
+    developerMessage:
+      "AI가 누구에게 적합한 서비스인지 답할 수 있도록 '이런 분께 추천합니다', '대표 활용 사례', '사용 전후 변화' 같은 섹션을 작성해 주세요. 최소 2개 이상의 실제 활용 상황을 포함하고, 과장된 성과 표현보다 확인 가능한 사용 맥락을 우선합니다.",
+    acceptanceCriteria: [
+      {
+        code: "AUDIENCE-USECASE-01",
+        label: "주요 이용 대상이 초기 HTML과 사용자 화면에서 확인된다.",
+        required: true,
+      },
+      {
+        code: "AUDIENCE-USECASE-02",
+        label: "대표 활용 사례가 최소 2개 이상 구체적으로 설명되어 있다.",
+        required: true,
+      },
+      {
+        code: "AUDIENCE-USECASE-03",
+        label:
+          "활용 사례가 실제 서비스 기능과 연결되어 있고 과장된 추천 문구만으로 구성되지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-WORKFLOW-OUTCOME-001": {
+    requirement:
+      "서비스 시작부터 결과 확인까지의 이용 절차와 최종 결과물을 3~5단계로 설명합니다.",
+    developerMessage:
+      "사용자가 어떤 순서로 서비스를 이용하고 어떤 산출물을 받는지 AI가 오독 없이 설명할 수 있어야 합니다. 가입, URL 입력, 진단 실행, 보고서/작업지시서 확인, 재검수 같은 실제 흐름을 3~5단계로 정리해 주세요.",
+    acceptanceCriteria: [
+      {
+        code: "WORKFLOW-OUTCOME-01",
+        label: "이용 절차가 3~5단계로 초기 HTML과 사용자 화면에 표시된다.",
+        required: true,
+      },
+      {
+        code: "WORKFLOW-OUTCOME-02",
+        label: "사용자가 준비할 것과 최종 결과물이 무엇인지 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "WORKFLOW-OUTCOME-03",
+        label: "단계별 설명이 실제 화면의 기능 흐름과 충돌하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-PRICING-TERMS-001": {
+    requirement:
+      "무료 범위, 유료 범위, 요금제, 결제 주기, 추가 비용 여부를 사용자 화면과 초기 HTML에 명확히 안내합니다.",
+    developerMessage:
+      "AI는 요금 정보가 모호하면 잘못된 답변을 만들 수 있습니다. 무료 간편진단 범위, 유료 상세 보고서와 수정 작업지시서 제공 범위, 할인 또는 사례 활용 조건, 외부 결제·API 비용 여부를 표나 FAQ 형태로 정리해 주세요.",
+    acceptanceCriteria: [
+      {
+        code: "PRICING-TERMS-01",
+        label: "무료 제공 범위와 유료 제공 범위가 구분되어 있다.",
+        required: true,
+      },
+      {
+        code: "PRICING-TERMS-02",
+        label:
+          "요금제명, 가격 또는 가격 확인 방법, 결제 주기와 추가 비용 여부가 확인된다.",
+        required: true,
+      },
+      {
+        code: "PRICING-TERMS-03",
+        label:
+          "요금 관련 문구가 결제 화면, 약관, FAQ, JSON-LD와 의미상 충돌하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-SUPPORT-CONTACT-001": {
+    requirement:
+      "공식 문의 채널, 상담 가능 시간, 응답 기준, 지원 범위를 사용자 화면과 초기 HTML에 명확히 표시합니다.",
+    developerMessage:
+      "AI가 사용자에게 정확한 문의 방법을 안내할 수 있도록 이메일, 카카오톡, 채널톡, 전화 등 공식 채널과 운영시간, 예상 답변 소요 시간, 지원 가능한 문의 범위를 작성해 주세요. 구조화 데이터 contactPoint와도 같은 의미가 되게 유지합니다.",
+    acceptanceCriteria: [
+      {
+        code: "SUPPORT-CONTACT-01",
+        label: "공식 문의 채널이 초기 HTML과 사용자 화면에서 확인된다.",
+        required: true,
+      },
+      {
+        code: "SUPPORT-CONTACT-02",
+        label: "상담 가능 시간, 예상 응답 기준, 지원 범위가 설명되어 있다.",
+        required: true,
+      },
+      {
+        code: "SUPPORT-CONTACT-03",
+        label:
+          "문의 정보가 footer, FAQ, JSON-LD contactPoint와 의미상 충돌하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-DATA-POLICY-001": {
+    requirement:
+      "개인정보 처리, 입력자료 보관·삭제, 보안, 관련 정책 링크를 초기 HTML과 사용자 화면에 보강합니다.",
+    developerMessage:
+      "AI가 데이터 처리와 보안 질문에 답할 수 있도록 사용자가 입력한 URL·자료·진단 결과가 어떻게 처리되고 보관·삭제되는지 공식 문구로 설명해 주세요. 개인정보처리방침과 이용약관 링크는 JavaScript 클릭만이 아니라 href가 있는 표준 링크로 제공해야 합니다.",
+    acceptanceCriteria: [
+      {
+        code: "DATA-POLICY-01",
+        label:
+          "개인정보와 입력자료 처리 방식이 초기 HTML과 사용자 화면에서 확인된다.",
+        required: true,
+      },
+      {
+        code: "DATA-POLICY-02",
+        label: "보관·삭제 기준 또는 확인 가능한 정책 페이지 링크가 제공된다.",
+        required: true,
+      },
+      {
+        code: "DATA-POLICY-03",
+        label: "개인정보처리방침·이용약관 링크가 표준 a 태그로 제공된다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-DIFFERENTIATION-PROOF-001": {
+    requirement:
+      "차별점, 대표 사례, 사용 예시, 후기 또는 실적 같은 신뢰 근거를 사실 기반으로 보강합니다.",
+    developerMessage:
+      "AI가 왜 이 사이트를 추천할 수 있는지 판단하려면 단순 홍보 문구보다 비교 가능한 차별점과 실제 사용 예시가 필요합니다. 경쟁 서비스와의 차이, 대표 적용 사례, 전후 비교, 고객 후기, 운영 실적 중 실제로 공개 가능한 근거를 사용자 화면과 초기 HTML에 작성해 주세요.",
+    acceptanceCriteria: [
+      {
+        code: "DIFFERENTIATION-PROOF-01",
+        label: "서비스 차별점이 초기 HTML과 사용자 화면에 설명되어 있다.",
+        required: true,
+      },
+      {
+        code: "DIFFERENTIATION-PROOF-02",
+        label:
+          "대표 사례, 사용 예시, 후기, 실적 중 하나 이상의 신뢰 근거가 확인된다.",
+        required: true,
+      },
+      {
+        code: "DIFFERENTIATION-PROOF-03",
+        label:
+          "검증할 수 없는 과장 표현이나 사실과 다른 추천 근거를 사용하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
+  "CONTENT-TRANSACTION-POLICY-001": {
+    requirement:
+      "사이트 전환 구조에 맞는 결제·예약·문의 정책을 사용자 화면과 초기 HTML에 명확히 안내합니다.",
+    developerMessage:
+      "자동 추정된 전환 유형에 따라 완료 기준이 달라집니다. 직접 결제형은 환불·취소·해지 기준, 예약·문의 전환형은 예약 변경·취소와 상담 기준, 정보 제공형은 운영 주체와 공식 문의 정책을 명확히 작성해 주세요. 실제 비즈니스 모델이 자동 추정과 다르면 먼저 전환 유형을 확인해야 합니다.",
+    acceptanceCriteria: [
+      {
+        code: "TRANSACTION-POLICY-01",
+        label:
+          "현재 사이트가 직접 결제형, 예약·문의 전환형, 정보 제공형 중 어느 구조인지 확인되어 있다.",
+        required: true,
+      },
+      {
+        code: "TRANSACTION-POLICY-02",
+        label:
+          "전환 구조에 맞는 환불·취소·변경·문의 또는 운영 주체 정책이 초기 HTML과 사용자 화면에서 확인된다.",
+        required: true,
+      },
+      {
+        code: "TRANSACTION-POLICY-03",
+        label:
+          "요금/결제 안내, 약관, FAQ, 문의 정보와 정책 문구가 의미상 충돌하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: true,
+  },
 };
 
 const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
