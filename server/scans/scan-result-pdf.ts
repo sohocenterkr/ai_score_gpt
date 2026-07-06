@@ -1484,7 +1484,7 @@ function writeCover(
 
   document.moveDown(0.5);
   setText(document, 7.9, COLORS.muted).text(
-    result.scan.locale === "en" ? "The current QUICK score is calculated from the public URL HTTP response and initial HTML. JavaScript-rendered DOM comparison is used for rendering notes and improvement suggestions. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are added in the detailed diagnostic stage." : "현재 QUICK 점수는 공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 계산합니다. JavaScript 실행 후 DOM 비교는 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 정밀진단 단계에서 추가됩니다.",
+    result.scan.locale === "en" ? "The current QUICK score is calculated from the public URL HTTP response and initial HTML. JavaScript-rendered DOM comparison is used for rendering notes and improvement suggestions. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are added in the detailed diagnostic stage." : "현재 QUICK 점수는 공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 한 기술 준비 상태를 우선 계산합니다. 다만 실제 AI 답변·추천 가능성은 요금, 환불, 고객지원, 차별점, 사례, 데이터 처리 같은 핵심 콘텐츠의 충분성에도 영향을 받으므로 아래 콘텐츠 부족 항목을 함께 확인해야 합니다.",
     {
       width,
       lineGap: 3,
@@ -1687,14 +1687,14 @@ function writeContentReadiness(
   document.addPage();
   writeSectionTitle(
     document,
-    result.scan.locale === "en" ? "Additional content suggestions for AI answers" : "AI 답변을 위한 추가 콘텐츠 제안",
-    result.scan.locale === "en" ? "Separate from the current QUICK score, this section suggests content that can help AI answer more specific questions. These suggestions are not score deductions or failure judgments." : "현재 QUICK 점수와 별개로, AI가 더 구체적인 질문에 답하는 데 도움이 될 추가 콘텐츠를 안내합니다. 이 제안은 감점이나 미완료 판정이 아닙니다.",
+    result.scan.locale === "en" ? "Additional content suggestions for AI answers" : "AI 답변·추천 가능성을 낮추는 핵심 콘텐츠 부족 항목",
+    result.scan.locale === "en" ? "Separate from the current QUICK score, this section suggests content that can help AI answer more specific questions. These suggestions are not score deductions or failure judgments." : "기술 점수가 높더라도 요금·환불·고객지원·차별점·사례·데이터 처리 같은 핵심 정보가 부족하면 AI가 실제 고객 질문에 답하거나 사이트를 추천할 가능성이 낮아질 수 있습니다.",
   );
 
   writeTextBox(
     document,
-    result.scan.locale === "en" ? "Additional content note · score-independent" : `추가 콘텐츠 안내 · 점수 외 참고`,
-    result.scan.locale === "en" ? "This score-independent guide suggests optional content that may help AI answer more specific questions about the site, such as target users, use cases, process, support scope, pricing, data handling, operator information, and FAQs." : "이 영역은 자동진단 점수와 별개로 제공되는 추가 콘텐츠 가이드입니다. 자동검사만으로 사실 여부를 확정하기 어려운 이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·자료 처리·운영 주체, 자주 묻는 질문 등을 사이트 운영자가 선택적으로 보완하면 AI가 사이트를 바탕으로 더 구체적인 질문에 답하는 데 도움이 될 수 있습니다.",
+    result.scan.locale === "en" ? "Additional content note · score-independent" : `AI 답변 준비도 핵심 점검`,
+    result.scan.locale === "en" ? "This score-independent guide suggests optional content that may help AI answer more specific questions about the site, such as target users, use cases, process, support scope, pricing, data handling, operator information, and FAQs." : "이 영역은 단순 선택 사항이 아니라 AI가 고객 질문에 답하고 추천 근거로 활용할 수 있는 핵심 콘텐츠를 점검합니다. 자동검사만으로 사실 여부를 확정하기 어려운 이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·환불·취소·자료 처리·운영 주체, 자주 묻는 질문 등을 보완해야 합니다. 이 정보가 부족하면 기술 점수가 높아도 AI 답변이 불완전해지고 추천 가능성이 낮아질 수 있습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",
@@ -1744,7 +1744,7 @@ function writeContentReadiness(
   document.moveDown(0.8);
   writeSectionTitle(
     document,
-    result.scan.locale === "en" ? "Optional content to add" : "운영자가 선택적으로 보완할 콘텐츠",
+    result.scan.locale === "en" ? "Optional content to add" : "AI 답변·추천 가능성을 높이기 위해 보완해야 할 콘텐츠",
   );
 
   assessment.topics.forEach((topic, index) => {
@@ -2341,8 +2341,8 @@ function writeMethodology(
         "2. 종합점수와 판정은 규칙 버전에 정의된 배점과 완료 조건으로 계산하며 LLM이 임의로 결정하지 않습니다.",
         "3. OAI-SearchBot은 검색용, ChatGPT-User는 사용자 요청용, GPTBot은 학습용 접근으로 구분하여 표시합니다.",
         "4. 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 검사 증거를 보관합니다.",
-        "5. 현재 QUICK 점수는 초기 HTML 기준 25개 규칙으로 계산합니다. JavaScript 실행 후 DOM 비교는 점수에 직접 반영하지 않고 렌더링 비교 총평과 필요한 개선 제안을 만드는 데 활용하며, 모바일·PC 별도 비교, 업종별 기준정보와 질문 정답률은 포함되지 않습니다.",
-        "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·데이터 처리·FAQ의 정확성이 중요합니다.",
+        "5. 현재 QUICK 점수는 초기 HTML 기준 기술 준비 상태를 우선 계산합니다. 실제 AI 답변·추천 가능성은 요금, 환불, 고객지원, 차별점, 사례, 데이터 처리 같은 핵심 콘텐츠의 충분성에도 영향을 받으므로 콘텐츠 부족 항목을 함께 확인해야 합니다.",
+        "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·환불·고객지원·데이터 처리·FAQ의 정확성과 충분성이 중요합니다.",
         "7. 이 보고서는 AI 검색 노출, 추천 결과, 사이트 전체 보안성, 모든 기능의 무결성을 보증하지 않습니다.",
         "8. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 재검사해야 하며, 가능하면 실제 AI 질의응답 수동 확인도 함께 진행해야 합니다.",
       ];

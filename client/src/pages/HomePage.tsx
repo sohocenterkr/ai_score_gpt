@@ -4,7 +4,8 @@ const diagnosticAreas = [
   "검색·AI 봇 접근 가능 여부",
   "초기 HTML 핵심정보 포함 여부",
   "구조화 데이터와 화면 정보 일치",
-  "예상 고객 질문의 답변 가능성",
+  "요금·환불·고객지원 등 AI 답변 근거",
+  "차별점·활용 사례 등 AI 추천 근거",
 ];
 
 const serviceSteps = [
@@ -93,7 +94,7 @@ export function HomePage() {
           <p className="eyebrow">AEO WEB QUALITY VERIFICATION</p>
           <h1>{isEnglish ? "See how well AI can understand your website." : "내 사이트를 AI가 얼마나 잘 이해하는지 확인하세요."}</h1>
           <p className="hero-description">
-            {isEnglish ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and recheck the updated site with the same criteria." : "공개 URL을 진단하고, 무엇을 고쳐야 하는지 작업지시서로 정리하며, 수정 후에는 같은 기준으로 개선 결과를 다시 측정합니다."}
+            {isEnglish ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and recheck the updated site with the same criteria." : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다시 검수합니다."}
           </p>
           <div className="hero-actions">
             <Link className="primary-action" to={`/${activeLocale}/sites`}>
@@ -107,7 +108,7 @@ export function HomePage() {
         <div className="content-container section-content">
           <div className="section-heading">
             <p className="eyebrow">HOW IT WORKS</p>
-            <h2>{isEnglish ? "From diagnosis to improvement verification in one flow" : "진단부터 수정 검수까지 한 흐름으로"}</h2>
+            <h2>{isEnglish ? "From diagnosis to improvement verification in one flow" : "기술 진단부터 콘텐츠 보완 과제와 수정 검수까지"}</h2>
           </div>
           <div className="step-grid">
             {activeSteps.map(([number, title, description]) => (
@@ -125,7 +126,7 @@ export function HomePage() {
         <div className="content-container section-content">
           <div className="section-heading">
             <p className="eyebrow">DIAGNOSIS</p>
-            <h2>{isEnglish ? "Core areas AI needs to read and understand your site" : "AI가 사이트를 읽고 이해하는 데 필요한 핵심 영역"}</h2>
+            <h2>{isEnglish ? "Core areas AI needs to read and understand your site" : "AI가 읽고, 답하고, 추천하기 위해 필요한 핵심 영역"}</h2>
           </div>
           <ul className="diagnostic-list">
             {activeDiagnosticAreas.map((area) => (
@@ -142,7 +143,7 @@ export function HomePage() {
         <div className="content-container section-content compare-section">
           <div>
             <p className="eyebrow eyebrow-light">BEFORE &amp; AFTER</p>
-            <h2>{isEnglish ? "We show not only the score, but why it changed." : "점수만 보여주지 않고, 왜 달라졌는지 증명합니다."}</h2>
+            <h2>{isEnglish ? "We show not only the score, but why it changed." : "점수만 보여주지 않고, 왜 AI 답변·추천 가능성이 달라지는지 설명합니다."}</h2>
           </div>
           <div className="score-comparison" aria-label={isEnglish ? "Before and after example" : "수정 전후 예시"}>
             <div>
