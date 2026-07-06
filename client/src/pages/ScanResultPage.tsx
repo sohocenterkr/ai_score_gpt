@@ -88,6 +88,76 @@ const categoryEnglishLabels: Record<string, string> = {
   "최신성 및 추적 환경": "Freshness and tracking environment",
 };
 
+type MissingInformationSummaryKey = "technical" | "content" | "structured";
+
+type MissingInformationSummaryItem = {
+  key: MissingInformationSummaryKey;
+  koLabel: string;
+  enLabel: string;
+  count: number;
+};
+
+function classifyMissingInformationSummaryItem(item: {
+  ruleCode: string;
+  title: string;
+}): MissingInformationSummaryKey {
+  const ruleCode = item.ruleCode.toUpperCase();
+  const title = item.title;
+
+  if (
+    ruleCode.startsWith("CONTENT-") ||
+    /서비스 정의|이용 대상|활용 사례|이용 절차|결과물|요금|무료|유료|고객지원|개인정보|입력자료|차별점|신뢰 근거|운영 주체와 문의 정책|초기 콘텐츠|관련 콘텐츠/.test(
+      title,
+    )
+  ) {
+    return "content";
+  }
+
+  if (
+    ruleCode.startsWith("STRUCT-") ||
+    /JSON-LD|sameAs|contactPoint|SearchAction|구조화|문의 구조화/.test(title)
+  ) {
+    return "structured";
+  }
+
+  return "technical";
+}
+
+function buildMissingInformationSummary(
+  items: Array<{ ruleCode: string; title: string }>,
+): MissingInformationSummaryItem[] {
+  const counts: Record<MissingInformationSummaryKey, number> = {
+    technical: 0,
+    content: 0,
+    structured: 0,
+  };
+
+  for (const item of items) {
+    counts[classifyMissingInformationSummaryItem(item)] += 1;
+  }
+
+  return [
+    {
+      key: "technical",
+      koLabel: "사이트 설정·기술 구조",
+      enLabel: "Site settings and technical structure",
+      count: counts.technical,
+    },
+    {
+      key: "content",
+      koLabel: "콘텐츠·AI 답변 준비",
+      enLabel: "Content and AI answer readiness",
+      count: counts.content,
+    },
+    {
+      key: "structured",
+      koLabel: "구조화 데이터·신뢰 신호",
+      enLabel: "Structured data and trust signals",
+      count: counts.structured,
+    },
+  ];
+}
+
 function translateCategoryLabel(value: string, isEnglish: boolean): string {
   return isEnglish ? (categoryEnglishLabels[value] ?? value) : value;
 }
@@ -992,6 +1062,10 @@ export function ScanResultPage() {
   const score = result.scan.score;
   const grade = result.scan.grade;
   const scoreSummary = result.scoreSummary;
+  const missingInformationSummary = buildMissingInformationSummary(
+    result.missingInformation,
+  );
+  const totalMissingInformationCount = result.missingInformation.length;
   const isOutdatedRulesVersion = result.isOutdatedRulesVersion;
 
   return (
@@ -1199,25 +1273,36 @@ export function ScanResultPage() {
 
             <div>
               <h3>
-                {isEnglish
-                  ? "Missing or Unverified Information"
-                  : "찾지 못했거나 확인하지 못한 정보"}
+                {isEnglish ? "Improvement Item Summary" : "개선 필요 항목 요약"}
               </h3>
-              {result.missingInformation.length > 0 ? (
-                <ul className="scan-missing-list">
-                  {result.missingInformation.map((item) => (
-                    <li key={item.ruleCode}>
-                      <a href={`#${findingAnchor(item.ruleCode)}`}>
-                        {translateFindingTitle(item.title, isEnglish)}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
+              {totalMissingInformationCount > 0 ? (
+                <>
+                  <dl className="scan-improvement-summary">
+                    {missingInformationSummary.map((group) => (
+                      <div
+                        className="scan-improvement-summary-card"
+                        key={group.key}
+                      >
+                        <dt>{isEnglish ? group.enLabel : group.koLabel}</dt>
+                        <dd>
+                          {isEnglish
+                            ? `${group.count} ${group.count === 1 ? "item" : "items"} need improvement`
+                            : `개선 필요 ${group.count}개`}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="scan-improvement-summary-note">
+                    {isEnglish
+                      ? "Detailed improvement items and completion criteria are available in the detailed report or improvement work order."
+                      : "자세한 개선 항목과 완료 기준은 상세 보고서 또는 수정 작업지시서에서 확인할 수 있습니다."}
+                  </p>
+                </>
               ) : (
                 <p>
                   {isEnglish
-                    ? "No missing items were found under the current weighted rules."
-                    : "현재 가중 규칙에서 누락된 항목이 없습니다."}
+                    ? "No improvement items were found under the current weighted rules."
+                    : "현재 가중 규칙에서 개선 필요 항목이 없습니다."}
                 </p>
               )}
             </div>
@@ -1234,8 +1319,8 @@ export function ScanResultPage() {
               </h2>
               <p>
                 {locale === "en"
-                  ? "The detailed PDF report presents key issues and inspection evidence in this format. This page shows only one high-priority example before payment."
-                  : "상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 1개만 미리 보여드립니다."}
+                  ? "The detailed PDF report presents technical settings, structured data, content readiness issues, and inspection evidence in this format. This page shows only a summarized count and one high-priority example before payment."
+                  : "상세 PDF 보고서에서는 기술 설정, 구조화 데이터, 콘텐츠·AI 답변 준비 항목의 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 1개만 미리 보여드립니다."}
               </p>
             </div>
           </div>
@@ -1576,7 +1661,7 @@ export function ScanResultPage() {
               <p>
                 {isEnglish
                   ? "The simple diagnostic result page provides only the core score and key issue examples. After payment, you can access and save the detailed diagnostic PDF report and improvement work order."
-                  : "간편진단 결과 화면은 핵심 점수와 주요 문제 예시만 제공합니다. 결제 후에는 상세 진단 PDF 보고서와 수정 작업지시서를 확인하고 저장할 수 있습니다."}
+                  : "간편진단 결과 화면은 핵심 점수와 개선 필요 항목 개수 요약만 제공합니다. 결제 후에는 기술 설정, 구조화 데이터, 콘텐츠·AI 답변 준비 상태를 상세 진단 PDF 보고서와 수정 작업지시서로 확인하고 저장할 수 있습니다."}
               </p>
             </div>
           </div>
@@ -1594,7 +1679,7 @@ export function ScanResultPage() {
               <p>
                 {isEnglish
                   ? "The following items are provided in the detailed report based on the current site state."
-                  : "현재 사이트 상태를 기준으로 아래 항목을 상세 보고서로 제공합니다."}
+                  : "현재 사이트 상태를 기준으로 기술 설정, 구조화 데이터, 콘텐츠·AI 답변 준비 개선 항목을 상세 보고서로 제공합니다."}
               </p>
               <ul className="scan-paid-feature-list">
                 <li>
