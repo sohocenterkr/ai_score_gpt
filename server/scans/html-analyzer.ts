@@ -49,6 +49,10 @@ export interface HtmlAnalysis {
     invalidCount: number;
     types: string[];
     errors: string[];
+    sameAsCount: number;
+    contactPointCount: number;
+    hasSearchAction: boolean;
+    hasEntityContact: boolean;
   };
   contentSignals: ContentSignals;
   iframeCount: number;
@@ -110,10 +114,19 @@ function canonicalFromDocument(
   }
 }
 
-function collectJsonLdTypes(value: unknown, target: Set<string>): void {
+function collectJsonLdSignals(
+  value: unknown,
+  target: {
+    types: Set<string>;
+    sameAsCount: number;
+    contactPointCount: number;
+    hasSearchAction: boolean;
+    hasEntityContact: boolean;
+  },
+): void {
   if (Array.isArray(value)) {
     for (const item of value) {
-      collectJsonLdTypes(item, target);
+      collectJsonLdSignals(item, target);
     }
     return;
   }
@@ -124,19 +137,59 @@ function collectJsonLdTypes(value: unknown, target: Set<string>): void {
 
   const record = value as Record<string, unknown>;
   const rawType = record["@type"];
+  const typeValues = Array.isArray(rawType)
+    ? rawType.filter((item): item is string => typeof item === "string")
+    : typeof rawType === "string"
+      ? [rawType]
+      : [];
 
-  if (typeof rawType === "string") {
-    target.add(rawType);
-  } else if (Array.isArray(rawType)) {
-    for (const item of rawType) {
-      if (typeof item === "string") {
-        target.add(item);
-      }
+  for (const type of typeValues) {
+    target.types.add(type);
+    if (type === "SearchAction") {
+      target.hasSearchAction = true;
     }
   }
 
+  const sameAs = record.sameAs;
+  if (typeof sameAs === "string" && sameAs.trim()) {
+    target.sameAsCount += 1;
+  } else if (Array.isArray(sameAs)) {
+    target.sameAsCount += sameAs.filter(
+      (item) => typeof item === "string" && Boolean(item.trim()),
+    ).length;
+  }
+
+  const contactPoint = record.contactPoint;
+  if (contactPoint) {
+    target.contactPointCount += Array.isArray(contactPoint)
+      ? contactPoint.length
+      : 1;
+  }
+
+  const potentialAction = record.potentialAction;
+  if (potentialAction) {
+    const before = target.hasSearchAction;
+    collectJsonLdSignals(potentialAction, target);
+    target.hasSearchAction = target.hasSearchAction || before;
+  }
+
+  const isEntityType = typeValues.some((type) =>
+    /^(Organization|LocalBusiness|Person|WebSite|WebApplication)$/i.test(type),
+  );
+  const hasContactField = Boolean(
+    record.name &&
+      (record.url ||
+        record.telephone ||
+        record.email ||
+        record.address ||
+        record.contactPoint),
+  );
+  if (isEntityType && hasContactField) {
+    target.hasEntityContact = true;
+  }
+
   if (record["@graph"]) {
-    collectJsonLdTypes(record["@graph"], target);
+    collectJsonLdSignals(record["@graph"], target);
   }
 }
 
@@ -144,7 +197,13 @@ function analyzeJsonLd(html: ReturnType<typeof load>) {
   let scriptCount = 0;
   let validCount = 0;
   let invalidCount = 0;
-  const types = new Set<string>();
+  const signals = {
+    types: new Set<string>(),
+    sameAsCount: 0,
+    contactPointCount: 0,
+    hasSearchAction: false,
+    hasEntityContact: false,
+  };
   const errors: string[] = [];
 
   html('script[type="application/ld+json"]').each((_index, element) => {
@@ -162,7 +221,7 @@ function analyzeJsonLd(html: ReturnType<typeof load>) {
     try {
       const parsed = JSON.parse(raw) as unknown;
       validCount += 1;
-      collectJsonLdTypes(parsed, types);
+      collectJsonLdSignals(parsed, signals);
     } catch (error) {
       invalidCount += 1;
       if (errors.length < 5) {
@@ -179,8 +238,12 @@ function analyzeJsonLd(html: ReturnType<typeof load>) {
     scriptCount,
     validCount,
     invalidCount,
-    types: [...types].sort(),
+    types: [...signals.types].sort(),
     errors,
+    sameAsCount: signals.sameAsCount,
+    contactPointCount: signals.contactPointCount,
+    hasSearchAction: signals.hasSearchAction,
+    hasEntityContact: signals.hasEntityContact,
   };
 }
 

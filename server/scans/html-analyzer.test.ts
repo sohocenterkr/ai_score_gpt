@@ -45,9 +45,50 @@ describe("HTML analyzer", () => {
       validCount: 1,
       invalidCount: 0,
       types: ["WebSite"],
+      sameAsCount: 0,
+      contactPointCount: 0,
+      hasSearchAction: false,
+      hasEntityContact: false,
     });
     expect(result.iframeCount).toBe(1);
     expect(result.rawHtmlHash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+
+
+  it("JSON-LD 신뢰 신호를 추출한다", () => {
+    const result = analyzeHtml(
+      Buffer.from(`
+        <html><head>
+          <script type="application/ld+json">
+            {
+              "@context":"https://schema.org",
+              "@graph":[
+                {
+                  "@type":"Organization",
+                  "name":"Example Inc.",
+                  "url":"https://example.com/",
+                  "sameAs":["https://www.linkedin.com/company/example"],
+                  "contactPoint":{"@type":"ContactPoint","contactType":"customer support","email":"help@example.com"}
+                },
+                {
+                  "@type":"WebSite",
+                  "name":"Example",
+                  "url":"https://example.com/",
+                  "potentialAction":{"@type":"SearchAction","target":"https://example.com/search?q={search_term_string}"}
+                }
+              ]
+            }
+          </script>
+        </head><body>본문</body></html>
+      `),
+      "https://example.com/",
+    );
+
+    expect(result.jsonLd.sameAsCount).toBe(1);
+    expect(result.jsonLd.contactPointCount).toBe(1);
+    expect(result.jsonLd.hasSearchAction).toBe(true);
+    expect(result.jsonLd.hasEntityContact).toBe(true);
   });
 
   it("잘못된 JSON-LD를 오류 증거로 기록한다", () => {

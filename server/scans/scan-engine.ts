@@ -478,6 +478,55 @@ function sitemapFinding(
   });
 }
 
+
+function llmsTxtFinding(resource: OptionalResource): CollectedFinding {
+  if (!resource.response) {
+    return finding({
+      ruleCode: "ACCESS-LLMS-TXT-001",
+      category: "접근 및 수집 정책",
+      severity: "LOW",
+      status: "BLOCKED",
+      title: "llms.txt",
+      description: "사이트 루트의 llms.txt를 확인하지 못했습니다.",
+      evidence: {
+        url: resource.url,
+        errorCode: resource.errorCode,
+        errorMessage: resource.errorMessage,
+      },
+      recommendation:
+        "AI가 사이트의 핵심 페이지와 이용 범위를 빠르게 파악할 수 있도록 /llms.txt 파일을 제공하세요.",
+    });
+  }
+
+  const textSample = resource.response.body
+    .subarray(0, 4_000)
+    .toString("utf8")
+    .trim();
+  const passed = isSuccessful(resource.response.statusCode) && textSample.length > 0;
+
+  return finding({
+    ruleCode: "ACCESS-LLMS-TXT-001",
+    category: "접근 및 수집 정책",
+    severity: passed ? "INFO" : "LOW",
+    status: passed ? "PASS" : "FAIL",
+    title: "llms.txt",
+    description: passed
+      ? "사이트 루트에서 llms.txt를 확인했습니다."
+      : "llms.txt가 비어 있거나 정상 응답하지 않습니다.",
+    evidence: {
+      requestedUrl: resource.response.requestedUrl,
+      finalUrl: resource.response.finalUrl,
+      statusCode: resource.response.statusCode,
+      contentType: resource.response.contentType,
+      textLength: textSample.length,
+      textSample: textSample.slice(0, 1_000),
+    },
+    recommendation: passed
+      ? null
+      : "사이트 루트에 핵심 페이지, 서비스 설명, 정책 페이지를 안내하는 llms.txt를 추가하세요.",
+  });
+}
+
 function containsNoindex(value: string | null): boolean {
   return Boolean(value?.toLowerCase().includes("noindex"));
 }
@@ -506,6 +555,10 @@ function renderedAnalysisSummary(analysis: HtmlAnalysis) {
       validCount: analysis.jsonLd.validCount,
       invalidCount: analysis.jsonLd.invalidCount,
       types: analysis.jsonLd.types,
+      sameAsCount: analysis.jsonLd.sameAsCount,
+      contactPointCount: analysis.jsonLd.contactPointCount,
+      hasSearchAction: analysis.jsonLd.hasSearchAction,
+      hasEntityContact: analysis.jsonLd.hasEntityContact,
     },
     iframeCount: analysis.iframeCount,
   };
@@ -739,6 +792,78 @@ function metadataFindings(
       recommendation: hasJsonLdTypes
         ? null
         : "WebSite, Organization, LocalBusiness 등 사이트에 맞는 @type을 명시하세요.",
+    }),
+    finding({
+      ruleCode: "STRUCT-JSONLD-SAMEAS-001",
+      category: "핵심정보 인식 정확도",
+      severity: analysis.jsonLd.sameAsCount > 0 ? "INFO" : "LOW",
+      status: analysis.jsonLd.sameAsCount > 0 ? "PASS" : "FAIL",
+      title: "공식 채널 sameAs",
+      description:
+        analysis.jsonLd.sameAsCount > 0
+          ? "JSON-LD에서 공식 외부 채널 sameAs 신호를 확인했습니다."
+          : "JSON-LD에서 공식 외부 채널 sameAs 신호를 확인하지 못했습니다.",
+      evidence: {
+        sameAsCount: analysis.jsonLd.sameAsCount,
+        types: analysis.jsonLd.types,
+      },
+      recommendation:
+        analysis.jsonLd.sameAsCount > 0
+          ? null
+          : "Organization 또는 LocalBusiness JSON-LD에 공식 홈페이지, SNS, 지도, 지식패널 등 검증 가능한 sameAs 링크를 추가하세요.",
+    }),
+    finding({
+      ruleCode: "STRUCT-JSONLD-CONTACTPOINT-001",
+      category: "핵심정보 인식 정확도",
+      severity: analysis.jsonLd.contactPointCount > 0 ? "INFO" : "LOW",
+      status: analysis.jsonLd.contactPointCount > 0 ? "PASS" : "FAIL",
+      title: "구조화된 문의 정보 contactPoint",
+      description:
+        analysis.jsonLd.contactPointCount > 0
+          ? "JSON-LD에서 contactPoint 문의 정보를 확인했습니다."
+          : "JSON-LD에서 contactPoint 문의 정보를 확인하지 못했습니다.",
+      evidence: {
+        contactPointCount: analysis.jsonLd.contactPointCount,
+        types: analysis.jsonLd.types,
+      },
+      recommendation:
+        analysis.jsonLd.contactPointCount > 0
+          ? null
+          : "고객지원, 예약, 상담, 결제 문의에 사용할 contactPoint를 Organization 또는 LocalBusiness JSON-LD에 추가하세요.",
+    }),
+    finding({
+      ruleCode: "STRUCT-JSONLD-SEARCHACTION-001",
+      category: "핵심정보 인식 정확도",
+      severity: analysis.jsonLd.hasSearchAction ? "INFO" : "LOW",
+      status: analysis.jsonLd.hasSearchAction ? "PASS" : "FAIL",
+      title: "사이트 검색 SearchAction",
+      description: analysis.jsonLd.hasSearchAction
+        ? "WebSite JSON-LD에서 SearchAction을 확인했습니다."
+        : "WebSite JSON-LD에서 SearchAction을 확인하지 못했습니다.",
+      evidence: {
+        hasSearchAction: analysis.jsonLd.hasSearchAction,
+        types: analysis.jsonLd.types,
+      },
+      recommendation: analysis.jsonLd.hasSearchAction
+        ? null
+        : "사이트 내부 검색이 있다면 WebSite JSON-LD의 potentialAction에 SearchAction을 추가하세요. 내부 검색이 없는 단순 사이트라면 낮은 우선순위로 검토하세요.",
+    }),
+    finding({
+      ruleCode: "STRUCT-JSONLD-ENTITY-TRUST-001",
+      category: "핵심정보 인식 정확도",
+      severity: analysis.jsonLd.hasEntityContact ? "INFO" : "LOW",
+      status: analysis.jsonLd.hasEntityContact ? "PASS" : "FAIL",
+      title: "운영 주체·문의 구조화 신호",
+      description: analysis.jsonLd.hasEntityContact
+        ? "JSON-LD에서 운영 주체와 문의·주소·URL 중 일부 신호를 함께 확인했습니다."
+        : "JSON-LD에서 운영 주체와 문의·주소·URL이 함께 드러나는 신호가 부족합니다.",
+      evidence: {
+        hasEntityContact: analysis.jsonLd.hasEntityContact,
+        types: analysis.jsonLd.types,
+      },
+      recommendation: analysis.jsonLd.hasEntityContact
+        ? null
+        : "Organization, LocalBusiness, WebSite, WebApplication JSON-LD에 운영 주체명과 URL, 문의 또는 주소 정보를 일관되게 제공하세요.",
     }),
     finding({
       ruleCode: "CONTENT-INITIAL-001",
@@ -1006,6 +1131,7 @@ export async function collectSiteScan(
   const finalOrigin = finalUrl.origin;
   const robotsUrl = new URL("/robots.txt", finalOrigin).toString();
   const defaultSitemapUrl = new URL("/sitemap.xml", finalOrigin).toString();
+  const llmsUrl = new URL("/llms.txt", finalOrigin).toString();
   const robots = await fetchOptionalResource(
     fetcher,
     robotsUrl,
@@ -1020,6 +1146,11 @@ export async function collectSiteScan(
     fetcher,
     robotsPolicy.sitemaps,
     defaultSitemapUrl,
+  );
+  const llms = await fetchOptionalResource(
+    fetcher,
+    llmsUrl,
+    "text/plain,text/markdown,*/*;q=0.5",
   );
   const botFindings = await Promise.all(
     botDefinitions.map((definition) =>
@@ -1112,6 +1243,7 @@ export async function collectSiteScan(
   findings.push(
     sitemapFinding(sitemap, robotsPolicy.sitemaps, defaultSitemapUrl),
   );
+  findings.push(llmsTxtFinding(llms));
   findings.push(...botFindings);
 
   if (analysis) {

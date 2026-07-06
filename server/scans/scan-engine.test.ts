@@ -92,6 +92,10 @@ function renderedSuccess(
         invalidCount: 0,
         types: ["WebSite"],
         errors: [],
+        sameAsCount: 0,
+        contactPointCount: 0,
+        hasSearchAction: false,
+        hasEntityContact: false,
       },
       iframeCount: 0,
       contentSignals: {
@@ -252,7 +256,7 @@ describe("HTTP scan engine", () => {
       "ENV-MEASUREMENT-001",
     );
 
-    expect(result.findings).toHaveLength(33);
+    expect(result.findings).toHaveLength(38);
     expect(environment.status).toBe("PASS");
     expect(environment.evidence).toMatchObject({
       rulesScope:
@@ -304,7 +308,7 @@ describe("HTTP scan engine", () => {
     );
 
     expect(result.status).toBe("COMPLETED");
-    expect(result.findings).toHaveLength(33);
+    expect(result.findings).toHaveLength(38);
     expect(environment.evidence).toMatchObject({
       rulesScope: "QUICK_INITIAL_HTML",
       renderedDom: {

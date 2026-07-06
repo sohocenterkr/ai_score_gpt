@@ -49,7 +49,7 @@ describe("scan scoring", () => {
     canonical.status = "FAIL";
     const summary = calculateScore(findings);
 
-    expect(summary.score).toBe(98);
+    expect(summary.score).toBe(99);
     expect(summary.grade).toBe("A+");
   });
 

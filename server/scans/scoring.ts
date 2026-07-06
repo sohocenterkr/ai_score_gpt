@@ -1,6 +1,6 @@
 import type { CollectedFinding, CollectedFindingStatus } from "./scan-engine";
 
-export const CURRENT_RULES_VERSION = "2026.07-core-v4";
+export const CURRENT_RULES_VERSION = "2026.07-core-v5";
 
 export const SCORE_CATEGORIES = [
   "접근 및 수집 정책",
@@ -25,12 +25,12 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-HTTP-001",
     category: "접근 및 수집 정책",
-    weight: 3,
+    weight: 2,
   },
   {
     ruleCode: "ACCESS-HTTPS-001",
     category: "접근 및 수집 정책",
-    weight: 2,
+    weight: 1,
   },
   {
     ruleCode: "ACCESS-ROBOTS-001",
@@ -45,22 +45,27 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-SITEMAP-001",
     category: "접근 및 수집 정책",
-    weight: 3,
+    weight: 2,
+  },
+  {
+    ruleCode: "ACCESS-LLMS-TXT-001",
+    category: "접근 및 수집 정책",
+    weight: 2,
   },
   {
     ruleCode: "CONTENT-HTML-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 4,
+    weight: 3,
   },
   {
     ruleCode: "CONTENT-INITIAL-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 4,
+    weight: 3,
   },
   {
     ruleCode: "STRUCT-H1-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 3,
+    weight: 2,
   },
   {
     ruleCode: "STRUCT-IFRAME-001",
@@ -80,7 +85,7 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "META-CANONICAL-001",
     category: "정보 구조와 의미 전달",
-    weight: 2,
+    weight: 1,
   },
   {
     ruleCode: "STRUCT-LANG-001",
@@ -90,17 +95,37 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "META-OG-001",
     category: "정보 구조와 의미 전달",
-    weight: 2,
+    weight: 1,
   },
   {
     ruleCode: "STRUCT-JSONLD-001",
     category: "핵심정보 인식 정확도",
-    weight: 4,
+    weight: 3,
   },
   {
     ruleCode: "STRUCT-JSONLD-TYPES-001",
     category: "핵심정보 인식 정확도",
-    weight: 3,
+    weight: 2,
+  },
+  {
+    ruleCode: "STRUCT-JSONLD-SAMEAS-001",
+    category: "핵심정보 인식 정확도",
+    weight: 2,
+  },
+  {
+    ruleCode: "STRUCT-JSONLD-CONTACTPOINT-001",
+    category: "핵심정보 인식 정확도",
+    weight: 2,
+  },
+  {
+    ruleCode: "STRUCT-JSONLD-SEARCHACTION-001",
+    category: "핵심정보 인식 정확도",
+    weight: 2,
+  },
+  {
+    ruleCode: "STRUCT-JSONLD-ENTITY-TRUST-001",
+    category: "핵심정보 인식 정확도",
+    weight: 2,
   },
   {
     ruleCode: "CONTENT-ANSWERABILITY-001",
