@@ -56,7 +56,8 @@ const templates: Record<string, WorkOrderTemplate> = {
       },
       {
         code: "H1-04",
-        label: "검사 대상 운영 URL에서 자동검수 가능하며 기존 정상 항목을 깨뜨리지 않는다.",
+        label:
+          "검사 대상 운영 URL에서 자동검수 가능하며 기존 정상 항목을 깨뜨리지 않는다.",
         required: true,
       },
     ],
@@ -80,7 +81,8 @@ const templates: Record<string, WorkOrderTemplate> = {
       },
       {
         code: "HEADINGS-03",
-        label: "제목 계층을 추가하면서 기존 디자인과 주요 기능이 깨지지 않는다.",
+        label:
+          "제목 계층을 추가하면서 기존 디자인과 주요 기능이 깨지지 않는다.",
         required: true,
       },
     ],
@@ -99,17 +101,20 @@ const templates: Record<string, WorkOrderTemplate> = {
       },
       {
         code: "INITIAL-TEXT-02",
-        label: "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하거나 핵심 정보 격차가 허용 범위다.",
+        label:
+          "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하거나 핵심 정보 격차가 허용 범위다.",
         required: true,
       },
       {
         code: "INITIAL-TEXT-03",
-        label: "서비스 정의, 대상 고객, 대표 활용 사례, 이용 절차, 요금·데이터 처리 요약이 초기 HTML에서 확인된다.",
+        label:
+          "서비스 정의, 대상 고객, 대표 활용 사례, 이용 절차, 요금·데이터 처리 요약이 초기 HTML에서 확인된다.",
         required: true,
       },
       {
         code: "INITIAL-TEXT-04",
-        label: "검색 노출용 숨김 텍스트가 아니라 실제 사용자 화면과 같은 의미의 콘텐츠다.",
+        label:
+          "검색 노출용 숨김 텍스트가 아니라 실제 사용자 화면과 같은 의미의 콘텐츠다.",
         required: true,
       },
     ],
@@ -133,7 +138,8 @@ const templates: Record<string, WorkOrderTemplate> = {
       },
       {
         code: "CONTENT-ANSWERABILITY-001-03",
-        label: "가입부터 생성, 배포, 제출 확인, 내보내기 등 3~5단계 이용 절차를 확인할 수 있다.",
+        label:
+          "가입부터 생성, 배포, 제출 확인, 내보내기 등 3~5단계 이용 절차를 확인할 수 있다.",
         required: true,
       },
       {
@@ -162,7 +168,8 @@ const templates: Record<string, WorkOrderTemplate> = {
       },
       {
         code: "LINKS-03",
-        label: "초기 HTML 내부 링크 수가 렌더링 DOM 대비 75% 이상이거나 차이가 2개 이하이다.",
+        label:
+          "초기 HTML 내부 링크 수가 렌더링 DOM 대비 75% 이상이거나 차이가 2개 이하이다.",
         required: true,
       },
       {
@@ -313,6 +320,142 @@ const templates: Record<string, WorkOrderTemplate> = {
     ],
     isRequired: true,
   },
+
+  "ACCESS-LLMS-TXT-001": {
+    requirement:
+      "사이트 루트에 /llms.txt 파일을 추가하여 AI가 핵심 페이지와 이용 범위를 빠르게 파악할 수 있게 합니다.",
+    developerMessage:
+      "/llms.txt가 인증 없이 2xx 응답으로 열리도록 배포하고, 사이트명·서비스 요약·핵심 페이지 링크·요금/정책/문의/도움말 경로를 간결한 Markdown 텍스트로 제공해 주세요. 점수만 올리기 위한 키워드 나열이 아니라 실제 사용자에게 공개해도 되는 최신 정보만 포함해야 합니다.",
+    acceptanceCriteria: [
+      {
+        code: "LLMS-01",
+        label: "사이트 루트 /llms.txt가 인증 없이 2xx 응답을 반환한다.",
+        required: true,
+      },
+      {
+        code: "LLMS-02",
+        label:
+          "파일 내용에 사이트명, 서비스 요약, 핵심 페이지 링크가 포함되어 있다.",
+        required: true,
+      },
+      {
+        code: "LLMS-03",
+        label:
+          "요금, 정책, 문의, 도움말 등 AI 답변에 필요한 주요 경로가 누락되지 않는다.",
+        required: false,
+      },
+      {
+        code: "LLMS-04",
+        label:
+          "공개하면 안 되는 내부 정보나 확인되지 않은 문구가 포함되지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: false,
+  },
+  "STRUCT-JSONLD-SAMEAS-001": {
+    requirement:
+      "Organization 또는 LocalBusiness JSON-LD에 공식 외부 채널을 sameAs로 연결합니다.",
+    developerMessage:
+      "초기 HTML의 JSON-LD에 sameAs 배열을 추가하고, 실제 운영자가 관리하는 공식 홈페이지·SNS·지도·앱스토어·지식패널 등 검증 가능한 외부 채널 URL만 넣어 주세요. 임의의 블로그 후기나 운영자가 관리하지 않는 페이지를 sameAs로 넣지 마세요.",
+    acceptanceCriteria: [
+      {
+        code: "JSONLD-SAMEAS-01",
+        label: "초기 HTML JSON-LD에서 sameAs 값을 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-SAMEAS-02",
+        label:
+          "sameAs URL은 실제 공식 채널 또는 운영자가 관리하는 외부 프로필이다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-SAMEAS-03",
+        label: "sameAs 값이 화면의 운영 주체 정보와 충돌하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: false,
+  },
+  "STRUCT-JSONLD-CONTACTPOINT-001": {
+    requirement:
+      "Organization 또는 LocalBusiness JSON-LD에 고객 문의용 contactPoint를 추가합니다.",
+    developerMessage:
+      "초기 HTML의 JSON-LD에 contactPoint를 추가하고 문의 유형, 이메일·전화·문의 URL 중 실제 운영 중인 채널, 지원 언어 또는 응답 범위를 현재 정책과 맞게 작성해 주세요. 공개하지 않는 연락처나 운영하지 않는 채널을 구조화 데이터에 넣지 마세요.",
+    acceptanceCriteria: [
+      {
+        code: "JSONLD-CONTACT-01",
+        label: "초기 HTML JSON-LD에서 contactPoint를 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-CONTACT-02",
+        label:
+          "contactPoint의 연락 경로가 실제 사용자 화면 또는 문의 페이지와 일치한다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-CONTACT-03",
+        label:
+          "운영하지 않는 전화, 이메일, 상담 채널을 허위로 추가하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: false,
+  },
+  "STRUCT-JSONLD-SEARCHACTION-001": {
+    requirement:
+      "사이트 내부 검색 기능이 있다면 WebSite JSON-LD에 SearchAction을 추가합니다.",
+    developerMessage:
+      "내부 검색 페이지가 실제로 존재하는 사이트에만 WebSite JSON-LD의 potentialAction으로 SearchAction을 선언해 주세요. 검색 URL 템플릿은 실제 검색 결과 페이지와 일치해야 하며, 내부 검색 기능이 없는 단순 랜딩 사이트라면 기능을 억지로 만들거나 잘못된 SearchAction을 추가하지 마세요.",
+    acceptanceCriteria: [
+      {
+        code: "JSONLD-SEARCH-01",
+        label:
+          "내부 검색 기능이 있는 경우 초기 HTML WebSite JSON-LD에서 SearchAction을 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-SEARCH-02",
+        label:
+          "SearchAction target URL 템플릿이 실제 검색 결과 페이지와 일치한다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-SEARCH-03",
+        label:
+          "내부 검색 기능이 없는 사이트에는 허위 SearchAction을 추가하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: false,
+  },
+  "STRUCT-JSONLD-ENTITY-TRUST-001": {
+    requirement:
+      "운영 주체를 식별할 수 있도록 Organization, LocalBusiness, WebSite 또는 WebApplication JSON-LD의 핵심 속성을 보강합니다.",
+    developerMessage:
+      "JSON-LD에 name, url, description과 함께 실제 사이트 성격에 맞는 운영 주체·서비스 정보를 넣어 주세요. 문의가 중요한 사이트는 email, telephone, address, contactPoint 중 실제 공개 가능한 값을 함께 선언하고, 화면의 회사소개·문의·약관·개인정보처리방침 정보와 충돌하지 않게 유지해 주세요.",
+    acceptanceCriteria: [
+      {
+        code: "JSONLD-ENTITY-01",
+        label:
+          "JSON-LD에서 사이트 또는 운영 주체의 name과 url을 확인할 수 있다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-ENTITY-02",
+        label: "선택한 @type이 실제 사이트 성격과 일치한다.",
+        required: true,
+      },
+      {
+        code: "JSONLD-ENTITY-03",
+        label: "공개 가능한 문의·주소·정책 정보가 화면 내용과 충돌하지 않는다.",
+        required: true,
+      },
+    ],
+    isRequired: false,
+  },
 };
 
 const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
@@ -339,7 +482,8 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
       },
       {
         code: "H1-04",
-        label: "The change is verifiable on the production URL and does not break existing passing items.",
+        label:
+          "The change is verifiable on the production URL and does not break existing passing items.",
         required: true,
       },
     ],
@@ -358,12 +502,14 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
       },
       {
         code: "HEADINGS-02",
-        label: "The H2 sections match the main content sections shown to users.",
+        label:
+          "The H2 sections match the main content sections shown to users.",
         required: true,
       },
       {
         code: "HEADINGS-03",
-        label: "Adding the heading hierarchy does not break the existing design or key features.",
+        label:
+          "Adding the heading hierarchy does not break the existing design or key features.",
         required: true,
       },
     ],
@@ -382,17 +528,20 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
       },
       {
         code: "INITIAL-TEXT-02",
-        label: "The initial HTML body includes at least 75% of the rendered DOM body or the key-information gap is within the allowed range.",
+        label:
+          "The initial HTML body includes at least 75% of the rendered DOM body or the key-information gap is within the allowed range.",
         required: true,
       },
       {
         code: "INITIAL-TEXT-03",
-        label: "The service definition, target customers, representative use cases, usage flow, and pricing/data handling summary are visible in the initial HTML.",
+        label:
+          "The service definition, target customers, representative use cases, usage flow, and pricing/data handling summary are visible in the initial HTML.",
         required: true,
       },
       {
         code: "INITIAL-TEXT-04",
-        label: "The content has the same meaning as the real user-facing page and is not hidden text for search exposure.",
+        label:
+          "The content has the same meaning as the real user-facing page and is not hidden text for search exposure.",
         required: true,
       },
     ],
@@ -406,22 +555,26 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
     acceptanceCriteria: [
       {
         code: "CONTENT-ANSWERABILITY-001-01",
-        label: "The service definition and core value can be explained from the initial HTML alone.",
+        label:
+          "The service definition and core value can be explained from the initial HTML alone.",
         required: true,
       },
       {
         code: "CONTENT-ANSWERABILITY-001-02",
-        label: "Target users and at least two representative use cases are visible.",
+        label:
+          "Target users and at least two representative use cases are visible.",
         required: true,
       },
       {
         code: "CONTENT-ANSWERABILITY-001-03",
-        label: "A 3–5 step usage flow, such as sign-up, creation, deployment, submission check, and export, is visible.",
+        label:
+          "A 3–5 step usage flow, such as sign-up, creation, deployment, submission check, and export, is visible.",
         required: true,
       },
       {
         code: "CONTENT-ANSWERABILITY-001-04",
-        label: "Pricing, data handling, operator information, or a contact path is visible.",
+        label:
+          "Pricing, data handling, operator information, or a contact path is visible.",
         required: true,
       },
     ],
@@ -440,12 +593,14 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
       },
       {
         code: "LINKS-02",
-        label: "Key internal links use standard anchor tags with href attributes.",
+        label:
+          "Key internal links use standard anchor tags with href attributes.",
         required: true,
       },
       {
         code: "LINKS-03",
-        label: "The initial HTML contains at least 75% of the rendered DOM internal links or differs by no more than two links.",
+        label:
+          "The initial HTML contains at least 75% of the rendered DOM internal links or differs by no more than two links.",
         required: true,
       },
       {
@@ -537,7 +692,8 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
       },
       {
         code: "OG-04",
-        label: "The Open Graph values are semantically consistent with the visible representative title and description.",
+        label:
+          "The Open Graph values are semantically consistent with the visible representative title and description.",
         required: false,
       },
     ],
@@ -547,7 +703,7 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
     requirement:
       "Add valid Schema.org JSON-LD to the initial HTML and keep it consistent with the visible page information.",
     developerMessage:
-      "Output a <script type=\"application/ld+json\"> block in the initial HTML. Check JSON syntax, required properties, and consistency with the visible page. For SaaS or web services, prioritize WebApplication or a WebSite/Organization combination. If the visible page includes FAQ content, also consider FAQPage JSON-LD.",
+      'Output a <script type="application/ld+json"> block in the initial HTML. Check JSON syntax, required properties, and consistency with the visible page. For SaaS or web services, prioritize WebApplication or a WebSite/Organization combination. If the visible page includes FAQ content, also consider FAQPage JSON-LD.',
     acceptanceCriteria: [
       {
         code: "JSONLD-01",
@@ -566,7 +722,8 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
       },
       {
         code: "JSONLD-04",
-        label: "Structured data such as name, URL, and description matches the visible page information.",
+        label:
+          "Structured data such as name, URL, and description matches the visible page information.",
         required: true,
       },
     ],
@@ -666,13 +823,11 @@ export function buildRenderedImprovementWorkOrderTemplate(
         : "- AI 검색 노출 보장이 아니라 AI가 서비스를 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.",
       ...plan.developerInstructions.map((instruction) => `- ${instruction}`),
     ].join("\n"),
-    acceptanceCriteria: plan.acceptanceCriteria.map(
-      (label, index) => ({
-        code: `${prefix}-${String(index + 1).padStart(2, "0")}`,
-        label,
-        required: true,
-      }),
-    ),
+    acceptanceCriteria: plan.acceptanceCriteria.map((label, index) => ({
+      code: `${prefix}-${String(index + 1).padStart(2, "0")}`,
+      label,
+      required: true,
+    })),
     isRequired: false,
   };
 }
