@@ -108,24 +108,40 @@ const WORK_ORDER_RENDERED_TEXT_EN: Record<string, string> = {
   "AI 검색 시스템에 따라 처음 받은 정보를 사용하기도 하고 화면 완성 후의 정보를 사용하기도 합니다. 값이 다르면 같은 페이지를 서로 다르게 이해할 수 있으며, B2B 서비스에서는 AI가 서비스명·기능·요금·데이터 처리 방식을 잘못 설명할 위험이 커집니다.": "Depending on the AI search system, it may use the initially received information or the fully rendered page. If they differ, the same page can be understood differently, increasing the risk that AI misstates the service name, features, pricing, or data handling.",
   "글자 하나까지 완전히 같을 필요는 없지만 페이지 주제, 서비스명, 핵심 기능, 가격·요금, 개인정보·자료 처리 방식, 운영 주체처럼 중요한 사실과 의미는 처음과 나중이 일치하도록 맞춥니다.": "The text does not need to be identical character by character, but important facts and meaning such as page topic, service name, key features, pricing, privacy/data handling, and operator information should stay consistent before and after rendering.",
   "페이지를 처음 불러왔을 때도 사이트가 누구를 위한 곳이며 무엇을 제공하는지, 어떤 절차로 이용하는지, 요금·데이터 처리·FAQ는 어디서 확인할 수 있는지 알 수 있도록 핵심 소개와 주요 정보를 보완합니다.": "Add core introduction and key information so that even the initially loaded page explains who the site is for, what it provides, how to use it, and where pricing, data handling, and FAQs can be found.",
+  "점수만 올리기 위한 숨김 텍스트가 아니라, 실제 사용자 화면과 같은 의미의 콘텐츠를 초기 HTML과 구조화 데이터에 반영해 주세요.": "Do not add hidden text just to raise the score. Reflect content with the same meaning as the real user-facing page in the initial HTML and structured data.",
+  "AI 검색 노출 보장이 아니라 AI가 서비스를 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.": "Treat this as work that helps AI systems understand and cite the service more accurately, not as a guarantee of AI search visibility.",
+  "핵심 본문을 초기 HTML에 출력해 주세요.": "Output the core body content in the initial HTML.",
+  "기존 화면 기능을 유지해 주세요.": "Keep existing UI behavior working.",
+  "핵심 본문에는 서비스 정의와 핵심 가치, 이용 대상과 대표 활용 사례, 3~5단계 이용 절차, 요금·데이터 처리 요약, FAQ 또는 도움말 경로를 포함해 주세요.": "Include the service definition and core value, target users and representative use cases, a 3-5 step usage flow, pricing/data handling summary, and FAQ or help paths in the core body content.",
+  "서비스 정의, 대상 고객, 이용 절차, 요금·데이터 처리 요약, FAQ 또는 도움말 경로가 사용자 화면과 초기 HTML에서 함께 확인됩니다.": "The service definition, target customers, usage process, pricing/data handling summary, and FAQ or help paths are visible both on the user-facing page and in the initial HTML.",
 };
 
 function workOrderRenderedText(value: string, isEnglish: boolean): string {
   if (!isEnglish) return value;
 
-  const exact = WORK_ORDER_RENDERED_TEXT_EN[value];
-  if (exact) return exact;
+  const translateLine = (line: string): string => {
+    const trimmed = line.trim();
+    const bullet = trimmed.startsWith("- ");
+    const body = bullet ? trimmed.slice(2).trim() : trimmed;
+    const exact = WORK_ORDER_RENDERED_TEXT_EN[body];
 
-  return value
-    .replace(/현재 상태:/g, "Current state:")
-    .replace(/무슨 뜻인가요:/g, "What it means:")
-    .replace(/무엇을 바꾸나요:/g, "What to change:")
-    .replace(/초기 HTML/g, "initial HTML")
-    .replace(/렌더링 DOM/g, "rendered DOM")
-    .replace(/본문 글자 수가 ([0-9,]+)자에서 ([0-9,]+)자로 늘었습니다\./g, "Body text length increased from $1 chars to $2 chars.")
-    .replace(/내부 링크가 ([0-9,]+)개에서 ([0-9,]+)개로 늘었습니다\./g, "Internal links increased from $1 to $2.")
-    .replace(/초기 HTML 본문 포함 비율은 ([0-9.]+)%입니다\./g, "Initial HTML body coverage is $1%.")
-    .replace(/초기 HTML 내부 링크 포함 비율은 ([0-9.]+)%입니다\./g, "Initial HTML internal link coverage is $1%.");
+    if (exact) {
+      return `${bullet ? "- " : ""}${exact}`;
+    }
+
+    return line
+      .replace(/현재 상태:/g, "Current state:")
+      .replace(/무슨 뜻인가요:/g, "What it means:")
+      .replace(/무엇을 바꾸나요:/g, "What to change:")
+      .replace(/초기 HTML/g, "initial HTML")
+      .replace(/렌더링 DOM/g, "rendered DOM")
+      .replace(/본문 글자 수가 ([0-9,]+)자에서 ([0-9,]+)자로 늘었습니다\./g, "Body text length increased from $1 chars to $2 chars.")
+      .replace(/내부 링크가 ([0-9,]+)개에서 ([0-9,]+)개로 늘었습니다\./g, "Internal links increased from $1 to $2.")
+      .replace(/초기 HTML 본문 포함 비율은 ([0-9.]+)%입니다\./g, "Initial HTML body coverage is $1%.")
+      .replace(/초기 HTML 내부 링크 포함 비율은 ([0-9.]+)%입니다\./g, "Initial HTML internal link coverage is $1%.");
+  };
+
+  return value.split("\n").map(translateLine).join("\n");
 }
 
 
