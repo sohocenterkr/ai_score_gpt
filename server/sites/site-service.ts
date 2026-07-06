@@ -1,9 +1,4 @@
-import {
-  Prisma,
-  type Scan,
-  type ScanType,
-  type Site,
-} from "@prisma/client";
+import { Prisma, type Scan, type ScanType, type Site } from "@prisma/client";
 import type { PublicUser } from "../auth/auth-service";
 import { getDatabase } from "../db";
 import { CURRENT_RULES_VERSION } from "../scans/scoring";
@@ -36,13 +31,9 @@ export interface PublicScan {
   siteId: string;
   type: "QUICK" | "DEEP" | "VERIFICATION" | "MONITORING";
   status:
-    | "QUEUED"
-    | "RUNNING"
-    | "COMPLETED"
-    | "PARTIAL"
-    | "FAILED"
-    | "CANCELLED";
+    "QUEUED" | "RUNNING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";
   rulesVersion: string;
+  isOutdatedRulesVersion: boolean;
   locale: "ko" | "en";
   score: number | null;
   grade: string | null;
@@ -136,6 +127,7 @@ function toPublicScan(scan: Scan): PublicScan {
     type: scan.type,
     status: scan.status,
     rulesVersion: scan.rulesVersion,
+    isOutdatedRulesVersion: scan.rulesVersion !== CURRENT_RULES_VERSION,
     locale: scan.locale === "en" ? "en" : "ko",
     score: scan.score,
     grade: scan.grade,
@@ -306,9 +298,7 @@ function duplicateSiteError(): SiteServiceError {
   );
 }
 
-export function createPrismaSiteService(
-  resolver?: DnsResolver,
-): SiteService {
+export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
   return {
     async listSites(user) {
       const prisma = getDatabase();
@@ -338,10 +328,7 @@ export function createPrismaSiteService(
 
     async createSite(user, input) {
       const prisma = getDatabase();
-      const validated = await validatePublicSiteUrl(
-        input.baseUrl,
-        resolver,
-      );
+      const validated = await validatePublicSiteUrl(input.baseUrl, resolver);
       const organization = await getOrCreateCustomerOrganization(user);
 
       const existing = await prisma.site.findUnique({
@@ -426,10 +413,7 @@ export function createPrismaSiteService(
       }
 
       if (input.baseUrl !== undefined) {
-        const validated = await validatePublicSiteUrl(
-          input.baseUrl,
-          resolver,
-        );
+        const validated = await validatePublicSiteUrl(input.baseUrl, resolver);
         data.baseUrl = validated.normalizedUrl;
         data.finalUrl = null;
       }
@@ -527,7 +511,7 @@ export function createPrismaSiteService(
         data: {
           siteId: site.id,
           type,
-            locale,
+          locale,
           status: "QUEUED",
           rulesVersion: CURRENT_RULES_VERSION,
           createdBy: user.id,

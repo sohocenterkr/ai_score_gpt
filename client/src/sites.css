@@ -373,3 +373,22 @@
     gap: 14px;
   }
 }
+
+.site-upgrade-notice {
+  margin: 12px 0 0;
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  background: #fff7ed;
+  color: #9a3412;
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+@media (min-width: 640px) {
+  .site-card-actions .site-danger-button {
+    flex: 0 0 auto;
+    width: auto;
+  }
+}

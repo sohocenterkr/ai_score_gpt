@@ -3,13 +3,9 @@ export interface SiteScan {
   siteId: string;
   type: "QUICK" | "DEEP" | "VERIFICATION" | "MONITORING";
   status:
-    | "QUEUED"
-    | "RUNNING"
-    | "COMPLETED"
-    | "PARTIAL"
-    | "FAILED"
-    | "CANCELLED";
+    "QUEUED" | "RUNNING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";
   rulesVersion: string;
+  isOutdatedRulesVersion: boolean;
   locale: "ko" | "en";
   score: number | null;
   grade: string | null;
@@ -169,11 +165,7 @@ export async function listSiteScansRequest(
 
 export type ScanFindingStatus = "PASS" | "FAIL" | "BLOCKED" | "NA";
 export type ScanFindingSeverity =
-  | "INFO"
-  | "LOW"
-  | "MEDIUM"
-  | "HIGH"
-  | "CRITICAL";
+  "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export interface ScanResultFinding {
   id: string;
@@ -208,10 +200,7 @@ export interface ScanScoreSummary {
   categories: ScanCategoryScore[];
 }
 
-export type ContentReadinessStatus =
-  | "NEEDS_WORK"
-  | "PARTIAL"
-  | "BASIC_READY";
+export type ContentReadinessStatus = "NEEDS_WORK" | "PARTIAL" | "BASIC_READY";
 
 export interface ContentReadinessTopic {
   code: string;
@@ -294,19 +283,12 @@ export async function getScanResultRequest(
       credentials: "same-origin",
     },
   );
-  const data = await readJson<{ result: ScanResultResponse }>(
-    response,
-  );
+  const data = await readJson<{ result: ScanResultResponse }>(response);
   return data.result;
 }
 
-export function scanResultPdfUrl(
-  scanId: string,
-  locale?: "ko" | "en",
-): string {
-  const baseUrl = `/api/scan-results/${encodeURIComponent(
-    scanId,
-  )}/export.pdf`;
+export function scanResultPdfUrl(scanId: string, locale?: "ko" | "en"): string {
+  const baseUrl = `/api/scan-results/${encodeURIComponent(scanId)}/export.pdf`;
 
   return locale === "en" ? `${baseUrl}?locale=en` : baseUrl;
 }

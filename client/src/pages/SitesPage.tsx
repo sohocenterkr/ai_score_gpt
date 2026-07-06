@@ -58,8 +58,7 @@ const sitesCopy = {
     notice:
       "공개 URL의 실제 HTTP 응답과 초기 HTML 증거를 수집하고 규칙 기반 점수와 검사 결과를 제공합니다. 작업지시서 생성은 다음 단계에서 실패 항목에 연결됩니다.",
     createTitle: "새 사이트 등록",
-    createHelp:
-      "`example.com`처럼 입력하면 HTTPS 주소로 보완하여 확인합니다.",
+    createHelp: "`example.com`처럼 입력하면 HTTPS 주소로 보완하여 확인합니다.",
     checking: "확인 중...",
     createButton: "사이트 등록",
     listTitle: "등록 사이트",
@@ -83,6 +82,9 @@ const sitesCopy = {
     score: (score: number, grade: string) => `${score}점 ${grade}`,
     scanWaiting: "검사 대기 중",
     scanComplete: "간편검사 완료",
+    rescanCurrent: "현재 기준으로 다시 검사",
+    scanOutdatedNotice:
+      "평가 방법이 업그레이드되어 현재 기준으로 다시 검사가 필요합니다.",
     processing: "처리 중...",
     startScan: "간편검사 시작",
     viewResult: "결과 보기",
@@ -144,6 +146,9 @@ const sitesCopy = {
     score: (score: number, grade: string) => `${score} points ${grade}`,
     scanWaiting: "Scan queued",
     scanComplete: "Simple diagnostic completed",
+    rescanCurrent: "Recheck with current rules",
+    scanOutdatedNotice:
+      "The evaluation method has been upgraded. Run a new scan with the current rules.",
     processing: "Processing...",
     startScan: "Start Simple Diagnostic",
     viewResult: "View Result",
@@ -189,13 +194,13 @@ function messageFromError(error: unknown, fallback: string): string {
 
 const siteTypeEnglishLabels: Record<string, string> = {
   "AI 점수 확인": "AI score check",
-  "음식점": "Restaurant",
-  "병원": "Clinic",
+  음식점: "Restaurant",
+  병원: "Clinic",
   "기업 홈페이지": "Company website",
-  "학원": "Academy",
-  "카페": "Cafe",
-  "미용실": "Hair salon",
-  "쇼핑몰": "Online store",
+  학원: "Academy",
+  카페: "Cafe",
+  미용실: "Hair salon",
+  쇼핑몰: "Online store",
 };
 
 function formatSiteType(
@@ -409,9 +414,7 @@ export function SitesPage() {
 
     try {
       await archiveSiteRequest(site.id);
-      setSites((current) =>
-        current.filter((item) => item.id !== site.id),
-      );
+      setSites((current) => current.filter((item) => item.id !== site.id));
       setMessage(copy.deletedMessage);
     } catch (error) {
       setErrorMessage(messageFromError(error, copy.unknownError));
@@ -433,9 +436,7 @@ export function SitesPage() {
       );
       setSites((current) =>
         current.map((item) =>
-          item.id === site.id
-            ? { ...item, latestScan: scan }
-            : item,
+          item.id === site.id ? { ...item, latestScan: scan } : item,
         ),
       );
       setMessage(copy.queuedMessage);
@@ -513,9 +514,7 @@ export function SitesPage() {
                 {copy.loading}
               </div>
             ) : sites.length === 0 ? (
-              <div className="surface sites-empty">
-                {copy.empty}
-              </div>
+              <div className="surface sites-empty">{copy.empty}</div>
             ) : (
               <div className="site-list">
                 {sites.map((site) => {
@@ -525,6 +524,9 @@ export function SitesPage() {
                   const scanCompleted =
                     site.latestScan?.status === "COMPLETED" ||
                     site.latestScan?.status === "PARTIAL";
+                  const scanOutdated = Boolean(
+                    scanCompleted && site.latestScan?.isOutdatedRulesVersion,
+                  );
                   const working = workingSiteId === site.id;
 
                   return (
@@ -547,6 +549,12 @@ export function SitesPage() {
                               updateForm(key, value, true)
                             }
                           />
+                          {scanOutdated ? (
+                            <p className="site-upgrade-notice">
+                              {copy.scanOutdatedNotice}
+                            </p>
+                          ) : null}
+
                           <div className="site-card-actions">
                             <button
                               className="site-primary-button"
@@ -569,7 +577,9 @@ export function SitesPage() {
                         <>
                           <div className="site-card-header">
                             <div>
-                              <span className="site-status">{copy.registered}</span>
+                              <span className="site-status">
+                                {copy.registered}
+                              </span>
                               <h3>{site.name}</h3>
                             </div>
                             <span className="site-locale">
@@ -589,7 +599,12 @@ export function SitesPage() {
                           <dl className="site-meta">
                             <div>
                               <dt>{copy.industry}</dt>
-                              <dd>{formatSiteType(site.siteType, normalizedLocale) ?? copy.notEntered}</dd>
+                              <dd>
+                                {formatSiteType(
+                                  site.siteType,
+                                  normalizedLocale,
+                                ) ?? copy.notEntered}
+                              </dd>
                             </div>
                             <div>
                               <dt>{copy.region}</dt>
@@ -597,13 +612,13 @@ export function SitesPage() {
                             </div>
                             <div>
                               <dt>{copy.finalUrl}</dt>
-                              <dd>
-                                {site.finalUrl ?? copy.checkedAfterScan}
-                              </dd>
+                              <dd>{site.finalUrl ?? copy.checkedAfterScan}</dd>
                             </div>
                             <div>
                               <dt>{copy.createdAt}</dt>
-                              <dd>{formatKST(site.createdAt, normalizedLocale)}</dd>
+                              <dd>
+                                {formatKST(site.createdAt, normalizedLocale)}
+                              </dd>
                             </div>
                           </dl>
 
@@ -615,14 +630,15 @@ export function SitesPage() {
                                 {site.latestScan.type}
                                 {site.latestScan.score !== null ? (
                                   <>
-                                    {" "}·{" "}
+                                    {" "}
+                                    ·{" "}
                                     {copy.score(
                                       Math.round(site.latestScan.score),
                                       site.latestScan.grade ?? "-",
                                     )}
                                   </>
-                                ) : null}
-                                {" "}·{" "}
+                                ) : null}{" "}
+                                ·{" "}
                                 {formatKST(
                                   site.latestScan.createdAt,
                                   normalizedLocale,
@@ -638,15 +654,21 @@ export function SitesPage() {
                               className="site-primary-button"
                               type="button"
                               onClick={() => void handleQueueScan(site)}
-                              disabled={working || scanPending || scanCompleted}
+                              disabled={
+                                working ||
+                                scanPending ||
+                                (scanCompleted && !scanOutdated)
+                              }
                             >
-                              {scanPending
-                                ? copy.scanWaiting
-                                : scanCompleted
-                                  ? copy.scanComplete
-                                  : working
-                                    ? copy.processing
-                                    : copy.startScan}
+                              {working
+                                ? copy.processing
+                                : scanPending
+                                  ? copy.scanWaiting
+                                  : scanOutdated
+                                    ? copy.rescanCurrent
+                                    : scanCompleted
+                                      ? copy.scanComplete
+                                      : copy.startScan}
                             </button>
                             {site.latestScan &&
                             (site.latestScan.status === "COMPLETED" ||
@@ -762,9 +784,7 @@ function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
             id={`${prefix}-locale`}
             name="primaryLocale"
             value={form.primaryLocale}
-            onChange={(event) =>
-              onChange("primaryLocale", event.target.value)
-            }
+            onChange={(event) => onChange("primaryLocale", event.target.value)}
             placeholder={labels.primaryLocalePlaceholder}
             required
           />

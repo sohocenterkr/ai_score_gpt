@@ -38,6 +38,7 @@ const sampleScan: PublicScan = {
   type: "QUICK",
   status: "QUEUED",
   rulesVersion: "2026.06-core-v1",
+  isOutdatedRulesVersion: true,
   locale: "ko",
   score: null,
   grade: null,
@@ -139,13 +140,13 @@ describe("site API", () => {
       .post("/api/sites")
       .set("Cookie", sessionCookie)
       .send({
-      name: "테스트 사이트",
-      baseUrl: "example.com",
-      siteType: "기업 홈페이지",
-      country: "KR",
-      region: "서울",
-      primaryLocale: "ko",
-    });
+        name: "테스트 사이트",
+        baseUrl: "example.com",
+        siteType: "기업 홈페이지",
+        country: "KR",
+        region: "서울",
+        primaryLocale: "ko",
+      });
 
     expect(response.status).toBe(201);
     expect(response.body.site.id).toBe(sampleSite.id);
@@ -169,11 +170,11 @@ describe("site API", () => {
       .post("/api/sites")
       .set("Cookie", sessionCookie)
       .send({
-      name: "A",
-      baseUrl: "",
-      country: "KOR",
-      primaryLocale: "korean",
-    });
+        name: "A",
+        baseUrl: "",
+        country: "KOR",
+        primaryLocale: "korean",
+      });
 
     expect(response.status).toBe(400);
     expect(response.body.code).toBe("VALIDATION_ERROR");
@@ -236,25 +237,22 @@ describe("site API", () => {
 
     expect(response.status).toBe(201);
     expect(response.body.scan.status).toBe("QUEUED");
-    expect(queueScan).toHaveBeenCalledWith(
-      sampleUser,
-      "site-1",
-      "QUICK",
-      "ko",
-    );
+    expect(queueScan).toHaveBeenCalledWith(sampleUser, "site-1", "QUICK", "ko");
   });
 
   it("무료 간편진단 사이트 제한 오류를 반환한다", async () => {
     const app = createApp({
       authService: createFakeAuthService(),
       siteService: createFakeSiteService({
-        queueScan: vi.fn().mockRejectedValue(
-          new SiteServiceError(
-            "FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED",
-            "무료 간편진단은 계정당 최대 10개 사이트까지 사용할 수 있습니다. 이미 진단한 사이트의 재진단은 계속 가능합니다.",
-            403,
+        queueScan: vi
+          .fn()
+          .mockRejectedValue(
+            new SiteServiceError(
+              "FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED",
+              "무료 간편진단은 계정당 최대 10개 사이트까지 사용할 수 있습니다. 이미 진단한 사이트의 재진단은 계속 가능합니다.",
+              403,
+            ),
           ),
-        ),
       }),
     });
 
@@ -271,12 +269,14 @@ describe("site API", () => {
     const app = createApp({
       authService: createFakeAuthService(),
       siteService: createFakeSiteService({
-        createSite: vi.fn().mockRejectedValue(
-          new SiteUrlError(
-            "SITE_URL_BLOCKED",
-            "사설 IP나 내부 주소는 검사할 수 없습니다.",
+        createSite: vi
+          .fn()
+          .mockRejectedValue(
+            new SiteUrlError(
+              "SITE_URL_BLOCKED",
+              "사설 IP나 내부 주소는 검사할 수 없습니다.",
+            ),
           ),
-        ),
       }),
     });
 
@@ -284,11 +284,11 @@ describe("site API", () => {
       .post("/api/sites")
       .set("Cookie", sessionCookie)
       .send({
-      name: "내부 주소",
-      baseUrl: "http://127.0.0.1",
-      country: "KR",
-      primaryLocale: "ko",
-    });
+        name: "내부 주소",
+        baseUrl: "http://127.0.0.1",
+        country: "KR",
+        primaryLocale: "ko",
+      });
 
     expect(response.status).toBe(400);
     expect(response.body.code).toBe("SITE_URL_BLOCKED");
@@ -299,13 +299,15 @@ describe("site API", () => {
     const app = createApp({
       authService: createFakeAuthService(),
       siteService: createFakeSiteService({
-        createSite: vi.fn().mockRejectedValue(
-          new SiteServiceError(
-            "SITE_DUPLICATE",
-            "같은 사이트 주소가 이미 등록되어 있습니다.",
-            409,
+        createSite: vi
+          .fn()
+          .mockRejectedValue(
+            new SiteServiceError(
+              "SITE_DUPLICATE",
+              "같은 사이트 주소가 이미 등록되어 있습니다.",
+              409,
+            ),
           ),
-        ),
       }),
     });
 
@@ -313,11 +315,11 @@ describe("site API", () => {
       .post("/api/sites")
       .set("Cookie", sessionCookie)
       .send({
-      name: "중복 사이트",
-      baseUrl: "https://example.com",
-      country: "KR",
-      primaryLocale: "ko",
-    });
+        name: "중복 사이트",
+        baseUrl: "https://example.com",
+        country: "KR",
+        primaryLocale: "ko",
+      });
 
     expect(response.status).toBe(409);
     expect(response.body.code).toBe("SITE_DUPLICATE");
