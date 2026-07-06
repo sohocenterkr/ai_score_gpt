@@ -1,9 +1,6 @@
-import type {
-  CollectedFinding,
-  CollectedFindingStatus,
-} from "./scan-engine";
+import type { CollectedFinding, CollectedFindingStatus } from "./scan-engine";
 
-export const CURRENT_RULES_VERSION = "2026.06-core-v3";
+export const CURRENT_RULES_VERSION = "2026.07-core-v4";
 
 export const SCORE_CATEGORIES = [
   "접근 및 수집 정책",
@@ -13,6 +10,7 @@ export const SCORE_CATEGORIES = [
   "콘텐츠 이해 및 답변 가능성",
   "AI 에이전트 사용 가능성",
   "최신성 및 측정 환경",
+  "AI 답변 준비 콘텐츠",
 ] as const;
 
 export type ScoreCategory = (typeof SCORE_CATEGORIES)[number];
@@ -27,7 +25,7 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-HTTP-001",
     category: "접근 및 수집 정책",
-    weight: 4,
+    weight: 3,
   },
   {
     ruleCode: "ACCESS-HTTPS-001",
@@ -37,7 +35,7 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-ROBOTS-001",
     category: "접근 및 수집 정책",
-    weight: 4,
+    weight: 2,
   },
   {
     ruleCode: "ACCESS-OAI-SEARCHBOT-001",
@@ -47,77 +45,77 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-SITEMAP-001",
     category: "접근 및 수집 정책",
-    weight: 4,
+    weight: 3,
   },
   {
     ruleCode: "CONTENT-HTML-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 6,
+    weight: 4,
   },
   {
     ruleCode: "CONTENT-INITIAL-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 10,
+    weight: 4,
   },
   {
     ruleCode: "STRUCT-H1-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 4,
+    weight: 3,
   },
   {
     ruleCode: "STRUCT-IFRAME-001",
     category: "콘텐츠 읽기 용이성",
-    weight: 2,
+    weight: 1,
   },
   {
     ruleCode: "META-TITLE-001",
     category: "정보 구조와 의미 전달",
-    weight: 4,
+    weight: 2,
   },
   {
     ruleCode: "META-DESCRIPTION-001",
     category: "정보 구조와 의미 전달",
-    weight: 3,
+    weight: 2,
   },
   {
     ruleCode: "META-CANONICAL-001",
     category: "정보 구조와 의미 전달",
-    weight: 3,
+    weight: 2,
   },
   {
     ruleCode: "STRUCT-LANG-001",
     category: "정보 구조와 의미 전달",
-    weight: 2,
+    weight: 1,
   },
   {
     ruleCode: "META-OG-001",
     category: "정보 구조와 의미 전달",
-    weight: 3,
+    weight: 2,
   },
   {
     ruleCode: "STRUCT-JSONLD-001",
     category: "핵심정보 인식 정확도",
-    weight: 12,
+    weight: 4,
   },
   {
     ruleCode: "STRUCT-JSONLD-TYPES-001",
     category: "핵심정보 인식 정확도",
-    weight: 8,
+    weight: 3,
   },
   {
     ruleCode: "CONTENT-ANSWERABILITY-001",
     category: "콘텐츠 이해 및 답변 가능성",
-    weight: 10,
+    weight: 2,
   },
   {
     ruleCode: "CONTENT-HEADINGS-001",
     category: "콘텐츠 이해 및 답변 가능성",
-    weight: 4,
+    weight: 2,
   },
   {
     ruleCode: "CONTENT-NAVIGATION-001",
     category: "콘텐츠 이해 및 답변 가능성",
-    weight: 3,
+    weight: 1,
   },
   {
     ruleCode: "ACCESS-CHATGPT-USER-001",
@@ -127,25 +125,62 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-INDEXABILITY-001",
     category: "AI 에이전트 사용 가능성",
-    weight: 4,
+    weight: 3,
   },
   {
     ruleCode: "STRUCT-LINKS-001",
     category: "AI 에이전트 사용 가능성",
-    weight: 3,
+    weight: 2,
   },
   {
     ruleCode: "ENV-MEASUREMENT-001",
     category: "최신성 및 측정 환경",
+    weight: 2,
+  },
+  {
+    ruleCode: "CONTENT-CORE-DEFINITION-001",
+    category: "AI 답변 준비 콘텐츠",
+    weight: 8,
+  },
+  {
+    ruleCode: "CONTENT-AUDIENCE-USECASE-001",
+    category: "AI 답변 준비 콘텐츠",
+    weight: 6,
+  },
+  {
+    ruleCode: "CONTENT-WORKFLOW-OUTCOME-001",
+    category: "AI 답변 준비 콘텐츠",
+    weight: 6,
+  },
+  {
+    ruleCode: "CONTENT-PRICING-TERMS-001",
+    category: "AI 답변 준비 콘텐츠",
+    weight: 8,
+  },
+  {
+    ruleCode: "CONTENT-SUPPORT-CONTACT-001",
+    category: "AI 답변 준비 콘텐츠",
+    weight: 6,
+  },
+  {
+    ruleCode: "CONTENT-DATA-POLICY-001",
+    category: "AI 답변 준비 콘텐츠",
+    weight: 6,
+  },
+  {
+    ruleCode: "CONTENT-DIFFERENTIATION-PROOF-001",
+    category: "AI 답변 준비 콘텐츠",
+    weight: 5,
+  },
+  {
+    ruleCode: "CONTENT-TRANSACTION-POLICY-001",
+    category: "AI 답변 준비 콘텐츠",
     weight: 5,
   },
 ] as const;
 
 const rulesByCode = new Map(
-  RULE_DEFINITIONS.map((definition) => [
-    definition.ruleCode,
-    definition,
-  ]),
+  RULE_DEFINITIONS.map((definition) => [definition.ruleCode, definition]),
 );
 
 export interface ScoreCategoryResult {
@@ -172,10 +207,7 @@ export interface ScorableFinding {
   status: CollectedFindingStatus;
 }
 
-function earnedWeight(
-  status: CollectedFindingStatus,
-  weight: number,
-): number {
+function earnedWeight(status: CollectedFindingStatus, weight: number): number {
   return status === "PASS" ? weight : 0;
 }
 
@@ -196,19 +228,14 @@ function statusFor(
   return findingsByCode.get(ruleCode)?.status;
 }
 
-function scoreCap(
-  findingsByCode: Map<string, ScorableFinding>,
-): number | null {
+function scoreCap(findingsByCode: Map<string, ScorableFinding>): number | null {
   const caps: number[] = [];
 
   if (statusFor(findingsByCode, "ACCESS-HTTP-001") !== "PASS") {
     caps.push(10);
   }
 
-  if (
-    statusFor(findingsByCode, "ACCESS-INDEXABILITY-001") ===
-    "FAIL"
-  ) {
+  if (statusFor(findingsByCode, "ACCESS-INDEXABILITY-001") === "FAIL") {
     caps.push(30);
   }
 
@@ -234,12 +261,7 @@ export function calculateScore(
   const categoryValues = new Map<
     ScoreCategory,
     { score: number; maxScore: number }
-  >(
-    SCORE_CATEGORIES.map((category) => [
-      category,
-      { score: 0, maxScore: 0 },
-    ]),
-  );
+  >(SCORE_CATEGORIES.map((category) => [category, { score: 0, maxScore: 0 }]));
   let rawScore = 0;
   let measuredWeight = 0;
 
@@ -255,19 +277,14 @@ export function calculateScore(
 
     if (finding) {
       measuredWeight += definition.weight;
-      const earned = earnedWeight(
-        finding.status,
-        definition.weight,
-      );
+      const earned = earnedWeight(finding.status, definition.weight);
       category.score += earned;
       rawScore += earned;
     }
   }
 
   const cap = scoreCap(findingsByCode);
-  const score = Math.round(
-    cap === null ? rawScore : Math.min(rawScore, cap),
-  );
+  const score = Math.round(cap === null ? rawScore : Math.min(rawScore, cap));
   const lostPoints = Math.max(0, 100 - score);
 
   return {
@@ -299,9 +316,7 @@ export function calculateScore(
   };
 }
 
-export function applyScoreToFindings(
-  findings: readonly CollectedFinding[],
-): {
+export function applyScoreToFindings(findings: readonly CollectedFinding[]): {
   findings: CollectedFinding[];
   summary: ScoreSummary;
 } {
@@ -322,8 +337,7 @@ export function applyScoreToFindings(
       return {
         ...finding,
         category: definition.category,
-        scoreDelta:
-          finding.status === "PASS" ? 0 : -definition.weight,
+        scoreDelta: finding.status === "PASS" ? 0 : -definition.weight,
       };
     }),
   };

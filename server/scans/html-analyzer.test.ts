@@ -32,9 +32,7 @@ describe("HTML analyzer", () => {
 
     expect(result.title).toBe("테스트 페이지");
     expect(result.metaDescription).toBe("페이지 설명");
-    expect(result.canonicalUrl).toBe(
-      "https://example.com/canonical",
-    );
+    expect(result.canonicalUrl).toBe("https://example.com/canonical");
     expect(result.htmlLang).toBe("ko");
     expect(result.headings.h1).toEqual(["대표 제목"]);
     expect(result.links).toMatchObject({
@@ -83,4 +81,34 @@ describe("HTML analyzer", () => {
 
     expect(result.textLength).toBe("실제 본문".length);
   });
+});
+
+import {
+  describe as describeContentSignals,
+  expect as expectContentSignals,
+  it as itContentSignals,
+} from "vitest";
+import { analyzeHtml as analyzeHtmlForContentSignals } from "./html-analyzer";
+
+describeContentSignals("html content signals", () => {
+  itContentSignals(
+    "결제형 사이트의 AI 답변 준비 콘텐츠 신호를 추출한다",
+    () => {
+      const html = Buffer.from(
+        `<!doctype html><html lang="ko"><head><title>TaxDIY</title><meta name="description" content="개인사업자와 프리랜서를 위한 세무 자료 정리 서비스"></head><body><h1>세무 신고 준비 서비스</h1><h2>이런 분께 추천합니다</h2><p>개인사업자와 프리랜서가 영수증과 통장 자료를 업로드하고 결과물을 확인합니다. 무료 범위와 유료 플랜, 개인정보 처리, 카카오톡 고객지원, 환불 및 해지 기준, 기존 엑셀 관리와의 차별점, 고객 사례, 후기와 신뢰 근거를 안내합니다.</p><a href="/pricing">요금제</a><a href="/privacy">개인정보처리방침</a></body></html>`,
+      );
+      const result = analyzeHtmlForContentSignals(html, "https://taxdiy.kr/");
+
+      expectContentSignals(result.contentSignals.conversionIntent).toBe(
+        "DIRECT_PAYMENT",
+      );
+      expectContentSignals(result.contentSignals.hasPricingOrTerms).toBe(true);
+      expectContentSignals(result.contentSignals.hasTransactionPolicy).toBe(
+        true,
+      );
+      expectContentSignals(
+        result.contentSignals.hasDifferentiationOrProof,
+      ).toBe(true);
+    },
+  );
 });

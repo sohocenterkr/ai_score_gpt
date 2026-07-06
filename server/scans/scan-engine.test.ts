@@ -94,6 +94,19 @@ function renderedSuccess(
         errors: [],
       },
       iframeCount: 0,
+      contentSignals: {
+        conversionIntent: "INFORMATIONAL",
+        detectedSignals: [],
+        missingSignals: [],
+        hasServiceDefinition: true,
+        hasAudienceOrUseCase: true,
+        hasWorkflowOrOutcome: true,
+        hasPricingOrTerms: true,
+        hasSupportOrContact: true,
+        hasDataPolicy: true,
+        hasDifferentiationOrProof: true,
+        hasTransactionPolicy: false,
+      },
     },
   };
 }
@@ -239,7 +252,7 @@ describe("HTTP scan engine", () => {
       "ENV-MEASUREMENT-001",
     );
 
-    expect(result.findings).toHaveLength(25);
+    expect(result.findings).toHaveLength(33);
     expect(environment.status).toBe("PASS");
     expect(environment.evidence).toMatchObject({
       rulesScope:
@@ -291,7 +304,7 @@ describe("HTTP scan engine", () => {
     );
 
     expect(result.status).toBe("COMPLETED");
-    expect(result.findings).toHaveLength(25);
+    expect(result.findings).toHaveLength(33);
     expect(environment.evidence).toMatchObject({
       rulesScope: "QUICK_INITIAL_HTML",
       renderedDom: {

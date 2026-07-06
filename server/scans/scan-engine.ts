@@ -3,14 +3,8 @@ import {
   type SafeHttpFetcher,
   type SafeHttpResponse,
 } from "./http-fetcher";
-import {
-  analyzeHtml,
-  type HtmlAnalysis,
-} from "./html-analyzer";
-import type {
-  RenderedDomCollector,
-  RenderedDomResult,
-} from "./rendered-dom";
+import { analyzeHtml, type HtmlAnalysis } from "./html-analyzer";
+import type { RenderedDomCollector, RenderedDomResult } from "./rendered-dom";
 import {
   evaluateRobotsPolicy,
   parseRobotsPolicy,
@@ -18,18 +12,10 @@ import {
   type RobotsDecision,
 } from "./robots-policy";
 
-export type CollectedFindingStatus =
-  | "PASS"
-  | "FAIL"
-  | "BLOCKED"
-  | "NA";
+export type CollectedFindingStatus = "PASS" | "FAIL" | "BLOCKED" | "NA";
 
 export type CollectedFindingSeverity =
-  | "INFO"
-  | "LOW"
-  | "MEDIUM"
-  | "HIGH"
-  | "CRITICAL";
+  "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export interface CollectedFinding {
   ruleCode: string;
@@ -128,13 +114,150 @@ function finding(
   };
 }
 
+type ContentSignalKey =
+  | "hasServiceDefinition"
+  | "hasAudienceOrUseCase"
+  | "hasWorkflowOrOutcome"
+  | "hasPricingOrTerms"
+  | "hasSupportOrContact"
+  | "hasDataPolicy"
+  | "hasDifferentiationOrProof"
+  | "hasTransactionPolicy";
+
+function contentReadinessFinding(
+  analysis: HtmlAnalysis,
+  input: {
+    ruleCode: string;
+    key: ContentSignalKey;
+    title: string;
+    passDescription: string;
+    failDescription: string;
+    recommendation: string;
+  },
+): CollectedFinding {
+  const passed = Boolean(analysis.contentSignals[input.key]);
+
+  return finding({
+    ruleCode: input.ruleCode,
+    category: "AI 답변 준비 콘텐츠",
+    severity: passed ? "INFO" : "MEDIUM",
+    status: passed ? "PASS" : "FAIL",
+    title: input.title,
+    description: passed ? input.passDescription : input.failDescription,
+    evidence: {
+      conversionIntent: analysis.contentSignals.conversionIntent,
+      detectedSignals: analysis.contentSignals.detectedSignals,
+      missingSignals: analysis.contentSignals.missingSignals,
+    },
+    recommendation: passed ? null : input.recommendation,
+  });
+}
+
+function buildContentReadinessFindings(
+  analysis: HtmlAnalysis,
+): CollectedFinding[] {
+  const transactionTitle =
+    analysis.contentSignals.conversionIntent === "DIRECT_PAYMENT"
+      ? "환불·취소·해지 정책"
+      : analysis.contentSignals.conversionIntent === "INQUIRY_OR_RESERVATION"
+        ? "예약·상담 취소/변경 기준"
+        : "운영 주체와 문의 정책";
+
+  return [
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-CORE-DEFINITION-001",
+      key: "hasServiceDefinition",
+      title: "서비스 정의와 핵심 가치",
+      passDescription:
+        "AI가 기본 설명에 사용할 수 있는 서비스 정의 단서를 확인했습니다.",
+      failDescription:
+        "AI가 이 사이트가 무엇을 제공하는지 답하기 위한 서비스 정의가 부족합니다.",
+      recommendation:
+        "서비스 정의, 해결하는 문제, 핵심 기능, 사용자가 얻는 결과를 사용자 화면과 초기 HTML에 명확히 추가하세요.",
+    }),
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-AUDIENCE-USECASE-001",
+      key: "hasAudienceOrUseCase",
+      title: "이용 대상과 활용 사례",
+      passDescription:
+        "이용 대상 또는 대표 활용 사례에 대한 단서를 확인했습니다.",
+      failDescription:
+        "AI가 누구에게 적합한 서비스인지 답하기 위한 이용 대상·활용 사례 정보가 부족합니다.",
+      recommendation:
+        "이런 분께 추천합니다, 대표 활용 사례, 사용 전후 변화 같은 섹션을 보강하세요.",
+    }),
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-WORKFLOW-OUTCOME-001",
+      key: "hasWorkflowOrOutcome",
+      title: "이용 절차와 결과물",
+      passDescription: "이용 절차 또는 결과물에 대한 단서를 확인했습니다.",
+      failDescription:
+        "AI가 사용 순서와 결과물을 답하기 위한 단계별 설명이 부족합니다.",
+      recommendation:
+        "가입, 입력, 처리, 결과 확인처럼 실제 이용 흐름을 3~5단계로 설명하세요.",
+    }),
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-PRICING-TERMS-001",
+      key: "hasPricingOrTerms",
+      title: "요금과 무료·유료 범위",
+      passDescription:
+        "요금, 무료·유료 범위 또는 이용 조건에 대한 단서를 확인했습니다.",
+      failDescription:
+        "AI가 비용과 이용 범위를 답하기 위한 요금·무료·유료 정보가 부족합니다.",
+      recommendation:
+        "무료 범위, 유료 범위, 요금제, 외부 비용 부담 여부를 표나 FAQ로 명확히 안내하세요.",
+    }),
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-SUPPORT-CONTACT-001",
+      key: "hasSupportOrContact",
+      title: "고객지원과 문의 채널",
+      passDescription: "고객지원 또는 문의 채널 단서를 확인했습니다.",
+      failDescription:
+        "AI가 고객지원 방법을 답하기 위한 문의 채널, 운영시간, 응답 기준 정보가 부족합니다.",
+      recommendation:
+        "문의 채널, 상담 가능 시간, 응답 예상 시간, 지원 범위를 명확히 표시하세요.",
+    }),
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-DATA-POLICY-001",
+      key: "hasDataPolicy",
+      title: "개인정보와 입력자료 처리",
+      passDescription:
+        "개인정보, 보안, 데이터 처리 또는 정책 링크 단서를 확인했습니다.",
+      failDescription:
+        "AI가 데이터 처리와 보안 관련 질문에 답하기 위한 개인정보·자료 처리 설명이 부족합니다.",
+      recommendation:
+        "개인정보 처리, 입력자료 보관·삭제, 보안, 이용약관·개인정보처리방침 링크를 보강하세요.",
+    }),
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-DIFFERENTIATION-PROOF-001",
+      key: "hasDifferentiationOrProof",
+      title: "차별점과 신뢰 근거",
+      passDescription:
+        "차별점, 사례, 후기, 실적 등 신뢰 근거 단서를 확인했습니다.",
+      failDescription:
+        "AI가 왜 이 사이트를 추천해야 하는지 판단할 차별점·사례·후기 정보가 부족합니다.",
+      recommendation:
+        "대안과의 차이, 대표 사례, 고객 후기, 실적, 사용 예시를 사실 기반으로 보강하세요.",
+    }),
+    contentReadinessFinding(analysis, {
+      ruleCode: "CONTENT-TRANSACTION-POLICY-001",
+      key: "hasTransactionPolicy",
+      title: transactionTitle,
+      passDescription:
+        "사이트 전환 구조에 맞는 거래·문의 정책 단서를 확인했습니다.",
+      failDescription:
+        "사이트 전환 구조에 맞는 결제·예약·문의 정책 정보가 부족합니다.",
+      recommendation:
+        "결제형은 환불·취소·해지, 예약·문의형은 예약 변경·취소 기준, 정보형은 운영 주체와 문의 정책을 명확히 안내하세요.",
+    }),
+  ];
+}
+
 function isSuccessful(statusCode: number): boolean {
   return statusCode >= 200 && statusCode < 300;
 }
 
-function isHtmlContentType(
-  contentType: string | null,
-): boolean {
+function isHtmlContentType(contentType: string | null): boolean {
   if (!contentType) {
     return true;
   }
@@ -146,9 +269,7 @@ function isHtmlContentType(
   );
 }
 
-function statusSeverity(
-  statusCode: number,
-): CollectedFindingSeverity {
+function statusSeverity(statusCode: number): CollectedFindingSeverity {
   if (statusCode >= 500 || statusCode === 0) {
     return "CRITICAL";
   }
@@ -321,9 +442,7 @@ function resourceFinding(
       statusCode: resource.response.statusCode,
       contentType: resource.response.contentType,
       redirects: resource.response.redirects,
-      headers: selectEvidenceHeaders(
-        resource.response.headers,
-      ),
+      headers: selectEvidenceHeaders(resource.response.headers),
     },
     recommendation: passed ? null : recommendation,
   });
@@ -342,11 +461,7 @@ function sitemapFinding(
     ruleCode: "ACCESS-SITEMAP-001",
     category: "접근 및 수집 정책",
     severity: collection.selected ? "INFO" : "MEDIUM",
-    status: collection.selected
-      ? "PASS"
-      : hasHttpResponse
-        ? "FAIL"
-        : "BLOCKED",
+    status: collection.selected ? "PASS" : hasHttpResponse ? "FAIL" : "BLOCKED",
     title: "sitemap",
     description: collection.selected
       ? "robots.txt 선언 또는 사이트 루트에서 유효한 sitemap을 확인했습니다."
@@ -417,23 +532,18 @@ function renderedDomEvidence(
     initialHtml: renderedAnalysisSummary(initial),
     renderedDom: renderedAnalysisSummary(result.analysis),
     comparison: {
-      textLengthDelta:
-        result.analysis.textLength - initial.textLength,
+      textLengthDelta: result.analysis.textLength - initial.textLength,
       internalLinksDelta:
         result.analysis.links.internal - initial.links.internal,
       externalLinksDelta:
         result.analysis.links.external - initial.links.external,
       h1CountDelta:
-        result.analysis.headings.h1.length -
-        initial.headings.h1.length,
+        result.analysis.headings.h1.length - initial.headings.h1.length,
       h2CountDelta:
-        result.analysis.headings.h2.length -
-        initial.headings.h2.length,
+        result.analysis.headings.h2.length - initial.headings.h2.length,
       jsonLdValidCountDelta:
-        result.analysis.jsonLd.validCount -
-        initial.jsonLd.validCount,
-      canonicalChanged:
-        result.analysis.canonicalUrl !== initial.canonicalUrl,
+        result.analysis.jsonLd.validCount - initial.jsonLd.validCount,
+      canonicalChanged: result.analysis.canonicalUrl !== initial.canonicalUrl,
       openGraphChanged:
         JSON.stringify(result.analysis.openGraph) !==
         JSON.stringify(initial.openGraph),
@@ -449,12 +559,10 @@ function metadataFindings(
   const hasDescription = Boolean(analysis.metaDescription);
   const hasCanonical = Boolean(analysis.canonicalUrl);
   const hasH1 = analysis.headings.h1.length > 0;
-  const hasHeadingStructure =
-    hasH1 && analysis.headings.h2.length > 0;
+  const hasHeadingStructure = hasH1 && analysis.headings.h2.length > 0;
   const hasLang = Boolean(analysis.htmlLang);
   const hasOpenGraph = Boolean(
-    analysis.openGraph.title &&
-      analysis.openGraph.description,
+    analysis.openGraph.title && analysis.openGraph.description,
   );
   const hasValidJsonLd = analysis.jsonLd.validCount > 0;
   const hasJsonLdTypes = analysis.jsonLd.types.length > 0;
@@ -463,11 +571,9 @@ function metadataFindings(
   const navigable = analysis.links.internal >= 1;
   const iframeIndependent =
     analysis.iframeCount === 0 || analysis.textLength >= 500;
-  const xRobotsTag =
-    selectEvidenceHeaders(main.headers)["x-robots-tag"];
+  const xRobotsTag = selectEvidenceHeaders(main.headers)["x-robots-tag"];
   const indexable =
-    !containsNoindex(analysis.robotsMeta) &&
-    !containsNoindex(xRobotsTag);
+    !containsNoindex(analysis.robotsMeta) && !containsNoindex(xRobotsTag);
 
   return [
     finding({
@@ -668,6 +774,7 @@ function metadataFindings(
         ? null
         : "서비스·장소·이용방법 등 주요 질문에 답할 수 있는 설명을 초기 HTML에 보강하세요.",
     }),
+    ...buildContentReadinessFindings(analysis),
     finding({
       ruleCode: "STRUCT-LINKS-001",
       category: "AI 에이전트 사용 가능성",
@@ -758,11 +865,9 @@ async function botFinding(
     definition.userAgent,
   );
   const actualAccessible = Boolean(
-    resource.response &&
-      isSuccessful(resource.response.statusCode),
+    resource.response && isSuccessful(resource.response.statusCode),
   );
-  const mismatch =
-    robotsDecision === "BLOCKED" && actualAccessible;
+  const mismatch = robotsDecision === "BLOCKED" && actualAccessible;
 
   if (definition.kind === "TRAINING") {
     return finding({
@@ -791,8 +896,7 @@ async function botFinding(
         finalUrl: resource.response?.finalUrl ?? null,
         errorCode: resource.errorCode,
         errorMessage: resource.errorMessage,
-        officialSource:
-          "https://developers.openai.com/api/docs/bots",
+        officialSource: "https://developers.openai.com/api/docs/bots",
       },
       recommendation: null,
     });
@@ -823,8 +927,7 @@ async function botFinding(
         redirects: resource.response?.redirects ?? [],
         errorCode: resource.errorCode,
         errorMessage: resource.errorMessage,
-        officialSource:
-          "https://developers.openai.com/api/docs/bots",
+        officialSource: "https://developers.openai.com/api/docs/bots",
       },
       recommendation: actualAccessible
         ? null
@@ -832,8 +935,7 @@ async function botFinding(
     });
   }
 
-  const passed =
-    robotsDecision !== "BLOCKED" && actualAccessible;
+  const passed = robotsDecision !== "BLOCKED" && actualAccessible;
   const blockedByPolicy = robotsDecision === "BLOCKED";
 
   return finding({
@@ -863,8 +965,7 @@ async function botFinding(
       redirects: resource.response?.redirects ?? [],
       errorCode: resource.errorCode,
       errorMessage: resource.errorMessage,
-      officialSource:
-        "https://developers.openai.com/api/docs/bots",
+      officialSource: "https://developers.openai.com/api/docs/bots",
     },
     recommendation: passed
       ? null
@@ -881,44 +982,37 @@ export async function collectSiteScan(
 ): Promise<ScanCollectionResult> {
   const main = await fetcher.fetch(baseUrl);
   const htmlContent = isHtmlContentType(main.contentType);
-  const analysis = htmlContent
-    ? analyzeHtml(main.body, main.finalUrl)
-    : null;
+  const analysis = htmlContent ? analyzeHtml(main.body, main.finalUrl) : null;
   const httpPassed = isSuccessful(main.statusCode);
-    const renderedDomPromise =
-      httpPassed && analysis && options.renderedDomCollector
-        ? options.renderedDomCollector
-            .collect(main.finalUrl)
-            .catch((error): RenderedDomResult => ({
-              status: "FAILED",
-              errorCode: "RENDERED_DOM_FAILED",
-              message:
-                error instanceof Error
-                  ? error.message
-                  : "JavaScript 렌더링 수집 중 알 수 없는 오류가 발생했습니다.",
-            }))
-        : Promise.resolve<RenderedDomResult>({
-            status: "NOT_RUN",
-            reason:
-              options.renderedDomCollector
-                ? "대표 페이지가 정상 HTML 응답이 아닙니다."
-                : "렌더링 수집기가 비활성화되어 있습니다.",
-          });
+  const renderedDomPromise =
+    httpPassed && analysis && options.renderedDomCollector
+      ? options.renderedDomCollector
+          .collect(main.finalUrl)
+          .catch((error): RenderedDomResult => ({
+            status: "FAILED",
+            errorCode: "RENDERED_DOM_FAILED",
+            message:
+              error instanceof Error
+                ? error.message
+                : "JavaScript 렌더링 수집 중 알 수 없는 오류가 발생했습니다.",
+          }))
+      : Promise.resolve<RenderedDomResult>({
+          status: "NOT_RUN",
+          reason: options.renderedDomCollector
+            ? "대표 페이지가 정상 HTML 응답이 아닙니다."
+            : "렌더링 수집기가 비활성화되어 있습니다.",
+        });
   const finalUrl = new URL(main.finalUrl);
   const finalOrigin = finalUrl.origin;
   const robotsUrl = new URL("/robots.txt", finalOrigin).toString();
-  const defaultSitemapUrl = new URL(
-    "/sitemap.xml",
-    finalOrigin,
-  ).toString();
+  const defaultSitemapUrl = new URL("/sitemap.xml", finalOrigin).toString();
   const robots = await fetchOptionalResource(
     fetcher,
     robotsUrl,
     "text/plain,*/*;q=0.5",
   );
   const robotsText =
-    robots.response &&
-    isSuccessful(robots.response.statusCode)
+    robots.response && isSuccessful(robots.response.statusCode)
       ? robots.response.body.toString("utf8")
       : "";
   const robotsPolicy = parseRobotsPolicy(robotsText);
@@ -945,9 +1039,7 @@ export async function collectSiteScan(
     finding({
       ruleCode: "ACCESS-HTTP-001",
       category: "접근 및 수집 정책",
-      severity: httpPassed
-        ? "INFO"
-        : statusSeverity(main.statusCode),
+      severity: httpPassed ? "INFO" : statusSeverity(main.statusCode),
       status: httpPassed ? "PASS" : "FAIL",
       title: "대표 페이지 HTTP 응답",
       description: httpPassed
@@ -1018,11 +1110,7 @@ export async function collectSiteScan(
   );
 
   findings.push(
-    sitemapFinding(
-      sitemap,
-      robotsPolicy.sitemaps,
-      defaultSitemapUrl,
-    ),
+    sitemapFinding(sitemap, robotsPolicy.sitemaps, defaultSitemapUrl),
   );
   findings.push(...botFindings);
 
@@ -1036,8 +1124,7 @@ export async function collectSiteScan(
         severity: "HIGH",
         status: "FAIL",
         title: "HTML 콘텐츠",
-        description:
-          "대표 페이지 응답을 HTML 문서로 확인하지 못했습니다.",
+        description: "대표 페이지 응답을 HTML 문서로 확인하지 못했습니다.",
         evidence: {
           contentType: main.contentType,
           bodyBytes: main.body.length,
@@ -1077,8 +1164,7 @@ export async function collectSiteScan(
   );
 
   return {
-    status:
-      httpPassed && analysis ? "COMPLETED" : "PARTIAL",
+    status: httpPassed && analysis ? "COMPLETED" : "PARTIAL",
     finalUrl: main.finalUrl,
     page: {
       url: baseUrl,

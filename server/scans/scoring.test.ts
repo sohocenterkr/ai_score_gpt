@@ -1,14 +1,8 @@
 import { describe, expect, it } from "vitest";
-import {
-  RULE_DEFINITIONS,
-  SCORE_CATEGORIES,
-  calculateScore,
-} from "./scoring";
+import { RULE_DEFINITIONS, SCORE_CATEGORIES, calculateScore } from "./scoring";
 import type { CollectedFindingStatus } from "./scan-engine";
 
-function allFindings(
-  status: CollectedFindingStatus = "PASS",
-) {
+function allFindings(status: CollectedFindingStatus = "PASS") {
   return RULE_DEFINITIONS.map((rule) => ({
     ruleCode: rule.ruleCode,
     status,
@@ -18,21 +12,14 @@ function allFindings(
 describe("scan scoring", () => {
   it("규칙 배점과 영역 배점 합계가 각각 100점이다", () => {
     expect(
-      RULE_DEFINITIONS.reduce(
-        (sum, definition) => sum + definition.weight,
-        0,
-      ),
+      RULE_DEFINITIONS.reduce((sum, definition) => sum + definition.weight, 0),
     ).toBe(100);
 
     const summary = calculateScore(allFindings());
-    expect(summary.categories).toHaveLength(
-      SCORE_CATEGORIES.length,
-    );
+    expect(SCORE_CATEGORIES).toContain("AI 답변 준비 콘텐츠");
+    expect(summary.categories).toHaveLength(SCORE_CATEGORIES.length);
     expect(
-      summary.categories.reduce(
-        (sum, category) => sum + category.maxScore,
-        0,
-      ),
+      summary.categories.reduce((sum, category) => sum + category.maxScore, 0),
     ).toBe(100);
   });
 
@@ -62,15 +49,14 @@ describe("scan scoring", () => {
     canonical.status = "FAIL";
     const summary = calculateScore(findings);
 
-    expect(summary.score).toBe(97);
+    expect(summary.score).toBe(98);
     expect(summary.grade).toBe("A+");
   });
 
   it("전체 noindex는 30점 상한을 적용한다", () => {
     const findings = allFindings();
     const indexability = findings.find(
-      (finding) =>
-        finding.ruleCode === "ACCESS-INDEXABILITY-001",
+      (finding) => finding.ruleCode === "ACCESS-INDEXABILITY-001",
     );
 
     if (!indexability) {
@@ -80,7 +66,7 @@ describe("scan scoring", () => {
     indexability.status = "FAIL";
     const summary = calculateScore(findings);
 
-    expect(summary.rawScore).toBe(96);
+    expect(summary.rawScore).toBe(97);
     expect(summary.score).toBe(30);
     expect(summary.grade).toBe("E");
     expect(summary.cap).toBe(30);
@@ -89,8 +75,7 @@ describe("scan scoring", () => {
   it("OAI 검색봇 실제 요청 실패는 점수 상한을 적용하지 않는다", () => {
     const findings = allFindings();
     const searchBot = findings.find(
-      (finding) =>
-        finding.ruleCode === "ACCESS-OAI-SEARCHBOT-001",
+      (finding) => finding.ruleCode === "ACCESS-OAI-SEARCHBOT-001",
     );
 
     if (!searchBot) {
