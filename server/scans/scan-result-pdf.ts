@@ -10,7 +10,7 @@ import type {
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
 export const SCAN_RESULT_PDF_RENDERER_VERSION =
-  "2026.07-scan-locale-v1";
+  "2026.07-scan-locale-v2";
 
 let cachedFontHash: string | undefined;
 
@@ -33,14 +33,21 @@ const COLORS = {
   neutralSoft: "#F8FAFC",
 };
 
-const STATUS_LABELS: Record<PublicScanResultFinding["status"], string> = {
+const STATUS_LABELS_KO: Record<PublicScanResultFinding["status"], string> = {
   PASS: "통과",
   FAIL: "실패",
   BLOCKED: "확인 불가",
   NA: "감점 제외",
 };
 
-const SEVERITY_LABELS: Record<
+const STATUS_LABELS_EN: Record<PublicScanResultFinding["status"], string> = {
+  PASS: "Pass",
+  FAIL: "Fail",
+  BLOCKED: "Unable to verify",
+  NA: "Not scored",
+};
+
+const SEVERITY_LABELS_KO: Record<
   PublicScanResultFinding["severity"],
   string
 > = {
@@ -50,6 +57,33 @@ const SEVERITY_LABELS: Record<
   HIGH: "높음",
   CRITICAL: "매우 높음",
 };
+
+const SEVERITY_LABELS_EN: Record<
+  PublicScanResultFinding["severity"],
+  string
+> = {
+  INFO: "Info",
+  LOW: "Low",
+  MEDIUM: "Medium",
+  HIGH: "High",
+  CRITICAL: "Critical",
+};
+
+function statusLabel(
+  status: PublicScanResultFinding["status"],
+  locale: "ko" | "en" = "ko",
+): string {
+  return locale === "en" ? STATUS_LABELS_EN[status] : STATUS_LABELS_KO[status];
+}
+
+function severityLabel(
+  severity: PublicScanResultFinding["severity"],
+  locale: "ko" | "en" = "ko",
+): string {
+  return locale === "en"
+    ? SEVERITY_LABELS_EN[severity]
+    : SEVERITY_LABELS_KO[severity];
+}
 
 function fontPaths(filename: string): string[] {
   return [
@@ -95,12 +129,15 @@ function cleanText(value: unknown): string {
     .trim();
 }
 
-function formatKST(value: string | null): string {
+function formatKST(
+  value: string | null,
+  locale: "ko" | "en" = "ko",
+): string {
   if (!value) {
-    return "기록 없음";
+    return locale === "en" ? "Not recorded" : "기록 없음";
   }
 
-  return new Intl.DateTimeFormat("ko-KR", {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ko-KR", {
     timeZone: "Asia/Seoul",
     year: "numeric",
     month: "2-digit",
@@ -243,7 +280,7 @@ function writeTextBox(
   const original = cleanText(text) || "-";
   const safeText =
     original.length > maxCharacters
-      ? `${original.slice(0, maxCharacters)}\n\n[문서 길이를 위해 이후 증거는 생략했습니다.]`
+      ? `${original.slice(0, maxCharacters)}\n\n…`
       : original;
   const fontSize = options.fontSize ?? 9.1;
 
@@ -325,14 +362,23 @@ function statusColors(
   return { text: COLORS.neutral, soft: COLORS.neutralSoft };
 }
 
-function pointImpact(finding: PublicScanResultFinding): string {
+function pointImpact(
+  finding: PublicScanResultFinding,
+  locale: "ko" | "en" = "ko",
+): string {
+  const isEnglish = locale === "en";
+
   if (finding.weight <= 0 || finding.status === "NA") {
-    return "점수 영향 없음";
+    return isEnglish ? "No score impact" : "점수 영향 없음";
   }
 
   return finding.status === "PASS"
-    ? `배점 ${finding.weight}점 획득`
-    : `배점 ${finding.weight}점 미반영`;
+    ? isEnglish
+      ? `Earned ${finding.weight} pts`
+      : `배점 ${finding.weight}점 획득`
+    : isEnglish
+      ? `${finding.weight} pts not earned`
+      : `배점 ${finding.weight}점 미반영`;
 }
 
 function sanitizeSensitiveString(value: string): string {
@@ -740,15 +786,20 @@ export function buildRenderedDomImprovementPlans(
 
     plans.push({
       code: "RENDERED-ADDED-CONTENT",
-      title:
-        "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
+      title: isEnglish
+        ? "Some information is visible on screen but may be missed by AI"
+        : "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
       currentState:
         stateParts.join(" ") ||
-        "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다.",
-      meaning:
-        "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.",
-      change:
-        "모든 화면 기능을 바꿀 필요는 없습니다. SSR, SSG 또는 사전 렌더링을 통해 AI가 처음 받는 HTML에도 서비스 정의, 대상 고객, 이용 절차, 요금·보안 정보, FAQ와 중요한 이동 링크가 실제 사용자 화면과 같은 의미로 포함되도록 수정합니다.",
+        (isEnglish
+          ? "Body content or navigation links are added after the page opens."
+          : "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다."),
+      meaning: isEnglish
+        ? "The page may look normal to users, but some AI search crawlers that do not fully process JavaScript can miss information and links added later."
+        : "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.",
+      change: isEnglish
+        ? "You do not need to change every screen feature. Use SSR, SSG, or prerendering so the initial HTML also includes the service definition, target users, usage process, pricing and security information, FAQs, and important navigation links with the same meaning as the actual user screen."
+        : "모든 화면 기능을 바꿀 필요는 없습니다. SSR, SSG 또는 사전 렌더링을 통해 AI가 처음 받는 HTML에도 서비스 정의, 대상 고객, 이용 절차, 요금·보안 정보, FAQ와 중요한 이동 링크가 실제 사용자 화면과 같은 의미로 포함되도록 수정합니다.",
       developerInstructions: [
         "이 항목은 8개의 독립 작업으로 나누기보다 SSR/SSG/사전 렌더링 도입 또는 랜딩 페이지 정적화를 중심 작업으로 묶어 처리해 주세요.",
         "초기 HTML에는 단순 글자 채우기가 아니라 서비스 정의와 핵심 가치, 이용 대상과 대표 활용 사례, 3~5단계 이용 절차를 자연스러운 본문 섹션으로 포함해 주세요.",
@@ -809,21 +860,28 @@ export function buildRenderedDomImprovementPlans(
   if (mismatchedFields.length > 0) {
     plans.push({
       code: "RENDERED-INCONSISTENT-INFORMATION",
-      title:
-        "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다",
+      title: isEnglish
+        ? "Initial information and rendered screen information differ"
+        : "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다",
       currentState: `${mismatchedFields.join(
         ", ",
       )}${isEnglish ? " differ between the initial response and the fully rendered page." : " 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다."}${
         renderedH1Duplicate
-          ? ` 렌더링 DOM에는 H1이 ${comparison.renderedH1.length}개(${comparison.renderedH1.join(
-              " / ",
-            )}) 있어 대표 H1 하나로 정리가 필요합니다.`
+          ? isEnglish
+            ? ` The rendered DOM has ${comparison.renderedH1.length} H1 elements (${comparison.renderedH1.join(
+                " / ",
+              )}), so the page should keep one primary H1.`
+            : ` 렌더링 DOM에는 H1이 ${comparison.renderedH1.length}개(${comparison.renderedH1.join(
+                " / ",
+              )}) 있어 대표 H1 하나로 정리가 필요합니다.`
           : ""
       }`,
-      meaning:
-        "AI 검색 시스템에 따라 처음 받은 정보를 사용하기도 하고 화면 완성 후의 정보를 사용하기도 합니다. 값이 다르면 같은 페이지를 서로 다르게 이해할 수 있으며, B2B 서비스에서는 AI가 서비스명·기능·요금·데이터 처리 방식을 잘못 설명할 위험이 커집니다.",
-      change:
-        "글자 하나까지 완전히 같을 필요는 없지만 페이지 주제, 서비스명, 핵심 기능, 가격·요금, 개인정보·자료 처리 방식, 운영 주체처럼 중요한 사실과 의미는 처음과 나중이 일치하도록 맞춥니다.",
+      meaning: isEnglish
+        ? "Some AI search systems use the initially received information, while others may use the fully rendered screen. If these values differ, the same page can be understood differently, increasing the risk that AI explains the service name, features, pricing, or data handling incorrectly."
+        : "AI 검색 시스템에 따라 처음 받은 정보를 사용하기도 하고 화면 완성 후의 정보를 사용하기도 합니다. 값이 다르면 같은 페이지를 서로 다르게 이해할 수 있으며, B2B 서비스에서는 AI가 서비스명·기능·요금·데이터 처리 방식을 잘못 설명할 위험이 커집니다.",
+      change: isEnglish
+        ? "Exact character-by-character equality is not required, but important facts and meanings such as page topic, service name, core features, pricing, data handling, and operator information should match before and after rendering."
+        : "글자 하나까지 완전히 같을 필요는 없지만 페이지 주제, 서비스명, 핵심 기능, 가격·요금, 개인정보·자료 처리 방식, 운영 주체처럼 중요한 사실과 의미는 처음과 나중이 일치하도록 맞춥니다.",
       developerInstructions: [
         "초기 HTML과 렌더링 DOM의 title, meta description, H1, JSON-LD 값을 비교해 주세요.",
         "클라이언트 실행 후 올바른 초기 값을 오래되거나 다른 값으로 덮어쓰는 코드를 수정해 주세요.",
@@ -1039,7 +1097,10 @@ function writeCover(
   );
 
   setText(document, 12, COLORS.primaryDark).text(
-    cleanText(result.scan.grade ?? "미계산"),
+    cleanText(
+      result.scan.grade ??
+        (result.scan.locale === "en" ? "Not calculated" : "미계산"),
+    ),
     x + cardWidth - 65,
     cardY + 47,
     {
@@ -1103,12 +1164,12 @@ function writeCover(
   writeLabelValue(
     document,
     result.scan.locale === "en" ? "Completed at (KST)" : "완료 시각(KST)",
-    formatKST(result.scan.completedAt),
+    formatKST(result.scan.completedAt, result.scan.locale),
   );
   writeLabelValue(
     document,
     result.scan.locale === "en" ? "Report generated at (KST)" : "보고서 생성 시각(KST)",
-    formatKST(new Date().toISOString()),
+    formatKST(new Date().toISOString(), result.scan.locale),
   );
 
   document.moveDown(0.5);
@@ -1162,7 +1223,9 @@ function writeCategoryScores(
     );
 
     setText(document, 9.2, COLORS.primaryDark).text(
-      `${category.score}/${category.maxScore}점`,
+      result.scan.locale === "en"
+        ? `${category.score}/${category.maxScore} pts`
+        : `${category.score}/${category.maxScore}점`,
       x + width - 100,
       y,
       {
@@ -1205,7 +1268,9 @@ function writeCategoryScores(
     writeTextBox(
       document,
       result.scan.locale === "en" ? "Score cap applied" : "점수 상한 적용",
-      `치명적 조건으로 최종 점수가 ${result.scoreSummary.cap}점 이하로 제한되었습니다.`,
+      result.scan.locale === "en"
+        ? `A critical condition limited the final score to ${result.scoreSummary.cap} points or lower.`
+        : `치명적 조건으로 최종 점수가 ${result.scoreSummary.cap}점 이하로 제한되었습니다.`,
       {
         background: COLORS.neutralSoft,
         border: COLORS.border,
@@ -1217,7 +1282,9 @@ function writeCategoryScores(
   writeTextBox(
     document,
     result.scan.locale === "en" ? "Expected improvement range" : "예상 개선 범위",
-    `현재 규칙 배점 기준으로 +${result.scoreSummary.expectedImprovementMin}~${result.scoreSummary.expectedImprovementMax}점의 개선 가능 범위가 계산되었습니다. 이 수치는 Site AI Score 내부 규칙 기준의 참고값이며 실제 상승 점수, AI 검색 노출, 추천 결과를 보장하지 않습니다. 핵심 목표는 AI가 사이트를 더 정확히 인식하고 인용할 수 있게 만드는 것입니다.`,
+    result.scan.locale === "en"
+      ? `Based on the current scoring rules, the expected improvement range is +${result.scoreSummary.expectedImprovementMin}~${result.scoreSummary.expectedImprovementMax} points. This is a reference value under Site AI Score's internal rules and does not guarantee an actual score increase, AI search exposure, or recommendation results. The core goal is to help AI understand and cite the site more accurately.`
+      : `현재 규칙 배점 기준으로 +${result.scoreSummary.expectedImprovementMin}~${result.scoreSummary.expectedImprovementMax}점의 개선 가능 범위가 계산되었습니다. 이 수치는 Site AI Score 내부 규칙 기준의 참고값이며 실제 상승 점수, AI 검색 노출, 추천 결과를 보장하지 않습니다. 핵심 목표는 AI가 사이트를 더 정확히 인식하고 인용할 수 있게 만드는 것입니다.`,
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",
@@ -1385,6 +1452,7 @@ function writeRenderedDomComparison(
   document: PDFKit.PDFDocument,
   result: PublicScanResult,
 ): void {
+  const isEnglish = result.scan.locale === "en";
   const comparison = scanResultRenderedDomComparison(result);
   const improvementPlans =
     buildRenderedDomImprovementPlans(comparison, result.scan.locale);
@@ -1468,7 +1536,9 @@ function writeRenderedDomComparison(
         ? (result.scan.locale === "en" ? "Not confirmed" : "미확인")
         : result.scan.locale === "en"
           ? `${(comparison.durationMs / 1_000).toFixed(1)} sec`
-          : `${(comparison.durationMs / 1_000).toFixed(1)}초`,
+          : isEnglish
+            ? `${(comparison.durationMs / 1_000).toFixed(1)} sec`
+            : `${(comparison.durationMs / 1_000).toFixed(1)}초`,
     );
     writeLabelValue(
       document,
@@ -1477,7 +1547,9 @@ function writeRenderedDomComparison(
         ? (result.scan.locale === "en" ? "Not confirmed" : "미확인")
         : result.scan.locale === "en"
           ? `${comparison.pageErrorCount.toLocaleString("en-US")} errors`
-          : `${comparison.pageErrorCount.toLocaleString("ko-KR")}건`,
+          : isEnglish
+            ? `${comparison.pageErrorCount.toLocaleString("en-US")} errors`
+            : `${comparison.pageErrorCount.toLocaleString("ko-KR")}건`,
     );
 
     writeSectionTitle(
@@ -1578,7 +1650,7 @@ function writeFindingDetail(
   const metaY = document.y + 12;
 
   setText(document, 8.4, colors.text).text(
-    locale === "en" ? `Status · ${STATUS_LABELS[finding.status]}` : `판정 · ${STATUS_LABELS[finding.status]}`,
+    locale === "en" ? `Status · ${statusLabel(finding.status, locale)}` : `판정 · ${statusLabel(finding.status, locale)}`,
     x + 13,
     metaY,
     {
@@ -1587,7 +1659,7 @@ function writeFindingDetail(
   );
 
   setText(document, 8.4, colors.text).text(
-    locale === "en" ? `Severity · ${SEVERITY_LABELS[finding.severity]}` : `중요도 · ${SEVERITY_LABELS[finding.severity]}`,
+    locale === "en" ? `Severity · ${severityLabel(finding.severity, locale)}` : `중요도 · ${severityLabel(finding.severity, locale)}`,
     x + width * 0.34,
     metaY,
     {
@@ -1596,7 +1668,7 @@ function writeFindingDetail(
   );
 
   setText(document, 8.4, colors.text).text(
-    pointImpact(finding),
+    pointImpact(finding, locale),
     x + width * 0.66,
     metaY,
     {
@@ -1737,9 +1809,10 @@ function writeCompactFinding(
   let currentY = y + padding + titleHeight + 5;
 
   setText(document, 7.6, colors.text).text(
-    `${STATUS_LABELS[finding.status]} / ${
-      SEVERITY_LABELS[finding.severity]
-    } / ${pointImpact(finding)}`,
+    `${statusLabel(finding.status, locale)} / ${severityLabel(
+      finding.severity,
+      locale,
+    )} / ${pointImpact(finding, locale)}`,
     x + padding,
     currentY,
     {
@@ -1871,7 +1944,7 @@ function writeCollectedPages(
           : `iframe: ${page.iframeCount ?? notConfirmed}개`,
         isEnglish
           ? `HTML SHA-256: ${page.rawHtmlHash ?? "Not stored"}`
-          : `HTML SHA-256: ${page.rawHtmlHash ?? "미저장"}`,
+          : `HTML SHA-256: ${page.rawHtmlHash ?? (isEnglish ? "Not stored" : "미저장")}`,
       ].join("\n"),
       {
         background: COLORS.surface,
@@ -1936,7 +2009,7 @@ function writeMethodology(
   writeLabelValue(
     document,
     isEnglish ? "Completed at (KST)" : "검사 완료(KST)",
-    formatKST(result.scan.completedAt),
+    formatKST(result.scan.completedAt, result.scan.locale),
   );
 
   document.moveDown(1.1);
