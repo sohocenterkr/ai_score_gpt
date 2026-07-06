@@ -33,3 +33,21 @@ describe("public landing page SEO fallback", () => {
     expect(llms).toContain("https://siteaiscore.com/ko");
   });
 });
+
+describe("prerender public pages", () => {
+  const prerenderScript = readFileSync(
+    "scripts/build/prerender-public-pages.cjs",
+    "utf8",
+  );
+
+  it("keeps the Korean landing prerender JSON-LD graph complete", () => {
+    expect(prerenderScript).toContain("const homePageJsonLd");
+    expect(prerenderScript).toContain('"@graph"');
+    expect(prerenderScript).toContain('"@type": "Organization"');
+    expect(prerenderScript).toContain('"@type": "WebSite"');
+    expect(prerenderScript).toContain('"@type": "WebApplication"');
+    expect(prerenderScript).toContain('"@type": "FAQPage"');
+    expect(prerenderScript).toContain("sameAs");
+    expect(prerenderScript).toContain("contactPoint");
+  });
+});

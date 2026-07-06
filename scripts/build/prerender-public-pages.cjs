@@ -10,19 +10,31 @@ if (!fs.existsSync(sourceIndexPath)) {
 
 const sourceHtml = fs.readFileSync(sourceIndexPath, "utf8");
 
+const siteOrigin = "https://siteaiscore.com";
+const officialContactUrl = "https://open.kakao.com/me/sohocenter";
+const supportEmail = "sohocenter.kr@gmail.com";
+const supportPhone = "+82-70-4513-4093";
+
 const organizationJsonLd = {
-  "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": `${siteOrigin}/#organization`,
   name: "소호센터",
   alternateName: "SOHO Center",
-  url: "https://siteaiscore.com/ko",
-  logo: "https://siteaiscore.com/favicon.ico",
-  contactPoint: {
-    "@type": "ContactPoint",
-    telephone: "+82-70-4513-4093",
-    contactType: "customer support",
-    availableLanguage: ["ko"],
-  },
+  url: `${siteOrigin}/ko`,
+  logo: `${siteOrigin}/favicon.ico`,
+  email: supportEmail,
+  telephone: supportPhone,
+  sameAs: [officialContactUrl],
+  contactPoint: [
+    {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      telephone: supportPhone,
+      email: supportEmail,
+      url: officialContactUrl,
+      availableLanguage: ["ko", "en"],
+    },
+  ],
   address: {
     "@type": "PostalAddress",
     addressCountry: "KR",
@@ -32,19 +44,28 @@ const organizationJsonLd = {
   },
 };
 
+const webSiteJsonLd = {
+  "@type": "WebSite",
+  "@id": `${siteOrigin}/#website`,
+  name: "Site AI Score",
+  url: `${siteOrigin}/ko`,
+  inLanguage: "ko-KR",
+  publisher: {
+    "@id": `${siteOrigin}/#organization`,
+  },
+};
+
 const webApplicationJsonLd = {
-  "@context": "https://schema.org",
   "@type": "WebApplication",
+  "@id": `${siteOrigin}/#webapplication`,
   name: "Site AI Score",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
-  url: "https://siteaiscore.com/ko",
+  url: `${siteOrigin}/ko`,
   description:
-    "Site AI Score는 웹사이트의 AI 검색 친화도, 검색엔진 접근성, 구조화 데이터, 초기 HTML 콘텐츠, 개선 방향을 진단하는 웹 애플리케이션입니다.",
+    "Site AI Score는 공개 URL의 AI 검색 접근성, 초기 HTML, 구조화 데이터, 핵심 콘텐츠, 상세 진단 보고서와 수정 작업지시서를 제공하는 AEO 진단 웹 애플리케이션입니다.",
   provider: {
-    "@type": "Organization",
-    name: "소호센터",
-    url: "https://siteaiscore.com/ko",
+    "@id": `${siteOrigin}/#organization`,
   },
   offers: {
     "@type": "Offer",
@@ -52,8 +73,46 @@ const webApplicationJsonLd = {
     price: "100",
     availability: "https://schema.org/PreOrder",
     description:
-      "간편진단 실행은 무료로 제공되며, 상세 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다.",
+      "간편진단은 무료로 제공되며, 상세 진단 PDF 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다.",
   },
+};
+
+const homeFaqItems = [
+  [
+    "Site AI Score는 무엇을 진단하나요?",
+    "공개 URL의 AI 봇 접근성, 초기 HTML 본문, H1과 내부 링크, 구조화 데이터, 요금·고객지원·개인정보 같은 AI 답변 준비 콘텐츠를 함께 진단합니다.",
+  ],
+  [
+    "무료 간편진단과 유료 산출물의 차이는 무엇인가요?",
+    "무료 간편진단은 점수와 개선 필요 항목 개수 요약을 제공합니다. 상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공되는 유료 산출물입니다.",
+  ],
+  [
+    "수정 작업지시서는 무엇을 제공하나요?",
+    "기술 설정, 초기 HTML, canonical, JSON-LD, 콘텐츠 보강, 개인정보와 문의 정책, 재검수 완료 기준을 개발자가 실행하기 쉬운 작업 항목으로 정리합니다.",
+  ],
+];
+
+const homeFaqJsonLd = {
+  "@type": "FAQPage",
+  "@id": `${siteOrigin}/#faq`,
+  mainEntity: homeFaqItems.map(([question, answer]) => ({
+    "@type": "Question",
+    name: question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: answer,
+    },
+  })),
+};
+
+const homePageJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    organizationJsonLd,
+    webSiteJsonLd,
+    webApplicationJsonLd,
+    homeFaqJsonLd,
+  ],
 };
 
 const faqItems = [
@@ -75,19 +134,19 @@ const faqItems = [
   ],
   [
     "무료로 이용할 수 있나요?",
-    "간편진단 실행은 무료로 제공됩니다. 계정당 최대 10개 사이트까지 무료로 진단할 수 있으며, 이미 진단한 사이트는 무료 한도 초과 후에도 재진단할 수 있습니다.",
+    "간편진단 실행은 무료로 제공됩니다. 계정당 무료 진단 개수에는 제한이 있을 수 있으며, 이미 진단한 사이트는 정책에 따라 재진단할 수 있습니다.",
   ],
   [
     "유료 요금제는 어떻게 되나요?",
-    "상세 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다. 기본 가격은 USD 100 수준을 검토하고 있으며, 개선 사례 활용에 동의하는 경우 USD 70 수준의 할인 가격을 검토하고 있습니다.",
+    "상세 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다. 최종 가격, 할인 조건, 결제 가능 여부는 요금/결제 안내에서 확인합니다.",
   ],
   [
     "결제는 어떤 방식으로 가능한가요?",
-    "결제 기능은 준비 중입니다. 1회성 결제 방식으로 제공할 예정이며, 결제 수단은 최종 도입 시 안내됩니다.",
+    "결제 가능 국가, 결제 수단, 국내·해외 결제 지원 여부는 요금/결제 안내 화면에서 확인할 수 있습니다.",
   ],
   [
     "환불이나 취소는 가능한가요?",
-    "결제 기능 도입 후 환불 기준을 별도로 안내할 예정입니다. 디지털 산출물이 생성되거나 다운로드된 경우 환불이 제한될 수 있습니다.",
+    "결제 기능과 디지털 산출물 제공 범위에 따라 환불·취소 기준이 달라질 수 있으므로 요금/결제 안내와 이용약관을 함께 확인해야 합니다.",
   ],
   [
     "모바일에서도 사용할 수 있나요?",
@@ -103,7 +162,7 @@ const faqItems = [
   ],
   [
     "입력한 데이터는 저장되나요?",
-    "사이트명, URL, 진단 결과 점수는 서비스 제공과 이력 확인을 위해 저장될 수 있습니다. 생성된 상세 보고서 자료와 수정 작업지시서 본문은 관리자 페이지에서 열람할 수 없도록 운영됩니다.",
+    "사이트명, URL, 진단 결과 점수와 주요 증거는 서비스 제공과 이력 확인을 위해 저장될 수 있습니다. 자세한 기준은 개인정보처리방침에서 확인합니다.",
   ],
   [
     "오류가 발생하면 어떻게 하나요?",
@@ -137,43 +196,68 @@ const pages = [
     path: "/ko",
     title: "Site AI Score | AI 검색 친화도 진단",
     description:
-      "Site AI Score는 웹사이트가 AI 검색과 검색엔진에 잘 이해되는지 진단하고, 개선 방향과 작업지시서를 제공하는 서비스입니다.",
-    jsonLd: [organizationJsonLd, webApplicationJsonLd],
+      "Site AI Score는 웹사이트의 AI 검색 접근성, 초기 HTML, 구조화 데이터, 핵심 콘텐츠, 수정 작업지시서와 재검수까지 한 흐름으로 점검하는 AEO 진단 서비스입니다.",
+    jsonLd: [homePageJsonLd],
   },
   {
     path: "/ko/guide",
     title: "이용가이드 | Site AI Score",
     description:
-      "Site AI Score 회원가입, 사이트 등록, 간편진단 실행, 진단 결과 확인, 개선 후 재진단 방법을 안내합니다.",
-    jsonLd: [organizationJsonLd],
+      "Site AI Score 회원가입, 사이트 등록, 무료 간편진단, 유료 보고서, 결제, 개선 후 재진단 방법을 안내합니다.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@graph": [organizationJsonLd, webSiteJsonLd],
+      },
+    ],
   },
   {
     path: "/ko/faq",
     title: "자주 묻는 질문 | Site AI Score",
     description:
-      "Site AI Score의 무료 이용 범위, 유료 산출물, 결제 준비 상태, 개인정보 보호, 문의 방법을 확인하세요.",
-    jsonLd: [organizationJsonLd, faqJsonLd],
+      "Site AI Score의 무료 이용 범위, Google 로그인, 유료 산출물, Polar 결제, 자료 이용 범위, 문의 방법을 확인하세요.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@graph": [organizationJsonLd, webSiteJsonLd, faqJsonLd],
+      },
+    ],
   },
   {
     path: "/ko/checkout",
     title: "요금/결제 안내 | Site AI Score",
     description:
-      "Site AI Score의 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 추가 제공 항목과 요금 안내입니다.",
-    jsonLd: [organizationJsonLd],
+      "Site AI Score의 상세 진단 PDF 보고서, 수정 작업지시서, 사례 할인 상품, Polar 해외 결제와 요금 안내입니다.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@graph": [organizationJsonLd, webSiteJsonLd, webApplicationJsonLd],
+      },
+    ],
   },
   {
     path: "/ko/terms",
     title: "이용약관 | Site AI Score",
     description:
-      "Site AI Score 서비스 이용 조건, 무료 이용 범위, 유료 산출물, 금지 행위, 면책 사항을 안내합니다.",
-    jsonLd: [organizationJsonLd],
+      "Site AI Score 서비스 이용 조건, 무료 이용 범위, 유료 산출물, 사례 할인 자료 이용, 금지 행위, 면책 사항을 안내합니다.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@graph": [organizationJsonLd, webSiteJsonLd],
+      },
+    ],
   },
   {
     path: "/ko/privacy",
     title: "개인정보처리방침 | Site AI Score",
     description:
-      "Site AI Score의 개인정보 처리 목적, 처리 항목, 진단 데이터 저장, 보관 및 삭제 기준을 안내합니다.",
-    jsonLd: [organizationJsonLd],
+      "Site AI Score의 개인정보 처리 목적, Google 로그인, 결제 정보, 진단 데이터, 보관 및 삭제 기준을 안내합니다.",
+    jsonLd: [
+      {
+        "@context": "https://schema.org",
+        "@graph": [organizationJsonLd, webSiteJsonLd],
+      },
+    ],
   },
 ];
 
@@ -188,31 +272,47 @@ function escapeHtml(value) {
 function removeExistingHeadTags(html) {
   return html
     .replace(/\s*<link\s+rel="canonical"[^>]*>\s*/gi, "\n")
-    .replace(/\s*<script\s+type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>\s*/gi, "\n");
+    .replace(
+      /\s*<script\s+type="application\/ld\+json"[^>]*>[\s\S]*?<\/script>\s*/gi,
+      "\n",
+    );
 }
 
 function upsertTitle(html, title) {
-  return html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${escapeHtml(title)}</title>`);
+  return html.replace(
+    /<title>[\s\S]*?<\/title>/i,
+    `<title>${escapeHtml(title)}</title>`,
+  );
 }
 
 function upsertMetaName(html, name, content) {
   const escaped = escapeHtml(content);
-  const pattern = new RegExp(`<meta\\s+name="${name}"\\s+content="[^"]*"\\s*/?>`, "i");
+  const pattern = new RegExp(
+    `<meta\\s+name="${name}"\\s+content="[^"]*"\\s*/?>`,
+    "i",
+  );
   const tag = `<meta name="${name}" content="${escaped}" />`;
 
-  return pattern.test(html) ? html.replace(pattern, tag) : html.replace("</head>", `  ${tag}\n</head>`);
+  return pattern.test(html)
+    ? html.replace(pattern, tag)
+    : html.replace("</head>", `  ${tag}\n</head>`);
 }
 
 function upsertMetaProperty(html, property, content) {
   const escaped = escapeHtml(content);
-  const pattern = new RegExp(`<meta\\s+property="${property}"\\s+content="[^"]*"\\s*/?>`, "i");
+  const pattern = new RegExp(
+    `<meta\\s+property="${property}"\\s+content="[^"]*"\\s*/?>`,
+    "i",
+  );
   const tag = `<meta property="${property}" content="${escaped}" />`;
 
-  return pattern.test(html) ? html.replace(pattern, tag) : html.replace("</head>", `  ${tag}\n</head>`);
+  return pattern.test(html)
+    ? html.replace(pattern, tag)
+    : html.replace("</head>", `  ${tag}\n</head>`);
 }
 
 function renderPage(page) {
-  const canonicalUrl = `https://siteaiscore.com${page.path}`;
+  const canonicalUrl = `${siteOrigin}${page.path}`;
   const jsonLdTags = page.jsonLd
     .map(
       (item) =>
