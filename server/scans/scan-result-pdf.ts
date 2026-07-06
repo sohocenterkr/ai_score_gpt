@@ -1400,9 +1400,7 @@ function writeCover(
   );
 
   setText(document, 8.3, COLORS.primaryDark).text(
-    result.scan.locale === "en"
-      ? "Scope and improvement potential"
-      : "측정 범위와 개선 가능성",
+    result.scan.locale === "en" ? "Diagnostic coverage" : "진단 측정 범위",
     x + cardWidth + gap + 14,
     cardY + 14,
     {
@@ -1411,8 +1409,6 @@ function writeCover(
   );
 
   const coverage = result.scoreSummary?.coverage;
-  const improvementMin = result.scoreSummary?.expectedImprovementMin ?? 0;
-  const improvementMax = result.scoreSummary?.expectedImprovementMax ?? 0;
 
   setText(document, 15, COLORS.primary).text(
     coverage === undefined
@@ -1420,8 +1416,8 @@ function writeCover(
         ? "No current rule score"
         : "현재 규칙 점수 없음"
       : result.scan.locale === "en"
-        ? `Measured ${coverage}% / +${improvementMin}~${improvementMax} pts`
-        : `측정 ${coverage}% / +${improvementMin}~${improvementMax}점`,
+        ? `Measured ${coverage}%`
+        : `측정 ${coverage}%`,
     x + cardWidth + gap + 14,
     cardY + 42,
     {
@@ -1587,11 +1583,11 @@ function writeCategoryScores(
   writeTextBox(
     document,
     result.scan.locale === "en"
-      ? "Expected improvement range"
-      : "예상 개선 범위",
+      ? "Improvement goals are provided in the work order"
+      : "개선 목표는 수정 작업지시서에서 확인",
     result.scan.locale === "en"
-      ? `Based on the current scoring rules, the expected improvement range is +${result.scoreSummary.expectedImprovementMin}~${result.scoreSummary.expectedImprovementMax} points. This is a reference value under Site AI Score's internal rules and does not guarantee an actual score increase, AI search exposure, or recommendation results. The core goal is to help AI understand and cite the site more accurately.`
-      : `현재 규칙 배점 기준으로 +${result.scoreSummary.expectedImprovementMin}~${result.scoreSummary.expectedImprovementMax}점의 개선 가능 범위가 계산되었습니다. 이 수치는 Site AI Score 내부 규칙 기준의 참고값이며 실제 상승 점수, AI 검색 노출, 추천 결과를 보장하지 않습니다. 핵심 목표는 AI가 사이트를 더 정확히 인식하고 인용할 수 있게 만드는 것입니다.`,
+      ? "This diagnostic report shows the current measured state of the public URL. Detailed improvement goals, execution items, and verification criteria are provided in the improvement work order."
+      : "이 진단 보고서는 공개 URL의 현재 측정 상태를 보여줍니다. 구체적인 개선 목표, 실행 항목, 완료 기준은 수정 작업지시서에서 확인할 수 있습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",

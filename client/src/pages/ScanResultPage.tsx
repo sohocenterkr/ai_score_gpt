@@ -23,10 +23,7 @@ const statusLabels: Record<ScanResultFinding["status"], string> = {
   NA: "감점 제외",
 };
 
-const severityLabels: Record<
-  ScanResultFinding["severity"],
-  string
-> = {
+const severityLabels: Record<ScanResultFinding["severity"], string> = {
   INFO: "참고",
   LOW: "낮음",
   MEDIUM: "주의",
@@ -34,15 +31,13 @@ const severityLabels: Record<
   CRITICAL: "매우 높음",
 };
 
-const severityDescriptions: Record<
-  ScanResultFinding["severity"],
-  string
-> = {
+const severityDescriptions: Record<ScanResultFinding["severity"], string> = {
   INFO: "문제 해결 순서를 정할 때 참고하는 안내 수준입니다.",
   LOW: "점수 영향과 위험이 비교적 낮은 개선 항목입니다.",
   MEDIUM: "점수와 AI 이해도에 영향을 줄 수 있어 확인이 필요한 항목입니다.",
   HIGH: "핵심 접근성이나 이해 정확도에 큰 영향을 줄 수 있는 항목입니다.",
-  CRITICAL: "검사 결과 전체를 제한할 수 있어 가장 먼저 해결해야 하는 항목입니다.",
+  CRITICAL:
+    "검사 결과 전체를 제한할 수 있어 가장 먼저 해결해야 하는 항목입니다.",
 };
 
 const englishStatusLabels: Record<ScanResultFinding["status"], string> = {
@@ -60,12 +55,17 @@ const englishSeverityLabels: Record<ScanResultFinding["severity"], string> = {
   CRITICAL: "Critical",
 };
 
-const englishSeverityDescriptions: Record<ScanResultFinding["severity"], string> = {
+const englishSeverityDescriptions: Record<
+  ScanResultFinding["severity"],
+  string
+> = {
   INFO: "Informational guidance for prioritizing improvements.",
   LOW: "A relatively low-risk improvement item with limited score impact.",
-  MEDIUM: "An item that may affect score and AI understanding and should be reviewed.",
+  MEDIUM:
+    "An item that may affect score and AI understanding and should be reviewed.",
   HIGH: "An item that may significantly affect core accessibility or understanding accuracy.",
-  CRITICAL: "A critical item that may limit the entire diagnostic result and should be addressed first.",
+  CRITICAL:
+    "A critical item that may limit the entire diagnostic result and should be addressed first.",
 };
 
 const categoryEnglishLabels: Record<string, string> = {
@@ -89,14 +89,14 @@ const categoryEnglishLabels: Record<string, string> = {
 };
 
 function translateCategoryLabel(value: string, isEnglish: boolean): string {
-  return isEnglish ? categoryEnglishLabels[value] ?? value : value;
+  return isEnglish ? (categoryEnglishLabels[value] ?? value) : value;
 }
 
 const foundLabelEnglishLabels: Record<string, string> = {
-  "사이트명": "Site name",
+  사이트명: "Site name",
   "문서 제목": "Document title",
-  "제목": "Title",
-  "설명": "Description",
+  제목: "Title",
+  설명: "Description",
   "기본 언어": "Primary language",
   "대표 URL": "Main URL",
   "최종 URL": "Final URL",
@@ -127,7 +127,7 @@ const findingTitleEnglishLabels: Record<string, string> = {
   "초기 HTML 내부 링크": "Initial HTML internal links",
   "JSON-LD 구조화 데이터": "JSON-LD structured data",
   "JSON-LD 유형 식별": "JSON-LD type identification",
-  "사이트맵": "Sitemap",
+  사이트맵: "Sitemap",
   "메타 로봇 정책": "Meta robots policy",
   "초기 콘텐츠 답변 기반": "Initial content answer basis",
   "메타 설명": "Meta description",
@@ -140,19 +140,24 @@ const findingTitleEnglishLabels: Record<string, string> = {
 };
 
 function translateFoundLabel(value: string, isEnglish: boolean): string {
-  return isEnglish ? foundLabelEnglishLabels[value] ?? value : value;
+  return isEnglish ? (foundLabelEnglishLabels[value] ?? value) : value;
 }
 
 function translateFindingTitle(value: string, isEnglish: boolean): string {
-  return isEnglish ? findingTitleEnglishLabels[value] ?? value : value;
+  return isEnglish ? (findingTitleEnglishLabels[value] ?? value) : value;
 }
 
-function translateStoredEvidenceText(value: string, isEnglish: boolean): string {
+function translateStoredEvidenceText(
+  value: string,
+  isEnglish: boolean,
+): string {
   if (!isEnglish) return value;
 
   const exact: Record<string, string> = {
-    "Site AI Score | AI 검색 친화도 진단": "Site AI Score | AI Search Readiness Diagnostic",
-    "Site AI Score는 웹사이트가 AI 검색과 검색엔진에 잘 이해되는지 진단하고, 개선 방향과 작업지시서를 제공하는 서비스입니다.": "Site AI Score diagnoses whether a website is well understood by AI search and search engines, and provides improvement direction and work orders.",
+    "Site AI Score | AI 검색 친화도 진단":
+      "Site AI Score | AI Search Readiness Diagnostic",
+    "Site AI Score는 웹사이트가 AI 검색과 검색엔진에 잘 이해되는지 진단하고, 개선 방향과 작업지시서를 제공하는 서비스입니다.":
+      "Site AI Score diagnoses whether a website is well understood by AI search and search engines, and provides improvement direction and work orders.",
   };
 
   if (exact[value]) return exact[value];
@@ -182,21 +187,35 @@ function translateStoredEvidenceText(value: string, isEnglish: boolean): string 
     );
 }
 
-function translateDiagnosticText(value: string | null | undefined, isEnglish: boolean): string {
+function translateDiagnosticText(
+  value: string | null | undefined,
+  isEnglish: boolean,
+): string {
   if (!value || !isEnglish) return value ?? "";
 
   const exact: Record<string, string> = {
-    "유효한 JSON-LD 구조화 데이터를 확인했습니다.": "Valid JSON-LD structured data was found.",
-    "유효한 JSON-LD 구조화 데이터를 확인하지 못했습니다.": "Valid JSON-LD structured data was not found.",
-    "초기 HTML에서 유효한 JSON-LD 구조화 데이터를 찾지 못했습니다.": "No valid JSON-LD structured data was found in the initial HTML.",
-    "사이트의 업종과 핵심정보에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.": "Add Schema.org JSON-LD that matches the website type and key information to the initial HTML.",
-    "사이트에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.": "Add Schema.org JSON-LD that fits the website to the initial HTML.",
-    "JSON-LD에서 Schema.org 유형을 식별했습니다.": "A Schema.org type was identified in the JSON-LD.",
-    "식별 가능한 JSON-LD @type이 없습니다.": "No identifiable JSON-LD @type was found.",
-    "초기 HTML에서 탐색 가능한 내부 링크를 확인했습니다.": "Navigable internal links were found in the initial HTML.",
-    "초기 HTML에서 탐색 가능한 내부 링크를 찾지 못했습니다.": "Navigable internal links were not found in the initial HTML.",
-    "초기 HTML의 내부 링크가 관련 콘텐츠 탐색 단서를 제공합니다.": "Internal links in the initial HTML provide navigation signals to related content.",
-    "관련 콘텐츠로 이어지는 내부 링크 단서가 부족합니다.": "There are not enough internal link signals leading to related content.",
+    "유효한 JSON-LD 구조화 데이터를 확인했습니다.":
+      "Valid JSON-LD structured data was found.",
+    "유효한 JSON-LD 구조화 데이터를 확인하지 못했습니다.":
+      "Valid JSON-LD structured data was not found.",
+    "초기 HTML에서 유효한 JSON-LD 구조화 데이터를 찾지 못했습니다.":
+      "No valid JSON-LD structured data was found in the initial HTML.",
+    "사이트의 업종과 핵심정보에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.":
+      "Add Schema.org JSON-LD that matches the website type and key information to the initial HTML.",
+    "사이트에 맞는 Schema.org JSON-LD를 초기 HTML에 추가하세요.":
+      "Add Schema.org JSON-LD that fits the website to the initial HTML.",
+    "JSON-LD에서 Schema.org 유형을 식별했습니다.":
+      "A Schema.org type was identified in the JSON-LD.",
+    "식별 가능한 JSON-LD @type이 없습니다.":
+      "No identifiable JSON-LD @type was found.",
+    "초기 HTML에서 탐색 가능한 내부 링크를 확인했습니다.":
+      "Navigable internal links were found in the initial HTML.",
+    "초기 HTML에서 탐색 가능한 내부 링크를 찾지 못했습니다.":
+      "Navigable internal links were not found in the initial HTML.",
+    "초기 HTML의 내부 링크가 관련 콘텐츠 탐색 단서를 제공합니다.":
+      "Internal links in the initial HTML provide navigation signals to related content.",
+    "관련 콘텐츠로 이어지는 내부 링크 단서가 부족합니다.":
+      "There are not enough internal link signals leading to related content.",
   };
 
   return exact[value] ?? value;
@@ -206,14 +225,22 @@ function translateRenderedText(value: string, isEnglish: boolean): string {
   if (!isEnglish) return value;
 
   const exact: Record<string, string> = {
-    "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다": "Some information is visible on screen but may be missed by some AI systems",
-    "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다.": "Body content or navigation links are added after the page opens.",
-    "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.": "It may look normal to users, but some AI search bots that do not fully process JavaScript may miss information and links added later.",
-    "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다": "The information first received by AI differs from what is displayed on screen",
-    "AI가 처음 받는 페이지에 핵심 정보가 부족합니다": "The page first received by AI lacks core information",
-    "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.": "Reduce rendering dependency so the initial HTML contains enough core body text and key navigation paths.",
-    "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.": "Check consistency so the initial HTML and rendered page communicate the same core title, description, and structured information.",
-    "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.": "Add core information so AI can understand the page topic and main service even from the first response.",
+    "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다":
+      "Some information is visible on screen but may be missed by some AI systems",
+    "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다.":
+      "Body content or navigation links are added after the page opens.",
+    "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.":
+      "It may look normal to users, but some AI search bots that do not fully process JavaScript may miss information and links added later.",
+    "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다":
+      "The information first received by AI differs from what is displayed on screen",
+    "AI가 처음 받는 페이지에 핵심 정보가 부족합니다":
+      "The page first received by AI lacks core information",
+    "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.":
+      "Reduce rendering dependency so the initial HTML contains enough core body text and key navigation paths.",
+    "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.":
+      "Check consistency so the initial HTML and rendered page communicate the same core title, description, and structured information.",
+    "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.":
+      "Add core information so AI can understand the page topic and main service even from the first response.",
   };
 
   if (exact[value]) return exact[value];
@@ -307,16 +334,18 @@ function pointImpactDescription(
     : `통과하지 못해 이 규칙의 배점 ${finding.weight}점이 반영되지 않았습니다.`;
 }
 
-
 function translateUiErrorMessage(message: string, isEnglish: boolean): string {
   if (!isEnglish) return message;
 
   const exact: Record<string, string> = {
     "검사 결과를 불러오지 못했습니다.": "Could not load the scan result.",
     "검사 번호가 없습니다.": "No scan ID was provided.",
-    "사이트와 검사 결과가 일치하지 않습니다.": "The site and scan result do not match.",
-    "현재 기준으로 다시 진단하지 못했습니다.": "Could not run a new diagnostic with the current rules.",
-    "상세 산출물 이용을 위해 결제 기능 연결이 필요합니다.": "Payment integration is required to access detailed deliverables.",
+    "사이트와 검사 결과가 일치하지 않습니다.":
+      "The site and scan result do not match.",
+    "현재 기준으로 다시 진단하지 못했습니다.":
+      "Could not run a new diagnostic with the current rules.",
+    "상세 산출물 이용을 위해 결제 기능 연결이 필요합니다.":
+      "Payment integration is required to access detailed deliverables.",
     "작업지시서를 만들지 못했습니다.": "Could not create the work order.",
   };
 
@@ -398,9 +427,7 @@ interface RenderedImprovementPlan {
 }
 
 function evidenceRecord(value: unknown): EvidenceRecord | null {
-  return value &&
-    typeof value === "object" &&
-    !Array.isArray(value)
+  return value && typeof value === "object" && !Array.isArray(value)
     ? (value as EvidenceRecord)
     : null;
 }
@@ -411,9 +438,7 @@ function recordNumber(
 ): number | null {
   const value = record?.[key];
 
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : null;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function recordString(
@@ -422,9 +447,7 @@ function recordString(
 ): string | null {
   const value = record?.[key];
 
-  return typeof value === "string" && value.trim()
-    ? value.trim()
-    : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function nestedRecord(
@@ -453,8 +476,7 @@ function recordStringArray(
   }
 
   return value.filter(
-    (item): item is string =>
-      typeof item === "string" && Boolean(item.trim()),
+    (item): item is string => typeof item === "string" && Boolean(item.trim()),
   );
 }
 
@@ -465,10 +487,7 @@ function renderedMetric(
   return {
     initial,
     rendered,
-    delta:
-      initial === null || rendered === null
-        ? null
-        : rendered - initial,
+    delta: initial === null || rendered === null ? null : rendered - initial,
   };
 }
 
@@ -485,8 +504,7 @@ function renderedDomComparisonFromFindings(
     return null;
   }
 
-  const status =
-    recordString(renderedEvidence, "status") ?? "UNKNOWN";
+  const status = recordString(renderedEvidence, "status") ?? "UNKNOWN";
   const initial = nestedRecord(renderedEvidence, "initialHtml");
   const rendered = nestedRecord(renderedEvidence, "renderedDom");
   const initialLinks = nestedRecord(initial, "links");
@@ -498,15 +516,9 @@ function renderedDomComparisonFromFindings(
 
   return {
     status,
-    browserVersion: recordString(
-      renderedEvidence,
-      "browserVersion",
-    ),
+    browserVersion: recordString(renderedEvidence, "browserVersion"),
     durationMs: recordNumber(renderedEvidence, "durationMs"),
-    pageErrorCount: recordNumber(
-      renderedEvidence,
-      "pageErrorCount",
-    ),
+    pageErrorCount: recordNumber(renderedEvidence, "pageErrorCount"),
     errorCode: recordString(renderedEvidence, "errorCode"),
     message: recordString(renderedEvidence, "message"),
     textLength: renderedMetric(
@@ -531,24 +543,12 @@ function renderedDomComparisonFromFindings(
     ),
     initialTitle: recordString(initial, "title"),
     renderedTitle: recordString(rendered, "title"),
-    initialDescription: recordString(
-      initial,
-      "metaDescription",
-    ),
-    renderedDescription: recordString(
-      rendered,
-      "metaDescription",
-    ),
+    initialDescription: recordString(initial, "metaDescription"),
+    renderedDescription: recordString(rendered, "metaDescription"),
     initialH1: recordStringArray(initialHeadings, "h1"),
     renderedH1: recordStringArray(renderedHeadings, "h1"),
-    initialJsonLdTypes: recordStringArray(
-      initialJsonLd,
-      "types",
-    ),
-    renderedJsonLdTypes: recordStringArray(
-      renderedJsonLd,
-      "types",
-    ),
+    initialJsonLdTypes: recordStringArray(initialJsonLd, "types"),
+    renderedJsonLdTypes: recordStringArray(renderedJsonLd, "types"),
   };
 }
 
@@ -606,8 +606,7 @@ function buildRenderedImprovementPlans(
 
     plans.push({
       code: "RENDERED-ADDED-CONTENT",
-      title:
-        "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
+      title: "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
       currentState:
         stateParts.join(" ") ||
         "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다.",
@@ -668,8 +667,7 @@ function buildRenderedImprovementPlans(
   if (mismatchedFields.length > 0) {
     plans.push({
       code: "RENDERED-INCONSISTENT-INFORMATION",
-      title:
-        "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다",
+      title: "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다",
       currentState: `${mismatchedFields.join(
         ", ",
       )} 항목이 페이지가 처음 전달될 때와 화면이 완성된 뒤 서로 다릅니다.`,
@@ -743,10 +741,7 @@ function buildRenderedImprovementPlans(
   return plans;
 }
 
-function publicRenderedPlanChange(
-  code: string,
-  fallback: string,
-): string {
+function publicRenderedPlanChange(code: string, fallback: string): string {
   switch (code) {
     case "RENDERED-ADDED-CONTENT":
       return "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.";
@@ -769,10 +764,7 @@ function metricValue(value: number | null, suffix = ""): string {
   return `${value.toLocaleString(isEnglishMetric ? "en-US" : "ko-KR")}${suffix}`;
 }
 
-function metricDelta(
-  value: number | null,
-  suffix: string,
-): string {
+function metricDelta(value: number | null, suffix: string): string {
   const isEnglishMetric = suffix.startsWith(" ");
 
   if (value === null) {
@@ -794,26 +786,17 @@ export function ScanResultPage() {
   const isSuperAdmin =
     authState.status === "authenticated" &&
     authState.user.role === "SUPER_ADMIN";
-  const {
-    locale = "ko",
-    siteId = "",
-    scanId = "",
-  } = useParams();
+  const { locale = "ko", siteId = "", scanId = "" } = useParams();
   const isEnglish = locale === "en";
   const navigate = useNavigate();
-  const [refreshingRulesVersion, setRefreshingRulesVersion] =
-    useState(false);
+  const [refreshingRulesVersion, setRefreshingRulesVersion] = useState(false);
   const [rulesRefreshError, setRulesRefreshError] = useState("");
-  const [result, setResult] =
-    useState<ScanResultResponse | null>(null);
+  const [result, setResult] = useState<ScanResultResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [workOrderError, setWorkOrderError] = useState("");
-  const [creatingWorkOrder, setCreatingWorkOrder] =
-    useState(false);
-  const [selectedFindingIds, setSelectedFindingIds] = useState<
-    string[]
-  >([]);
+  const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
+  const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>([]);
   const [
     selectedRenderedImprovementCodes,
     setSelectedRenderedImprovementCodes,
@@ -854,15 +837,15 @@ export function ScanResultPage() {
         );
         setSelectedRenderedImprovementCodes(
           buildRenderedImprovementPlans(
-            renderedDomComparisonFromFindings(
-              response.findings,
-            ),
+            renderedDomComparisonFromFindings(response.findings),
           ).map((plan) => plan.code),
         );
       })
       .catch((error) => {
         if (!cancelled) {
-          setErrorMessage(translateUiErrorMessage(messageFromError(error), isEnglish));
+          setErrorMessage(
+            translateUiErrorMessage(messageFromError(error), isEnglish),
+          );
         }
       })
       .finally(() => {
@@ -902,8 +885,7 @@ export function ScanResultPage() {
 
   async function handleCreateWorkOrder() {
     const selectedCount =
-      selectedFindingIds.length +
-      selectedRenderedImprovementCodes.length;
+      selectedFindingIds.length + selectedRenderedImprovementCodes.length;
 
     if (!result || selectedCount === 0) {
       setWorkOrderError(
@@ -921,9 +903,8 @@ export function ScanResultPage() {
       const workOrder = await createWorkOrderRequest({
         scanId: result.scan.id,
         findingIds: selectedFindingIds,
-        renderedImprovementCodes:
-          selectedRenderedImprovementCodes,
-          locale: isEnglish ? "en" : "ko",
+        renderedImprovementCodes: selectedRenderedImprovementCodes,
+        locale: isEnglish ? "en" : "ko",
       });
       navigate(`/${locale}/work-orders/${workOrder.id}`);
     } catch (error) {
@@ -939,10 +920,7 @@ export function ScanResultPage() {
     }
   }
 
-  function toggleWorkOrderFinding(
-    findingId: string,
-    checked: boolean,
-  ) {
+  function toggleWorkOrderFinding(findingId: string, checked: boolean) {
     setSelectedFindingIds((current) =>
       checked
         ? [...new Set([...current, findingId])]
@@ -950,10 +928,7 @@ export function ScanResultPage() {
     );
   }
 
-  function toggleRenderedImprovement(
-    planCode: string,
-    checked: boolean,
-  ) {
+  function toggleRenderedImprovement(planCode: string, checked: boolean) {
     setSelectedRenderedImprovementCodes((current) =>
       checked
         ? [...new Set([...current, planCode])]
@@ -974,10 +949,7 @@ export function ScanResultPage() {
   }, [result]);
 
   const renderedDomComparison = useMemo(
-    () =>
-      renderedDomComparisonFromFindings(
-        result?.findings ?? [],
-      ),
+    () => renderedDomComparisonFromFindings(result?.findings ?? []),
     [result],
   );
   const renderedImprovementPlans = useMemo(
@@ -985,17 +957,15 @@ export function ScanResultPage() {
     [renderedDomComparison],
   );
   const selectedWorkOrderItemCount =
-    selectedFindingIds.length +
-    selectedRenderedImprovementCodes.length;
+    selectedFindingIds.length + selectedRenderedImprovementCodes.length;
 
   if (loading) {
     return (
       <section className="full-bleed-section scan-result-section">
-        <div
-          className="content-container scan-result-loading"
-          role="status"
-        >
-          {isEnglish ? "Loading scan result." : "검사 결과를 불러오고 있습니다."}
+        <div className="content-container scan-result-loading" role="status">
+          {isEnglish
+            ? "Loading scan result."
+            : "검사 결과를 불러오고 있습니다."}
         </div>
       </section>
     );
@@ -1006,7 +976,10 @@ export function ScanResultPage() {
       <section className="full-bleed-section scan-result-section">
         <div className="content-container scan-result-loading">
           <p className="scan-result-error" role="alert">
-            {errorMessage || (isEnglish ? "No scan result was found." : "검사 결과가 없습니다.")}
+            {errorMessage ||
+              (isEnglish
+                ? "No scan result was found."
+                : "검사 결과가 없습니다.")}
           </p>
           <Link className="scan-result-back" to={`/${locale}/sites`}>
             {isEnglish ? "Back to site dashboard" : "사이트 관리로 돌아가기"}
@@ -1068,12 +1041,12 @@ export function ScanResultPage() {
               disabled={refreshingRulesVersion}
             >
               {refreshingRulesVersion
-                  ? isEnglish
-                    ? "Starting new diagnostic..."
-                    : "새 기준 진단 시작 중..."
-                  : isEnglish
-                    ? "Re-diagnose with current rules"
-                    : "새 기준으로 다시 진단하기"}
+                ? isEnglish
+                  ? "Starting new diagnostic..."
+                  : "새 기준 진단 시작 중..."
+                : isEnglish
+                  ? "Re-diagnose with current rules"
+                  : "새 기준으로 다시 진단하기"}
             </button>
           </section>
         ) : null}
@@ -1122,27 +1095,27 @@ export function ScanResultPage() {
               <div>
                 <h2>{isEnglish ? "Scores by Category" : "영역별 점수"}</h2>
                 <p>
-                    {isEnglish
-                      ? "The score is based on seven planned categories with a total of 100 points."
-                      : "기획서의 7개 영역, 총 100점 배점입니다."}
-                  </p>
+                  {isEnglish
+                    ? "The score is based on seven planned categories with a total of 100 points."
+                    : "기획서의 7개 영역, 총 100점 배점입니다."}
+                </p>
               </div>
               <span>
-                  {isEnglish ? "Coverage" : "측정 범위"} {scoreSummary.coverage}%
-                </span>
+                {isEnglish ? "Measured rule coverage" : "현재 규칙 측정 범위"}{" "}
+                {scoreSummary.coverage}%
+              </span>
             </div>
 
             <div className="scan-category-grid">
               {scoreSummary.categories.map((category) => (
-                <article
-                  className="scan-category-card"
-                  key={category.category}
-                >
+                <article className="scan-category-card" key={category.category}>
                   <div>
-                    <strong>{translateCategoryLabel(category.category, isEnglish)}</strong>
+                    <strong>
+                      {translateCategoryLabel(category.category, isEnglish)}
+                    </strong>
                     <span>
                       {category.score}/{category.maxScore}
-                        {isEnglish ? " pts" : "점"}
+                      {isEnglish ? " pts" : "점"}
                     </span>
                   </div>
                   <div
@@ -1165,33 +1138,38 @@ export function ScanResultPage() {
 
             {scoreSummary.cap !== null ? (
               <p className="scan-cap-notice">
-                  {isEnglish
-                    ? `A critical condition limited the final score to ${scoreSummary.cap} points or lower.`
-                    : `치명적 조건으로 최종 점수가 ${scoreSummary.cap}점 이하로 제한되었습니다.`}
-                </p>
+                {isEnglish
+                  ? `A critical condition limited the final score to ${scoreSummary.cap} points or lower.`
+                  : `치명적 조건으로 최종 점수가 ${scoreSummary.cap}점 이하로 제한되었습니다.`}
+              </p>
             ) : null}
           </section>
         ) : (
           <section className="surface scan-legacy-notice">
-              {isEnglish
-                ? "This result was created with an older rule version and has no score. Run a new simple diagnostic to calculate a score with the current rules."
-                : "이 결과는 이전 규칙 버전으로 생성되어 점수가 없습니다. 새 간편검사를 실행하면 현재 규칙으로 점수를 계산합니다."}
-            </section>
+            {isEnglish
+              ? "This result was created with an older rule version and has no score. Run a new simple diagnostic to calculate a score with the current rules."
+              : "이 결과는 이전 규칙 버전으로 생성되어 점수가 없습니다. 새 간편검사를 실행하면 현재 규칙으로 점수를 계산합니다."}
+          </section>
         )}
 
         <section className="surface scan-understanding-section">
           <div className="scan-section-heading">
             <div>
-              <h2>{isEnglish ? "What AI Read from the Site" : "AI가 읽은 사이트"}</h2>
+              <h2>
+                {isEnglish ? "What AI Read from the Site" : "AI가 읽은 사이트"}
+              </h2>
               <p>
-                  {isEnglish
-                    ? "This is a summary of stored initial HTML evidence, not an LLM guess."
-                    : "LLM의 추측이 아니라 저장된 초기 HTML 증거를 요약했습니다."}
-                </p>
+                {isEnglish
+                  ? "This is a summary of stored initial HTML evidence, not an LLM guess."
+                  : "LLM의 추측이 아니라 저장된 초기 HTML 증거를 요약했습니다."}
+              </p>
             </div>
           </div>
           <p className="scan-understanding-text">
-            {translateStoredEvidenceText(result.understandingSummary, isEnglish)}
+            {translateStoredEvidenceText(
+              result.understandingSummary,
+              isEnglish,
+            )}
           </p>
 
           <div className="scan-information-grid">
@@ -1200,19 +1178,31 @@ export function ScanResultPage() {
               {result.foundInformation.length > 0 ? (
                 <dl className="scan-information-list">
                   {result.foundInformation.map((item) => (
-                    <div key={`${item.label}-${translateStoredEvidenceText(item.value, isEnglish)}`}>
+                    <div
+                      key={`${item.label}-${translateStoredEvidenceText(item.value, isEnglish)}`}
+                    >
                       <dt>{translateFoundLabel(item.label, isEnglish)}</dt>
-                      <dd>{translateStoredEvidenceText(item.value, isEnglish)}</dd>
+                      <dd>
+                        {translateStoredEvidenceText(item.value, isEnglish)}
+                      </dd>
                     </div>
                   ))}
                 </dl>
               ) : (
-                <p>{isEnglish ? "No key information to display." : "표시할 핵심정보가 없습니다."}</p>
+                <p>
+                  {isEnglish
+                    ? "No key information to display."
+                    : "표시할 핵심정보가 없습니다."}
+                </p>
               )}
             </div>
 
             <div>
-              <h3>{isEnglish ? "Missing or Unverified Information" : "찾지 못했거나 확인하지 못한 정보"}</h3>
+              <h3>
+                {isEnglish
+                  ? "Missing or Unverified Information"
+                  : "찾지 못했거나 확인하지 못한 정보"}
+              </h3>
               {result.missingInformation.length > 0 ? (
                 <ul className="scan-missing-list">
                   {result.missingInformation.map((item) => (
@@ -1224,58 +1214,66 @@ export function ScanResultPage() {
                   ))}
                 </ul>
               ) : (
-                <p>{isEnglish ? "No missing items were found under the current weighted rules." : "현재 가중 규칙에서 누락된 항목이 없습니다."}</p>
+                <p>
+                  {isEnglish
+                    ? "No missing items were found under the current weighted rules."
+                    : "현재 가중 규칙에서 누락된 항목이 없습니다."}
+                </p>
               )}
             </div>
           </div>
         </section>
 
-
-
         <section className="surface scan-issues-section">
           <div className="scan-section-heading">
             <div>
               <h2>
-                  {locale === "en" ? "Detailed report example" : "상세보고서 예시"}
-                </h2>
-                <p>
-                  {locale === "en"
-                    ? "The detailed PDF report presents key issues and inspection evidence in this format. This page shows only one high-priority example before payment."
-                    : "상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 1개만 미리 보여드립니다."}
-                </p>
+                {locale === "en"
+                  ? "Detailed report example"
+                  : "상세보고서 예시"}
+              </h2>
+              <p>
+                {locale === "en"
+                  ? "The detailed PDF report presents key issues and inspection evidence in this format. This page shows only one high-priority example before payment."
+                  : "상세 PDF 보고서에서는 이런 방식으로 핵심 문제와 검사 근거를 확인할 수 있습니다. 아래에는 중요도가 높은 예시 1개만 미리 보여드립니다."}
+              </p>
             </div>
-</div>
+          </div>
 
           <div
             className="scan-finding-guide"
             role="note"
             aria-label={isEnglish ? "Diagnostic badge guide" : "진단 배지 안내"}
           >
-            <strong>{isEnglish ? "How to Read Diagnostic Badges" : "진단 배지 읽는 법"}</strong>
+            <strong>
+              {isEnglish
+                ? "How to Read Diagnostic Badges"
+                : "진단 배지 읽는 법"}
+            </strong>
             <dl>
               <div>
                 <dt>{isEnglish ? "Status" : "판정"}</dt>
                 <dd>
-                    {isEnglish
-                      ? "The actual inspection result, such as pass, fail, or blocked."
-                      : "통과·실패·확인 불가 등 실제 검사 결과입니다."}
-                  </dd>
+                  {isEnglish
+                    ? "The actual inspection result, such as pass, fail, or blocked."
+                    : "통과·실패·확인 불가 등 실제 검사 결과입니다."}
+                </dd>
               </div>
               <div>
                 <dt>{isEnglish ? "Severity" : "중요도"}</dt>
                 <dd>
-                    {isEnglish
-                      ? "Shows the resolution priority from info to critical."
-                      : "참고·낮음·주의·높음·매우 높음 순으로 해결 우선순위를 나타냅니다."}
-                  </dd>
+                  {isEnglish
+                    ? "Shows the resolution priority from info to critical."
+                    : "참고·낮음·주의·높음·매우 높음 순으로 해결 우선순위를 나타냅니다."}
+                </dd>
               </div>
               <div>
                 <dt>{isEnglish ? "Score impact" : "점수 영향"}</dt>
                 <dd>
-                    {isEnglish
-                      ? "Passed items show earned points, while failed or blocked items show lost points."
-                      : "통과한 항목은 배점, 실패·확인 불가 항목은 감점으로 표시합니다."}
-                  </dd>
+                  {isEnglish
+                    ? "Passed items show earned points, while failed or blocked items show lost points."
+                    : "통과한 항목은 배점, 실패·확인 불가 항목은 감점으로 표시합니다."}
+                </dd>
               </div>
             </dl>
           </div>
@@ -1284,10 +1282,10 @@ export function ScanResultPage() {
             <div className="scan-issue-list">
               {result.primaryIssues.slice(0, 1).map((finding) => (
                 <FindingCard
-                    finding={finding}
-                    key={finding.id}
-                    locale={isEnglish ? "en" : "ko"}
-                    primary
+                  finding={finding}
+                  key={finding.id}
+                  locale={isEnglish ? "en" : "ko"}
+                  primary
                   selectable={finding.weight > 0}
                   selected={selectedFindingIds.includes(finding.id)}
                   onToggle={toggleWorkOrderFinding}
@@ -1296,8 +1294,10 @@ export function ScanResultPage() {
             </div>
           ) : (
             <p className="scan-empty-message">
-                {isEnglish ? "No items were classified as primary issues." : "주요 문제로 분류된 항목이 없습니다."}
-              </p>
+              {isEnglish
+                ? "No items were classified as primary issues."
+                : "주요 문제로 분류된 항목이 없습니다."}
+            </p>
           )}
 
           {workOrderError ? (
@@ -1305,7 +1305,6 @@ export function ScanResultPage() {
               {workOrderError}
             </p>
           ) : null}
-
         </section>
 
         {renderedDomComparison ? (
@@ -1313,30 +1312,30 @@ export function ScanResultPage() {
             <div className="scan-section-heading">
               <div>
                 <h2>
-                    {isEnglish
-                      ? "Additional Technical Reference: JavaScript Rendering Comparison"
-                      : "추가 기술 참고: JavaScript 렌더링 비교"}
-                  </h2>
+                  {isEnglish
+                    ? "Additional Technical Reference: JavaScript Rendering Comparison"
+                    : "추가 기술 참고: JavaScript 렌더링 비교"}
+                </h2>
                 <p>
-                    {isEnglish
-                      ? "This compares how much the actual DOM expands after JavaScript runs in the browser."
-                      : "브라우저에서 JavaScript를 실행한 뒤 실제 DOM이 얼마나 확장되는지 비교했습니다."}
-                  </p>
+                  {isEnglish
+                    ? "This compares how much the actual DOM expands after JavaScript runs in the browser."
+                    : "브라우저에서 JavaScript를 실행한 뒤 실제 DOM이 얼마나 확장되는지 비교했습니다."}
+                </p>
               </div>
               <span
                 className={`scan-rendered-status scan-rendered-status-${renderedDomComparison.status.toLowerCase()}`}
               >
                 {renderedDomComparison.status === "SUCCESS"
+                  ? isEnglish
+                    ? "Comparison complete"
+                    : "비교 완료"
+                  : renderedDomComparison.status === "FAILED"
                     ? isEnglish
-                      ? "Comparison complete"
-                      : "비교 완료"
-                    : renderedDomComparison.status === "FAILED"
-                      ? isEnglish
-                        ? "Comparison failed"
-                        : "비교 실패"
-                      : isEnglish
-                        ? "Not compared"
-                        : "비교 미실행"}
+                      ? "Comparison failed"
+                      : "비교 실패"
+                    : isEnglish
+                      ? "Not compared"
+                      : "비교 미실행"}
               </span>
             </div>
 
@@ -1366,43 +1365,32 @@ export function ScanResultPage() {
                     },
                     {
                       label: isEnglish ? "Valid JSON-LD" : "유효 JSON-LD",
-                      metric:
-                        renderedDomComparison.jsonLdValidCount,
+                      metric: renderedDomComparison.jsonLdValidCount,
                       suffix: isEnglish ? " items" : "개",
                     },
                   ].map((item) => (
-                    <article
-                      className="scan-rendered-card"
-                      key={item.label}
-                    >
+                    <article className="scan-rendered-card" key={item.label}>
                       <h3>{item.label}</h3>
                       <div className="scan-rendered-values">
                         <div>
-                          <span>{isEnglish ? "Initial HTML" : "초기 HTML"}</span>
+                          <span>
+                            {isEnglish ? "Initial HTML" : "초기 HTML"}
+                          </span>
                           <strong>
-                            {metricValue(
-                              item.metric.initial,
-                              item.suffix,
-                            )}
+                            {metricValue(item.metric.initial, item.suffix)}
                           </strong>
                         </div>
                         <b aria-hidden="true">→</b>
                         <div>
-                          <span>{isEnglish ? "Rendered DOM" : "렌더링 DOM"}</span>
+                          <span>
+                            {isEnglish ? "Rendered DOM" : "렌더링 DOM"}
+                          </span>
                           <strong>
-                            {metricValue(
-                              item.metric.rendered,
-                              item.suffix,
-                            )}
+                            {metricValue(item.metric.rendered, item.suffix)}
                           </strong>
                         </div>
                       </div>
-                      <p>
-                        {metricDelta(
-                          item.metric.delta,
-                          item.suffix,
-                        )}
-                      </p>
+                      <p>{metricDelta(item.metric.delta, item.suffix)}</p>
                     </article>
                   ))}
                 </div>
@@ -1411,31 +1399,36 @@ export function ScanResultPage() {
                   <div>
                     <dt>{isEnglish ? "Browser" : "브라우저"}</dt>
                     <dd>
-                      {renderedDomComparison.browserVersion ?? (isEnglish ? "Unknown" : "미확인")}
+                      {renderedDomComparison.browserVersion ??
+                        (isEnglish ? "Unknown" : "미확인")}
                     </dd>
                   </div>
                   <div>
                     <dt>{isEnglish ? "Rendering time" : "렌더링 시간"}</dt>
                     <dd>
                       {renderedDomComparison.durationMs === null
-                          ? isEnglish
-                            ? "Unknown"
-                            : "미확인"
-                          : isEnglish
-                            ? `${(
-                                renderedDomComparison.durationMs / 1_000
-                              ).toFixed(1)} sec`
-                            : `${(
-                                renderedDomComparison.durationMs / 1_000
-                              ).toFixed(1)}초`}
+                        ? isEnglish
+                          ? "Unknown"
+                          : "미확인"
+                        : isEnglish
+                          ? `${(
+                              renderedDomComparison.durationMs / 1_000
+                            ).toFixed(1)} sec`
+                          : `${(
+                              renderedDomComparison.durationMs / 1_000
+                            ).toFixed(1)}초`}
                     </dd>
                   </div>
                   <div>
-                    <dt>{isEnglish ? "Page JavaScript errors" : "페이지 JavaScript 오류"}</dt>
+                    <dt>
+                      {isEnglish
+                        ? "Page JavaScript errors"
+                        : "페이지 JavaScript 오류"}
+                    </dt>
                     <dd>
                       {metricValue(
                         renderedDomComparison.pageErrorCount,
-                          isEnglish ? " errors" : "건",
+                        isEnglish ? " errors" : "건",
                       )}
                     </dd>
                   </div>
@@ -1444,7 +1437,11 @@ export function ScanResultPage() {
                 <div className="scan-rendered-improvements">
                   <div>
                     <p className="eyebrow">RENDERING SUMMARY</p>
-                    <h3>{isEnglish ? "JavaScript Rendering Comparison Notes" : "JavaScript 렌더링 비교 참고 의견"}</h3>
+                    <h3>
+                      {isEnglish
+                        ? "JavaScript Rendering Comparison Notes"
+                        : "JavaScript 렌더링 비교 참고 의견"}
+                    </h3>
                     <p>
                       {isEnglish
                         ? "This explains what the comparison numbers mean and, when needed, summarizes improvement direction."
@@ -1457,65 +1454,91 @@ export function ScanResultPage() {
                       {renderedImprovementPlans.slice(0, 1).map((plan) => (
                         <article
                           className={`scan-rendered-improvement-card${
-                            selectedRenderedImprovementCodes.includes(
-                              plan.code,
-                            )
+                            selectedRenderedImprovementCodes.includes(plan.code)
                               ? " scan-rendered-improvement-selected"
                               : ""
                           }`}
                           key={plan.code}
                         >
                           <div className="scan-rendered-improvement-header">
-                            <h4>{translateRenderedText(plan.title, isEnglish)}</h4>
+                            <h4>
+                              {translateRenderedText(plan.title, isEnglish)}
+                            </h4>
                           </div>
 
                           <div className="scan-rendered-explanation">
                             <section>
-                              <strong>{isEnglish ? "Current state" : "현재 어떤 상태인가요?"}</strong>
-                              <p>{translateRenderedText(plan.currentState, isEnglish)}</p>
-                            </section>
-                            <section>
-                              <strong>{isEnglish ? "What it means" : "무슨 뜻인가요?"}</strong>
-                              <p>{translateRenderedText(plan.meaning, isEnglish)}</p>
-                            </section>
-                            <section>
-                              <strong>{isEnglish ? "Improvement summary" : "개선 방향 요약"}</strong>
+                              <strong>
+                                {isEnglish
+                                  ? "Current state"
+                                  : "현재 어떤 상태인가요?"}
+                              </strong>
                               <p>
-                                  {translateRenderedText(
-                                    publicRenderedPlanChange(plan.code, plan.change),
-                                    isEnglish,
-                                  )}
-                                </p>
+                                {translateRenderedText(
+                                  plan.currentState,
+                                  isEnglish,
+                                )}
+                              </p>
+                            </section>
+                            <section>
+                              <strong>
+                                {isEnglish ? "What it means" : "무슨 뜻인가요?"}
+                              </strong>
+                              <p>
+                                {translateRenderedText(plan.meaning, isEnglish)}
+                              </p>
+                            </section>
+                            <section>
+                              <strong>
+                                {isEnglish
+                                  ? "Improvement summary"
+                                  : "개선 방향 요약"}
+                              </strong>
+                              <p>
+                                {translateRenderedText(
+                                  publicRenderedPlanChange(
+                                    plan.code,
+                                    plan.change,
+                                  ),
+                                  isEnglish,
+                                )}
+                              </p>
                             </section>
                           </div>
 
                           <div className="scan-rendered-action-grid">
                             <section>
-                              <h5>{isEnglish ? "Diagnostic report scope" : "진단 보고서 제공 범위"}</h5>
+                              <h5>
+                                {isEnglish
+                                  ? "Diagnostic report scope"
+                                  : "진단 보고서 제공 범위"}
+                              </h5>
                               <p>
-                                  {isEnglish
-                                    ? "This preview summarizes only the current state, impact, and improvement direction. Detailed implementation steps and completion criteria are provided in the work order."
-                                    : "이 보고서는 현재 상태, 영향, 개선 방향만 요약합니다. 세부 구현 순서와 완료 기준은 작업지시서에서 제공합니다."}
-                                </p>
+                                {isEnglish
+                                  ? "This preview summarizes only the current state, impact, and improvement direction. Detailed implementation steps and completion criteria are provided in the work order."
+                                  : "이 보고서는 현재 상태, 영향, 개선 방향만 요약합니다. 세부 구현 순서와 완료 기준은 작업지시서에서 제공합니다."}
+                              </p>
                             </section>
                             <section>
-                                <h5>{locale === "en" ? "Next step" : "다음 단계"}</h5>
-                                <p>
-                                  {locale === "en"
-                                    ? "Detailed next-step instructions and completion criteria are available in the paid diagnostic report and improvement work order after payment."
-                                    : "세부 다음 단계와 완료 기준은 결제 후 제공되는 상세 보고서와 작업지시서에서 확인할 수 있습니다."}
-                                </p>
-                              </section>
+                              <h5>
+                                {locale === "en" ? "Next step" : "다음 단계"}
+                              </h5>
+                              <p>
+                                {locale === "en"
+                                  ? "Detailed next-step instructions and completion criteria are available in the paid diagnostic report and improvement work order after payment."
+                                  : "세부 다음 단계와 완료 기준은 결제 후 제공되는 상세 보고서와 작업지시서에서 확인할 수 있습니다."}
+                              </p>
+                            </section>
                           </div>
                         </article>
                       ))}
                     </div>
                   ) : (
                     <p className="scan-rendered-no-improvement">
-                        {isEnglish
-                          ? "The core structure of the initial HTML and the completed rendered page is relatively similar. No separate improvement plan was generated from this comparison."
-                          : "초기 HTML과 화면 완성 후의 핵심 구조가 비교적 비슷합니다. 현재 비교 결과에서 별도 개선안이 생성되지 않았습니다."}
-                      </p>
+                      {isEnglish
+                        ? "The core structure of the initial HTML and the completed rendered page is relatively similar. No separate improvement plan was generated from this comparison."
+                        : "초기 HTML과 화면 완성 후의 핵심 구조가 비교적 비슷합니다. 현재 비교 결과에서 별도 개선안이 생성되지 않았습니다."}
+                    </p>
                   )}
                 </div>
               </>
@@ -1527,63 +1550,99 @@ export function ScanResultPage() {
                 </strong>
                 <p>
                   {renderedDomComparison.message ??
-                      (isEnglish
-                        ? "JavaScript rendering changes were not compared in this simple diagnostic. This is an auxiliary technical reference and not a required scoring item."
-                        : "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다.")}
+                    (isEnglish
+                      ? "JavaScript rendering changes were not compared in this simple diagnostic. This is an auxiliary technical reference and not a required scoring item."
+                      : "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다.")}
                 </p>
               </div>
             )}
 
             <p className="scan-rendered-note">
-                {isEnglish
-                  ? "Site AI Score calculates the score based on the initial HTML delivered first. JavaScript rendering results are used to create the comparison summary and improvement suggestions for AI environments that can read additional rendered content."
-                  : "Site AI Score는 처음 전달되는 초기 HTML을 기준으로 점수를 계산합니다. JavaScript 렌더링 결과는 추가 콘텐츠를 읽을 수 있는 AI 환경까지 고려해 위 비교 총평과 필요한 개선 제안을 만드는 데 활용합니다."}
-              </p>
+              {isEnglish
+                ? "Site AI Score calculates the score based on the initial HTML delivered first. JavaScript rendering results are used to create the comparison summary and improvement suggestions for AI environments that can read additional rendered content."
+                : "Site AI Score는 처음 전달되는 초기 HTML을 기준으로 점수를 계산합니다. JavaScript 렌더링 결과는 추가 콘텐츠를 읽을 수 있는 AI 환경까지 고려해 위 비교 총평과 필요한 개선 제안을 만드는 데 활용합니다."}
+            </p>
           </section>
         ) : null}
-
-
 
         <section className="surface scan-page-section">
           <div className="scan-section-heading">
             <div>
-              <h2>{isEnglish ? "Detailed Report and Work Order" : "상세 보고서와 작업지시서"}</h2>
+              <h2>
+                {isEnglish
+                  ? "Detailed Report and Work Order"
+                  : "상세 보고서와 작업지시서"}
+              </h2>
               <p>
-                  {isEnglish
-                    ? "The simple diagnostic result page provides only the core score and key issue examples. After payment, you can access and save the detailed diagnostic PDF report and improvement work order."
-                    : "간편진단 결과 화면은 핵심 점수와 주요 문제 예시만 제공합니다. 결제 후에는 상세 진단 PDF 보고서와 수정 작업지시서를 확인하고 저장할 수 있습니다."}
-                </p>
+                {isEnglish
+                  ? "The simple diagnostic result page provides only the core score and key issue examples. After payment, you can access and save the detailed diagnostic PDF report and improvement work order."
+                  : "간편진단 결과 화면은 핵심 점수와 주요 문제 예시만 제공합니다. 결제 후에는 상세 진단 PDF 보고서와 수정 작업지시서를 확인하고 저장할 수 있습니다."}
+              </p>
             </div>
           </div>
 
           <div className="scan-paid-products-grid">
-            <div className="work-order-selection scan-paid-product-card" role="note">
-              <strong>{isEnglish ? "Detailed Diagnostic PDF Report" : "상세 진단 PDF 보고서"}</strong>
+            <div
+              className="work-order-selection scan-paid-product-card"
+              role="note"
+            >
+              <strong>
+                {isEnglish
+                  ? "Detailed Diagnostic PDF Report"
+                  : "상세 진단 PDF 보고서"}
+              </strong>
               <p>
-                  {isEnglish
-                    ? "The following items are provided in the detailed report based on the current site state."
-                    : "현재 사이트 상태를 기준으로 아래 항목을 상세 보고서로 제공합니다."}
-                </p>
+                {isEnglish
+                  ? "The following items are provided in the detailed report based on the current site state."
+                  : "현재 사이트 상태를 기준으로 아래 항목을 상세 보고서로 제공합니다."}
+              </p>
               <ul className="scan-paid-feature-list">
-                <li>{isEnglish ? "Full diagnostic items" : "전체 진단 항목"}</li>
-                <li>{isEnglish ? "Measurement evidence from collected pages" : "수집 페이지의 측정 증거"}</li>
-                <li>{isEnglish ? "Initial HTML and JavaScript rendering comparison" : "초기 HTML과 JavaScript 렌더링 비교"}</li>
-                <li>{isEnglish ? "Key issues and improvement direction" : "주요 문제와 개선 방향"}</li>
+                <li>
+                  {isEnglish ? "Full diagnostic items" : "전체 진단 항목"}
+                </li>
+                <li>
+                  {isEnglish
+                    ? "Measurement evidence from collected pages"
+                    : "수집 페이지의 측정 증거"}
+                </li>
+                <li>
+                  {isEnglish
+                    ? "Initial HTML and JavaScript rendering comparison"
+                    : "초기 HTML과 JavaScript 렌더링 비교"}
+                </li>
+                <li>
+                  {isEnglish
+                    ? "Key issues and improvement direction"
+                    : "주요 문제와 개선 방향"}
+                </li>
               </ul>
             </div>
 
-            <div className="work-order-selection scan-paid-product-card" role="note">
-              <strong>{isEnglish ? "Improvement Work Order" : "수정 작업지시서"}</strong>
+            <div
+              className="work-order-selection scan-paid-product-card"
+              role="note"
+            >
+              <strong>
+                {isEnglish ? "Improvement Work Order" : "수정 작업지시서"}
+              </strong>
               <p>
-                  {isEnglish
-                    ? "The following items are organized into an actionable document for actually improving the website."
-                    : "사이트를 실제로 수정할 수 있도록 아래 항목을 실행용 문서로 정리합니다."}
-                </p>
+                {isEnglish
+                  ? "The following items are organized into an actionable document for actually improving the website."
+                  : "사이트를 실제로 수정할 수 있도록 아래 항목을 실행용 문서로 정리합니다."}
+              </p>
               <ul className="scan-paid-feature-list">
                 <li>{isEnglish ? "Work priorities" : "작업 우선순위"}</li>
-                <li>{isEnglish ? "Developer handoff instructions" : "개발자 전달 문구"}</li>
+                <li>
+                  {isEnglish
+                    ? "Developer handoff instructions"
+                    : "개발자 전달 문구"}
+                </li>
                 <li>{isEnglish ? "Completion criteria" : "완료 판정 기준"}</li>
-                <li>{isEnglish ? "Regression prevention and automated review criteria" : "회귀 방지 기준과 자동검수 기준"}</li>
+                <li>
+                  {isEnglish
+                    ? "Regression prevention and automated review criteria"
+                    : "회귀 방지 기준과 자동검수 기준"}
+                </li>
               </ul>
             </div>
 
@@ -1591,16 +1650,32 @@ export function ScanResultPage() {
               className="work-order-selection scan-paid-product-card scan-paid-followup-card"
               role="note"
             >
-              <strong>{isEnglish ? "Additional Post-Improvement Guidance" : "개선 후 추가 제공"}</strong>
+              <strong>
+                {isEnglish
+                  ? "Additional Post-Improvement Guidance"
+                  : "개선 후 추가 제공"}
+              </strong>
               <p>
-                  {isEnglish
-                    ? "After site improvements and re-diagnosis, additional content suggestions may be provided so AI can answer more specific questions."
-                    : "사이트 수정·업그레이드 후 재진단 결과를 바탕으로 AI가 더 구체적으로 답변할 수 있도록 보완 콘텐츠 제안을 추가로 제공합니다."}
-                </p>
+                {isEnglish
+                  ? "After site improvements and re-diagnosis, additional content suggestions may be provided so AI can answer more specific questions."
+                  : "사이트 수정·업그레이드 후 재진단 결과를 바탕으로 AI가 더 구체적으로 답변할 수 있도록 보완 콘텐츠 제안을 추가로 제공합니다."}
+              </p>
               <ul className="scan-paid-feature-list">
-                <li>{isEnglish ? "Additional content suggestions for AI answers" : "AI 답변을 위한 추가 콘텐츠 제안"}</li>
-                <li>{isEnglish ? "Optional content improvements for the website operator" : "운영자가 선택적으로 보완할 콘텐츠 제안"}</li>
-                <li>{isEnglish ? "Re-diagnostic criteria for before-and-after comparison" : "개선 전후 비교를 위한 재진단 기준 안내"}</li>
+                <li>
+                  {isEnglish
+                    ? "Additional content suggestions for AI answers"
+                    : "AI 답변을 위한 추가 콘텐츠 제안"}
+                </li>
+                <li>
+                  {isEnglish
+                    ? "Optional content improvements for the website operator"
+                    : "운영자가 선택적으로 보완할 콘텐츠 제안"}
+                </li>
+                <li>
+                  {isEnglish
+                    ? "Re-diagnostic criteria for before-and-after comparison"
+                    : "개선 전후 비교를 위한 재진단 기준 안내"}
+                </li>
               </ul>
             </div>
           </div>
@@ -1610,7 +1685,9 @@ export function ScanResultPage() {
               <div
                 className="scan-admin-actions"
                 role="group"
-                aria-label={isEnglish ? "Super admin deliverables" : "수퍼관리자 산출물"}
+                aria-label={
+                  isEnglish ? "Super admin deliverables" : "수퍼관리자 산출물"
+                }
               >
                 <a
                   className="scan-report-link"
@@ -1620,47 +1697,68 @@ export function ScanResultPage() {
                   )}
                   target="_blank"
                   rel="noreferrer"
-                >{isEnglish ? "Detailed Diagnostic Report" : "상세 진단 보고서"}</a>
+                >
+                  {isEnglish
+                    ? "Detailed Diagnostic Report"
+                    : "상세 진단 보고서"}
+                </a>
                 <button
                   className="scan-report-link secondary"
                   type="button"
                   onClick={handleCreateWorkOrder}
                   disabled={
-                    creatingWorkOrder ||
-                    selectedWorkOrderItemCount === 0
+                    creatingWorkOrder || selectedWorkOrderItemCount === 0
                   }
                 >
                   {creatingWorkOrder
-                    ? isEnglish ? "Creating work order..." : "작업지시서 생성 중..."
+                    ? isEnglish
+                      ? "Creating work order..."
+                      : "작업지시서 생성 중..."
                     : selectedWorkOrderItemCount > 0
-                      ? isEnglish ? "Create Work Order" : "작업지시서 생성"
-                      : isEnglish ? "No work order items" : "작업지시서 대상 없음"}
+                      ? isEnglish
+                        ? "Create Work Order"
+                        : "작업지시서 생성"
+                      : isEnglish
+                        ? "No work order items"
+                        : "작업지시서 대상 없음"}
                 </button>
                 <Link
                   className="scan-report-link ghost"
                   to={`/${locale}/work-orders`}
-                >{isEnglish ? "Work Orders" : "작업지시서 목록"}</Link>
+                >
+                  {isEnglish ? "Work Orders" : "작업지시서 목록"}
+                </Link>
               </div>
             ) : (
               <div
                 className="scan-admin-actions"
                 role="group"
-                aria-label={isEnglish ? "Paid deliverables guide" : "유료 산출물 안내"}
+                aria-label={
+                  isEnglish ? "Paid deliverables guide" : "유료 산출물 안내"
+                }
               >
                 <button
                   className="scan-report-link scan-paid-locked-action"
                   type="button"
                   disabled
-                >{isEnglish ? "Detailed Diagnostic Report" : "상세 진단 보고서"}</button>
+                >
+                  {isEnglish
+                    ? "Detailed Diagnostic Report"
+                    : "상세 진단 보고서"}
+                </button>
                 <button
                   className="scan-report-link secondary scan-paid-locked-action"
                   type="button"
                   disabled
-                >{isEnglish ? "Create Work Order" : "작업지시서 생성"}</button>
+                >
+                  {isEnglish ? "Create Work Order" : "작업지시서 생성"}
+                </button>
                 <Link
                   className="scan-report-link ghost"
                   to={`/${locale}/work-orders`}
-                >{isEnglish ? "Work Orders" : "작업지시서 목록"}</Link>
+                >
+                  {isEnglish ? "Work Orders" : "작업지시서 목록"}
+                </Link>
               </div>
             )}
 
@@ -1669,10 +1767,11 @@ export function ScanResultPage() {
               to={`/${locale}/checkout?scanId=${encodeURIComponent(
                 result.scan.id,
               )}`}
-            >{isEnglish ? "Proceed to Payment" : "결제하기"}</Link>
+            >
+              {isEnglish ? "Proceed to Payment" : "결제하기"}
+            </Link>
           </div>
         </section>
-
       </div>
     </section>
   );
@@ -1718,7 +1817,11 @@ function FindingCard({
         </div>
         <div
           className="scan-finding-badges"
-          aria-label={isEnglish ? "Diagnostic status and score impact" : "진단 판정과 점수 영향"}
+          aria-label={
+            isEnglish
+              ? "Diagnostic status and score impact"
+              : "진단 판정과 점수 영향"
+          }
         >
           <span
             className={`scan-badge scan-badge-status scan-badge-status-${finding.status.toLowerCase()}`}
