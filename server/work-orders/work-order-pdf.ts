@@ -76,6 +76,59 @@ const SEVERITY_LABELS_EN: Record<string, string> = {
   CRITICAL: "Critical",
 };
 
+const WORK_ORDER_FINDING_DESCRIPTION_EN: Record<string, string> = {
+  "초기 HTML에서 유효한 JSON-LD 구조화 데이터를 찾지 못했습니다.": "No valid JSON-LD structured data was found in the initial HTML.",
+  "유효한 JSON-LD 구조화 데이터를 확인하지 못했습니다.": "Valid JSON-LD structured data was not found.",
+  "식별 가능한 JSON-LD @type이 없습니다.": "No identifiable JSON-LD @type was found.",
+  "초기 HTML에서 H1 제목을 찾지 못했습니다.": "No H1 heading was found in the initial HTML.",
+  "H1과 H2를 함께 사용한 기본 제목 계층이 부족합니다.": "The page lacks a basic heading hierarchy using both H1 and H2.",
+  "초기 HTML의 읽을 수 있는 본문 텍스트가 매우 적습니다.": "The initial HTML contains very little readable body text.",
+  "초기 HTML 본문량이 적어 사이트 기반 답변 생성이 제한될 수 있습니다.": "The initial HTML has too little body text, which may limit site-based answer generation.",
+  "초기 HTML에서 탐색 가능한 내부 링크를 찾지 못했습니다.": "Navigable internal links were not found in the initial HTML.",
+  "관련 콘텐츠로 이어지는 내부 링크 단서가 부족합니다.": "There are not enough internal-link signals leading to related content.",
+};
+
+function workOrderFindingDescription(
+  value: string,
+  isEnglish: boolean,
+): string {
+  return isEnglish
+    ? WORK_ORDER_FINDING_DESCRIPTION_EN[value] ?? value
+    : value;
+}
+
+
+const WORK_ORDER_RENDERED_TEXT_EN: Record<string, string> = {
+  "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다": "Some information is visible on screen but may be missed by some AI systems",
+  "AI가 처음 받은 정보와 화면에 표시된 정보가 서로 다릅니다": "The information first received by AI differs from what is displayed on screen",
+  "AI가 처음 받는 페이지에 핵심 정보가 부족합니다": "The page first received by AI lacks core information",
+  "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다.": "Body content or navigation links are added after the page opens.",
+  "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.": "It may look normal to users, but some AI search bots that do not fully process JavaScript may miss information and links added later.",
+  "초기 HTML에 핵심 본문과 주요 이동 경로가 충분히 포함되도록 렌더링 의존도를 줄이는 개선이 필요합니다.": "Reduce rendering dependency so the initial HTML contains enough core body text and key navigation paths.",
+  "AI 검색 시스템에 따라 처음 받은 정보를 사용하기도 하고 화면 완성 후의 정보를 사용하기도 합니다. 값이 다르면 같은 페이지를 서로 다르게 이해할 수 있으며, B2B 서비스에서는 AI가 서비스명·기능·요금·데이터 처리 방식을 잘못 설명할 위험이 커집니다.": "Depending on the AI search system, it may use the initially received information or the fully rendered page. If they differ, the same page can be understood differently, increasing the risk that AI misstates the service name, features, pricing, or data handling.",
+  "글자 하나까지 완전히 같을 필요는 없지만 페이지 주제, 서비스명, 핵심 기능, 가격·요금, 개인정보·자료 처리 방식, 운영 주체처럼 중요한 사실과 의미는 처음과 나중이 일치하도록 맞춥니다.": "The text does not need to be identical character by character, but important facts and meaning such as page topic, service name, key features, pricing, privacy/data handling, and operator information should stay consistent before and after rendering.",
+  "페이지를 처음 불러왔을 때도 사이트가 누구를 위한 곳이며 무엇을 제공하는지, 어떤 절차로 이용하는지, 요금·데이터 처리·FAQ는 어디서 확인할 수 있는지 알 수 있도록 핵심 소개와 주요 정보를 보완합니다.": "Add core introduction and key information so that even the initially loaded page explains who the site is for, what it provides, how to use it, and where pricing, data handling, and FAQs can be found.",
+};
+
+function workOrderRenderedText(value: string, isEnglish: boolean): string {
+  if (!isEnglish) return value;
+
+  const exact = WORK_ORDER_RENDERED_TEXT_EN[value];
+  if (exact) return exact;
+
+  return value
+    .replace(/현재 상태:/g, "Current state:")
+    .replace(/무슨 뜻인가요:/g, "What it means:")
+    .replace(/무엇을 바꾸나요:/g, "What to change:")
+    .replace(/초기 HTML/g, "initial HTML")
+    .replace(/렌더링 DOM/g, "rendered DOM")
+    .replace(/본문 글자 수가 ([0-9,]+)자에서 ([0-9,]+)자로 늘었습니다\./g, "Body text length increased from $1 chars to $2 chars.")
+    .replace(/내부 링크가 ([0-9,]+)개에서 ([0-9,]+)개로 늘었습니다\./g, "Internal links increased from $1 to $2.")
+    .replace(/초기 HTML 본문 포함 비율은 ([0-9.]+)%입니다\./g, "Initial HTML body coverage is $1%.")
+    .replace(/초기 HTML 내부 링크 포함 비율은 ([0-9.]+)%입니다\./g, "Initial HTML internal link coverage is $1%.");
+}
+
+
 function fontPaths(filename: string): string[] {
   return [
     join(
@@ -356,7 +409,7 @@ function writeCriteria(
     const padding = 10;
     const labelWidth =
       width - codeWidth - requiredWidth - padding * 4;
-    const label = cleanText(criterion.label);
+    const label = cleanText(workOrderRenderedText(criterion.label, isEnglish));
     const labelHeight = document.heightOfString(label, {
       width: labelWidth,
       lineGap: 2,
@@ -615,7 +668,9 @@ function writeCover(
       },
     );
     setBold(document, 9.2, COLORS.text).text(
-      `${cleanText(item.itemCode)} / ${cleanText(item.title)}`,
+      `${cleanText(item.itemCode)} / ${cleanText(
+        workOrderRenderedText(item.title, isEnglish),
+      )}`,
       x + 34,
       y,
       {
@@ -653,7 +708,7 @@ function writeExecutionPlanPage(
     const itemText = [
       item.title,
       item.requirement,
-      item.developerMessage,
+      workOrderRenderedText(item.developerMessage, isEnglish),
     ].join(" ");
 
     return (
@@ -797,7 +852,7 @@ function writeItemPage(
   );
   document.moveDown(0.45);
 
-  setBold(document, 18, COLORS.text).text(cleanText(item.title), {
+  setBold(document, 18, COLORS.text).text(cleanText(workOrderRenderedText(item.title, isEnglish)), {
     width,
     lineGap: 3,
   });
@@ -869,7 +924,7 @@ function writeItemPage(
     writeTextBox(
       document,
       isEnglish ? "Current issue" : "현재 문제",
-      item.finding.description,
+      workOrderFindingDescription(item.finding.description, isEnglish),
       {
         background: "#FFF7ED",
         border: "#FED7AA",
@@ -878,7 +933,7 @@ function writeItemPage(
     );
   }
 
-  writeTextBox(document, isEnglish ? "Required change" : "수정 요구사항", item.requirement, {
+  writeTextBox(document, isEnglish ? "Required change" : "수정 요구사항", workOrderRenderedText(item.requirement, isEnglish), {
     background: COLORS.white,
     border: COLORS.border,
     accent: COLORS.primary,
@@ -887,7 +942,7 @@ function writeItemPage(
   writeTextBox(
     document,
     isEnglish ? "Developer instructions" : "개발자 전달용 문구",
-    item.developerMessage,
+    workOrderRenderedText(item.developerMessage, isEnglish),
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",

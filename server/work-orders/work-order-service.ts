@@ -672,7 +672,10 @@ export function createPrismaWorkOrderService(
         })),
       });
       const availablePlans = new Map(
-        buildRenderedDomImprovementPlans(comparison).map((plan) => [
+        buildRenderedDomImprovementPlans(
+          comparison,
+          input.locale ?? "ko",
+        ).map((plan) => [
           plan.code,
           plan,
         ]),
