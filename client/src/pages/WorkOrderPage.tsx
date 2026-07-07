@@ -275,7 +275,9 @@ export function WorkOrderPage() {
     if (!workOrder) return;
     const revised = await runAction(
       () => reviseWorkOrderRequest(workOrder.id),
-      "새 버전을 만들었습니다.",
+      isEnglish
+        ? "A follow-up work order has been created from the remaining items."
+        : "남은 항목으로 후속 작업지시서를 만들었습니다.",
     );
 
     if (revised) {
@@ -718,13 +720,13 @@ export function WorkOrderPage() {
               <div>
                 <strong>
                   {isEnglish
-                    ? "Recheck after site updates"
-                    : "사이트 수정 후 재검수 가능"}
+                    ? "Create a follow-up from remaining items"
+                    : "남은 항목으로 후속 작업지시서 만들기"}
                 </strong>
                 <p>
                   {isEnglish
-                    ? "Use rechecks after verifying the improved site, especially when the score did not improve enough or remaining issues require a follow-up work order."
-                    : "재검수는 개선된 사이트를 검수한 뒤 점수가 충분히 오르지 않았거나 남은 문제가 있을 때 후속 작업지시서를 만들 때 사용합니다."}
+                    ? "After a recheck, create a new work order only for the items that still failed or need confirmation."
+                    : "재검수 후에도 실패하거나 확인이 필요한 항목만 모아 다음 작업지시서를 만듭니다."}
                 </p>
               </div>
               <button
@@ -744,8 +746,8 @@ export function WorkOrderPage() {
                 }
               >
                 {isEnglish
-                  ? "Issue follow-up work order"
-                  : "후속 작업지시서 발급"}
+                  ? "Create follow-up from remaining items"
+                  : "남은 항목으로 후속 작업지시서 만들기"}
               </button>
             </div>
           ) : null}

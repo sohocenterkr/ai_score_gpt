@@ -1027,6 +1027,7 @@ export function createPrismaWorkOrderService(
     },
 
     async reviseWorkOrder(user, workOrderId) {
+      const prisma = getDatabase();
       const current = await accessibleRecord(user, workOrderId);
 
       if (current.status === "CANCELLED") {
@@ -1037,7 +1038,145 @@ export function createPrismaWorkOrderService(
         );
       }
 
-      const latest = await getDatabase().workOrder.aggregate({
+      const latestCompletedAttempt = current.verificationAttempts.find(
+        (attempt) =>
+          attempt.scoreAfter !== null &&
+          (attempt.scan.status === "COMPLETED" ||
+            attempt.scan.status === "PARTIAL"),
+      );
+
+      if (
+        !latestCompletedAttempt ||
+        latestCompletedAttempt.scoreAfter === null
+      ) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_INVALID_STATUS",
+          "후속 작업지시서는 완료된 재검수 결과가 있어야 만들 수 있습니다.",
+          409,
+        );
+      }
+
+      const remainingItemIds = new Set(
+        latestCompletedAttempt.itemResults
+          .filter(
+            (result) => result.status === "FAIL" || result.status === "BLOCKED",
+          )
+          .map((result) => result.workOrderItemId),
+      );
+      const remainingCurrentItems = current.items.filter((item) =>
+        remainingItemIds.has(item.id),
+      );
+
+      if (remainingCurrentItems.length === 0) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_INVALID_STATUS",
+          "후속 작업지시서로 만들 남은 실패 항목이 없습니다.",
+          409,
+        );
+      }
+
+      const verificationScan = await prisma.scan.findFirst({
+        where: {
+          id: latestCompletedAttempt.scan.id,
+          status: {
+            in: ["COMPLETED", "PARTIAL"],
+          },
+        },
+        include: {
+          site: true,
+          findings: {
+            include: {
+              scanPage: true,
+            },
+          },
+        },
+      });
+
+      if (!verificationScan || verificationScan.score === null) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_INVALID_SCAN",
+          "점수가 계산된 재검수 결과에서만 후속 작업지시서를 만들 수 있습니다.",
+          400,
+        );
+      }
+
+      const existingFollowUp = await prisma.workOrder.findFirst({
+        where: {
+          orderNumber: current.orderNumber,
+          initialScanId: verificationScan.id,
+          status: {
+            not: "CANCELLED",
+          },
+        },
+        include: workOrderInclude,
+        orderBy: {
+          version: "desc",
+        },
+      });
+
+      if (existingFollowUp) {
+        return publicWorkOrder(existingFollowUp);
+      }
+
+      const locale = verificationScan.locale === "en" ? "en" : "ko";
+      const findingsByRuleCode = new Map(
+        verificationScan.findings.map((finding) => [finding.ruleCode, finding]),
+      );
+      const itemInputs = remainingCurrentItems.map((item) => {
+        const finding = findingsByRuleCode.get(item.itemCode);
+        const definition = finding
+          ? getRuleDefinition(finding.ruleCode)
+          : undefined;
+
+        if (
+          finding &&
+          definition &&
+          (finding.status === "FAIL" || finding.status === "BLOCKED")
+        ) {
+          const template = buildWorkOrderTemplate(finding, locale);
+          const targetUrl =
+            finding.scanPage?.finalUrl ??
+            finding.scanPage?.url ??
+            verificationScan.site.finalUrl ??
+            verificationScan.site.baseUrl;
+
+          return {
+            findingId: finding.id,
+            itemCode: finding.ruleCode,
+            targetUrl,
+            title: workOrderItemTitle(finding.ruleCode, finding.title, locale),
+            requirement: template.requirement,
+            developerMessage: template.developerMessage,
+            acceptanceCriteriaJson:
+              template.acceptanceCriteria as unknown as Prisma.InputJsonValue,
+            isRequired: template.isRequired,
+            weight: definition.weight,
+            status: "PENDING" as const,
+          };
+        }
+
+        return {
+          findingId: null,
+          itemCode: item.itemCode,
+          targetUrl:
+            verificationScan.site.finalUrl ?? verificationScan.site.baseUrl,
+          title: item.title,
+          requirement: item.requirement,
+          developerMessage: item.developerMessage,
+          acceptanceCriteriaJson:
+            item.acceptanceCriteriaJson as Prisma.InputJsonValue,
+          isRequired: item.isRequired,
+          weight: item.weight,
+          status: "PENDING" as const,
+        };
+      });
+
+      const totalWeight = itemInputs.reduce(
+        (total, item) => total + item.weight,
+        0,
+      );
+      const range = expectedScoreRange(verificationScan.score, totalWeight);
+      const latest = await prisma.workOrder.aggregate({
         where: {
           orderNumber: current.orderNumber,
         },
@@ -1047,35 +1186,23 @@ export function createPrismaWorkOrderService(
       });
       const nextVersion = (latest._max.version ?? current.version) + 1;
 
-      const created = await getDatabase().workOrder.create({
+      const created = await prisma.workOrder.create({
         data: {
           orderNumber: current.orderNumber,
           siteId: current.siteId,
-          initialScanId: current.initialScanId,
+          initialScanId: verificationScan.id,
           customerOrganizationId: current.customerOrganizationId,
           agencyOrganizationId: current.agencyOrganizationId,
           version: nextVersion,
           status: "DRAFT",
-          rulesVersion: current.rulesVersion,
-          scoreBefore: current.scoreBefore,
-          gradeBefore: current.gradeBefore,
-          expectedScoreMin: current.expectedScoreMin,
-          expectedScoreMax: current.expectedScoreMax,
+          rulesVersion: verificationScan.rulesVersion,
+          scoreBefore: verificationScan.score,
+          gradeBefore: verificationScan.grade,
+          expectedScoreMin: range.min,
+          expectedScoreMax: range.max,
           createdBy: user.id,
           items: {
-            create: current.items.map((item) => ({
-              findingId: item.findingId,
-              itemCode: item.itemCode,
-              targetUrl: item.targetUrl,
-              title: item.title,
-              requirement: item.requirement,
-              developerMessage: item.developerMessage,
-              acceptanceCriteriaJson:
-                item.acceptanceCriteriaJson as Prisma.InputJsonValue,
-              isRequired: item.isRequired,
-              weight: item.weight,
-              status: "PENDING",
-            })),
+            create: itemInputs,
           },
         },
         include: workOrderInclude,
