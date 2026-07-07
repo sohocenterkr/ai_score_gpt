@@ -11,10 +11,9 @@ import {
   hasPaidFeatureAccessForWorkOrder,
   sendPaidFeatureRequired,
 } from "../billing/paid-feature-access";
-import {
-  renderWorkOrderPdf,
-  workOrderPdfFilename,
-} from "./work-order-pdf";
+import { renderWorkOrderPdf, workOrderPdfFilename } from "./work-order-pdf";
+import { createSafeHttpFetcher } from "../scans/http-fetcher";
+import { runQueuedScanById } from "../scans/scan-worker";
 import {
   WorkOrderServiceError,
   type WorkOrderService,
@@ -33,10 +32,7 @@ const verificationSchema = z.object({
 const createSchema = z
   .object({
     scanId: z.string().trim().min(1).max(100),
-    findingIds: z
-      .array(z.string().trim().min(1).max(100))
-      .max(50)
-      .default([]),
+    findingIds: z.array(z.string().trim().min(1).max(100)).max(50).default([]),
     renderedImprovementCodes: z
       .array(renderedImprovementCodeSchema)
       .max(3)
@@ -45,8 +41,7 @@ const createSchema = z
   })
   .superRefine((value, context) => {
     const total =
-      value.findingIds.length +
-      value.renderedImprovementCodes.length;
+      value.findingIds.length + value.renderedImprovementCodes.length;
 
     if (total < 1) {
       context.addIssue({
@@ -72,9 +67,7 @@ interface CreateWorkOrderRouterOptions {
   ) => Promise<void>;
 }
 
-function readRouteParam(
-  value: string | string[] | undefined,
-): string {
+function readRouteParam(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {
     return value[0] ?? "";
   }
@@ -111,8 +104,7 @@ async function requirePaidWorkOrderFeature(
 ): Promise<void> {
   const workOrderId = readRouteParam(request.params.workOrderId);
   const body = request.body as { scanId?: unknown } | undefined;
-  const scanId =
-    typeof body?.scanId === "string" ? body.scanId.trim() : "";
+  const scanId = typeof body?.scanId === "string" ? body.scanId.trim() : "";
 
   if (!workOrderId && !scanId) {
     next();
@@ -125,10 +117,7 @@ async function requirePaidWorkOrderFeature(
           response.locals.authUser,
           workOrderId,
         )
-      : await hasPaidFeatureAccessForScan(
-          response.locals.authUser,
-          scanId,
-        );
+      : await hasPaidFeatureAccessForScan(response.locals.authUser, scanId);
 
     if (hasAccess) {
       next();
@@ -147,9 +136,7 @@ async function requirePaidWorkOrderFeature(
   }
 }
 
-export function createWorkOrderRouter(
-  options: CreateWorkOrderRouterOptions,
-) {
+export function createWorkOrderRouter(options: CreateWorkOrderRouterOptions) {
   const router = Router();
   const { workOrderService, requireAuth } = options;
 
@@ -164,27 +151,32 @@ export function createWorkOrderRouter(
     }
   });
 
-  router.post("/", requireAuth, requirePaidWorkOrderFeature, async (request, response) => {
-    const parsed = createSchema.safeParse(request.body);
+  router.post(
+    "/",
+    requireAuth,
+    requirePaidWorkOrderFeature,
+    async (request, response) => {
+      const parsed = createSchema.safeParse(request.body);
 
-    if (!parsed.success) {
-      response.status(400).json({
-        code: "VALIDATION_ERROR",
-        message: "검사와 작업지시서 대상 항목을 확인해 주세요.",
-      });
-      return;
-    }
+      if (!parsed.success) {
+        response.status(400).json({
+          code: "VALIDATION_ERROR",
+          message: "검사와 작업지시서 대상 항목을 확인해 주세요.",
+        });
+        return;
+      }
 
-    try {
-      const workOrder = await workOrderService.createWorkOrder(
-        response.locals.authUser,
-        parsed.data,
-      );
-      response.status(201).json({ workOrder });
-    } catch (error) {
-      handleError(response, error);
-    }
-  });
+      try {
+        const workOrder = await workOrderService.createWorkOrder(
+          response.locals.authUser,
+          parsed.data,
+        );
+        response.status(201).json({ workOrder });
+      } catch (error) {
+        handleError(response, error);
+      }
+    },
+  );
 
   router.get("/:workOrderId", requireAuth, async (request, response) => {
     try {
@@ -231,12 +223,32 @@ export function createWorkOrderRouter(
       }
 
       try {
-        const workOrder =
-          await workOrderService.submitVerification(
-            response.locals.authUser,
-            readRouteParam(request.params.workOrderId),
-            parsed.data,
+        const workOrderId = readRouteParam(request.params.workOrderId);
+        const workOrder = await workOrderService.submitVerification(
+          response.locals.authUser,
+          workOrderId,
+          parsed.data,
+        );
+
+        const queuedAttempt = workOrder.verificationAttempts.find(
+          (attempt) => attempt.status === "QUEUED",
+        );
+
+        if (process.env.VERCEL === "1" && queuedAttempt) {
+          await runQueuedScanById(
+            queuedAttempt.scan.id,
+            createSafeHttpFetcher(),
           );
+
+          const refreshedWorkOrder = await workOrderService.getWorkOrder(
+            response.locals.authUser,
+            workOrderId,
+          );
+
+          response.status(201).json({ workOrder: refreshedWorkOrder });
+          return;
+        }
+
         response.status(201).json({ workOrder });
       } catch (error) {
         handleError(response, error);
