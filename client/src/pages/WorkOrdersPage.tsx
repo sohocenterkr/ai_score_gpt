@@ -40,7 +40,6 @@ const workOrdersCopy = {
     title: "수정 작업지시서",
     intro:
       "검사 문제를 개발자가 바로 작업할 수 있는 요구사항과 완료 기준으로 정리합니다.",
-    backToSites: "사이트 관리로",
     loading: "작업지시서 목록을 불러오고 있습니다.",
     emptyTitle: "아직 작업지시서가 없습니다.",
     emptyDescription:
@@ -61,7 +60,6 @@ const workOrdersCopy = {
     title: "Improvement Work Orders",
     intro:
       "Turn diagnostic issues into developer-ready requirements and completion criteria.",
-    backToSites: "Back to site dashboard",
     loading: "Loading work orders.",
     emptyTitle: "No work orders yet.",
     emptyDescription:
@@ -191,10 +189,7 @@ export function WorkOrdersPage() {
             <p className="eyebrow">{copy.eyebrow}</p>
             <h1>{copy.title}</h1>
             <p>{copy.intro}</p>
-          </div>
-          <Link className="work-order-back" to={`/${normalizedLocale}/sites`}>
-            {copy.backToSites}
-          </Link>
+          </div>{" "}
         </header>
 
         {errorMessage ? (

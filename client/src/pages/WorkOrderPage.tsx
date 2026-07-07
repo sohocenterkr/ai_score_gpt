@@ -356,7 +356,7 @@ export function WorkOrderPage() {
             </p>
           </div>
           <Link className="work-order-back" to={`/${locale}/work-orders`}>
-            {isEnglish ? "Work order list" : "작업지시서 목록"}
+            {isEnglish ? "Improvement work orders" : "수정 작업지시서 목록"}
           </Link>
         </header>
 
