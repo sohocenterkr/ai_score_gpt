@@ -6,6 +6,8 @@ export interface SiteScan {
     "QUEUED" | "RUNNING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";
   rulesVersion: string;
   isOutdatedRulesVersion: boolean;
+  linkedWorkOrderId: string | null;
+  verificationWorkOrderId: string | null;
   locale: "ko" | "en";
   score: number | null;
   grade: string | null;

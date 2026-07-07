@@ -12,6 +12,7 @@ import {
 import "../scan-results.css";
 import {
   createWorkOrderRequest,
+  getLatestWorkOrderByScanRequest,
   WorkOrderApiError,
 } from "../work-orders/work-order-api";
 import "../work-orders.css";
@@ -865,6 +866,10 @@ export function ScanResultPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [workOrderError, setWorkOrderError] = useState("");
+  const [linkedWorkOrderId, setLinkedWorkOrderId] = useState<string | null>(
+    null,
+  );
+  const [linkedWorkOrderLoading, setLinkedWorkOrderLoading] = useState(false);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
   const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>([]);
   const [
@@ -933,6 +938,37 @@ export function ScanResultPage() {
     };
   }, [scanId, siteId]);
 
+  useEffect(() => {
+    if (!result?.scan.id) {
+      setLinkedWorkOrderId(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLinkedWorkOrderLoading(true);
+
+    void getLatestWorkOrderByScanRequest(result.scan.id)
+      .then((workOrder) => {
+        if (!cancelled) {
+          setLinkedWorkOrderId(workOrder.id);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLinkedWorkOrderId(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLinkedWorkOrderLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.scan.id]);
+
   async function handleRefreshWithCurrentRules() {
     if (!result) {
       return;
@@ -958,6 +994,11 @@ export function ScanResultPage() {
   }
 
   async function handleCreateWorkOrder() {
+    if (linkedWorkOrderId) {
+      navigate(`/${locale}/work-orders/${linkedWorkOrderId}`);
+      return;
+    }
+
     const selectedCount =
       selectedFindingIds.length + selectedRenderedImprovementCodes.length;
 
@@ -1066,6 +1107,7 @@ export function ScanResultPage() {
   const score = result.scan.score;
   const grade = result.scan.grade;
   const scoreSummary = result.scoreSummary;
+  const isVerificationScan = result.scan.type === "VERIFICATION";
   const missingInformationSummary = buildMissingInformationSummary(
     result.missingInformation,
   );
@@ -1080,7 +1122,13 @@ export function ScanResultPage() {
             <p className="eyebrow">SCAN RESULT</p>
             <h1>
               {result.site.name}{" "}
-              {isEnglish ? "Simple Diagnostic Result" : "간편진단 결과"}
+              {isVerificationScan
+                ? isEnglish
+                  ? "Post-Improvement Verification Result"
+                  : "사이트 개선 후 검수 결과"
+                : isEnglish
+                  ? "Simple Diagnostic Result"
+                  : "간편진단 결과"}
             </h1>
             <p>
               {isEnglish
@@ -1166,6 +1214,51 @@ export function ScanResultPage() {
             </div>
           </dl>
         </section>
+
+        {isVerificationScan ? (
+          <section className="surface scan-linked-work-order-notice">
+            <div>
+              <p className="eyebrow">
+                {isEnglish
+                  ? "POST-IMPROVEMENT VERIFICATION"
+                  : "사이트 개선 후 검수 결과"}
+              </p>
+              <h2>
+                {isEnglish
+                  ? "Review the before-and-after comparison in the work order."
+                  : "1차 진단과 2차 검수 비교는 작업지시서에서 확인하세요."}
+              </h2>
+              <p>
+                {isEnglish
+                  ? "This page is the technical scan result created for a work order verification. The work order page shows the initial score, latest recheck score, and item-level verification results together."
+                  : "이 화면은 작업지시서 검수를 위해 생성된 기술 검사 결과입니다. 1차 점수, 최근 재검수 점수, 항목별 자동검수 결과는 기존 작업지시서 화면에서 함께 확인할 수 있습니다."}
+              </p>
+            </div>
+            {linkedWorkOrderId ? (
+              <Link
+                className="scan-report-link"
+                to={`/${locale}/work-orders/${linkedWorkOrderId}`}
+              >
+                {isEnglish
+                  ? "View linked work order"
+                  : "검수 결과가 반영된 작업지시서 보기"}
+              </Link>
+            ) : (
+              <Link
+                className="scan-report-link ghost"
+                to={`/${locale}/work-orders`}
+              >
+                {linkedWorkOrderLoading
+                  ? isEnglish
+                    ? "Finding linked work order..."
+                    : "연결된 작업지시서 확인 중..."
+                  : isEnglish
+                    ? "Go to work orders"
+                    : "작업지시서 목록으로 이동"}
+              </Link>
+            )}
+          </section>
+        ) : null}
 
         {scoreSummary ? (
           <section className="surface scan-category-section">
@@ -1796,20 +1889,25 @@ export function ScanResultPage() {
                   type="button"
                   onClick={handleCreateWorkOrder}
                   disabled={
-                    creatingWorkOrder || selectedWorkOrderItemCount === 0
+                    creatingWorkOrder ||
+                    (!linkedWorkOrderId && selectedWorkOrderItemCount === 0)
                   }
                 >
-                  {creatingWorkOrder
+                  {linkedWorkOrderId
                     ? isEnglish
-                      ? "Creating work order..."
-                      : "작업지시서 생성 중..."
-                    : selectedWorkOrderItemCount > 0
+                      ? "View Existing Work Order"
+                      : "기존 작업지시서 보기"
+                    : creatingWorkOrder
                       ? isEnglish
-                        ? "Create Work Order"
-                        : "작업지시서 생성"
-                      : isEnglish
-                        ? "No work order items"
-                        : "작업지시서 대상 없음"}
+                        ? "Creating work order..."
+                        : "작업지시서 생성 중..."
+                      : selectedWorkOrderItemCount > 0
+                        ? isEnglish
+                          ? "Create Work Order"
+                          : "작업지시서 생성"
+                        : isEnglish
+                          ? "No work order items"
+                          : "작업지시서 대상 없음"}
                 </button>
                 <Link
                   className="scan-report-link ghost"
@@ -1851,14 +1949,16 @@ export function ScanResultPage() {
               </div>
             )}
 
-            <Link
-              className="primary"
-              to={`/${locale}/checkout?scanId=${encodeURIComponent(
-                result.scan.id,
-              )}`}
-            >
-              {isEnglish ? "Proceed to Payment" : "결제하기"}
-            </Link>
+            {!isVerificationScan ? (
+              <Link
+                className="primary"
+                to={`/${locale}/checkout?scanId=${encodeURIComponent(
+                  result.scan.id,
+                )}`}
+              >
+                {isEnglish ? "Proceed to Payment" : "결제하기"}
+              </Link>
+            ) : null}
           </div>
         </section>
       </div>

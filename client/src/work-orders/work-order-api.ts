@@ -141,6 +141,9 @@ export interface WorkOrderSummary {
     id: string;
     name: string;
   };
+  initialScan: {
+    id: string;
+  };
 }
 
 async function readJson<T>(response: Response): Promise<T> {
@@ -163,9 +166,7 @@ async function readJson<T>(response: Response): Promise<T> {
   );
 }
 
-export async function listWorkOrdersRequest(): Promise<
-  WorkOrderSummary[]
-> {
+export async function listWorkOrdersRequest(): Promise<WorkOrderSummary[]> {
   const response = await fetch("/api/work-orders", {
     credentials: "same-origin",
   });
@@ -189,6 +190,21 @@ export async function createWorkOrderRequest(input: {
     },
     body: JSON.stringify(input),
   });
+  const data = await readJson<{
+    workOrder: WorkOrderDetail;
+  }>(response);
+  return data.workOrder;
+}
+
+export async function getLatestWorkOrderByScanRequest(
+  scanId: string,
+): Promise<WorkOrderDetail> {
+  const response = await fetch(
+    `/api/work-orders/by-scan/${encodeURIComponent(scanId)}`,
+    {
+      credentials: "same-origin",
+    },
+  );
   const data = await readJson<{
     workOrder: WorkOrderDetail;
   }>(response);
@@ -231,9 +247,7 @@ export async function submitVerificationRequest(
   submittedUrl: string,
 ): Promise<WorkOrderDetail> {
   const response = await fetch(
-    `/api/work-orders/${encodeURIComponent(
-      workOrderId,
-    )}/verifications`,
+    `/api/work-orders/${encodeURIComponent(workOrderId)}/verifications`,
     {
       method: "POST",
       credentials: "same-origin",
@@ -285,7 +299,5 @@ export function workOrderExportUrl(
   workOrderId: string,
   format: "json" | "csv" | "pdf",
 ): string {
-  return `/api/work-orders/${encodeURIComponent(
-    workOrderId,
-  )}/export.${format}`;
+  return `/api/work-orders/${encodeURIComponent(workOrderId)}/export.${format}`;
 }

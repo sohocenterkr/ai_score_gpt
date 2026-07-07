@@ -46,6 +46,8 @@ const sampleScan: PublicScan = {
   completedAt: null,
   errorCode: null,
   createdAt: "2026-06-15T01:30:00.000Z",
+  linkedWorkOrderId: null,
+  verificationWorkOrderId: null,
 };
 
 const sampleSite: PublicSite = {

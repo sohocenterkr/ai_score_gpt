@@ -198,6 +198,9 @@ export interface PublicWorkOrderSummary {
     id: string;
     name: string;
   };
+  initialScan: {
+    id: string;
+  };
 }
 
 export interface CreateWorkOrderInput {
@@ -225,6 +228,10 @@ export interface WorkOrderService {
     input: CreateWorkOrderInput,
   ): Promise<PublicWorkOrder>;
   getWorkOrder(user: PublicUser, workOrderId: string): Promise<PublicWorkOrder>;
+  getLatestWorkOrderByScan(
+    user: PublicUser,
+    scanId: string,
+  ): Promise<PublicWorkOrder>;
   getLatestWorkOrderForAdminByScan?(scanId: string): Promise<PublicWorkOrder>;
   issueWorkOrder(
     user: PublicUser,
@@ -577,6 +584,9 @@ export function createPrismaWorkOrderService(
         issuedAt: record.issuedAt?.toISOString() ?? null,
         itemCount: record._count.items,
         site: record.site,
+        initialScan: {
+          id: record.initialScanId,
+        },
       }));
     },
 
@@ -633,6 +643,36 @@ export function createPrismaWorkOrderService(
           "점수가 계산된 완료 검사에서만 작업지시서를 만들 수 있습니다.",
           400,
         );
+      }
+
+      const existingWorkOrders = await prisma.workOrder.findMany({
+        where: {
+          initialScanId: scan.id,
+          status: {
+            not: "CANCELLED",
+          },
+          site: {
+            organization: {
+              members: {
+                some: {
+                  userId: user.id,
+                },
+              },
+            },
+          },
+        },
+        include: workOrderInclude,
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 10,
+      });
+      const existingWorkOrder =
+        existingWorkOrders.find((record) => record.status !== "DRAFT") ??
+        existingWorkOrders[0];
+
+      if (existingWorkOrder) {
+        return publicWorkOrder(existingWorkOrder);
       }
 
       const autoIncludedFindingIds = scan.findings
@@ -789,6 +829,50 @@ export function createPrismaWorkOrderService(
 
     async getWorkOrder(user, workOrderId) {
       return publicWorkOrder(await accessibleRecord(user, workOrderId));
+    },
+
+    async getLatestWorkOrderByScan(user, scanId) {
+      const prisma = getDatabase();
+      const record = await prisma.workOrder.findFirst({
+        where: {
+          status: {
+            not: "CANCELLED",
+          },
+          site: {
+            organization: {
+              members: {
+                some: {
+                  userId: user.id,
+                },
+              },
+            },
+          },
+          OR: [
+            { initialScanId: scanId },
+            {
+              verificationAttempts: {
+                some: {
+                  scanId,
+                },
+              },
+            },
+          ],
+        },
+        include: workOrderInclude,
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      if (!record) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_NOT_FOUND",
+          "해당 진단으로 연결된 작업지시서를 찾을 수 없습니다.",
+          404,
+        );
+      }
+
+      return publicWorkOrder(record);
     },
 
     async getLatestWorkOrderForAdminByScan(scanId) {

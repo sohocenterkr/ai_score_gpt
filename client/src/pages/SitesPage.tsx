@@ -676,9 +676,19 @@ export function SitesPage() {
                               site.latestScan.status === "FAILED") ? (
                               <Link
                                 className="site-secondary-button"
-                                to={`/${locale}/sites/${site.id}/scans/${site.latestScan.id}`}
+                                to={
+                                  site.latestScan.type === "VERIFICATION" &&
+                                  site.latestScan.verificationWorkOrderId
+                                    ? `/${locale}/work-orders/${site.latestScan.verificationWorkOrderId}`
+                                    : `/${locale}/sites/${site.id}/scans/${site.latestScan.id}`
+                                }
                               >
-                                {copy.viewResult}
+                                {site.latestScan.type === "VERIFICATION" &&
+                                site.latestScan.verificationWorkOrderId
+                                  ? normalizedLocale === "en"
+                                    ? "View Recheck Comparison"
+                                    : "검수 비교 보기"
+                                  : copy.viewResult}
                               </Link>
                             ) : null}
                             <button

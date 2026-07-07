@@ -178,6 +178,18 @@ export function createWorkOrderRouter(options: CreateWorkOrderRouterOptions) {
     },
   );
 
+  router.get("/by-scan/:scanId", requireAuth, async (request, response) => {
+    try {
+      const workOrder = await workOrderService.getLatestWorkOrderByScan(
+        response.locals.authUser,
+        readRouteParam(request.params.scanId),
+      );
+      response.json({ workOrder });
+    } catch (error) {
+      handleError(response, error);
+    }
+  });
+
   router.get("/:workOrderId", requireAuth, async (request, response) => {
     try {
       const workOrder = await workOrderService.getWorkOrder(

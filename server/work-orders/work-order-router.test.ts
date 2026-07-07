@@ -8,10 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AuthenticatedResponseLocals } from "../auth/auth-middleware";
 import type { PublicUser } from "../auth/auth-service";
 import { createWorkOrderRouter } from "./work-order-router";
-import type {
-  PublicWorkOrder,
-  WorkOrderService,
-} from "./work-order-service";
+import type { PublicWorkOrder, WorkOrderService } from "./work-order-service";
 
 const user: PublicUser = {
   id: "user-1",
@@ -76,6 +73,7 @@ function createService(): WorkOrderService {
     listWorkOrders: vi.fn().mockResolvedValue([]),
     createWorkOrder: vi.fn().mockResolvedValue(workOrder),
     getWorkOrder: vi.fn().mockResolvedValue(workOrder),
+    getLatestWorkOrderByScan: vi.fn(),
     issueWorkOrder: vi.fn().mockResolvedValue({
       ...workOrder,
       status: "ISSUED",
@@ -151,9 +149,7 @@ describe("work order router", () => {
       });
 
     expect(response.status).toBe(201);
-    expect(response.body.workOrder.orderNumber).toBe(
-      "WO-20260615-12345",
-    );
+    expect(response.body.workOrder.orderNumber).toBe("WO-20260615-12345");
   });
 
   it("AI 수집 개선안만 선택해도 생성한다", async () => {
@@ -163,18 +159,14 @@ describe("work order router", () => {
       .send({
         scanId: "scan-1",
         findingIds: [],
-        renderedImprovementCodes: [
-          "RENDERED-ADDED-CONTENT",
-        ],
+        renderedImprovementCodes: ["RENDERED-ADDED-CONTENT"],
       });
 
     expect(response.status).toBe(201);
     expect(service.createWorkOrder).toHaveBeenCalledWith(user, {
       scanId: "scan-1",
       findingIds: [],
-      renderedImprovementCodes: [
-        "RENDERED-ADDED-CONTENT",
-      ],
+      renderedImprovementCodes: ["RENDERED-ADDED-CONTENT"],
       locale: "ko",
     });
   });
@@ -211,17 +203,12 @@ describe("work order router", () => {
 
     expect(response.status).toBe(201);
     expect(response.body.workOrder.status).toBe("VERIFYING");
-    expect(
-      response.body.workOrder.verificationAttempts[0]
-        .submittedUrl,
-    ).toBe("https://deploy.example.com/");
-    expect(service.submitVerification).toHaveBeenCalledWith(
-      user,
-      "wo-1",
-      {
-        submittedUrl: "https://deploy.example.com/",
-      },
+    expect(response.body.workOrder.verificationAttempts[0].submittedUrl).toBe(
+      "https://deploy.example.com/",
     );
+    expect(service.submitVerification).toHaveBeenCalledWith(user, "wo-1", {
+      submittedUrl: "https://deploy.example.com/",
+    });
   });
 
   it("검수 URL이 비어 있으면 등록하지 않는다", async () => {
@@ -253,9 +240,7 @@ describe("work order router", () => {
     expect(response.headers["content-disposition"]).toContain(
       "WO-20260615-12345-v1.json",
     );
-    expect(response.body.formatVersion).toBe(
-      "site-ai-score-work-order-v1",
-    );
+    expect(response.body.formatVersion).toBe("site-ai-score-work-order-v1");
   });
 
   it("CSV 파일을 내려받는다", async () => {

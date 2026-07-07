@@ -34,6 +34,8 @@ export interface PublicScan {
     "QUEUED" | "RUNNING" | "COMPLETED" | "PARTIAL" | "FAILED" | "CANCELLED";
   rulesVersion: string;
   isOutdatedRulesVersion: boolean;
+  linkedWorkOrderId: string | null;
+  verificationWorkOrderId: string | null;
   locale: "ko" | "en";
   score: number | null;
   grade: string | null;
@@ -98,7 +100,7 @@ interface SiteWithSummary extends Site {
   organization: {
     name: string;
   };
-  scans: Scan[];
+  scans: Array<Scan & { verificationAttempt?: { workOrderId: string } | null }>;
 }
 
 function normalizeName(value: string): string {
@@ -120,7 +122,9 @@ function normalizeOptionalText(
   return normalized || null;
 }
 
-function toPublicScan(scan: Scan): PublicScan {
+function toPublicScan(
+  scan: Scan & { verificationAttempt?: { workOrderId: string } | null },
+): PublicScan {
   return {
     id: scan.id,
     siteId: scan.siteId,
@@ -128,6 +132,8 @@ function toPublicScan(scan: Scan): PublicScan {
     status: scan.status,
     rulesVersion: scan.rulesVersion,
     isOutdatedRulesVersion: scan.rulesVersion !== CURRENT_RULES_VERSION,
+    linkedWorkOrderId: scan.verificationAttempt?.workOrderId ?? null,
+    verificationWorkOrderId: scan.verificationAttempt?.workOrderId ?? null,
     locale: scan.locale === "en" ? "en" : "ko",
     score: scan.score,
     grade: scan.grade,
@@ -318,6 +324,13 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
           scans: {
             orderBy: { createdAt: "desc" },
             take: 1,
+            include: {
+              verificationAttempt: {
+                select: {
+                  workOrderId: true,
+                },
+              },
+            },
           },
         },
         orderBy: { updatedAt: "desc" },
@@ -445,6 +458,13 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
             scans: {
               orderBy: { createdAt: "desc" },
               take: 1,
+              include: {
+                verificationAttempt: {
+                  select: {
+                    workOrderId: true,
+                  },
+                },
+              },
             },
           },
         });
@@ -477,6 +497,11 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
         where: { siteId },
         orderBy: { createdAt: "desc" },
         take: 50,
+        include: {
+          verificationAttempt: {
+            select: { workOrderId: true },
+          },
+        },
       });
 
       return scans.map(toPublicScan);

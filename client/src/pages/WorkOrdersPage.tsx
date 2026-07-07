@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   listWorkOrdersRequest,
@@ -98,6 +98,18 @@ function workOrderGoalRange(scoreBefore: number | null | undefined) {
   };
 }
 
+function workOrderStatusPriority(status: string): number {
+  if (status === "PASSED") return 9;
+  if (status === "REWORK_REQUIRED") return 8;
+  if (status === "VERIFYING") return 7;
+  if (status === "SUBMITTED") return 6;
+  if (status === "IN_PROGRESS") return 5;
+  if (status === "ASSIGNED") return 4;
+  if (status === "ISSUED") return 3;
+  if (status === "DRAFT") return 1;
+  return 0;
+}
+
 function translateWorkOrderError(message: string, locale: Locale): string {
   if (locale === "ko") return message;
 
@@ -145,6 +157,32 @@ export function WorkOrdersPage() {
     };
   }, [copy.loadError, normalizedLocale]);
 
+  const visibleWorkOrders = useMemo(() => {
+    const grouped = new Map<string, WorkOrderSummary>();
+
+    for (const workOrder of workOrders) {
+      const groupKey = `${workOrder.site.id}:${workOrder.initialScan.id}`;
+      const current = grouped.get(groupKey);
+
+      if (
+        !current ||
+        workOrderStatusPriority(workOrder.status) >
+          workOrderStatusPriority(current.status) ||
+        (workOrderStatusPriority(workOrder.status) ===
+          workOrderStatusPriority(current.status) &&
+          new Date(workOrder.createdAt).getTime() >
+            new Date(current.createdAt).getTime())
+      ) {
+        grouped.set(groupKey, workOrder);
+      }
+    }
+
+    return Array.from(grouped.values()).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [workOrders]);
+
   return (
     <section className="full-bleed-section work-orders-section">
       <div className="content-container work-orders-content">
@@ -171,7 +209,7 @@ export function WorkOrdersPage() {
           </div>
         ) : null}
 
-        {!loading && workOrders.length === 0 ? (
+        {!loading && visibleWorkOrders.length === 0 ? (
           <div className="surface work-order-empty">
             <h2>{copy.emptyTitle}</h2>
             <p>{copy.emptyDescription}</p>
@@ -180,7 +218,7 @@ export function WorkOrdersPage() {
         ) : null}
 
         <div className="work-order-list">
-          {workOrders.map((workOrder) => (
+          {visibleWorkOrders.map((workOrder) => (
             <article
               className="surface work-order-summary-card"
               key={workOrder.id}
