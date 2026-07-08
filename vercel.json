@@ -39,6 +39,30 @@
       "destination": "/ko/privacy/index.html"
     },
     {
+      "source": "/en",
+      "destination": "/en/index.html"
+    },
+    {
+      "source": "/en/guide",
+      "destination": "/en/guide/index.html"
+    },
+    {
+      "source": "/en/faq",
+      "destination": "/en/faq/index.html"
+    },
+    {
+      "source": "/en/checkout",
+      "destination": "/en/checkout/index.html"
+    },
+    {
+      "source": "/en/terms",
+      "destination": "/en/terms/index.html"
+    },
+    {
+      "source": "/en/privacy",
+      "destination": "/en/privacy/index.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
