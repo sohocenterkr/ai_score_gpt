@@ -50,4 +50,18 @@ describe("prerender public pages", () => {
     expect(prerenderScript).toContain("sameAs");
     expect(prerenderScript).toContain("contactPoint");
   });
+
+  it("keeps Korean subpage fallback H1s page-specific", () => {
+    expect(prerenderScript).toContain("const koreanFallbackPages");
+    expect(prerenderScript).toContain('"/ko/guide"');
+    expect(prerenderScript).toContain('title: "이용가이드"');
+    expect(prerenderScript).toContain('"/ko/faq"');
+    expect(prerenderScript).toContain('title: "자주 묻는 질문"');
+    expect(prerenderScript).toContain('"/ko/checkout"');
+    expect(prerenderScript).toContain('title: "요금/결제 안내"');
+    expect(prerenderScript).toContain('"/ko/terms"');
+    expect(prerenderScript).toContain('title: "이용약관"');
+    expect(prerenderScript).toContain('"/ko/privacy"');
+    expect(prerenderScript).toContain('title: "개인정보처리방침"');
+  });
 });

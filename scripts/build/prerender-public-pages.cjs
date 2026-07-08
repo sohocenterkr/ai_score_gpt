@@ -730,6 +730,144 @@ function renderAlternateLinks(page) {
   ].join("\n");
 }
 
+function renderKoreanFallback(title, lead, sections) {
+  return `      <main class="static-fallback" lang="ko">
+        <section>
+          <p>AEO WEB QUALITY VERIFICATION</p>
+          <h1>${escapeHtml(title)}</h1>
+          <p>${escapeHtml(lead)}</p>
+          <p>
+            <a href="/ko/sites">사이트 진단</a> ·
+            <a href="/ko/checkout">요금/결제 안내</a> ·
+            <a href="/ko/guide">이용가이드</a>
+          </p>
+        </section>
+${sections
+  .map(
+    (section) => `        <section>
+          <h2>${escapeHtml(section.heading)}</h2>
+${section.paragraphs.map((paragraph) => `          <p>${escapeHtml(paragraph)}</p>`).join("\n")}
+        </section>`,
+  )
+  .join("\n")}
+        <section>
+          <h2>문의</h2>
+          <p>
+            <a href="/ko/faq">FAQ 전체 보기</a> ·
+            <a href="https://open.kakao.com/me/sohocenter">카카오톡 문의</a> ·
+            <a href="mailto:sohocenter.kr@gmail.com">이메일 문의</a>
+          </p>
+        </section>
+      </main>`;
+}
+
+const koreanFallbackPages = {
+  "/ko/guide": {
+    title: "이용가이드",
+    lead: "회원가입부터 사이트 등록, 무료 간편진단, 유료 보고서, 결제, 개선 후 재검수까지 Site AI Score 이용 흐름을 안내합니다.",
+    sections: [
+      {
+        heading: "1. 계정 만들기",
+        paragraphs: [
+          "이메일 주소 또는 Google 계정으로 가입할 수 있습니다. 이메일 가입은 인증 절차를 거치며, Google 로그인은 Google 인증 흐름을 사용합니다.",
+        ],
+      },
+      {
+        heading: "2. 사이트 등록",
+        paragraphs: [
+          "진단할 사이트명과 대표 URL을 입력합니다. 외부에서 접속 가능한 운영 URL을 등록하는 것이 좋습니다.",
+        ],
+      },
+      {
+        heading: "3. 진단과 결과 확인",
+        paragraphs: [
+          "간편진단은 AI 검색 친화도, 구조화 데이터, 초기 HTML 콘텐츠, 접근성, 링크 구조를 확인합니다. 개선 후에는 같은 기준으로 다시 검수하고 점수 변화를 비교합니다.",
+        ],
+      },
+    ],
+  },
+  "/ko/faq": {
+    title: "자주 묻는 질문",
+    lead: "무료 이용 범위, Google 로그인, 유료 산출물, 결제, 자료 이용, 개인정보, 문의 방법을 확인할 수 있습니다.",
+    sections: faqItems.map(([question, answer]) => ({
+      heading: question,
+      paragraphs: [answer],
+    })),
+  },
+  "/ko/checkout": {
+    title: "요금/결제 안내",
+    lead: "무료 간편진단은 핵심 점수와 주요 개선 항목 예시를 제공합니다. 상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공됩니다.",
+    sections: [
+      {
+        heading: "유료 산출물",
+        paragraphs: [
+          "유료 산출물에는 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 재검수 비교 자료, AI 답변을 위한 추가 콘텐츠 제안이 포함될 수 있습니다.",
+        ],
+      },
+      {
+        heading: "사례 할인",
+        paragraphs: [
+          "사례 할인은 초기 점수와 개선 후 점수 같은 제한된 비교 결과 공개에 동의하는 경우 선택할 수 있습니다. 전체 보고서와 작업지시서는 공개하지 않습니다.",
+        ],
+      },
+    ],
+  },
+  "/ko/terms": {
+    title: "이용약관",
+    lead: "Site AI Score 서비스 이용 조건, 무료 이용 범위, 유료 산출물, 자료 이용, 금지 행위, 면책 사항을 안내합니다.",
+    sections: [
+      {
+        heading: "서비스 설명",
+        paragraphs: [
+          "Site AI Score는 웹사이트의 AI 검색 친화도, 검색엔진 접근성, 구조화 데이터, 콘텐츠 명확성, 진단 결과를 분석하고 개선 방향을 제공합니다.",
+        ],
+      },
+      {
+        heading: "면책 사항",
+        paragraphs: [
+          "진단 결과는 웹사이트 개선을 위한 참고 자료이며, 검색 노출, AI 인용, 순위 상승, 트래픽 증가, 매출 또는 광고 성과를 보장하지 않습니다.",
+        ],
+      },
+    ],
+  },
+  "/ko/privacy": {
+    title: "개인정보처리방침",
+    lead: "Site AI Score의 계정 정보, 진단 데이터, 결제 기록, 보관 및 삭제 기준을 안내합니다.",
+    sections: [
+      {
+        heading: "입력자료와 진단 데이터",
+        paragraphs: [
+          "사이트명, URL, 진단 점수, 주요 발견 사항, 보고서 또는 작업지시서 데이터는 서비스 제공과 사용자 이력 관리를 위해 저장될 수 있습니다.",
+        ],
+      },
+      {
+        heading: "공개 범위",
+        paragraphs: [
+          "상세 보고서, 수정 작업지시서, 세부 문제 목록, 출처 증거, 검사 데이터, 내부 분석 자료는 별도 동의 없이 공개하지 않습니다.",
+        ],
+      },
+    ],
+  },
+};
+
+function resolveFallbackHtml(page) {
+  if (page.fallbackHtml) {
+    return page.fallbackHtml;
+  }
+
+  const koreanFallback = koreanFallbackPages[page.path];
+
+  if (!koreanFallback) {
+    return null;
+  }
+
+  return renderKoreanFallback(
+    koreanFallback.title,
+    koreanFallback.lead,
+    koreanFallback.sections,
+  );
+}
+
 function renderPage(page) {
   const canonicalUrl = `${siteOrigin}${page.path}`;
   const jsonLdTags = page.jsonLd
@@ -746,10 +884,12 @@ function renderPage(page) {
     `<html lang="${page.htmlLang ?? "ko"}">`,
   );
 
-  if (page.fallbackHtml) {
+  const fallbackHtml = resolveFallbackHtml(page);
+
+  if (fallbackHtml) {
     html = html.replace(
       /<main class="static-fallback"[\s\S]*?<\/main>/i,
-      page.fallbackHtml,
+      fallbackHtml,
     );
   }
 
