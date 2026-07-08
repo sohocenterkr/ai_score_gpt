@@ -390,6 +390,14 @@ ${section.paragraphs.map((paragraph) => `          <p>${escapeHtml(paragraph)}</
         </section>`,
   )
   .join("\n")}
+        <section>
+          <h2>Contact</h2>
+          <p>
+            <a href="/en/faq">View full FAQ</a> ·
+            <a href="https://open.kakao.com/me/sohocenter">KakaoTalk contact</a> ·
+            <a href="mailto:sohocenter.kr@gmail.com">Email contact</a>
+          </p>
+        </section>
       </main>`;
 }
 
