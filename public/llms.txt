@@ -3,31 +3,39 @@
 Site AI Score is an AEO diagnostic service for checking whether public websites are accessible, understandable, and citeable by AI search systems.
 
 ## Official URL
+
 - Korean: https://siteaiscore.com/ko
 - English: https://siteaiscore.com/en
 
 ## What the service does
+
 Site AI Score checks public URLs for AI bot accessibility, robots and sitemap signals, initial HTML content, H1 and heading structure, canonical URL, internal links, structured data, and content that helps AI answer customer questions.
 
 ## Main deliverables
+
 1. Free simple diagnostic: a score and a summary of improvement item counts.
 2. Detailed diagnostic PDF report: current technical and content-readiness evidence.
 3. Improvement work order: developer-ready requirements, acceptance criteria, and recheck guidance.
 4. Recheck after deployment: comparison using the same rules where possible.
 
 ## Who uses it
+
 Site owners, SaaS teams, local businesses, marketing agencies, and web developers can use Site AI Score to improve how AI systems understand their official site.
 
 ## Pricing and scope
-Simple diagnostics may be provided for free. Detailed PDF reports, improvement work orders, and before-and-after comparison materials may be paid deliverables. Final price, discounts, and payment options are shown on the pricing page.
+
+Simple diagnostics are free for up to 10 websites per account. Detailed PDF reports, improvement work orders, and before-and-after comparison materials are provided after payment. Final price, discounts, and payment options are shown on the pricing page.
 
 ## Data and privacy
-Site names, URLs, diagnostic scores, and major findings may be stored to provide the service and retain history. Raw HTML is not stored; hashes and structured evidence are retained. Detailed reports and work orders are not publicly disclosed without separate consent.
+
+Site names, URLs, diagnostic scores, and major findings may be stored for customer support and service quality improvement. Raw HTML is not stored; hashes and structured evidence are retained. Detailed reports and work orders are not publicly disclosed without separate consent.
 
 ## Support
+
 - KakaoTalk: https://open.kakao.com/me/sohocenter
 - Email: sohocenter.kr@gmail.com
 - Phone: 070-4513-4093
 
 ## Important notes
+
 Site AI Score does not guarantee AI search exposure, recommendation results, full site security, or that every AI system will use the same criteria. The goal is to make the official site easier for AI systems to access, understand, and cite accurately.

@@ -73,7 +73,7 @@ const webApplicationJsonLd = {
     price: "100",
     availability: "https://schema.org/PreOrder",
     description:
-      "간편진단은 무료로 제공되며, 상세 진단 PDF 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다.",
+      "간편진단은 계정당 최대 10개 사이트까지 무료로 제공되며, 상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공됩니다.",
   },
 };
 
@@ -84,11 +84,11 @@ const homeFaqItems = [
   ],
   [
     "무료 간편진단과 유료 산출물의 차이는 무엇인가요?",
-    "무료 간편진단은 점수와 개선 필요 항목 개수 요약을 제공합니다. 상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공되는 유료 산출물입니다.",
+    "무료 간편진단은 점수와 개선 필요 항목 개수 요약을 제공합니다. 상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공됩니다.",
   ],
   [
     "수정 작업지시서는 무엇을 제공하나요?",
-    "기술 설정, 초기 HTML, canonical, JSON-LD, 콘텐츠 보강, 개인정보와 문의 정책, 재검수 완료 기준을 개발자가 실행하기 쉬운 작업 항목으로 정리합니다.",
+    "기술 설정, 초기 HTML, canonical, JSON-LD, 콘텐츠 보강 등을 개발자가 바로 사이트를 개선할 수 있도록 일목요연하게 정리하여 제공합니다.",
   ],
 ];
 
@@ -134,11 +134,11 @@ const faqItems = [
   ],
   [
     "무료로 이용할 수 있나요?",
-    "간편진단 실행은 무료로 제공됩니다. 계정당 무료 진단 개수에는 제한이 있을 수 있으며, 이미 진단한 사이트는 정책에 따라 재진단할 수 있습니다.",
+    "무료 간편진단은 계정당 최대 10개 사이트까지 제공됩니다. 10개를 초과하는 사이트 진단이 필요한 경우 별도 문의 바랍니다.",
   ],
   [
     "유료 요금제는 어떻게 되나요?",
-    "상세 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다. 최종 가격, 할인 조건, 결제 가능 여부는 요금/결제 안내에서 확인합니다.",
+    "상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공됩니다. 최종 가격, 할인 조건, 결제 가능 여부는 요금/결제 안내에서 확인합니다.",
   ],
   [
     "결제는 어떤 방식으로 가능한가요?",
@@ -245,7 +245,7 @@ const englishWebApplicationJsonLd = {
     price: "100",
     availability: "https://schema.org/PreOrder",
     description:
-      "Simple diagnostics may be provided for free, while detailed diagnostic PDF reports and improvement work orders may be paid deliverables.",
+      "Simple diagnostics are free for up to 10 websites per account. Detailed diagnostic PDF reports and improvement work orders are provided after payment.",
   },
 };
 
@@ -256,11 +256,19 @@ const englishHomeFaqItems = [
   ],
   [
     "What is the difference between the free diagnostic and paid deliverables?",
-    "The free simple diagnostic provides a score and a summary count of improvement items. Detailed diagnostic PDF reports and improvement work orders are paid deliverables provided after payment.",
+    "The free simple diagnostic provides a score and a summary count of improvement items. Detailed diagnostic PDF reports and improvement work orders are provided after payment.",
   ],
   [
     "What does an improvement work order include?",
-    "It organizes technical settings, initial HTML, canonical URLs, JSON-LD, content improvements, privacy and contact policies, and recheck acceptance criteria into developer-ready tasks.",
+    "It clearly organizes technical settings, initial HTML, canonical URLs, JSON-LD, and content improvements so developers can improve the site right away.",
+  ],
+  [
+    "Are refunds or cancellations available?",
+    "Refunds may be limited after digital deliverables such as detailed reports or work orders are generated or access has been granted. Please review the checkout page and Terms for details.",
+  ],
+  [
+    "Can I use it on mobile?",
+    "Yes. Site AI Score is designed so key features such as website registration, result review, and work order review can be used on mobile.",
   ],
 ];
 
@@ -333,7 +341,7 @@ const englishFaqItems = [
   ],
   [
     "Is my submitted data stored?",
-    "Website names, URLs, diagnostic scores, and key findings may be stored to provide the service and maintain user history. Detailed reports and work order materials are not publicly disclosed without separate consent and are used internally for service improvement and quality enhancement.",
+    "Website names, URLs, diagnostic scores, and key findings may be stored for customer support and service quality improvement. Detailed reports and work order materials are not publicly disclosed without separate consent and are used internally for service improvement and quality enhancement.",
   ],
   [
     "What should I do if an error occurs?",
@@ -392,10 +400,10 @@ const englishPages = [
     ogLocale: "en_US",
     title: "Site AI Score | AI Search Readiness Diagnostic",
     description:
-      "Site AI Score checks AI search accessibility, initial HTML, structured data, core content, improvement work orders, and rechecks in one AEO diagnostic flow.",
+      "Site AI Score checks AI search accessibility, initial HTML, structured data, core content, improvement work orders, rechecks, and follow-up work orders when needed in one AEO diagnostic flow.",
     fallbackHtml: renderEnglishFallback(
       "Check how well AI understands your website.",
-      "Site AI Score is an AEO diagnostic service that checks public URLs for AI search accessibility, initial HTML body content, H1 and internal links, canonical URLs, structured data, and missing content that AI systems need to answer customer questions.",
+      "Site AI Score is an AEO diagnostic service that checks public URLs for AI search accessibility, initial HTML body content, H1 and internal links, canonical URLs, structured data, and missing content that AI systems need to answer customer questions. If needed, you can issue another work order for remaining improvements.",
       [
         {
           heading: "What the service provides",
@@ -406,13 +414,13 @@ const englishPages = [
         {
           heading: "Process and deliverables",
           paragraphs: [
-            "Register a public URL, run a free simple diagnostic, review the current score, and use detailed PDF reports and improvement work orders to confirm issue evidence and completion criteria.",
+            "Register a public URL, run a free simple diagnostic, review the current score, use detailed PDF reports and improvement work orders, and issue a follow-up work order if the improvement is not sufficient.",
           ],
         },
         {
           heading: "Pricing and data handling",
           paragraphs: [
-            "Simple diagnostics may be free within account limits. Detailed diagnostic PDF reports, improvement work orders, and post-improvement comparison materials may be paid deliverables.",
+            "Simple diagnostics are free for up to 10 websites per account. Detailed diagnostic PDF reports, improvement work orders, and before-and-after comparison materials are provided after payment.",
           ],
         },
       ],

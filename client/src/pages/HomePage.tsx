@@ -16,6 +16,11 @@ const serviceSteps = [
   ],
   ["02", "수정 작업지시", "문제별 요구사항과 자동검수 완료 기준을 제공합니다."],
   ["03", "배포 결과 검수", "수정된 운영 URL을 같은 규칙으로 다시 검사합니다."],
+  [
+    "04",
+    "필요시 작업지시서 재발행",
+    "개선 정도가 불충분하다고 판단되면 다시 한 번 진행할 수 있습니다.",
+  ],
 ];
 
 const serviceStepsEn = [
@@ -29,6 +34,11 @@ const serviceStepsEn = [
     "03",
     "Deployment recheck",
     "Recheck the updated production URL with the same rules.",
+  ],
+  [
+    "04",
+    "Issue a follow-up work order if needed",
+    "If the improvement is not sufficient, you can run another work order.",
   ],
 ];
 
@@ -51,15 +61,15 @@ const serviceDetailSections = [
   },
   {
     title: "요금과 무료·유료 범위",
-    body: "간편진단은 무료로 제공될 수 있으며, 계정당 무료 진단 개수에는 제한이 있을 수 있습니다. 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 비교 자료는 유료 산출물로 제공될 수 있습니다. 결제 금액, 할인 조건, 국내·해외 결제 가능 여부는 요금/결제 안내 화면에서 확인합니다.",
+    body: "간편진단은 계정당 최대 10개 사이트까지 무료로 제공됩니다. 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 비교 자료는 결제 후 제공됩니다. 결제 금액, 할인 조건, 국내·해외 결제 가능 여부는 요금/결제 안내 화면에서 확인합니다.",
   },
   {
     title: "개인정보와 입력자료 처리",
-    body: "사용자가 입력한 사이트명, 대표 URL, 진단 대상 URL, 진단 점수와 주요 발견 사항은 서비스 제공과 이력 확인을 위해 저장될 수 있습니다. 원본 HTML은 저장하지 않고 해시와 구조화된 검사 증거를 보관하는 것을 원칙으로 하며, 상세 보고서와 작업지시서 자료는 별도 동의 없이 공개하지 않습니다.",
+    body: "사용자가 입력한 사이트명, 대표 URL, 진단 대상 URL, 진단 점수와 주요 발견 사항은 고객지원과 서비스 품질 향상을 위해 저장될 수 있습니다. 원본 HTML은 저장하지 않고 해시와 구조화된 검사 증거를 보관하는 것을 원칙으로 하며, 상세 보고서와 작업지시서 자료는 별도 동의 없이 공개하지 않습니다.",
   },
   {
     title: "고객지원과 문의",
-    body: "문의는 카카오톡 오픈채팅, 이메일, 전화로 접수할 수 있습니다. 공식 문의 채널은 카카오톡 오픈채팅, 이메일 sohocenter.kr@gmail.com, 전화 070-4513-4093입니다. 서비스 오류, 결제, 상세 보고서, 작업지시서, 재검수 관련 문의를 지원합니다.",
+    body: "카카오톡 오픈채팅, 이메일 sohocenter.kr@gmail.com, 전화 070-4513-4093으로 문의할 수 있습니다. 서비스 오류, 결제, 상세 보고서, 작업지시서, 재검수 관련 문의를 지원합니다.",
   },
   {
     title: "차별점과 신뢰 근거",
@@ -78,15 +88,15 @@ const serviceDetailSectionsEn = [
   },
   {
     title: "Pricing and paid scope",
-    body: "Simple diagnostics may be provided for free. Detailed diagnostic PDF reports, improvement work orders, and before-and-after comparison materials may be provided as paid deliverables. Final pricing and available payment methods are shown on the pricing page.",
+    body: "Simple diagnostics are free for up to 10 websites per account. Detailed diagnostic PDF reports, improvement work orders, and before-and-after comparison materials are provided after payment. Final pricing, discounts, and available payment methods are shown on the pricing page.",
   },
   {
     title: "Privacy and submitted data",
-    body: "Site names, URLs, diagnostic scores, and major findings may be stored to provide the service and retain history. Raw HTML is not stored; hashes and structured evidence are retained. Detailed reports and work orders are not publicly disclosed without separate consent.",
+    body: "Site names, URLs, diagnostic scores, and major findings may be stored for customer support and service quality improvement. Raw HTML is not stored; hashes and structured evidence are retained. Detailed reports and work orders are not publicly disclosed without separate consent.",
   },
   {
     title: "Support and contact",
-    body: "Support requests can be sent through KakaoTalk open chat, email at sohocenter.kr@gmail.com, or phone at 070-4513-4093. We support service errors, payments, reports, work orders, and rechecks.",
+    body: "Contact us through KakaoTalk open chat, email at sohocenter.kr@gmail.com, or phone at 070-4513-4093. We support questions about service errors, payments, detailed reports, work orders, and rechecks.",
   },
   {
     title: "Differentiation and proof",
@@ -101,15 +111,23 @@ const faqItems = [
   ],
   [
     "무료 간편진단과 유료 산출물의 차이는 무엇인가요?",
-    "무료 간편진단은 점수와 개선 필요 항목 개수 요약을 제공합니다. 상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공되는 유료 산출물입니다.",
+    "무료 간편진단은 점수와 개선 필요 항목 개수 요약을 제공합니다. 상세 진단 PDF 보고서와 수정 작업지시서는 결제 후 제공됩니다.",
   ],
   [
     "수정 작업지시서에는 무엇이 포함되나요?",
-    "기술 설정, 초기 HTML, canonical, JSON-LD, 콘텐츠 보강, 개인정보와 문의 정책, 재검수 완료 기준을 개발자가 실행하기 쉬운 작업 항목으로 정리합니다.",
+    "기술 설정, 초기 HTML, canonical, JSON-LD, 콘텐츠 보강 등을 개발자가 바로 사이트를 개선할 수 있도록 일목요연하게 정리하여 제공합니다.",
   ],
   [
     "입력한 사이트 정보와 진단 결과는 어떻게 처리되나요?",
-    "사이트명, URL, 진단 점수와 주요 발견 사항은 서비스 제공과 이력 확인을 위해 저장될 수 있습니다. 상세 보고서와 작업지시서 자료는 별도 동의 없이 공개하지 않습니다.",
+    "사이트명, URL, 진단 점수와 주요 발견 사항은 고객지원과 서비스 품질 향상을 위해 저장될 수 있습니다. 상세 보고서와 작업지시서 자료는 별도 동의 없이 공개하지 않습니다.",
+  ],
+  [
+    "환불이나 취소는 가능한가요?",
+    "상세 보고서나 작업지시서 등 디지털 산출물이 생성되거나 접근 권한이 열린 뒤에는 환불이 제한될 수 있습니다. 자세한 기준은 결제 화면과 이용약관에서 확인합니다.",
+  ],
+  [
+    "모바일에서도 사용할 수 있나요?",
+    "네. Site AI Score는 모바일에서도 사이트 등록, 진단 결과 확인, 작업지시서 확인 등 주요 기능을 사용할 수 있도록 구성되어 있습니다.",
   ],
 ];
 
@@ -120,15 +138,23 @@ const faqItemsEn = [
   ],
   [
     "What is the difference between the free scan and paid deliverables?",
-    "The free scan shows the score and a summary count of improvement items. Detailed PDF reports and improvement work orders are paid deliverables.",
+    "The free scan shows the score and a summary count of improvement items. Detailed PDF reports and improvement work orders are provided after payment.",
   ],
   [
     "What is included in an improvement work order?",
-    "It converts technical settings, initial HTML, canonical, JSON-LD, content, privacy, contact policy, and recheck criteria into actionable work items.",
+    "It clearly organizes technical settings, initial HTML, canonical URLs, JSON-LD, and content improvements so developers can improve the site right away.",
   ],
   [
     "How is submitted site data handled?",
-    "Site names, URLs, scores, and key findings may be stored for service delivery. Detailed reports and work orders are not publicly disclosed without separate consent.",
+    "Site names, URLs, scores, and key findings may be stored for customer support and service quality improvement. Detailed reports and work orders are not publicly disclosed without separate consent.",
+  ],
+  [
+    "Are refunds or cancellations available?",
+    "Refunds may be limited after digital deliverables such as detailed reports or work orders are generated or access has been granted. Please review the checkout page and Terms for details.",
+  ],
+  [
+    "Can I use it on mobile?",
+    "Yes. Site AI Score is designed so key features such as website registration, result review, and work order review can be used on mobile.",
   ],
 ];
 
@@ -205,8 +231,8 @@ export function HomePage() {
         price: "100",
         availability: "https://schema.org/PreOrder",
         description: isEnglish
-          ? "Simple diagnostics are free, while detailed reports and improvement work orders may be provided as paid deliverables."
-          : "간편진단 실행은 무료로 제공되며, 상세 보고서와 수정 작업지시서는 유료 산출물로 제공될 수 있습니다.",
+          ? "Simple diagnostics are free for up to 10 websites per account. Detailed reports and improvement work orders are provided after payment."
+          : "간편진단은 계정당 최대 10개 사이트까지 무료로 제공되며, 상세 보고서와 수정 작업지시서는 결제 후 제공됩니다.",
       },
     },
     {
@@ -240,8 +266,8 @@ export function HomePage() {
           </h1>
           <p className="hero-description">
             {isEnglish
-              ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and recheck the updated site with the same criteria."
-              : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다시 검수합니다."}
+              ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and recheck the updated site with the same criteria. If needed, you can issue another work order for remaining improvements."
+              : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다시 검수합니다. 필요시 작업지시서를 한 번 더 발행할 수 있습니다."}
           </p>
           <div className="hero-actions">
             <Link className="primary-action" to={`/${activeLocale}/sites`}>
@@ -353,6 +379,12 @@ export function HomePage() {
               rel="noreferrer"
             >
               {isEnglish ? "KakaoTalk contact" : "카카오톡 문의"}
+            </a>
+            <a
+              className="secondary-action"
+              href="mailto:sohocenter.kr@gmail.com"
+            >
+              {isEnglish ? "Email contact" : "이메일 문의"}
             </a>
           </div>
         </div>
