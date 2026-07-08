@@ -707,13 +707,53 @@ export function WorkOrderPage() {
             </p>
           ) : null}
 
-          {message &&
-          (message.startsWith("공개 URL") ||
-            message.startsWith("The public URL")) ? (
-            <p className="work-order-message work-order-success" role="status">
-              {message}
-            </p>
-          ) : null}
+          {(() => {
+            const latestAttempt = workOrder.verificationAttempts[0] ?? null;
+            const hasVerificationNotice =
+              message.startsWith("공개 URL") ||
+              message.startsWith("The public URL") ||
+              latestAttempt !== null;
+
+            if (!hasVerificationNotice) {
+              return null;
+            }
+
+            const isAttemptComplete =
+              latestAttempt?.status === "PASSED" ||
+              latestAttempt?.status === "FAILED" ||
+              latestAttempt?.completedAt !== null;
+
+            const isAttemptFailed =
+              latestAttempt?.status === "FAILED" ||
+              latestAttempt?.scan?.status === "FAILED" ||
+              latestAttempt?.errorCode !== null ||
+              latestAttempt?.scan?.errorCode !== null;
+
+            const noticeClass = isAttemptFailed
+              ? "work-order-message work-order-error"
+              : "work-order-message work-order-success";
+
+            const noticeText =
+              workOrder.status === "VERIFYING"
+                ? isEnglish
+                  ? "The submitted URL is being checked."
+                  : "현재 제출된 URL을 검사하고 있습니다."
+                : isAttemptComplete
+                  ? isAttemptFailed
+                    ? isEnglish
+                      ? "Verification could not be completed. Please review the history below."
+                      : "검수를 완료하지 못했습니다. 아래 이력을 확인해 주세요."
+                    : isEnglish
+                      ? "Verification has been completed."
+                      : "검수가 완료되었습니다."
+                  : message;
+
+            return (
+              <p className={noticeClass} role="status">
+                {noticeText}
+              </p>
+            );
+          })()}
 
           {workOrder.status !== "DRAFT" && workOrder.status !== "CANCELLED" ? (
             <div className="work-order-revision-panel" role="note">
