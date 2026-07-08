@@ -43,6 +43,39 @@ const routeMetaByLocale: Record<
       description:
         "Site AI Score의 개인정보 처리 목적, Google 로그인, 결제 정보, 진단 데이터, 보관 및 삭제 기준을 안내합니다.",
     },
+    login: {
+      title: "로그인 | Site AI Score",
+      description:
+        "Site AI Score 계정에 로그인하여 사이트 진단, 결과 확인, 수정 작업지시서 관리를 진행합니다.",
+    },
+    signup: {
+      title: "회원가입 | Site AI Score",
+      description:
+        "이메일 또는 Google 계정으로 Site AI Score에 가입하고 무료 간편진단을 시작합니다.",
+    },
+    "forgot-password": {
+      title: "비밀번호 찾기 | Site AI Score",
+      description:
+        "가입한 이메일 주소로 Site AI Score 비밀번호 재설정 링크를 요청합니다.",
+    },
+    "reset-password": {
+      title: "비밀번호 재설정 | Site AI Score",
+      description: "Site AI Score 계정의 새 비밀번호를 설정합니다.",
+    },
+    settings: {
+      title: "계정 설정 | Site AI Score",
+      description:
+        "Site AI Score 로그인 정보와 계정 보안 설정을 확인하고 계정 작업을 관리합니다.",
+    },
+    "change-password": {
+      title: "비밀번호 변경 | Site AI Score",
+      description: "Site AI Score 계정의 비밀번호를 변경합니다.",
+    },
+    account: {
+      title: "회원탈퇴 | Site AI Score",
+      description:
+        "Site AI Score 계정 삭제 전 필요한 자료를 확인하고 회원탈퇴를 진행합니다.",
+    },
   },
   en: {
     "": {
@@ -80,6 +113,39 @@ const routeMetaByLocale: Record<
       description:
         "How Site AI Score processes account information, Google sign-in data, payment records, diagnostic data, retention, and deletion.",
     },
+    login: {
+      title: "Log in | Site AI Score",
+      description:
+        "Log in to Site AI Score to manage website diagnostics, results, and improvement work orders.",
+    },
+    signup: {
+      title: "Sign up | Site AI Score",
+      description:
+        "Create a Site AI Score account with email or Google and start a free simple diagnostic.",
+    },
+    "forgot-password": {
+      title: "Forgot password | Site AI Score",
+      description:
+        "Request a password reset link for your Site AI Score account by email.",
+    },
+    "reset-password": {
+      title: "Reset password | Site AI Score",
+      description: "Set a new password for your Site AI Score account.",
+    },
+    settings: {
+      title: "Account Settings | Site AI Score",
+      description:
+        "Review your Site AI Score sign-in information and account security settings.",
+    },
+    "change-password": {
+      title: "Change password | Site AI Score",
+      description: "Change the password for your Site AI Score account.",
+    },
+    account: {
+      title: "Delete account | Site AI Score",
+      description:
+        "Review important information before deleting your Site AI Score account.",
+    },
   },
 };
 
@@ -110,7 +176,9 @@ function setPropertyMeta(property: string, content: string) {
 }
 
 function setCanonical(url: string) {
-  let element = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  let element = document.querySelector<HTMLLinkElement>(
+    'link[rel="canonical"]',
+  );
 
   if (!element) {
     element = document.createElement("link");

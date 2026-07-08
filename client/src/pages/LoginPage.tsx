@@ -15,8 +15,45 @@ interface LoginLocationState {
   notice?: string;
 }
 
+type Locale = "ko" | "en";
+
+const loginCopy = {
+  ko: {
+    loading: "로그인 상태를 확인하고 있습니다.",
+    error: "로그인 중 오류가 발생했습니다.",
+    eyebrow: "SIGN IN",
+    title: "로그인",
+    intro: "가입한 이메일 주소와 비밀번호를 입력해 주세요.",
+    email: "이메일",
+    password: "비밀번호",
+    forgotPassword: "비밀번호를 잊으셨나요?",
+    submitting: "로그인 중...",
+    submit: "로그인",
+    google: "Google로 로그인",
+    switchText: "아직 계정이 없으신가요?",
+    signup: "회원가입",
+  },
+  en: {
+    loading: "Checking your sign-in status.",
+    error: "An error occurred while signing in.",
+    eyebrow: "SIGN IN",
+    title: "Log in",
+    intro: "Enter the email address and password you used to sign up.",
+    email: "Email",
+    password: "Password",
+    forgotPassword: "Forgot your password?",
+    submitting: "Logging in...",
+    submit: "Log in",
+    google: "Log in with Google",
+    switchText: "Don’t have an account yet?",
+    signup: "Sign up",
+  },
+} as const;
+
 export function LoginPage() {
   const { locale = "ko" } = useParams();
+  const normalizedLocale: Locale = locale === "en" ? "en" : "ko";
+  const copy = loginCopy[normalizedLocale];
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -32,14 +69,14 @@ export function LoginPage() {
     return (
       <section className="full-bleed-section auth-section">
         <div className="content-container auth-container" role="status">
-          로그인 상태를 확인하고 있습니다.
+          {copy.loading}
         </div>
       </section>
     );
   }
 
   if (state.status === "authenticated") {
-    return <Navigate to={`/${locale}`} replace />;
+    return <Navigate to={`/${normalizedLocale}`} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -49,13 +86,9 @@ export function LoginPage() {
 
     try {
       await login({ email, password });
-      navigate(`/${locale}`, { replace: true });
+      navigate(`/${normalizedLocale}`, { replace: true });
     } catch (error) {
-      setMessage(
-        error instanceof AuthApiError
-          ? error.message
-          : "로그인 중 오류가 발생했습니다.",
-      );
+      setMessage(error instanceof AuthApiError ? error.message : copy.error);
     } finally {
       setSubmitting(false);
     }
@@ -65,9 +98,9 @@ export function LoginPage() {
     <section className="full-bleed-section auth-section">
       <div className="content-container auth-container">
         <div className="auth-heading">
-          <p className="eyebrow">SIGN IN</p>
-          <h1>로그인</h1>
-          <p>가입한 이메일 주소와 비밀번호를 입력해 주세요.</p>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h1>{copy.title}</h1>
+          <p>{copy.intro}</p>
         </div>
 
         <form className="auth-form surface" onSubmit={handleSubmit} noValidate>
@@ -83,7 +116,7 @@ export function LoginPage() {
             </p>
           ) : null}
 
-          <label htmlFor="login-email">이메일</label>
+          <label htmlFor="login-email">{copy.email}</label>
           <input
             id="login-email"
             name="email"
@@ -95,7 +128,7 @@ export function LoginPage() {
             required
           />
 
-          <label htmlFor="login-password">비밀번호</label>
+          <label htmlFor="login-password">{copy.password}</label>
           <input
             id="login-password"
             name="password"
@@ -107,8 +140,8 @@ export function LoginPage() {
           />
 
           <div className="auth-inline-link">
-            <Link to={`/${locale}/forgot-password`}>
-              비밀번호를 잊으셨나요?
+            <Link to={`/${normalizedLocale}/forgot-password`}>
+              {copy.forgotPassword}
             </Link>
           </div>
 
@@ -119,7 +152,7 @@ export function LoginPage() {
           ) : null}
 
           <button className="auth-submit" type="submit" disabled={submitting}>
-            {submitting ? "로그인 중..." : "로그인"}
+            {submitting ? copy.submitting : copy.submit}
           </button>
 
           <button
@@ -127,16 +160,16 @@ export function LoginPage() {
             type="button"
             onClick={() => {
               window.location.href = `/api/auth/google/start?mode=login&locale=${encodeURIComponent(
-                locale,
+                normalizedLocale,
               )}`;
             }}
           >
-            Google로 로그인
+            {copy.google}
           </button>
 
           <p className="auth-switch">
-            아직 계정이 없으신가요?{" "}
-            <Link to={`/${locale}/signup`}>회원가입</Link>
+            {copy.switchText}{" "}
+            <Link to={`/${normalizedLocale}/signup`}>{copy.signup}</Link>
           </p>
         </form>
       </div>
