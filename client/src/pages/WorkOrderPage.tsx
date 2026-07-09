@@ -357,6 +357,20 @@ export function WorkOrderPage() {
 
   async function handleRevise() {
     if (!workOrder) return;
+
+    const hasLaterVerificationResult = workOrder.versionHistory.some(
+      (entry) => entry.version > workOrder.version,
+    );
+
+    if (hasLaterVerificationResult) {
+      setErrorMessage(
+        isEnglish
+          ? "A later work order already exists. Open the latest work order to continue."
+          : "이미 후속 작업지시서가 있습니다. 최신 작업지시서에서 계속 진행해 주세요.",
+      );
+      return;
+    }
+
     const revised = await runAction(
       () => reviseWorkOrderRequest(workOrder.id),
       isEnglish
@@ -558,18 +572,6 @@ export function WorkOrderPage() {
                       initialScan: workOrder.initialScan,
                     },
                   ];
-            const latestRecheckAlreadyShownAsNextDiagnostic =
-              latestScoredVerificationAttempt
-                ? workOrder.versionHistory.some(
-                    (entry) =>
-                      entry.version === workOrder.version + 1 &&
-                      entry.initialScan.completedAt ===
-                        latestScoredVerificationAttempt.completedAt &&
-                      entry.initialScan.score ===
-                        latestScoredVerificationAttempt.scoreAfter,
-                  )
-                : false;
-
             return latestScoredVerificationAttempt ? (
               <>
                 <div className="work-order-score-comparison">
@@ -649,71 +651,6 @@ export function WorkOrderPage() {
                       </dl>
                     </article>
                   ))}
-
-                  {!latestRecheckAlreadyShownAsNextDiagnostic ? (
-                    <article className="work-order-score-card verification">
-                      <span>
-                        {isEnglish ? "Latest recheck" : "최근 재검수"}
-                      </span>
-                      <strong>
-                        {latestScoredVerificationAttempt.scoreAfter}
-                        {latestScoredVerificationAttempt.gradeAfter ? (
-                          <small>
-                            {" "}
-                            {latestScoredVerificationAttempt.gradeAfter}
-                          </small>
-                        ) : null}
-                      </strong>
-                      <small>
-                        {isEnglish
-                          ? `Latest recheck result after version ${workOrder.version} work`
-                          : `${workOrder.version}차 작업 후 재검수 결과`}
-                      </small>
-
-                      <dl className="work-order-score-card-meta">
-                        <div>
-                          <dt>
-                            {isEnglish
-                              ? "Recheck requested at (KST)"
-                              : "재검수 요청 시각(KST)"}
-                          </dt>
-                          <dd>
-                            {formatKST(
-                              latestScoredVerificationAttempt.createdAt,
-                              isEnglish,
-                            )}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {isEnglish
-                              ? "Recheck completed at (KST)"
-                              : "재검수 완료 시각(KST)"}
-                          </dt>
-                          <dd>
-                            {formatKST(
-                              latestScoredVerificationAttempt.completedAt,
-                              isEnglish,
-                            )}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>{isEnglish ? "Recheck URL" : "재검수 URL"}</dt>
-                          <dd>
-                            <a
-                              href={
-                                latestScoredVerificationAttempt.submittedUrl
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {latestScoredVerificationAttempt.submittedUrl}
-                            </a>
-                          </dd>
-                        </div>
-                      </dl>
-                    </article>
-                  ) : null}
                 </div>
               </>
             ) : (
@@ -949,7 +886,9 @@ export function WorkOrderPage() {
             );
           })()}
 
-          {workOrder.status !== "DRAFT" && workOrder.status !== "CANCELLED" ? (
+          {workOrder.status !== "DRAFT" &&
+          workOrder.status !== "CANCELLED" &&
+          !hasLaterVerificationResult ? (
             <div className="work-order-revision-panel" role="note">
               <div>
                 <strong>

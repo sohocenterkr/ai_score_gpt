@@ -295,6 +295,7 @@ export class WorkOrderServiceError extends Error {
       | "WORK_ORDER_INVALID_STATUS"
       | "WORK_ORDER_INVALID_VERIFICATION_URL"
       | "WORK_ORDER_VERIFICATION_ALREADY_RUNNING"
+      | "WORK_ORDER_OUTDATED"
       | "EXTRA_VERIFICATION_PAYMENT_REQUIRED",
     message: string,
     public readonly status: number,
@@ -1042,6 +1043,35 @@ export function createPrismaWorkOrderService(
         );
       }
 
+      const laterWorkOrderForVerification = await prisma.workOrder.findFirst({
+        where: {
+          orderNumber: current.orderNumber,
+          siteId: current.siteId,
+          customerOrganizationId: current.customerOrganizationId,
+          version: {
+            gt: current.version,
+          },
+          status: {
+            not: "CANCELLED",
+          },
+        },
+        select: {
+          id: true,
+          version: true,
+        },
+        orderBy: {
+          version: "desc",
+        },
+      });
+
+      if (laterWorkOrderForVerification) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_OUTDATED",
+          "이미 후속 작업지시서가 있습니다. 최신 작업지시서에서 검수를 진행해 주세요.",
+          409,
+        );
+      }
+
       let submittedUrl: string;
 
       try {
@@ -1172,6 +1202,35 @@ export function createPrismaWorkOrderService(
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_STATUS",
           "취소된 작업지시서는 새 버전을 만들 수 없습니다.",
+          409,
+        );
+      }
+
+      const laterWorkOrderForRevision = await prisma.workOrder.findFirst({
+        where: {
+          orderNumber: current.orderNumber,
+          siteId: current.siteId,
+          customerOrganizationId: current.customerOrganizationId,
+          version: {
+            gt: current.version,
+          },
+          status: {
+            not: "CANCELLED",
+          },
+        },
+        select: {
+          id: true,
+          version: true,
+        },
+        orderBy: {
+          version: "desc",
+        },
+      });
+
+      if (laterWorkOrderForRevision) {
+        throw new WorkOrderServiceError(
+          "WORK_ORDER_OUTDATED",
+          "이미 후속 작업지시서가 있습니다. 최신 작업지시서에서 계속 진행해 주세요.",
           409,
         );
       }
