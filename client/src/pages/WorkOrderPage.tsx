@@ -185,6 +185,8 @@ export function WorkOrderPage() {
   const [message, setMessage] = useState("");
   const [submittedUrl, setSubmittedUrl] = useState("");
   const [submittingVerification, setSubmittingVerification] = useState(false);
+  const [selectedVerificationAttemptId, setSelectedVerificationAttemptId] =
+    useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -241,6 +243,20 @@ export function WorkOrderPage() {
 
     return () => window.clearInterval(timer);
   }, [workOrderId, workOrder?.status]);
+
+  useEffect(() => {
+    const attempts = workOrder?.verificationAttempts ?? [];
+
+    setSelectedVerificationAttemptId((current) => {
+      if (attempts.length === 0) {
+        return "";
+      }
+
+      return current && attempts.some((attempt) => attempt.id === current)
+        ? current
+        : (attempts[0]?.id ?? "");
+    });
+  }, [workOrder?.verificationAttempts]);
 
   async function runAction(
     action: () => Promise<WorkOrderDetail>,
@@ -916,237 +932,280 @@ export function WorkOrderPage() {
               <h3>
                 {isEnglish ? "Verification request history" : "검수 요청 이력"}
               </h3>
-              <ol>
+              <div className="work-order-verification-tabs" role="tablist">
                 {workOrder.verificationAttempts.map((attempt) => {
-                  const passCount = attempt.itemResults.filter(
-                    (result) => result.status === "PASS",
-                  ).length;
-                  const failCount = attempt.itemResults.filter(
-                    (result) => result.status === "FAIL",
-                  ).length;
-                  const blockedCount = attempt.itemResults.filter(
-                    (result) => result.status === "BLOCKED",
-                  ).length;
-                  const notApplicableCount = attempt.itemResults.filter(
-                    (result) => result.status === "NOT_APPLICABLE",
-                  ).length;
+                  const selected = attempt.id === selectedVerificationAttemptId;
 
                   return (
-                    <li key={attempt.id}>
-                      <div>
-                        <strong>
-                          {isEnglish
-                            ? `Verification ${attempt.attemptNumber + 1}`
-                            : `${attempt.attemptNumber + 1}차 검수`}
-                        </strong>
-                        <span
-                          className={`verification-attempt-status verification-attempt-status-${verificationStatusClass(
-                            attempt.status,
-                          )}`}
-                        >
-                          {isEnglish
-                            ? attempt.status.replaceAll("_", " ").toLowerCase()
-                            : (verificationStatusLabels[attempt.status] ??
-                              attempt.status)}
-                        </span>
-                      </div>
-                      <a
-                        href={attempt.submittedUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                    <button
+                      aria-selected={selected}
+                      className={selected ? "selected" : ""}
+                      key={attempt.id}
+                      onClick={() =>
+                        setSelectedVerificationAttemptId(attempt.id)
+                      }
+                      role="tab"
+                      type="button"
+                    >
+                      <strong>
+                        {isEnglish
+                          ? `Verification ${attempt.attemptNumber + 1}`
+                          : `${attempt.attemptNumber + 1}차 검수`}
+                      </strong>
+                      <span
+                        className={`verification-attempt-status verification-attempt-status-${verificationStatusClass(
+                          attempt.status,
+                        )}`}
                       >
-                        {attempt.submittedUrl}
-                      </a>
-                      <dl>
-                        <div>
-                          <dt>{isEnglish ? "Requested at" : "요청 시각"}</dt>
-                          <dd>{formatKST(attempt.createdAt, isEnglish)}</dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {isEnglish ? "Verification status" : "검사 상태"}
-                          </dt>
-                          <dd>
-                            {isEnglish
-                              ? attempt.scan.status
-                                  .replaceAll("_", " ")
-                                  .toLowerCase()
-                              : (statusLabels[attempt.scan.status] ??
-                                attempt.scan.status)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {isEnglish
-                              ? "Score after verification"
-                              : "검사 후 점수"}
-                          </dt>
-                          <dd>
-                            {attempt.scoreAfter ?? "—"}{" "}
-                            {attempt.gradeAfter ?? ""}
-                          </dd>
-                        </div>
-                      </dl>
-
-                      {attempt.itemResults.length > 0 ? (
-                        <div className="verification-result-summary">
-                          <strong>
-                            {isEnglish
-                              ? "Item-level automatic verification results"
-                              : "항목별 자동검수 결과"}
-                          </strong>
-                          <div>
-                            <span className="verification-count-pass">
-                              {isEnglish ? "Pass" : "통과"} {passCount}
-                            </span>
-                            <span className="verification-count-fail">
-                              {isEnglish ? "Fail" : "실패"} {failCount}
-                            </span>
-                            <span className="verification-count-blocked">
-                              {isEnglish ? "Blocked" : "확인 불가"}{" "}
-                              {blockedCount}
-                            </span>
-                            <span className="verification-count-na">
-                              {isEnglish ? "Not applicable" : "해당 없음"}{" "}
-                              {notApplicableCount}
-                            </span>
-                          </div>
-                        </div>
-                      ) : null}
-
-                      {attempt.itemResults.length > 0 ? (
-                        <div className="verification-item-results">
-                          {attempt.itemResults.map((result) => {
-                            const item = workOrder.items.find(
-                              (candidate) =>
-                                candidate.id === result.workOrderItemId,
-                            );
-                            const criterionResults = verificationCriteria(
-                              result.criteriaResults,
-                            );
-
-                            return (
-                              <article
-                                className={`verification-item-result verification-item-result-${verificationStatusClass(
-                                  result.status,
-                                )}`}
-                                key={result.id}
-                              >
-                                <header>
-                                  <div>
-                                    <span>
-                                      {item?.itemCode ?? result.workOrderItemId}
-                                    </span>
-                                    <h4>
-                                      {item?.title ??
-                                        (isEnglish
-                                          ? "Work item verification result"
-                                          : "작업 항목 검수 결과")}
-                                    </h4>
-                                  </div>
-                                  <b>
-                                    {isEnglish
-                                      ? result.status
-                                          .replaceAll("_", " ")
-                                          .toLowerCase()
-                                      : (verificationItemStatusLabels[
-                                          result.status
-                                        ] ?? result.status)}
-                                  </b>
-                                </header>
-
-                                {result.message ? (
-                                  <p className="verification-item-message">
-                                    {result.message}
-                                  </p>
-                                ) : null}
-
-                                {criterionResults.length > 0 ? (
-                                  <div className="verification-criteria-results">
-                                    <strong>
-                                      {isEnglish
-                                        ? "Completion criteria decisions"
-                                        : "완료 기준별 판정"}
-                                    </strong>
-                                    <ul>
-                                      {criterionResults.map((criterion) => (
-                                        <li
-                                          className={`verification-criterion verification-criterion-${verificationStatusClass(
-                                            criterion.status,
-                                          )}`}
-                                          key={criterion.code}
-                                        >
-                                          <div>
-                                            <span>{criterion.code}</span>
-                                            <b>
-                                              {isEnglish
-                                                ? criterion.status
-                                                    .replaceAll("_", " ")
-                                                    .toLowerCase()
-                                                : (verificationItemStatusLabels[
-                                                    criterion.status
-                                                  ] ?? criterion.status)}
-                                            </b>
-                                          </div>
-                                          <p>{criterion.label}</p>
-                                          {criterion.message ? (
-                                            <small>{criterion.message}</small>
-                                          ) : null}
-                                          <em>
-                                            {criterion.required
-                                              ? isEnglish
-                                                ? "Required"
-                                                : "필수"
-                                              : isEnglish
-                                                ? "Recommended"
-                                                : "권장"}
-                                            {" · "}
-                                            {criterion.automated
-                                              ? isEnglish
-                                                ? "Automatic decision"
-                                                : "자동 판정"
-                                              : isEnglish
-                                                ? "Manual review"
-                                                : "수동 확인"}
-                                          </em>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                ) : null}
-
-                                {result.evidence ? (
-                                  <details>
-                                    <summary>
-                                      {isEnglish
-                                        ? "View automatic verification evidence"
-                                        : "자동검수 증거 보기"}
-                                    </summary>
-                                    <pre>{evidenceText(result.evidence)}</pre>
-                                  </details>
-                                ) : null}
-                              </article>
-                            );
-                          })}
-                        </div>
-                      ) : attempt.status === "PASSED" ||
-                        attempt.status === "REWORK_REQUIRED" ? (
-                        <p className="work-order-verification-error">
-                          {isEnglish
-                            ? "No saved item-level verification results."
-                            : "저장된 항목별 검수 결과가 없습니다."}
-                        </p>
-                      ) : null}
-
-                      {attempt.errorCode ? (
-                        <p className="work-order-verification-error">
-                          {isEnglish ? "Error code" : "오류 코드"}:{" "}
-                          {attempt.errorCode}
-                        </p>
-                      ) : null}
-                    </li>
+                        {isEnglish
+                          ? attempt.status.replaceAll("_", " ").toLowerCase()
+                          : (verificationStatusLabels[attempt.status] ??
+                            attempt.status)}
+                      </span>
+                    </button>
                   );
                 })}
+              </div>
+              <ol>
+                {workOrder.verificationAttempts
+                  .filter((attempt) =>
+                    selectedVerificationAttemptId
+                      ? attempt.id === selectedVerificationAttemptId
+                      : attempt.id === workOrder.verificationAttempts[0]?.id,
+                  )
+                  .map((attempt) => {
+                    const passCount = attempt.itemResults.filter(
+                      (result) => result.status === "PASS",
+                    ).length;
+                    const failCount = attempt.itemResults.filter(
+                      (result) => result.status === "FAIL",
+                    ).length;
+                    const blockedCount = attempt.itemResults.filter(
+                      (result) => result.status === "BLOCKED",
+                    ).length;
+                    const notApplicableCount = attempt.itemResults.filter(
+                      (result) => result.status === "NOT_APPLICABLE",
+                    ).length;
+
+                    return (
+                      <li key={attempt.id}>
+                        <div>
+                          <strong>
+                            {isEnglish
+                              ? `Verification ${attempt.attemptNumber + 1}`
+                              : `${attempt.attemptNumber + 1}차 검수`}
+                          </strong>
+                          <span
+                            className={`verification-attempt-status verification-attempt-status-${verificationStatusClass(
+                              attempt.status,
+                            )}`}
+                          >
+                            {isEnglish
+                              ? attempt.status
+                                  .replaceAll("_", " ")
+                                  .toLowerCase()
+                              : (verificationStatusLabels[attempt.status] ??
+                                attempt.status)}
+                          </span>
+                        </div>
+                        <a
+                          href={attempt.submittedUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {attempt.submittedUrl}
+                        </a>
+                        <dl>
+                          <div>
+                            <dt>{isEnglish ? "Requested at" : "요청 시각"}</dt>
+                            <dd>{formatKST(attempt.createdAt, isEnglish)}</dd>
+                          </div>
+                          <div>
+                            <dt>
+                              {isEnglish ? "Verification status" : "검사 상태"}
+                            </dt>
+                            <dd>
+                              {isEnglish
+                                ? attempt.scan.status
+                                    .replaceAll("_", " ")
+                                    .toLowerCase()
+                                : (statusLabels[attempt.scan.status] ??
+                                  attempt.scan.status)}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>
+                              {isEnglish
+                                ? "Score after verification"
+                                : "검사 후 점수"}
+                            </dt>
+                            <dd>
+                              {attempt.scoreAfter ?? "—"}{" "}
+                              {attempt.gradeAfter ?? ""}
+                            </dd>
+                          </div>
+                        </dl>
+
+                        {attempt.itemResults.length > 0 ? (
+                          <div className="verification-result-summary">
+                            <strong>
+                              {isEnglish
+                                ? "Item-level automatic verification results"
+                                : "항목별 자동검수 결과"}
+                            </strong>
+                            <div>
+                              <span className="verification-count-pass">
+                                {isEnglish ? "Pass" : "통과"} {passCount}
+                              </span>
+                              <span className="verification-count-fail">
+                                {isEnglish ? "Fail" : "실패"} {failCount}
+                              </span>
+                              <span className="verification-count-blocked">
+                                {isEnglish ? "Blocked" : "확인 불가"}{" "}
+                                {blockedCount}
+                              </span>
+                              <span className="verification-count-na">
+                                {isEnglish ? "Not applicable" : "해당 없음"}{" "}
+                                {notApplicableCount}
+                              </span>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {attempt.itemResults.length > 0 ? (
+                          <div className="verification-item-results">
+                            {attempt.itemResults.map((result) => {
+                              const item = workOrder.items.find(
+                                (candidate) =>
+                                  candidate.id === result.workOrderItemId,
+                              );
+                              const criterionResults = verificationCriteria(
+                                result.criteriaResults,
+                              );
+
+                              return (
+                                <article
+                                  className={`verification-item-result verification-item-result-${verificationStatusClass(
+                                    result.status,
+                                  )}`}
+                                  key={result.id}
+                                >
+                                  <header>
+                                    <div>
+                                      <span>
+                                        {item?.itemCode ??
+                                          result.workOrderItemId}
+                                      </span>
+                                      <h4>
+                                        {item?.title ??
+                                          (isEnglish
+                                            ? "Work item verification result"
+                                            : "작업 항목 검수 결과")}
+                                      </h4>
+                                    </div>
+                                    <b>
+                                      {isEnglish
+                                        ? result.status
+                                            .replaceAll("_", " ")
+                                            .toLowerCase()
+                                        : (verificationItemStatusLabels[
+                                            result.status
+                                          ] ?? result.status)}
+                                    </b>
+                                  </header>
+
+                                  {result.message ? (
+                                    <p className="verification-item-message">
+                                      {result.message}
+                                    </p>
+                                  ) : null}
+
+                                  {criterionResults.length > 0 ? (
+                                    <div className="verification-criteria-results">
+                                      <strong>
+                                        {isEnglish
+                                          ? "Completion criteria decisions"
+                                          : "완료 기준별 판정"}
+                                      </strong>
+                                      <ul>
+                                        {criterionResults.map((criterion) => (
+                                          <li
+                                            className={`verification-criterion verification-criterion-${verificationStatusClass(
+                                              criterion.status,
+                                            )}`}
+                                            key={criterion.code}
+                                          >
+                                            <div>
+                                              <span>{criterion.code}</span>
+                                              <b>
+                                                {isEnglish
+                                                  ? criterion.status
+                                                      .replaceAll("_", " ")
+                                                      .toLowerCase()
+                                                  : (verificationItemStatusLabels[
+                                                      criterion.status
+                                                    ] ?? criterion.status)}
+                                              </b>
+                                            </div>
+                                            <p>{criterion.label}</p>
+                                            {criterion.message ? (
+                                              <small>{criterion.message}</small>
+                                            ) : null}
+                                            <em>
+                                              {criterion.required
+                                                ? isEnglish
+                                                  ? "Required"
+                                                  : "필수"
+                                                : isEnglish
+                                                  ? "Recommended"
+                                                  : "권장"}
+                                              {" · "}
+                                              {criterion.automated
+                                                ? isEnglish
+                                                  ? "Automatic decision"
+                                                  : "자동 판정"
+                                                : isEnglish
+                                                  ? "Manual review"
+                                                  : "수동 확인"}
+                                            </em>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ) : null}
+
+                                  {result.evidence ? (
+                                    <details>
+                                      <summary>
+                                        {isEnglish
+                                          ? "View automatic verification evidence"
+                                          : "자동검수 증거 보기"}
+                                      </summary>
+                                      <pre>{evidenceText(result.evidence)}</pre>
+                                    </details>
+                                  ) : null}
+                                </article>
+                              );
+                            })}
+                          </div>
+                        ) : attempt.status === "PASSED" ||
+                          attempt.status === "REWORK_REQUIRED" ? (
+                          <p className="work-order-verification-error">
+                            {isEnglish
+                              ? "No saved item-level verification results."
+                              : "저장된 항목별 검수 결과가 없습니다."}
+                          </p>
+                        ) : null}
+
+                        {attempt.errorCode ? (
+                          <p className="work-order-verification-error">
+                            {isEnglish ? "Error code" : "오류 코드"}:{" "}
+                            {attempt.errorCode}
+                          </p>
+                        ) : null}
+                      </li>
+                    );
+                  })}
               </ol>
             </div>
           ) : null}

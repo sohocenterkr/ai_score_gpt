@@ -334,6 +334,36 @@
   list-style: none;
 }
 
+.work-order-verification-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.work-order-verification-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #172033;
+  cursor: pointer;
+  font: inherit;
+}
+
+.work-order-verification-tabs button.selected {
+  border-color: #3157e5;
+  background: #eef2ff;
+  box-shadow: 0 0 0 2px rgb(49 87 229 / 12%);
+}
+
+.work-order-verification-tabs button strong {
+  font-size: 0.86rem;
+}
+
 .work-order-verification-history li {
   padding: 16px;
   border: 1px solid #e2e8f0;
