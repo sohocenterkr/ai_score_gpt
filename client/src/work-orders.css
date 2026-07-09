@@ -974,9 +974,11 @@
 
 .work-order-score-comparison {
   display: grid;
+  grid-column: 1 / -1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   align-items: stretch;
+  width: 100%;
 }
 
 .work-order-score-card {
