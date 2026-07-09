@@ -974,7 +974,7 @@
 
 .work-order-score-comparison {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   align-items: stretch;
 }
@@ -1062,14 +1062,10 @@
   font-size: 0.86rem;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 720px) {
   .work-order-score-comparison {
     grid-template-columns: 1fr;
     gap: 18px;
-  }
-
-  .work-order-score-comparison-arrow {
-    font-size: 48px;
   }
 
   .work-order-score-card > strong {
