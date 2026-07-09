@@ -56,6 +56,13 @@ const workOrder = {
   agencyOrganization: null,
   items: [],
   verificationAttempts: [],
+  extraVerification: {
+    required: false,
+    available: true,
+    freeUntilVersion: 2,
+    priceAmount: 33_000,
+    currency: "KRW",
+  },
   versionHistory: [],
 } satisfies PublicWorkOrder;
 

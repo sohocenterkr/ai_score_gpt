@@ -35,6 +35,13 @@ const workOrder: PublicWorkOrder = {
   },
   agencyOrganization: null,
   verificationAttempts: [],
+  extraVerification: {
+    required: false,
+    available: true,
+    freeUntilVersion: 2,
+    priceAmount: 33_000,
+    currency: "KRW",
+  },
   versionHistory: [],
   items: [
     {

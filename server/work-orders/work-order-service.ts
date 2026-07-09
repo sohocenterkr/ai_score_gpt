@@ -80,6 +80,18 @@ const workOrderInclude = {
       attemptNumber: "desc",
     },
   },
+  paidEntitlements: {
+    where: {
+      plan: "EXTRA_VERIFICATION",
+      status: "ACTIVE",
+    },
+    select: {
+      id: true,
+    },
+    orderBy: {
+      grantedAt: "asc",
+    },
+  },
 } satisfies Prisma.WorkOrderInclude;
 
 type WorkOrderRecord = Prisma.WorkOrderGetPayload<{
@@ -196,6 +208,13 @@ export interface PublicWorkOrder {
   } | null;
   items: PublicWorkOrderItem[];
   verificationAttempts: PublicVerificationAttempt[];
+  extraVerification: {
+    required: boolean;
+    available: boolean;
+    freeUntilVersion: number;
+    priceAmount: number;
+    currency: "KRW";
+  };
   versionHistory: PublicWorkOrderVersionHistoryEntry[];
 }
 
@@ -275,7 +294,8 @@ export class WorkOrderServiceError extends Error {
       | "WORK_ORDER_INVALID_FINDINGS"
       | "WORK_ORDER_INVALID_STATUS"
       | "WORK_ORDER_INVALID_VERIFICATION_URL"
-      | "WORK_ORDER_VERIFICATION_ALREADY_RUNNING",
+      | "WORK_ORDER_VERIFICATION_ALREADY_RUNNING"
+      | "EXTRA_VERIFICATION_PAYMENT_REQUIRED",
     message: string,
     public readonly status: number,
   ) {
@@ -375,6 +395,13 @@ function publicWorkOrder(
           }
         : null,
     })),
+    extraVerification: {
+      required: record.version >= 3,
+      available: record.version < 3 || record.paidEntitlements.length > 0,
+      freeUntilVersion: 2,
+      priceAmount: 33_000,
+      currency: "KRW",
+    },
     verificationAttempts: record.verificationAttempts.map((attempt) => ({
       id: attempt.id,
       attemptNumber: attempt.attemptNumber,
@@ -1063,6 +1090,31 @@ export function createPrismaWorkOrderService(
       });
       const attemptNumber = (latest._max.attemptNumber ?? 0) + 1;
 
+      const extraVerificationEntitlement =
+        current.version >= 3
+          ? await prisma.paidEntitlement.findFirst({
+              where: {
+                workOrderId: current.id,
+                plan: "EXTRA_VERIFICATION",
+                status: "ACTIVE",
+              },
+              select: {
+                id: true,
+              },
+              orderBy: {
+                grantedAt: "asc",
+              },
+            })
+          : null;
+
+      if (current.version >= 3 && !extraVerificationEntitlement) {
+        throw new WorkOrderServiceError(
+          "EXTRA_VERIFICATION_PAYMENT_REQUIRED",
+          "3차 이상 작업지시서 검수는 추가 검수권 결제 후 진행할 수 있습니다.",
+          402,
+        );
+      }
+
       const updated = await prisma.$transaction(async (transaction) => {
         const scan = await transaction.scan.create({
           data: {
@@ -1085,6 +1137,18 @@ export function createPrismaWorkOrderService(
             createdBy: user.id,
           },
         });
+
+        if (extraVerificationEntitlement) {
+          await transaction.paidEntitlement.update({
+            where: {
+              id: extraVerificationEntitlement.id,
+            },
+            data: {
+              status: "REVOKED",
+              revokedAt: new Date(),
+            },
+          });
+        }
 
         return transaction.workOrder.update({
           where: {
