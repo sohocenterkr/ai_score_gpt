@@ -309,6 +309,19 @@ export function WorkOrderPage() {
   async function handleSubmitVerification() {
     if (!workOrder) return;
 
+    const hasLaterVerificationResult = workOrder.versionHistory.some(
+      (entry) => entry.version > workOrder.version,
+    );
+
+    if (hasLaterVerificationResult) {
+      setErrorMessage(
+        isEnglish
+          ? "A later verification result already exists. Create or open the next work order to continue."
+          : "이미 다음 차수 검수 결과가 있습니다. 후속 작업지시서를 만들거나 최신 작업지시서에서 검수를 진행해 주세요.",
+      );
+      return;
+    }
+
     if (
       workOrder.extraVerification.required &&
       !workOrder.extraVerification.available
@@ -411,6 +424,16 @@ export function WorkOrderPage() {
     );
   }
 
+  const canSubmitVerification = [
+    "ISSUED",
+    "ASSIGNED",
+    "IN_PROGRESS",
+    "SUBMITTED",
+    "REWORK_REQUIRED",
+  ].includes(workOrder.status);
+  const hasLaterVerificationResult = workOrder.versionHistory.some(
+    (entry) => entry.version > workOrder.version,
+  );
   const needsExtraVerificationPayment =
     workOrder.extraVerification.required &&
     !workOrder.extraVerification.available;
@@ -803,13 +826,13 @@ export function WorkOrderPage() {
             ) : null}
           </div>
 
-          {[
-            "ISSUED",
-            "ASSIGNED",
-            "IN_PROGRESS",
-            "SUBMITTED",
-            "REWORK_REQUIRED",
-          ].includes(workOrder.status) ? (
+          {canSubmitVerification && hasLaterVerificationResult ? (
+            <p className="work-order-verification-notice">
+              {isEnglish
+                ? "A later verification result already exists. Create the follow-up work order, then run verification from the latest work order."
+                : "이미 다음 차수 검수 결과가 생성되었습니다. 남은 항목으로 후속 작업지시서를 만든 뒤 최신 작업지시서에서 검수를 진행해 주세요."}
+            </p>
+          ) : canSubmitVerification ? (
             <form
               className="work-order-verification-form"
               onSubmit={(event) => {
