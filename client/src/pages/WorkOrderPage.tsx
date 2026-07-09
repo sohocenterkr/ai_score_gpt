@@ -115,6 +115,19 @@ function formatKST(value: string | null, isEnglish = false): string {
   }).format(new Date(value));
 }
 
+function extraVerificationCheckoutPath(
+  locale: string,
+  workOrder: WorkOrderDetail,
+): string {
+  const params = new URLSearchParams({
+    workOrderId: workOrder.id,
+    plan: "EXTRA_VERIFICATION",
+    returnTo: `/${locale}/work-orders/${workOrder.id}`,
+  });
+
+  return `/${locale}/checkout?${params.toString()}`;
+}
+
 function evidenceText(value: unknown): string {
   try {
     return JSON.stringify(value, null, 2);
@@ -296,6 +309,14 @@ export function WorkOrderPage() {
   async function handleSubmitVerification() {
     if (!workOrder) return;
 
+    if (
+      workOrder.extraVerification.required &&
+      !workOrder.extraVerification.available
+    ) {
+      navigate(extraVerificationCheckoutPath(locale, workOrder));
+      return;
+    }
+
     setSubmittingVerification(true);
     setErrorMessage("");
     setMessage("");
@@ -389,6 +410,17 @@ export function WorkOrderPage() {
       </section>
     );
   }
+
+  const needsExtraVerificationPayment =
+    workOrder.extraVerification.required &&
+    !workOrder.extraVerification.available;
+  const verificationSubmitLabel = needsExtraVerificationPayment
+    ? isEnglish
+      ? "Pay to verify"
+      : "결제 후 검수"
+    : isEnglish
+      ? "Start verification"
+      : "검수시작";
 
   return (
     <section className="full-bleed-section work-orders-section">
@@ -782,24 +814,36 @@ export function WorkOrderPage() {
                   disabled={submittingVerification}
                 />
                 <button
-                  type="submit"
+                  type={needsExtraVerificationPayment ? "button" : "submit"}
                   disabled={
-                    submittingVerification || submittedUrl.trim().length === 0
+                    submittingVerification ||
+                    (!needsExtraVerificationPayment &&
+                      submittedUrl.trim().length === 0)
+                  }
+                  onClick={
+                    needsExtraVerificationPayment
+                      ? () =>
+                          navigate(
+                            extraVerificationCheckoutPath(locale, workOrder),
+                          )
+                      : undefined
                   }
                 >
                   {submittingVerification
                     ? isEnglish
                       ? "Requesting verification..."
                       : "검수 요청 중..."
-                    : isEnglish
-                      ? "Start verification"
-                      : "검수시작"}
+                    : verificationSubmitLabel}
                 </button>
               </div>
               <small>
-                {isEnglish
-                  ? "Only externally accessible HTTP(S) URLs can be submitted. URLs requiring login or an internal network are not supported."
-                  : "로그인이나 사내망 없이 외부에서 접속 가능한 HTTP(S) 주소만 제출할 수 있습니다."}
+                {needsExtraVerificationPayment
+                  ? isEnglish
+                    ? `Version ${workOrder.version} and later verification requires one additional verification ticket.`
+                    : `${workOrder.version}차 이상 작업지시서 검수는 추가 검수권 1회 결제 후 진행할 수 있습니다.`
+                  : isEnglish
+                    ? "Only externally accessible HTTP(S) URLs can be submitted. URLs requiring login or an internal network are not supported."
+                    : "로그인이나 사내망 없이 외부에서 접속 가능한 HTTP(S) 주소만 제출할 수 있습니다."}
               </small>
             </form>
           ) : workOrder.status === "DRAFT" ? (

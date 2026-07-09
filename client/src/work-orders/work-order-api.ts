@@ -139,6 +139,13 @@ export interface WorkOrderDetail {
   } | null;
   items: WorkOrderItem[];
   verificationAttempts: VerificationAttempt[];
+  extraVerification: {
+    required: boolean;
+    available: boolean;
+    freeUntilVersion: number;
+    priceAmount: number;
+    currency: "KRW";
+  };
   versionHistory: WorkOrderVersionHistoryEntry[];
 }
 

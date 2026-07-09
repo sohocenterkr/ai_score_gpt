@@ -16,23 +16,56 @@ function isPortOnePaymentFailure(
   response: unknown,
 ): response is PortOnePaymentFailure {
   return (
-    typeof response === "object" &&
-    response !== null &&
-    "code" in response
+    typeof response === "object" && response !== null && "code" in response
   );
 }
 
-function checkoutRedirectUrl(
-  locale: string,
-  scanId: string,
-  orderId: string,
-): string {
+function checkoutRedirectUrl(input: {
+  locale: string;
+  scanId?: string;
+  workOrderId?: string;
+  orderId: string;
+  plan: PaymentPlan;
+  returnTo?: string;
+}): string {
   const url = new URL(window.location.href);
-  url.pathname = `/${locale}/checkout`;
+  url.pathname = `/${input.locale}/checkout`;
   url.search = "";
-  url.searchParams.set("scanId", scanId);
-  url.searchParams.set("paymentOrderId", orderId);
+
+  if (input.scanId) {
+    url.searchParams.set("scanId", input.scanId);
+  }
+
+  if (input.workOrderId) {
+    url.searchParams.set("workOrderId", input.workOrderId);
+  }
+
+  url.searchParams.set("plan", input.plan);
+  url.searchParams.set("paymentOrderId", input.orderId);
+
+  if (input.returnTo) {
+    url.searchParams.set("returnTo", input.returnTo);
+  }
+
   return url.toString();
+}
+
+function paymentPlanFromQuery(value: string | null): PaymentPlan {
+  if (value === "CASE_STUDY_DISCOUNT" || value === "EXTRA_VERIFICATION") {
+    return value;
+  }
+
+  return "BASIC";
+}
+
+function safeCheckoutReturnPath(value: string, locale: string): string | null {
+  const trimmed = value.trim();
+
+  if (!trimmed.startsWith(`/${locale}/`)) {
+    return null;
+  }
+
+  return trimmed;
 }
 
 type CheckoutMessage = {
@@ -44,8 +77,7 @@ const checkoutCopy = {
   ko: {
     eyebrow: "PAYMENT GUIDE",
     title: "요금/결제 안내",
-    hero:
-      "Site AI Score의 간편진단 결과 화면은 핵심 점수와 주요 문제 예시를 제공합니다. 무료 간편진단은 계정당 최대 10개 사이트까지 제공되며, 10개를 초과하는 사이트 진단이 필요한 경우 별도 문의 바랍니다. 상세 진단 PDF 보고서와 수정 작업지시서는 유료 산출물로 제공됩니다.",
+    hero: "Site AI Score의 간편진단 결과 화면은 핵심 점수와 주요 문제 예시를 제공합니다. 무료 간편진단은 계정당 최대 10개 사이트까지 제공되며, 10개를 초과하는 사이트 진단이 필요한 경우 별도 문의 바랍니다. 상세 진단 PDF 보고서와 수정 작업지시서는 유료 산출물로 제공됩니다.",
     noScanTitle: "아직 결제할 진단 결과가 연결되지 않았습니다.",
     noScanBody:
       "아직 간편진단을 하지 않은 경우 결제가 진행되지 않습니다. 먼저 본인 사이트에 대한 무료 간편진단을 실행하고 점수와 주요 문제를 확인한 뒤, 상세 진단 PDF 보고서와 수정 작업지시서 구매 여부를 판단해 주세요.",
@@ -79,6 +111,13 @@ const checkoutCopy = {
     nonDisclosure:
       "상세 보고서 전체, 작업지시서, 상세 문제 목록, 원문 증거, 스캔 데이터와 내부 분석 자료는 공개하지 않습니다.",
     domesticButton: "국내 결제 준비",
+    extraVerificationTitle: "추가 검수권 1회 결제",
+    extraVerificationBody:
+      "3차 이상 작업지시서 검수는 추가 검수권 결제 후 진행할 수 있습니다. 결제 1건은 해당 작업지시서의 검수 1회에 사용됩니다.",
+    extraVerificationLabel: "추가 검수권 1회",
+    domesticExtraVerificationPrice: "33,000원 (VAT 포함)",
+    extraVerificationItem: "해당 작업지시서 자동검수 1회",
+    extraVerificationButton: "결제 후 검수 진행",
     loading: "결제창을 여는 중입니다... 잠시만 기다려 주세요..",
     globalPayment: "해외 카드와 글로벌 SaaS 결제 방식 지원",
     polarEyebrow: "해외 결제",
@@ -117,8 +156,7 @@ const checkoutCopy = {
   en: {
     eyebrow: "PAYMENT GUIDE",
     title: "Pricing and Payment",
-    hero:
-      "The simple diagnostic result page provides the core score and examples of key issues. Free simple diagnostics are available for up to 10 websites per account. If you need to diagnose more than 10 websites, please contact us separately. Detailed diagnostic PDF reports and improvement work orders are paid digital deliverables.",
+    hero: "The simple diagnostic result page provides the core score and examples of key issues. Free simple diagnostics are available for up to 10 websites per account. If you need to diagnose more than 10 websites, please contact us separately. Detailed diagnostic PDF reports and improvement work orders are paid digital deliverables.",
     noScanTitle: "No diagnostic result is connected for payment yet.",
     noScanBody:
       "Payment cannot proceed if you have not run a simple diagnostic yet. Please run a free diagnostic for your own website first, review the score and key issues, and then decide whether to purchase the detailed diagnostic PDF report and improvement work order.",
@@ -142,7 +180,8 @@ const checkoutCopy = {
     domesticBasicPrice: "KRW 165,000 including VAT",
     caseStudyLabel: "With case study consent",
     domesticCasePrice: "KRW 110,000 including VAT",
-    deliverableShort: "Detailed diagnostic PDF report and improvement work order",
+    deliverableShort:
+      "Detailed diagnostic PDF report and improvement work order",
     internalUse:
       "Diagnostic results, reports, work orders, and scan data may be used internally for service improvement and quality enhancement.",
     basicNoCase:
@@ -152,6 +191,13 @@ const checkoutCopy = {
     nonDisclosure:
       "Full detailed reports, work orders, detailed issue lists, source evidence, scan data, and internal analysis materials will not be publicly disclosed.",
     domesticButton: "Prepare domestic payment",
+    extraVerificationTitle: "Additional Verification Ticket",
+    extraVerificationBody:
+      "Version 3 and later work order verification requires an additional verification ticket. One payment grants one verification run for the connected work order.",
+    extraVerificationLabel: "One additional verification",
+    domesticExtraVerificationPrice: "KRW 33,000 including VAT",
+    extraVerificationItem: "One automatic verification for this work order",
+    extraVerificationButton: "Pay to verify",
     loading: "Opening the payment window... Please wait.",
     globalPayment: "Supports international cards and global SaaS payment flow",
     polarEyebrow: "International Payment",
@@ -215,16 +261,19 @@ function isValidEmail(value: string): boolean {
 
 export function CheckoutPage() {
   const { locale = "ko" } = useParams();
+  const isEnglish = locale === "en";
   const [searchParams] = useSearchParams();
   const scanId = searchParams.get("scanId")?.trim() ?? "";
+  const workOrderId = searchParams.get("workOrderId")?.trim() ?? "";
+  const requestedPlan = paymentPlanFromQuery(searchParams.get("plan"));
+  const returnTo = searchParams.get("returnTo")?.trim() ?? "";
   const redirectedPaymentOrderId =
     searchParams.get("paymentOrderId")?.trim() ?? "";
-  const redirectedPaymentId =
-    searchParams.get("paymentId")?.trim() ?? "";
-  const redirectedErrorMessage =
-    searchParams.get("message")?.trim() ?? "";
-  const [submittingPlan, setSubmittingPlan] =
-    useState<PaymentPlan | null>(null);
+  const redirectedPaymentId = searchParams.get("paymentId")?.trim() ?? "";
+  const redirectedErrorMessage = searchParams.get("message")?.trim() ?? "";
+  const [submittingPlan, setSubmittingPlan] = useState<PaymentPlan | null>(
+    null,
+  );
   const [message, setMessage] = useState<CheckoutMessage | null>(null);
   const [payerName, setPayerName] = useState("Site AI Score 고객");
   const [payerEmail, setPayerEmail] = useState("");
@@ -232,6 +281,12 @@ export function CheckoutPage() {
   const redirectHandledRef = useRef(false);
 
   const hasScanId = useMemo(() => scanId.length > 0, [scanId]);
+  const hasWorkOrderId = useMemo(() => workOrderId.length > 0, [workOrderId]);
+  const isExtraVerificationCheckout = requestedPlan === "EXTRA_VERIFICATION";
+  const canCreatePayment = isExtraVerificationCheckout
+    ? hasWorkOrderId
+    : hasScanId;
+  const safeReturnTo = safeCheckoutReturnPath(returnTo, locale);
   const copy = locale === "en" ? checkoutCopy.en : checkoutCopy.ko;
 
   useEffect(() => {
@@ -253,12 +308,26 @@ export function CheckoutPage() {
     }
 
     redirectHandledRef.current = true;
-    setSubmittingPlan("BASIC");
+    setSubmittingPlan(requestedPlan);
     completePaymentOrderRequest({
       paymentOrderId: redirectedPaymentOrderId,
       providerPaymentId: redirectedPaymentId,
     })
       .then(() => {
+        if (isExtraVerificationCheckout && safeReturnTo) {
+          setMessage({
+            tone: "success",
+            text:
+              locale === "en"
+                ? "Payment has been confirmed. Returning to the work order."
+                : "결제가 확인되었습니다. 작업지시서 화면으로 돌아갑니다.",
+          });
+          window.setTimeout(() => {
+            window.location.assign(`${safeReturnTo}?payment=completed`);
+          }, 600);
+          return;
+        }
+
         setMessage({
           tone: "success",
           text: "결제가 확인되어 상세 진단 보고서와 수정 작업지시서 접근 권한이 열렸습니다. 진단 결과 화면으로 돌아가 산출물을 이용해 주세요.",
@@ -280,10 +349,22 @@ export function CheckoutPage() {
     redirectedErrorMessage,
     redirectedPaymentId,
     redirectedPaymentOrderId,
+    requestedPlan,
+    isExtraVerificationCheckout,
+    safeReturnTo,
+    locale,
   ]);
 
   async function handleCreateDomesticOrder(plan: PaymentPlan) {
-    if (!hasScanId) {
+    if (plan === "EXTRA_VERIFICATION" && !hasWorkOrderId) {
+      setMessage({
+        tone: "error",
+        text: "결제할 작업지시서가 연결되지 않았습니다. 작업지시서 화면에서 다시 이동해 주세요.",
+      });
+      return;
+    }
+
+    if (plan !== "EXTRA_VERIFICATION" && !hasScanId) {
       setMessage({
         tone: "error",
         text: "결제할 진단 결과가 연결되지 않았습니다. 진단 결과 화면의 결제하기 버튼으로 다시 이동해 주세요.",
@@ -301,12 +382,18 @@ export function CheckoutPage() {
     }
 
     if (!isValidEmail(normalizedPayerEmail)) {
-      setMessage({ tone: "error", text: "결제자 이메일을 정확히 입력해 주세요." });
+      setMessage({
+        tone: "error",
+        text: "결제자 이메일을 정확히 입력해 주세요.",
+      });
       return;
     }
 
     if (normalizedPayerPhoneNumber.length < 10) {
-      setMessage({ tone: "error", text: "결제자 휴대폰번호를 정확히 입력해 주세요." });
+      setMessage({
+        tone: "error",
+        text: "결제자 휴대폰번호를 정확히 입력해 주세요.",
+      });
       return;
     }
 
@@ -315,7 +402,8 @@ export function CheckoutPage() {
 
     try {
       const result = await createPaymentOrderRequest({
-        scanId,
+        scanId: plan === "EXTRA_VERIFICATION" ? undefined : scanId,
+        workOrderId: plan === "EXTRA_VERIFICATION" ? workOrderId : undefined,
         plan,
       });
 
@@ -345,7 +433,7 @@ export function CheckoutPage() {
         storeId: portone.storeId,
         channelKey: portone.channelKey,
         paymentId: portone.paymentId,
-        orderName: "Site AI Score 진단 보고서",
+        orderName: portone.orderName,
         totalAmount: portone.totalAmount,
         currency: "CURRENCY_KRW",
         payMethod: portone.payMethod,
@@ -354,19 +442,20 @@ export function CheckoutPage() {
           email: normalizedPayerEmail,
           phoneNumber: normalizedPayerPhoneNumber,
         },
-        redirectUrl: checkoutRedirectUrl(
+        redirectUrl: checkoutRedirectUrl({
           locale,
-          scanId,
-          result.paymentOrder.id,
-        ),
+          scanId: plan === "EXTRA_VERIFICATION" ? undefined : scanId,
+          workOrderId: plan === "EXTRA_VERIFICATION" ? workOrderId : undefined,
+          orderId: result.paymentOrder.id,
+          plan,
+          returnTo: safeReturnTo ?? undefined,
+        }),
       });
 
       if (isPortOnePaymentFailure(paymentResponse)) {
         setMessage({
           tone: "error",
-          text:
-            paymentResponse.message ??
-            "결제가 완료되지 않았습니다.",
+          text: paymentResponse.message ?? "결제가 완료되지 않았습니다.",
         });
         return;
       }
@@ -375,6 +464,20 @@ export function CheckoutPage() {
         paymentOrderId: result.paymentOrder.id,
         providerPaymentId: portone.paymentId,
       });
+
+      if (plan === "EXTRA_VERIFICATION" && safeReturnTo) {
+        setMessage({
+          tone: "success",
+          text:
+            locale === "en"
+              ? "Payment has been confirmed. Returning to the work order."
+              : "결제가 확인되었습니다. 작업지시서 화면으로 돌아갑니다.",
+        });
+        window.setTimeout(() => {
+          window.location.assign(`${safeReturnTo}?payment=completed`);
+        }, 600);
+        return;
+      }
 
       setMessage({
         tone: "success",
@@ -394,7 +497,10 @@ export function CheckoutPage() {
   }
   async function handleCreatePolarOrder(plan: PaymentPlan) {
     if (!hasScanId) {
-      setMessage({ tone: "error", text: "결제할 진단 결과가 연결되지 않았습니다." });
+      setMessage({
+        tone: "error",
+        text: "결제할 진단 결과가 연결되지 않았습니다.",
+      });
       return;
     }
 
@@ -402,7 +508,11 @@ export function CheckoutPage() {
     setMessage(null);
 
     try {
-      const result = await createPaymentOrderRequest({ scanId, plan, provider: "POLAR" });
+      const result = await createPaymentOrderRequest({
+        scanId,
+        plan,
+        provider: "POLAR",
+      });
       const polar = result.polar;
 
       if (!polar) throw new Error("해외 결제 정보를 불러오지 못했습니다.");
@@ -420,13 +530,15 @@ export function CheckoutPage() {
     } catch (error) {
       setMessage({
         tone: "error",
-        text: error instanceof Error ? error.message : "해외 결제 주문을 생성하지 못했습니다.",
+        text:
+          error instanceof Error
+            ? error.message
+            : "해외 결제 주문을 생성하지 못했습니다.",
       });
     } finally {
       setSubmittingPlan(null);
     }
   }
-
 
   return (
     <section className="full-bleed-section legal-section">
@@ -437,13 +549,36 @@ export function CheckoutPage() {
           <p>{copy.hero}</p>
         </header>
 
-        {!hasScanId ? (
+        {!canCreatePayment ? (
           <section className="legal-card surface checkout-notice-card">
-            <h2>{copy.noScanTitle}</h2>
-            <p>{copy.noScanBody}</p>
+            <h2>
+              {isExtraVerificationCheckout
+                ? isEnglish
+                  ? "No work order is connected for payment."
+                  : "결제할 작업지시서가 연결되지 않았습니다."
+                : copy.noScanTitle}
+            </h2>
+            <p>
+              {isExtraVerificationCheckout
+                ? isEnglish
+                  ? "Please return to the work order page and use the payment button again."
+                  : "작업지시서 화면에서 결제 후 검수 버튼을 다시 눌러 주세요."
+                : copy.noScanBody}
+            </p>
             <div className="checkout-contact-actions">
-              <Link className="primary" to={`/${locale}/sites`}>
-                {copy.noScanAction}
+              <Link
+                className="primary"
+                to={
+                  isExtraVerificationCheckout
+                    ? `/${locale}/work-orders`
+                    : `/${locale}/sites`
+                }
+              >
+                {isExtraVerificationCheckout
+                  ? isEnglish
+                    ? "Back to work orders"
+                    : "작업지시서 목록으로"
+                  : copy.noScanAction}
               </Link>
               <Link className="secondary" to={`/${locale}/guide`}>
                 {locale === "en" ? "Read guide" : "이용가이드 보기"}
@@ -453,160 +588,195 @@ export function CheckoutPage() {
         ) : null}
 
         {/* 공통 결제 메시지 */}
-        {locale !== "en" ? (
-        <section className="legal-card surface checkout-pricing-card">
-          <div>
-            <p className="eyebrow">{copy.domesticEyebrow}</p>
-            <h2>{copy.domesticTitle}</h2>
-            <p>{copy.domesticBody}</p>
-          </div>
-          {message ? (
-            <p
+        {locale !== "en" || isExtraVerificationCheckout ? (
+          <section className="legal-card surface checkout-pricing-card">
+            <div>
+              <p className="eyebrow">{copy.domesticEyebrow}</p>
+              <h2>
+                {isExtraVerificationCheckout
+                  ? copy.extraVerificationTitle
+                  : copy.domesticTitle}
+              </h2>
+              <p>
+                {isExtraVerificationCheckout
+                  ? copy.extraVerificationBody
+                  : copy.domesticBody}
+              </p>
+            </div>
+            {message ? (
+              <p
+                className="checkout-payment-note"
+                role={message.tone === "error" ? "alert" : "status"}
+              >
+                {message.text}
+              </p>
+            ) : null}
+
+            <div
               className="checkout-payment-note"
-              role={message.tone === "error" ? "alert" : "status"}
+              style={{ display: "grid", gap: "0.75rem" }}
             >
-              {message.text}
-            </p>
-          ) : null}
+              <strong>{copy.payerInfoTitle}</strong>
+              <span>{copy.payerInfoBody}</span>
 
-          <div
-            className="checkout-payment-note"
-            style={{ display: "grid", gap: "0.75rem" }}
-          >
-            <strong>{copy.payerInfoTitle}</strong>
-            <span>{copy.payerInfoBody}</span>
+              <label style={{ display: "grid", gap: "0.35rem" }}>
+                {copy.payerName}
+                <input
+                  type="text"
+                  value={payerName}
+                  onChange={(event) => setPayerName(event.target.value)}
+                  placeholder={copy.payerNamePlaceholder}
+                  autoComplete="name"
+                />
+              </label>
 
-            <label style={{ display: "grid", gap: "0.35rem" }}>
-              {copy.payerName}
-              <input
-                type="text"
-                value={payerName}
-                onChange={(event) => setPayerName(event.target.value)}
-                placeholder={copy.payerNamePlaceholder}
-                autoComplete="name"
-              />
-            </label>
+              <label style={{ display: "grid", gap: "0.35rem" }}>
+                {copy.payerEmail}
+                <input
+                  type="email"
+                  value={payerEmail}
+                  onChange={(event) => setPayerEmail(event.target.value)}
+                  placeholder={copy.payerEmailPlaceholder}
+                  autoComplete="email"
+                />
+              </label>
 
-            <label style={{ display: "grid", gap: "0.35rem" }}>
-              {copy.payerEmail}
-              <input
-                type="email"
-                value={payerEmail}
-                onChange={(event) => setPayerEmail(event.target.value)}
-                placeholder={copy.payerEmailPlaceholder}
-                autoComplete="email"
-              />
-            </label>
+              <label style={{ display: "grid", gap: "0.35rem" }}>
+                {copy.payerPhone}
+                <input
+                  type="tel"
+                  value={payerPhoneNumber}
+                  onChange={(event) => setPayerPhoneNumber(event.target.value)}
+                  placeholder={copy.payerPhonePlaceholder}
+                  autoComplete="tel"
+                />
+              </label>
+            </div>
 
-            <label style={{ display: "grid", gap: "0.35rem" }}>
-              {copy.payerPhone}
-              <input
-                type="tel"
-                value={payerPhoneNumber}
-                onChange={(event) => setPayerPhoneNumber(event.target.value)}
-                placeholder={copy.payerPhonePlaceholder}
-                autoComplete="tel"
-              />
-            </label>
-          </div>
+            <div className="checkout-price-grid">
+              {isExtraVerificationCheckout ? (
+                <article>
+                  <span>{copy.extraVerificationLabel}</span>
+                  <strong>{copy.domesticExtraVerificationPrice}</strong>
+                  <ul className="checkout-price-list">
+                    <li>{copy.extraVerificationItem}</li>
+                    <li>{copy.internalUse}</li>
+                  </ul>
+                  <button
+                    className="primary checkout-price-action"
+                    type="button"
+                    disabled={!hasWorkOrderId || submittingPlan !== null}
+                    onClick={() =>
+                      void handleCreateDomesticOrder("EXTRA_VERIFICATION")
+                    }
+                  >
+                    {submittingPlan === "EXTRA_VERIFICATION"
+                      ? copy.loading
+                      : copy.extraVerificationButton}
+                  </button>
+                </article>
+              ) : (
+                <>
+                  <article>
+                    <span>{copy.basicPriceLabel}</span>
+                    <strong>{copy.domesticBasicPrice}</strong>
+                    <ul className="checkout-price-list">
+                      <li>{copy.deliverableShort}</li>
+                      <li>{copy.internalUse}</li>
+                      <li>{copy.basicNoCase}</li>
+                    </ul>
+                    <button
+                      className="primary checkout-price-action"
+                      type="button"
+                      disabled={!hasScanId || submittingPlan !== null}
+                      onClick={() => void handleCreateDomesticOrder("BASIC")}
+                    >
+                      {submittingPlan === "BASIC"
+                        ? copy.loading
+                        : copy.domesticButton}
+                    </button>
+                  </article>
 
-          <div className="checkout-price-grid">
-            <article>
-              <span>{copy.basicPriceLabel}</span>
-              <strong>{copy.domesticBasicPrice}</strong>
-              <ul className="checkout-price-list">
-                <li>{copy.deliverableShort}</li>
-                <li>{copy.internalUse}</li>
-                <li>{copy.basicNoCase}</li>
-              </ul>
-              <button
-                className="primary checkout-price-action"
-                type="button"
-                disabled={!hasScanId || submittingPlan !== null}
-                onClick={() => void handleCreateDomesticOrder("BASIC")}
-              >
-                {submittingPlan === "BASIC" ? copy.loading : copy.domesticButton}
-              </button>
-            </article>
-
-            <article>
-              <span>{copy.caseStudyLabel}</span>
-              <strong>{copy.domesticCasePrice}</strong>
-              <ul className="checkout-price-list">
-                <li>{copy.deliverableShort}</li>
-                <li>{copy.internalUse}</li>
-                <li>{copy.caseScope}</li>
-                <li>{copy.nonDisclosure}</li>
-              </ul>
-              <button
-                className="primary checkout-price-action"
-                type="button"
-                disabled={!hasScanId || submittingPlan !== null}
-                onClick={() =>
-                  void handleCreateDomesticOrder("CASE_STUDY_DISCOUNT")
-                }
-              >
-                {submittingPlan === "CASE_STUDY_DISCOUNT"
-                  ? copy.loading
-                  : copy.domesticButton}
-              </button>
-            </article>
-          </div>
-        </section>
+                  <article>
+                    <span>{copy.caseStudyLabel}</span>
+                    <strong>{copy.domesticCasePrice}</strong>
+                    <ul className="checkout-price-list">
+                      <li>{copy.deliverableShort}</li>
+                      <li>{copy.internalUse}</li>
+                      <li>{copy.caseScope}</li>
+                      <li>{copy.nonDisclosure}</li>
+                    </ul>
+                    <button
+                      className="primary checkout-price-action"
+                      type="button"
+                      disabled={!hasScanId || submittingPlan !== null}
+                      onClick={() =>
+                        void handleCreateDomesticOrder("CASE_STUDY_DISCOUNT")
+                      }
+                    >
+                      {submittingPlan === "CASE_STUDY_DISCOUNT"
+                        ? copy.loading
+                        : copy.domesticButton}
+                    </button>
+                  </article>
+                </>
+              )}
+            </div>
+          </section>
         ) : null}
 
-        {locale === "en" ? (
-        <section className="legal-card surface checkout-pricing-card">
-          <div>
-            <p className="eyebrow">{copy.polarEyebrow}</p>
-            <h2>{copy.polarTitle}</h2>
-            <p>{copy.polarBody}</p>
-          </div>
+        {locale === "en" && !isExtraVerificationCheckout ? (
+          <section className="legal-card surface checkout-pricing-card">
+            <div>
+              <p className="eyebrow">{copy.polarEyebrow}</p>
+              <h2>{copy.polarTitle}</h2>
+              <p>{copy.polarBody}</p>
+            </div>
 
-          <div className="checkout-price-grid">
-            <article>
-              <span>{copy.basicPriceLabel}</span>
-              <strong>USD 100</strong>
-              <ul className="checkout-price-list">
-                <li>{copy.deliverableShort}</li>
-                <li>{copy.internalUse}</li>
-                <li>{copy.globalPayment}</li>
-                <li>{copy.basicNoCase}</li>
-              </ul>
-              <button
-                className="primary checkout-price-action"
-                type="button"
-                disabled={!hasScanId || submittingPlan !== null}
-                onClick={() => void handleCreatePolarOrder("BASIC")}
-              >
-                {submittingPlan === "BASIC" ? copy.loading : copy.polarButton}
-              </button>
-            </article>
+            <div className="checkout-price-grid">
+              <article>
+                <span>{copy.basicPriceLabel}</span>
+                <strong>USD 100</strong>
+                <ul className="checkout-price-list">
+                  <li>{copy.deliverableShort}</li>
+                  <li>{copy.internalUse}</li>
+                  <li>{copy.globalPayment}</li>
+                  <li>{copy.basicNoCase}</li>
+                </ul>
+                <button
+                  className="primary checkout-price-action"
+                  type="button"
+                  disabled={!hasScanId || submittingPlan !== null}
+                  onClick={() => void handleCreatePolarOrder("BASIC")}
+                >
+                  {submittingPlan === "BASIC" ? copy.loading : copy.polarButton}
+                </button>
+              </article>
 
-            <article>
-              <span>{copy.caseStudyLabel}</span>
-              <strong>USD 70</strong>
-              <ul className="checkout-price-list">
-                <li>{copy.deliverableShort}</li>
-                <li>{copy.internalUse}</li>
-                <li>{copy.caseScope}</li>
-                <li>{copy.nonDisclosure}</li>
-              </ul>
-              <button
-                className="primary checkout-price-action"
-                type="button"
-                disabled={!hasScanId || submittingPlan !== null}
-                onClick={() =>
-                  void handleCreatePolarOrder("CASE_STUDY_DISCOUNT")
-                }
-              >
-                {submittingPlan === "CASE_STUDY_DISCOUNT"
-                  ? copy.loading
-                  : copy.polarButton}
-              </button>
-            </article>
-          </div>
-        </section>
+              <article>
+                <span>{copy.caseStudyLabel}</span>
+                <strong>USD 70</strong>
+                <ul className="checkout-price-list">
+                  <li>{copy.deliverableShort}</li>
+                  <li>{copy.internalUse}</li>
+                  <li>{copy.caseScope}</li>
+                  <li>{copy.nonDisclosure}</li>
+                </ul>
+                <button
+                  className="primary checkout-price-action"
+                  type="button"
+                  disabled={!hasScanId || submittingPlan !== null}
+                  onClick={() =>
+                    void handleCreatePolarOrder("CASE_STUDY_DISCOUNT")
+                  }
+                >
+                  {submittingPlan === "CASE_STUDY_DISCOUNT"
+                    ? copy.loading
+                    : copy.polarButton}
+                </button>
+              </article>
+            </div>
+          </section>
         ) : null}
 
         <section className="legal-card surface">
