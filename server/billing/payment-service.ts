@@ -7,7 +7,7 @@ import type { PublicUser } from "../auth/auth-service";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
 
-export type PaymentPlan = "BASIC" | "CASE_STUDY_DISCOUNT";
+export type PaymentPlan = "BASIC" | "CASE_STUDY_DISCOUNT" | "EXTRA_VERIFICATION";
 export type PaymentProviderCode = "PORTONE" | "POLAR";
 
 export interface CreatePaymentOrderInput {
@@ -20,7 +20,7 @@ export interface PublicPaymentOrder {
   id: string;
   provider: "PORTONE" | "POLAR";
   status: "PENDING" | "PAID" | "FAILED" | "CANCELED";
-  plan: "BASIC" | "CASE_STUDY_DISCOUNT";
+  plan: PaymentPlan;
   amount: number;
   currency: string;
   providerPaymentId: string | null;
@@ -124,11 +124,13 @@ export class PaymentServiceError extends Error {
 const DOMESTIC_PRICES: Record<PaymentPlan, number> = {
   BASIC: 165_000,
   CASE_STUDY_DISCOUNT: 110_000,
+  EXTRA_VERIFICATION: 33_000,
 };
 
 const POLAR_PRICES: Record<PaymentPlan, number> = {
   BASIC: 10_000,
   CASE_STUDY_DISCOUNT: 7_000,
+  EXTRA_VERIFICATION: 3_000,
 };
 
 function polarProductId(plan: PaymentPlan): string | null {
@@ -573,7 +575,7 @@ function publicOrder(record: {
   id: string;
   provider: "PORTONE" | "POLAR";
   status: "PENDING" | "PAID" | "FAILED" | "CANCELED";
-  plan: "BASIC" | "CASE_STUDY_DISCOUNT";
+  plan: PaymentPlan;
   amount: number;
   currency: string;
   providerPaymentId: string | null;

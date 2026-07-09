@@ -163,6 +163,7 @@ enum PaymentOrderStatus {
 enum PaidPlan {
   BASIC
   CASE_STUDY_DISCOUNT
+  EXTRA_VERIFICATION
 }
 
 enum PaidEntitlementStatus {
@@ -463,6 +464,8 @@ model WorkOrder {
   creator                User?                 @relation("WorkOrderCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   items                  WorkOrderItem[]
   verificationAttempts   VerificationAttempt[]
+  paymentOrders          PaymentOrder[]        @relation("PaymentOrderWorkOrder")
+  paidEntitlements       PaidEntitlement[]     @relation("PaidEntitlementWorkOrder")
 
   @@unique([orderNumber, version])
   @@index([siteId, createdAt])
@@ -575,6 +578,7 @@ model PaymentOrder {
   userId            String             @map("user_id")
   siteId            String             @map("site_id")
   scanId            String?            @map("scan_id")
+  workOrderId       String?            @map("work_order_id")
   provider          PaymentProvider
   status            PaymentOrderStatus @default(PENDING)
   plan              PaidPlan
@@ -592,6 +596,7 @@ model PaymentOrder {
   user              User               @relation("PaymentOrderUser", fields: [userId], references: [id], onDelete: Cascade)
   site              Site               @relation(fields: [siteId], references: [id], onDelete: Cascade)
   scan              Scan?              @relation(fields: [scanId], references: [id], onDelete: SetNull)
+  workOrder         WorkOrder?         @relation("PaymentOrderWorkOrder", fields: [workOrderId], references: [id], onDelete: SetNull)
   paidEntitlement   PaidEntitlement?
 
   @@unique([provider, providerOrderId])
@@ -599,6 +604,7 @@ model PaymentOrder {
   @@index([userId, status, createdAt])
   @@index([siteId, status])
   @@index([scanId, status])
+  @@index([workOrderId, status])
   @@map("payment_orders")
 }
 
@@ -607,6 +613,7 @@ model PaidEntitlement {
   userId         String                @map("user_id")
   siteId         String                @map("site_id")
   scanId         String?               @map("scan_id")
+  workOrderId    String?               @map("work_order_id")
   paymentOrderId String?               @unique @map("payment_order_id")
   plan           PaidPlan
   status         PaidEntitlementStatus @default(ACTIVE)
@@ -617,11 +624,13 @@ model PaidEntitlement {
   user           User                  @relation("PaidEntitlementUser", fields: [userId], references: [id], onDelete: Cascade)
   site           Site                  @relation(fields: [siteId], references: [id], onDelete: Cascade)
   scan           Scan?                 @relation(fields: [scanId], references: [id], onDelete: SetNull)
+  workOrder      WorkOrder?            @relation("PaidEntitlementWorkOrder", fields: [workOrderId], references: [id], onDelete: SetNull)
   paymentOrder   PaymentOrder?         @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
 
   @@index([userId, status, grantedAt])
   @@index([siteId, status])
   @@index([scanId, status])
+  @@index([workOrderId, status])
   @@map("paid_entitlements")
 }
 
