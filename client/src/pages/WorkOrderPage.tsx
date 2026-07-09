@@ -17,7 +17,7 @@ const verificationStatusLabels: Record<string, string> = {
   RUNNING: "검사 중",
   EVALUATING: "완료 기준 판정 준비",
   PASSED: "통과",
-  REWORK_REQUIRED: "재작업 필요",
+  REWORK_REQUIRED: "필요시 추가 개선",
   FAILED: "검사 실패",
 };
 
@@ -32,7 +32,7 @@ const statusLabels: Record<string, string> = {
   NOT_APPLICABLE: "해당 없음",
   SUBMITTED: "제출",
   VERIFYING: "검수 중",
-  REWORK_REQUIRED: "재작업 필요",
+  REWORK_REQUIRED: "필요시 추가 개선",
   PASSED: "통과",
   CANCELLED: "취소",
 };
@@ -661,29 +661,7 @@ export function WorkOrderPage() {
                   →
                 </div>
                 <div className="work-order-score-range expected primary-target">
-                  <span>
-                    {isEnglish
-                      ? `Version ${workOrder.version} improvement target`
-                      : `${workOrder.version}차 개선 목표`}
-                  </span>
-                  <strong>
-                    {formatGoalRange(
-                      scoreGoal.firstMin,
-                      scoreGoal.firstMax,
-                      isEnglish,
-                      true,
-                    )}
-                  </strong>
-                  <small>
-                    {isEnglish
-                      ? `Target for version ${workOrder.version} recheck`
-                      : `${workOrder.version}차 반영 후 재검수 기준`}
-                  </small>
-                </div>
-                <div className="work-order-score-range expected final-target">
-                  <span>
-                    {isEnglish ? "Final improvement target" : "최종 개선 목표"}
-                  </span>
+                  <span>{isEnglish ? "Target score" : "목표 점수"}</span>
                   <strong>
                     {formatGoalRange(
                       scoreGoal.finalMin,
@@ -691,16 +669,12 @@ export function WorkOrderPage() {
                       isEnglish,
                     )}
                   </strong>
-                  <small>
-                    {isEnglish
-                      ? "This work order is written for the final target"
-                      : "작업지시서는 최종 목표 기준으로 작성"}
-                  </small>
                 </div>
+
                 <p className="work-order-target-note">
                   {isEnglish
-                    ? "This work order is written to target a final 80-100 point outcome. Use the first recheck to reach at least the first improvement target, then review any remaining items toward the final target. Actual scores may vary depending on deployment status, server responses, robots.txt, llms.txt, structured data, and AI bot accessibility."
-                    : "이 작업지시서는 최종 80~100점을 목표로 작성되었습니다. 1차 반영 후 재검수에서는 1차 개선 목표 이상을 우선 확인하고, 남은 항목을 재검토해 최종 목표까지 개선합니다. 실제 점수는 배포 상태, 서버 응답, robots.txt, llms.txt, 구조화 데이터 반영 여부, AI 봇 접근성에 따라 달라질 수 있습니다."}
+                    ? "This work order is written to target the displayed score range and improve the remaining items. Actual scores may vary depending on deployment status, server responses, robots.txt, llms.txt, structured data, and AI bot accessibility."
+                    : "이 작업지시서는 표시된 목표 점수 범위와 남은 항목 개선을 기준으로 작성되었습니다. 실제 점수는 배포 상태, 서버 응답, robots.txt, llms.txt, 구조화 데이터 반영 여부, AI 봇 접근성에 따라 달라질 수 있습니다."}
                 </p>
                 <dl>
                   <div>
@@ -1277,7 +1251,7 @@ export function WorkOrderPage() {
                       {item.finding?.status ??
                         (isEnglish
                           ? "Additional improvement recommended"
-                          : "추가 개선 권장")}
+                          : "필요시 추가 개선")}
                     </dd>
                   </div>
                   <div>
@@ -1347,8 +1321,8 @@ export function WorkOrderPage() {
 
         <p className="work-order-disclaimer">
           {isEnglish
-            ? "The improvement targets describe the intended direction of this work order. They are not guarantees of score increases, AI search exposure, or recommendation results. After the first recheck, review remaining items toward the final target."
-            : "개선 목표는 이 작업지시서가 지향하는 수정 방향입니다. 실제 점수 상승, AI 검색 노출, 추천 결과를 보장하지 않으며 1차 재검수 후 남은 항목을 확인해 최종 목표까지 보완해야 합니다."}
+            ? "The target score describes the intended direction of this work order. It is not a guarantee of score increases, AI search exposure, or recommendation results."
+            : "목표 점수는 이 작업지시서가 지향하는 수정 방향입니다. 실제 점수 상승, AI 검색 노출, 추천 결과를 보장하지 않습니다."}
         </p>
       </div>
     </section>

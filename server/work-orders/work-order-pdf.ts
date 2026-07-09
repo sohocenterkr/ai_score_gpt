@@ -725,8 +725,8 @@ function writeCover(
   );
   setBold(document, 18, COLORS.primary).text(
     isEnglish
-      ? `1st ${pdfGoalRange(scoreGoal.firstMin, scoreGoal.firstMax, isEnglish, true)} / final ${pdfGoalRange(scoreGoal.finalMin, scoreGoal.finalMax, isEnglish)}`
-      : `1차 ${pdfGoalRange(scoreGoal.firstMin, scoreGoal.firstMax, isEnglish, true)} / 최종 ${pdfGoalRange(scoreGoal.finalMin, scoreGoal.finalMax, isEnglish)}`,
+      ? pdfGoalRange(scoreGoal.finalMin, scoreGoal.finalMax, isEnglish)
+      : pdfGoalRange(scoreGoal.finalMin, scoreGoal.finalMax, isEnglish),
     x + scoreWidth + gap + 14,
     scoreY + 33,
     {
@@ -820,8 +820,8 @@ function writeCover(
   document.moveDown(0.5);
   setRegular(document, 7.8, COLORS.muted).text(
     isEnglish
-      ? "This work order is written to target a final 80-100 point outcome. Use the first recheck to reach at least the first improvement target, then review any remaining items toward the final target. Actual scores may vary depending on deployment status, server responses, robots.txt, llms.txt, structured data, and AI bot accessibility."
-      : "이 작업지시서는 최종 80~100점을 목표로 작성되었습니다. 1차 반영 후 재검수에서는 1차 개선 목표 이상을 우선 확인하고, 남은 항목을 재검토해 최종 목표까지 개선합니다. 실제 점수는 배포 상태, 서버 응답, robots.txt, llms.txt, 구조화 데이터 반영 여부, AI 봇 접근성에 따라 달라질 수 있습니다.",
+      ? "This work order is written to target the displayed score range and improve the remaining items. Actual scores may vary depending on deployment status, server responses, robots.txt, llms.txt, structured data, and AI bot accessibility."
+      : "이 작업지시서는 표시된 목표 점수 범위와 남은 항목 개선을 기준으로 작성되었습니다. 실제 점수는 배포 상태, 서버 응답, robots.txt, llms.txt, 구조화 데이터 반영 여부, AI 봇 접근성에 따라 달라질 수 있습니다.",
     {
       width,
       lineGap: 2,
