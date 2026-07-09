@@ -974,76 +974,92 @@
 
 .work-order-score-comparison {
   display: grid;
-  grid-template-columns: 180px minmax(240px, 1fr) 96px 220px;
-  align-items: center;
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  align-items: stretch;
 }
 
 .work-order-score-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface-muted);
+}
+
+.work-order-score-card.current {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+.work-order-score-card.verification {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 8%, var(--surface));
 }
 
 .work-order-score-card > span {
-  font-size: 0.9rem;
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
   font-weight: 700;
-  color: #5f6b85;
 }
 
 .work-order-score-card > strong {
-  font-size: 3rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  color: var(--foreground);
+  font-size: clamp(2rem, 5vw, 3.5rem);
   line-height: 1;
-  font-weight: 800;
-  color: #1f2937;
 }
 
 .work-order-score-card > strong small {
-  font-size: 0.5em;
+  color: var(--muted-foreground);
+  font-size: 0.95rem;
   font-weight: 700;
-  color: #5f6b85;
 }
 
 .work-order-score-card > small {
-  font-size: 0.95rem;
-  color: #6b7280;
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 
-.work-order-score-comparison-meta {
+.work-order-score-card-meta {
   display: grid;
-  gap: 14px;
-  margin: 0;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
 }
 
-.work-order-score-comparison-meta div {
+.work-order-score-card-meta div {
   display: grid;
-  gap: 4px;
+  gap: 0.2rem;
+  min-width: 0;
 }
 
-.work-order-score-comparison-meta dt {
-  font-size: 0.9rem;
+.work-order-score-card-meta dt {
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
   font-weight: 700;
-  color: #5f6b85;
 }
 
-.work-order-score-comparison-meta dd {
-  margin: 0;
-  font-size: 1rem;
-  color: #1f2937;
+.work-order-score-card-meta dd {
+  color: var(--foreground);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
 }
 
-.work-order-score-comparison-arrow {
-  font-size: 72px;
-  line-height: 1;
-  text-align: center;
-  color: #8b8f9d;
-  font-weight: 700;
+.work-order-score-card-meta a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
 }
 
 .work-order-score-comparison-note {
-  margin-top: 18px;
-  font-size: 0.95rem;
-  color: #6b7280;
+  color: var(--muted-foreground);
+  font-size: 0.86rem;
 }
 
 @media (max-width: 960px) {

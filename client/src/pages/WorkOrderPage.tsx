@@ -73,7 +73,7 @@ function workOrderVersionScoreLabel(
   version: number,
   isEnglish: boolean,
 ): string {
-  return isEnglish ? `Version ${version} score` : `${version}차 점수`;
+  return isEnglish ? `Version ${version} diagnostic` : `${version}차 검수`;
 }
 
 function workOrderVersionCompletedLabel(
@@ -487,18 +487,11 @@ export function WorkOrderPage() {
                       initialScan: workOrder.initialScan,
                     },
                   ];
-            const currentVersionEntry =
-              versionHistory.find(
-                (item) => item.version === workOrder.version,
-              ) ??
-              versionHistory.at(-1) ??
-              null;
-
             return latestScoredVerificationAttempt ? (
               <>
                 <div className="work-order-score-comparison">
-                  {versionHistory.map((entry, index) => (
-                    <div
+                  {versionHistory.map((entry) => (
+                    <article
                       className={`work-order-score-card${
                         entry.version === workOrder.version ? " current" : ""
                       }`}
@@ -519,79 +512,62 @@ export function WorkOrderPage() {
                           isEnglish,
                         )}
                       </small>
-                      {index < versionHistory.length - 1 ? (
-                        <span
-                          className="work-order-inline-arrow"
-                          aria-hidden="true"
-                        >
-                          →
-                        </span>
-                      ) : null}
-                    </div>
+
+                      <dl className="work-order-score-card-meta">
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              entry.version,
+                              "rules",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>{entry.initialScan.rulesVersion}</dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              entry.version,
+                              "completedAt",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>
+                            {formatKST(
+                              entry.initialScan.completedAt,
+                              isEnglish,
+                            )}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              entry.version,
+                              "url",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>
+                            <a
+                              href={
+                                entry.initialScan.targetUrl ??
+                                workOrder.site.finalUrl ??
+                                workOrder.site.baseUrl
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {entry.initialScan.targetUrl ??
+                                workOrder.site.finalUrl ??
+                                workOrder.site.baseUrl}
+                            </a>
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
                   ))}
 
-                  <dl className="work-order-score-comparison-meta">
-                    <div>
-                      <dt>
-                        {workOrderVersionMetaLabel(
-                          workOrder.version,
-                          "rules",
-                          isEnglish,
-                        )}
-                      </dt>
-                      <dd>{workOrder.initialScan.rulesVersion}</dd>
-                    </div>
-                    <div>
-                      <dt>
-                        {workOrderVersionMetaLabel(
-                          workOrder.version,
-                          "completedAt",
-                          isEnglish,
-                        )}
-                      </dt>
-                      <dd>
-                        {formatKST(
-                          workOrder.initialScan.completedAt,
-                          isEnglish,
-                        )}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>
-                        {workOrderVersionMetaLabel(
-                          workOrder.version,
-                          "url",
-                          isEnglish,
-                        )}
-                      </dt>
-                      <dd>
-                        <a
-                          href={
-                            currentVersionEntry?.initialScan.targetUrl ??
-                            workOrder.initialScan.targetUrl ??
-                            workOrder.site.finalUrl ??
-                            workOrder.site.baseUrl
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {currentVersionEntry?.initialScan.targetUrl ??
-                            workOrder.initialScan.targetUrl ??
-                            workOrder.site.finalUrl ??
-                            workOrder.site.baseUrl}
-                        </a>
-                      </dd>
-                    </div>
-                  </dl>
-
-                  <div
-                    className="work-order-score-comparison-arrow"
-                    aria-hidden="true"
-                  >
-                    →
-                  </div>
-
-                  <div className="work-order-score-card verification">
+                  <article className="work-order-score-card verification">
                     <span>{isEnglish ? "Latest recheck" : "최근 재검수"}</span>
                     <strong>
                       {latestScoredVerificationAttempt.scoreAfter}
@@ -607,7 +583,48 @@ export function WorkOrderPage() {
                         ? `Latest verification for version ${workOrder.version} completed`
                         : `${workOrder.version}차 작업 후 재검수 완료`}
                     </small>
-                  </div>
+
+                    <dl className="work-order-score-card-meta">
+                      <div>
+                        <dt>
+                          {isEnglish
+                            ? "Recheck requested at (KST)"
+                            : "재검수 요청 시각(KST)"}
+                        </dt>
+                        <dd>
+                          {formatKST(
+                            latestScoredVerificationAttempt.createdAt,
+                            isEnglish,
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>
+                          {isEnglish
+                            ? "Recheck completed at (KST)"
+                            : "재검수 완료 시각(KST)"}
+                        </dt>
+                        <dd>
+                          {formatKST(
+                            latestScoredVerificationAttempt.completedAt,
+                            isEnglish,
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>{isEnglish ? "Recheck URL" : "재검수 URL"}</dt>
+                        <dd>
+                          <a
+                            href={latestScoredVerificationAttempt.submittedUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {latestScoredVerificationAttempt.submittedUrl}
+                          </a>
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
                 </div>
               </>
             ) : (
