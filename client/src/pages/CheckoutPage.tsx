@@ -192,9 +192,14 @@ const checkoutCopy = {
 const domesticPrices: Record<PaymentPlan, string> = {
   BASIC: "165,000원 (VAT 포함)",
   CASE_STUDY_DISCOUNT: "110,000원 (VAT 포함)",
+  EXTRA_VERIFICATION: "33,000원 (VAT 포함)",
 };
 
 function planLabel(plan: PaymentPlan): string {
+  if (plan === "EXTRA_VERIFICATION") {
+    return "추가 검수권 1회";
+  }
+
   return plan === "CASE_STUDY_DISCOUNT"
     ? "개선 사례 활용 동의 할인"
     : "기본 가격";

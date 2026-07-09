@@ -1,4 +1,4 @@
-export type PaymentPlan = "BASIC" | "CASE_STUDY_DISCOUNT";
+export type PaymentPlan = "BASIC" | "CASE_STUDY_DISCOUNT" | "EXTRA_VERIFICATION";
 export type PaymentProvider = "PORTONE" | "POLAR";
 
 export interface CreatePaymentOrderResponse {
@@ -18,6 +18,11 @@ export interface CreatePaymentOrderResponse {
     };
     scan: {
       id: string;
+    } | null;
+    workOrder: {
+      id: string;
+      orderNumber: string;
+      version: number;
     } | null;
   };
   portone: {
@@ -52,7 +57,8 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export async function createPaymentOrderRequest(input: {
-  scanId: string;
+  scanId?: string;
+  workOrderId?: string;
   plan: PaymentPlan;
   provider?: PaymentProvider;
 }): Promise<CreatePaymentOrderResponse> {
@@ -64,6 +70,7 @@ export async function createPaymentOrderRequest(input: {
     credentials: "same-origin",
     body: JSON.stringify({
       scanId: input.scanId,
+      workOrderId: input.workOrderId,
       plan: input.plan,
       provider: input.provider ?? "PORTONE",
     }),

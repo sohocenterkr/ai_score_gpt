@@ -12,8 +12,9 @@ import {
 } from "./payment-service";
 
 const createPaymentOrderSchema = z.object({
-  scanId: z.string().trim().min(1).max(100),
-  plan: z.enum(["BASIC", "CASE_STUDY_DISCOUNT"]),
+  scanId: z.string().trim().min(1).max(100).optional(),
+  workOrderId: z.string().trim().min(1).max(100).optional(),
+  plan: z.enum(["BASIC", "CASE_STUDY_DISCOUNT", "EXTRA_VERIFICATION"]),
   provider: z.enum(["PORTONE", "POLAR"]).default("PORTONE"),
 });
 

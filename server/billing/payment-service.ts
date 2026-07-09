@@ -7,11 +7,13 @@ import type { PublicUser } from "../auth/auth-service";
 import { env } from "../config/env";
 import { getDatabase } from "../db";
 
-export type PaymentPlan = "BASIC" | "CASE_STUDY_DISCOUNT" | "EXTRA_VERIFICATION";
+export type PaymentPlan =
+  "BASIC" | "CASE_STUDY_DISCOUNT" | "EXTRA_VERIFICATION";
 export type PaymentProviderCode = "PORTONE" | "POLAR";
 
 export interface CreatePaymentOrderInput {
-  scanId: string;
+  scanId?: string;
+  workOrderId?: string;
   plan: PaymentPlan;
   provider: PaymentProviderCode;
 }
@@ -32,6 +34,11 @@ export interface PublicPaymentOrder {
   };
   scan: {
     id: string;
+  } | null;
+  workOrder: {
+    id: string;
+    orderNumber: string;
+    version: number;
   } | null;
 }
 
@@ -134,9 +141,13 @@ const POLAR_PRICES: Record<PaymentPlan, number> = {
 };
 
 function polarProductId(plan: PaymentPlan): string | null {
+  if (plan === "EXTRA_VERIFICATION") {
+    return null;
+  }
+
   return plan === "CASE_STUDY_DISCOUNT"
-    ? env.POLAR_CASE_STUDY_DISCOUNT_PRODUCT_ID ?? null
-    : env.POLAR_BASIC_PRODUCT_ID ?? null;
+    ? (env.POLAR_CASE_STUDY_DISCOUNT_PRODUCT_ID ?? null)
+    : (env.POLAR_BASIC_PRODUCT_ID ?? null);
 }
 
 function polarConfigured(plan: PaymentPlan): boolean {
@@ -158,10 +169,7 @@ function createPolarClient(): Polar {
   });
 }
 
-function stringFromUnknownRecord(
-  record: unknown,
-  key: string,
-): string | null {
+function stringFromUnknownRecord(record: unknown, key: string): string | null {
   if (!isRecord(record)) {
     return null;
   }
@@ -180,9 +188,14 @@ function createProviderPaymentId(): string {
 }
 
 function orderName(siteName: string, plan: PaymentPlan): string {
+  const compactSiteName = siteName.trim().slice(0, 24) || "사이트";
+
+  if (plan === "EXTRA_VERIFICATION") {
+    return `Site AI Score 추가 검수권 1회 - ${compactSiteName}`;
+  }
+
   const suffix =
     plan === "CASE_STUDY_DISCOUNT" ? "개선 사례 활용 동의" : "기본";
-  const compactSiteName = siteName.trim().slice(0, 24) || "사이트";
   return `Site AI Score 상세 보고서 - ${compactSiteName} (${suffix})`;
 }
 
@@ -212,9 +225,7 @@ function stringField(
 ): string | null {
   const value = record[key];
 
-  return typeof value === "string" && value.trim()
-    ? value.trim()
-    : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function extractPaymentIdFromWebhookPayload(payload: string): string | null {
@@ -408,7 +419,9 @@ function polarEventType(event: Record<string, unknown>): string | null {
   return stringField(event, "type") ?? stringField(event, "event");
 }
 
-function polarEventData(event: Record<string, unknown>): Record<string, unknown> {
+function polarEventData(
+  event: Record<string, unknown>,
+): Record<string, unknown> {
   return isRecord(event.data) ? event.data : event;
 }
 
@@ -545,9 +558,7 @@ async function fetchPortOnePayment(
   }
 
   const response = await fetch(
-    `https://api.portone.io/payments/${encodeURIComponent(
-      providerPaymentId,
-    )}`,
+    `https://api.portone.io/payments/${encodeURIComponent(providerPaymentId)}`,
     {
       method: "GET",
       headers: {
@@ -556,9 +567,9 @@ async function fetchPortOnePayment(
     },
   );
 
-  const data = (await response.json().catch(() => null)) as
-    | PortOnePaymentLookupResponse
-    | null;
+  const data = (await response
+    .json()
+    .catch(() => null)) as PortOnePaymentLookupResponse | null;
 
   if (!response.ok || !data) {
     throw new PaymentServiceError(
@@ -588,6 +599,11 @@ function publicOrder(record: {
   scan: {
     id: string;
   } | null;
+  workOrder?: {
+    id: string;
+    orderNumber: string;
+    version: number;
+  } | null;
 }): PublicPaymentOrder {
   return {
     id: record.id,
@@ -599,6 +615,7 @@ function publicOrder(record: {
     providerPaymentId: record.providerPaymentId,
     site: record.site,
     scan: record.scan,
+    workOrder: record.workOrder ?? null,
   };
 }
 
@@ -613,7 +630,151 @@ export function createPrismaPaymentService(): PaymentService {
         );
       }
 
-      const scanId = normalizeId(input.scanId);
+      const scanId = normalizeId(input.scanId ?? "");
+      const workOrderId = normalizeId(input.workOrderId ?? "");
+
+      if (input.plan === "EXTRA_VERIFICATION") {
+        if (input.provider !== "PORTONE") {
+          throw new PaymentServiceError(
+            "EXTRA_VERIFICATION_PROVIDER_NOT_SUPPORTED",
+            "추가 검수권은 국내 카드결제만 지원합니다.",
+            400,
+          );
+        }
+
+        if (!workOrderId) {
+          throw new PaymentServiceError(
+            "PAYMENT_WORK_ORDER_REQUIRED",
+            "결제할 작업지시서를 확인해 주세요.",
+            400,
+          );
+        }
+
+        const prisma = getDatabase();
+        const workOrder = await prisma.workOrder.findFirst({
+          where: {
+            id: workOrderId,
+            site: {
+              status: "ACTIVE",
+              organization: {
+                members: {
+                  some: {
+                    userId: user.id,
+                  },
+                },
+              },
+            },
+          },
+          include: {
+            site: true,
+          },
+        });
+
+        if (!workOrder) {
+          throw new PaymentServiceError(
+            "PAYMENT_WORK_ORDER_NOT_FOUND",
+            "결제 가능한 작업지시서를 찾을 수 없습니다.",
+            404,
+          );
+        }
+
+        if (workOrder.version < 3) {
+          throw new PaymentServiceError(
+            "EXTRA_VERIFICATION_NOT_REQUIRED",
+            "1차와 2차 작업지시서 검수는 무료로 제공됩니다.",
+            409,
+          );
+        }
+
+        const existingEntitlement = await prisma.paidEntitlement.findFirst({
+          where: {
+            userId: user.id,
+            workOrderId: workOrder.id,
+            plan: "EXTRA_VERIFICATION",
+            status: "ACTIVE",
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (existingEntitlement) {
+          throw new PaymentServiceError(
+            "EXTRA_VERIFICATION_ENTITLEMENT_EXISTS",
+            "이미 추가 검수권 결제가 완료된 작업지시서입니다.",
+            409,
+          );
+        }
+
+        const amount = DOMESTIC_PRICES.EXTRA_VERIFICATION;
+        const providerPaymentId = createProviderPaymentId();
+        const title = orderName(workOrder.site.name, input.plan);
+        const configured = Boolean(
+          env.PORTONE_STORE_ID && env.PORTONE_CHANNEL_KEY,
+        );
+
+        const order = await prisma.paymentOrder.create({
+          data: {
+            userId: user.id,
+            siteId: workOrder.siteId,
+            scanId: null,
+            workOrderId: workOrder.id,
+            provider: "PORTONE",
+            status: "PENDING",
+            plan: input.plan,
+            amount,
+            currency: "KRW",
+            providerPaymentId,
+            idempotencyKey: providerPaymentId,
+            metadata: {
+              provider: "PORTONE",
+              source: "extra_verification_checkout",
+              workOrderId: workOrder.id,
+              orderNumber: workOrder.orderNumber,
+              version: workOrder.version,
+              siteId: workOrder.siteId,
+              siteName: workOrder.site.name,
+            } satisfies Prisma.InputJsonValue,
+          },
+          include: {
+            site: {
+              select: {
+                id: true,
+                name: true,
+                baseUrl: true,
+                finalUrl: true,
+              },
+            },
+            scan: {
+              select: {
+                id: true,
+              },
+            },
+            workOrder: {
+              select: {
+                id: true,
+                orderNumber: true,
+                version: true,
+              },
+            },
+          },
+        });
+
+        return {
+          paymentOrder: publicOrder(order),
+          portone: {
+            configured,
+            storeId: env.PORTONE_STORE_ID ?? null,
+            channelKey: env.PORTONE_CHANNEL_KEY ?? null,
+            paymentId: providerPaymentId,
+            orderName: title,
+            totalAmount: amount,
+            currency: "KRW",
+            payMethod: "CARD",
+          },
+          polar: null,
+        };
+      }
 
       if (!scanId) {
         throw new PaymentServiceError(
@@ -657,24 +818,23 @@ export function createPrismaPaymentService(): PaymentService {
         );
       }
 
-      const existingEntitlement =
-        await prisma.paidEntitlement.findFirst({
-          where: {
-            userId: user.id,
-            status: "ACTIVE",
-            OR: [
-              {
-                scanId: scan.id,
-              },
-              {
-                siteId: scan.siteId,
-              },
-            ],
-          },
-          select: {
-            id: true,
-          },
-        });
+      const existingEntitlement = await prisma.paidEntitlement.findFirst({
+        where: {
+          userId: user.id,
+          status: "ACTIVE",
+          OR: [
+            {
+              scanId: scan.id,
+            },
+            {
+              siteId: scan.siteId,
+            },
+          ],
+        },
+        select: {
+          id: true,
+        },
+      });
 
       if (existingEntitlement) {
         throw new PaymentServiceError(
@@ -685,13 +845,15 @@ export function createPrismaPaymentService(): PaymentService {
       }
 
       const isPolar = input.provider === "POLAR";
-        const amount = isPolar ? POLAR_PRICES[input.plan] : DOMESTIC_PRICES[input.plan];
+      const amount = isPolar
+        ? POLAR_PRICES[input.plan]
+        : DOMESTIC_PRICES[input.plan];
       const providerPaymentId = createProviderPaymentId();
       const title = orderName(scan.site.name, input.plan);
-        const configured = isPolar
-          ? polarConfigured(input.plan)
-          : Boolean(env.PORTONE_STORE_ID && env.PORTONE_CHANNEL_KEY);
-        const productId = isPolar ? polarProductId(input.plan) : null;
+      const configured = isPolar
+        ? polarConfigured(input.plan)
+        : Boolean(env.PORTONE_STORE_ID && env.PORTONE_CHANNEL_KEY);
+      const productId = isPolar ? polarProductId(input.plan) : null;
 
       const order = await prisma.paymentOrder.create({
         data: {
@@ -706,7 +868,7 @@ export function createPrismaPaymentService(): PaymentService {
           providerPaymentId,
           idempotencyKey: providerPaymentId,
           metadata: {
-              provider: input.provider,
+            provider: input.provider,
             source: "checkout",
             scanId: scan.id,
             siteId: scan.siteId,
@@ -729,51 +891,50 @@ export function createPrismaPaymentService(): PaymentService {
           },
         },
       });
-        if (isPolar) {
-          let checkoutUrl: string | null = null;
-          let checkoutId: string | null = null;
+      if (isPolar) {
+        let checkoutUrl: string | null = null;
+        let checkoutId: string | null = null;
 
-          if (configured && productId) {
-            const polar = createPolarClient();
-            const baseUrl = env.APP_BASE_URL.replace(/\/+$/, "");
-            const scanQuery = encodeURIComponent(scan.id);
-            const orderQuery = encodeURIComponent(order.id);
+        if (configured && productId) {
+          const polar = createPolarClient();
+          const baseUrl = env.APP_BASE_URL.replace(/\/+$/, "");
+          const scanQuery = encodeURIComponent(scan.id);
+          const orderQuery = encodeURIComponent(order.id);
 
-            const checkout = await polar.checkouts.create({
-              products: [productId],
-              successUrl: `${baseUrl}/ko/checkout?scanId=${scanQuery}&paymentOrderId=${orderQuery}&polarCheckoutId={CHECKOUT_ID}`,
-              returnUrl: `${baseUrl}/ko/checkout?scanId=${scanQuery}`,
-              customerEmail: user.email,
-              externalCustomerId: user.id,
-              metadata: {
-                source: "checkout",
-                provider: "POLAR",
-                paymentOrderId: order.id,
-                providerPaymentId,
-                scanId: scan.id,
-                siteId: scan.siteId,
-                userId: user.id,
-                plan: input.plan,
-              },
-            });
-
-            checkoutUrl = stringFromUnknownRecord(checkout, "url");
-            checkoutId = stringFromUnknownRecord(checkout, "id");
-          }
-
-          return {
-            paymentOrder: publicOrder(order),
-            portone: null,
-            polar: {
-              configured,
-              checkoutUrl,
-              checkoutId,
-              productId,
-              currency: "USD",
+          const checkout = await polar.checkouts.create({
+            products: [productId],
+            successUrl: `${baseUrl}/ko/checkout?scanId=${scanQuery}&paymentOrderId=${orderQuery}&polarCheckoutId={CHECKOUT_ID}`,
+            returnUrl: `${baseUrl}/ko/checkout?scanId=${scanQuery}`,
+            customerEmail: user.email,
+            externalCustomerId: user.id,
+            metadata: {
+              source: "checkout",
+              provider: "POLAR",
+              paymentOrderId: order.id,
+              providerPaymentId,
+              scanId: scan.id,
+              siteId: scan.siteId,
+              userId: user.id,
+              plan: input.plan,
             },
-          };
+          });
+
+          checkoutUrl = stringFromUnknownRecord(checkout, "url");
+          checkoutId = stringFromUnknownRecord(checkout, "id");
         }
 
+        return {
+          paymentOrder: publicOrder(order),
+          portone: null,
+          polar: {
+            configured,
+            checkoutUrl,
+            checkoutId,
+            productId,
+            currency: "USD",
+          },
+        };
+      }
 
       return {
         paymentOrder: publicOrder(order),
@@ -787,7 +948,7 @@ export function createPrismaPaymentService(): PaymentService {
           currency: "KRW",
           payMethod: "CARD",
         },
-          polar: null,
+        polar: null,
       };
     },
 
@@ -866,12 +1027,9 @@ export function createPrismaPaymentService(): PaymentService {
               id: order.id,
             },
             data: {
-              status:
-                paymentStatus === "FAILED" ? "FAILED" : "CANCELED",
-              failedAt:
-                paymentStatus === "FAILED" ? new Date() : undefined,
-              canceledAt:
-                paymentStatus === "FAILED" ? undefined : new Date(),
+              status: paymentStatus === "FAILED" ? "FAILED" : "CANCELED",
+              failedAt: paymentStatus === "FAILED" ? new Date() : undefined,
+              canceledAt: paymentStatus === "FAILED" ? undefined : new Date(),
             },
           });
         }
@@ -931,6 +1089,7 @@ export function createPrismaPaymentService(): PaymentService {
             userId: order.userId,
             siteId: order.siteId,
             scanId: order.scanId,
+            workOrderId: order.workOrderId,
             paymentOrderId: order.id,
             plan: order.plan,
             status: "ACTIVE",
@@ -1026,12 +1185,9 @@ export function createPrismaPaymentService(): PaymentService {
               id: order.id,
             },
             data: {
-              status:
-                paymentStatus === "FAILED" ? "FAILED" : "CANCELED",
-              failedAt:
-                paymentStatus === "FAILED" ? new Date() : undefined,
-              canceledAt:
-                paymentStatus === "FAILED" ? undefined : new Date(),
+              status: paymentStatus === "FAILED" ? "FAILED" : "CANCELED",
+              failedAt: paymentStatus === "FAILED" ? new Date() : undefined,
+              canceledAt: paymentStatus === "FAILED" ? undefined : new Date(),
             },
           });
         }
@@ -1080,6 +1236,7 @@ export function createPrismaPaymentService(): PaymentService {
             userId: order.userId,
             siteId: order.siteId,
             scanId: order.scanId,
+            workOrderId: order.workOrderId,
             paymentOrderId: order.id,
             plan: order.plan,
             status: "ACTIVE",
@@ -1215,6 +1372,7 @@ export function createPrismaPaymentService(): PaymentService {
             userId: order.userId,
             siteId: order.siteId,
             scanId: order.scanId,
+            workOrderId: order.workOrderId,
             paymentOrderId: order.id,
             plan: order.plan,
             status: "ACTIVE",
@@ -1229,6 +1387,6 @@ export function createPrismaPaymentService(): PaymentService {
         eventType,
         paymentOrderId,
       };
-    }
+    },
   };
 }

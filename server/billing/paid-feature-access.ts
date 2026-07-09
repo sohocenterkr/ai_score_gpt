@@ -38,6 +38,9 @@ export async function hasPaidFeatureAccessForScan(
     where: {
       userId: user.id,
       status: "ACTIVE",
+      plan: {
+        in: ["BASIC", "CASE_STUDY_DISCOUNT"],
+      },
       OR: [
         {
           scanId: normalizedScanId,
@@ -82,6 +85,9 @@ export async function hasPaidFeatureAccessForWorkOrder(
     where: {
       userId: user.id,
       status: "ACTIVE",
+      plan: {
+        in: ["BASIC", "CASE_STUDY_DISCOUNT"],
+      },
       OR: [
         {
           site: {
