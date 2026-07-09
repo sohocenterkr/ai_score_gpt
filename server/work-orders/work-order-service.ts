@@ -144,6 +144,21 @@ export interface PublicVerificationAttempt {
   itemResults: PublicVerificationItemResult[];
 }
 
+export interface PublicWorkOrderVersionHistoryEntry {
+  id: string;
+  version: number;
+  scoreBefore: number | null;
+  gradeBefore: string | null;
+  initialScan: {
+    id: string;
+    score: number | null;
+    grade: string | null;
+    rulesVersion: string;
+    targetUrl: string | null;
+    completedAt: string | null;
+  };
+}
+
 export interface PublicWorkOrder {
   id: string;
   orderNumber: string;
@@ -181,6 +196,7 @@ export interface PublicWorkOrder {
   } | null;
   items: PublicWorkOrderItem[];
   verificationAttempts: PublicVerificationAttempt[];
+  versionHistory: PublicWorkOrderVersionHistoryEntry[];
 }
 
 export interface PublicWorkOrderSummary {
@@ -294,7 +310,10 @@ function acceptanceCriteria(value: Prisma.JsonValue): AcceptanceCriterion[] {
   });
 }
 
-function publicWorkOrder(record: WorkOrderRecord): PublicWorkOrder {
+function publicWorkOrder(
+  record: WorkOrderRecord,
+  versionHistory: PublicWorkOrderVersionHistoryEntry[] = [],
+): PublicWorkOrder {
   return {
     id: record.id,
     orderNumber: record.orderNumber,
@@ -388,7 +407,60 @@ function publicWorkOrder(record: WorkOrderRecord): PublicWorkOrder {
         createdAt: result.createdAt.toISOString(),
       })),
     })),
+    versionHistory,
   };
+}
+
+async function publicWorkOrderWithHistory(
+  record: WorkOrderRecord,
+): Promise<PublicWorkOrder> {
+  const prisma = getDatabase();
+  const historyRecords = await prisma.workOrder.findMany({
+    where: {
+      orderNumber: record.orderNumber,
+      siteId: record.siteId,
+      customerOrganizationId: record.customerOrganizationId,
+      status: {
+        not: "CANCELLED",
+      },
+    },
+    select: {
+      id: true,
+      version: true,
+      scoreBefore: true,
+      gradeBefore: true,
+      initialScan: {
+        select: {
+          id: true,
+          score: true,
+          grade: true,
+          rulesVersion: true,
+          targetUrl: true,
+          completedAt: true,
+        },
+      },
+    },
+    orderBy: {
+      version: "asc",
+    },
+  });
+
+  const versionHistory = historyRecords.map((item) => ({
+    id: item.id,
+    version: item.version,
+    scoreBefore: item.scoreBefore,
+    gradeBefore: item.gradeBefore,
+    initialScan: {
+      id: item.initialScan.id,
+      score: item.initialScan.score,
+      grade: item.initialScan.grade,
+      rulesVersion: item.initialScan.rulesVersion,
+      targetUrl: item.initialScan.targetUrl,
+      completedAt: item.initialScan.completedAt?.toISOString() ?? null,
+    },
+  }));
+
+  return publicWorkOrder(record, versionHistory);
 }
 
 function formatKstDate(date: Date): string {
@@ -672,7 +744,7 @@ export function createPrismaWorkOrderService(
         existingWorkOrders[0];
 
       if (existingWorkOrder) {
-        return publicWorkOrder(existingWorkOrder);
+        return publicWorkOrderWithHistory(existingWorkOrder);
       }
 
       const autoIncludedFindingIds = scan.findings
@@ -824,11 +896,13 @@ export function createPrismaWorkOrderService(
         include: workOrderInclude,
       });
 
-      return publicWorkOrder(created);
+      return publicWorkOrderWithHistory(created);
     },
 
     async getWorkOrder(user, workOrderId) {
-      return publicWorkOrder(await accessibleRecord(user, workOrderId));
+      return publicWorkOrderWithHistory(
+        await accessibleRecord(user, workOrderId),
+      );
     },
 
     async getLatestWorkOrderByScan(user, scanId) {
@@ -872,7 +946,7 @@ export function createPrismaWorkOrderService(
         );
       }
 
-      return publicWorkOrder(record);
+      return publicWorkOrderWithHistory(record);
     },
 
     async getLatestWorkOrderForAdminByScan(scanId) {
@@ -893,7 +967,7 @@ export function createPrismaWorkOrderService(
         );
       }
 
-      return publicWorkOrder(record);
+      return publicWorkOrderWithHistory(record);
     },
 
     async issueWorkOrder(user, workOrderId) {
@@ -918,7 +992,7 @@ export function createPrismaWorkOrderService(
         include: workOrderInclude,
       });
 
-      return publicWorkOrder(updated);
+      return publicWorkOrderWithHistory(updated);
     },
 
     async submitVerification(user, workOrderId, input) {
@@ -1023,7 +1097,7 @@ export function createPrismaWorkOrderService(
         });
       });
 
-      return publicWorkOrder(updated);
+      return publicWorkOrderWithHistory(updated);
     },
 
     async reviseWorkOrder(user, workOrderId) {
@@ -1115,7 +1189,7 @@ export function createPrismaWorkOrderService(
       });
 
       if (existingFollowUp) {
-        return publicWorkOrder(existingFollowUp);
+        return publicWorkOrderWithHistory(existingFollowUp);
       }
 
       const locale = verificationScan.locale === "en" ? "en" : "ko";
@@ -1208,7 +1282,7 @@ export function createPrismaWorkOrderService(
         include: workOrderInclude,
       });
 
-      return publicWorkOrder(created);
+      return publicWorkOrderWithHistory(created);
     },
 
     async cancelWorkOrder(user, workOrderId) {

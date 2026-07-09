@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  renderWorkOrderPdf,
-  workOrderPdfFilename,
-} from "./work-order-pdf";
+import { renderWorkOrderPdf, workOrderPdfFilename } from "./work-order-pdf";
 import type { PublicWorkOrder } from "./work-order-service";
 
 const workOrder: PublicWorkOrder = {
@@ -38,6 +35,7 @@ const workOrder: PublicWorkOrder = {
   },
   agencyOrganization: null,
   verificationAttempts: [],
+  versionHistory: [],
   items: [
     {
       id: "item-1",
@@ -83,24 +81,17 @@ const workOrder: PublicWorkOrder = {
 };
 
 describe("work order PDF", () => {
-  it(
-    "한글 작업지시서를 유효한 PDF 버퍼로 생성한다",
-    async () => {
-      const result = await renderWorkOrderPdf(workOrder);
-      const source = result.toString("latin1");
-      const pageCount =
-        source.match(/\/Type\s*\/Page\b/g)?.length ?? 0;
+  it("한글 작업지시서를 유효한 PDF 버퍼로 생성한다", async () => {
+    const result = await renderWorkOrderPdf(workOrder);
+    const source = result.toString("latin1");
+    const pageCount = source.match(/\/Type\s*\/Page\b/g)?.length ?? 0;
 
-      expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
-      expect(result.length).toBeGreaterThan(10_000);
-      expect(pageCount).toBe(4);
-    },
-    45_000,
-  );
+    expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+    expect(result.length).toBeGreaterThan(10_000);
+    expect(pageCount).toBe(4);
+  }, 45_000);
 
   it("안전한 PDF 파일명을 만든다", () => {
-    expect(workOrderPdfFilename(workOrder)).toBe(
-      "WO-20260615-34838-v1.pdf",
-    );
+    expect(workOrderPdfFilename(workOrder)).toBe("WO-20260615-34838-v1.pdf");
   });
 });

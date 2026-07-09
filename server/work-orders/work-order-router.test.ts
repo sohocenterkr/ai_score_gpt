@@ -56,6 +56,7 @@ const workOrder = {
   agencyOrganization: null,
   items: [],
   verificationAttempts: [],
+  versionHistory: [],
 } satisfies PublicWorkOrder;
 
 function auth(

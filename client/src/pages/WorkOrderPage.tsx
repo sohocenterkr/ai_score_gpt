@@ -69,6 +69,40 @@ function formatGoalRange(
       : `${range}점`;
 }
 
+function workOrderVersionScoreLabel(
+  version: number,
+  isEnglish: boolean,
+): string {
+  return isEnglish ? `Version ${version} score` : `${version}차 점수`;
+}
+
+function workOrderVersionCompletedLabel(
+  version: number,
+  isEnglish: boolean,
+): string {
+  return isEnglish
+    ? `Version ${version} diagnostic completed`
+    : `${version}차 검수완료`;
+}
+
+function workOrderVersionMetaLabel(
+  version: number,
+  label: "rules" | "completedAt" | "url",
+  isEnglish: boolean,
+): string {
+  if (isEnglish) {
+    const prefix = `Version ${version}`;
+    if (label === "rules") return `${prefix} rules version`;
+    if (label === "completedAt")
+      return `${prefix} diagnostic completed at (KST)`;
+    return `${prefix} diagnostic URL`;
+  }
+
+  if (label === "rules") return `${version}차 규칙 버전`;
+  if (label === "completedAt") return `${version}차 검수 완료 시각(KST)`;
+  return `${version}차 검사 URL`;
+}
+
 function formatKST(value: string | null, isEnglish = false): string {
   if (!value) {
     return isEnglish ? "No record" : "기록 없음";
@@ -441,32 +475,79 @@ export function WorkOrderPage() {
                 (attempt) => attempt.scoreAfter !== null,
               );
             const scoreGoal = workOrderScoreGoal(workOrder.scoreBefore);
+            const versionHistory =
+              workOrder.versionHistory.length > 0
+                ? workOrder.versionHistory
+                : [
+                    {
+                      id: workOrder.id,
+                      version: workOrder.version,
+                      scoreBefore: workOrder.scoreBefore,
+                      gradeBefore: workOrder.gradeBefore,
+                      initialScan: workOrder.initialScan,
+                    },
+                  ];
+            const currentVersionEntry =
+              versionHistory.find(
+                (item) => item.version === workOrder.version,
+              ) ??
+              versionHistory.at(-1) ??
+              null;
 
             return latestScoredVerificationAttempt ? (
               <>
                 <div className="work-order-score-comparison">
-                  <div className="work-order-score-card">
-                    <span>{isEnglish ? "Initial score" : "1차 점수"}</span>
-                    <strong>{workOrder.scoreBefore ?? "—"}</strong>
-                    <small>
-                      {isEnglish
-                        ? "Initial diagnostic completed"
-                        : "1차 검수완료"}
-                    </small>
-                  </div>
+                  {versionHistory.map((entry, index) => (
+                    <div
+                      className={`work-order-score-card${
+                        entry.version === workOrder.version ? " current" : ""
+                      }`}
+                      key={entry.id}
+                    >
+                      <span>
+                        {workOrderVersionScoreLabel(entry.version, isEnglish)}
+                      </span>
+                      <strong>
+                        {entry.scoreBefore ?? "—"}
+                        {entry.gradeBefore ? (
+                          <small> {entry.gradeBefore}</small>
+                        ) : null}
+                      </strong>
+                      <small>
+                        {workOrderVersionCompletedLabel(
+                          entry.version,
+                          isEnglish,
+                        )}
+                      </small>
+                      {index < versionHistory.length - 1 ? (
+                        <span
+                          className="work-order-inline-arrow"
+                          aria-hidden="true"
+                        >
+                          →
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
 
                   <dl className="work-order-score-comparison-meta">
                     <div>
                       <dt>
-                        {isEnglish ? "Initial rules version" : "1차 규칙 버전"}
+                        {workOrderVersionMetaLabel(
+                          workOrder.version,
+                          "rules",
+                          isEnglish,
+                        )}
                       </dt>
                       <dd>{workOrder.initialScan.rulesVersion}</dd>
                     </div>
                     <div>
                       <dt>
-                        {isEnglish
-                          ? "Initial diagnostic completed at (KST)"
-                          : "1차 검수 완료 시각(KST)"}
+                        {workOrderVersionMetaLabel(
+                          workOrder.version,
+                          "completedAt",
+                          isEnglish,
+                        )}
                       </dt>
                       <dd>
                         {formatKST(
@@ -477,11 +558,16 @@ export function WorkOrderPage() {
                     </div>
                     <div>
                       <dt>
-                        {isEnglish ? "Initial diagnostic URL" : "1차 검사 URL"}
+                        {workOrderVersionMetaLabel(
+                          workOrder.version,
+                          "url",
+                          isEnglish,
+                        )}
                       </dt>
                       <dd>
                         <a
                           href={
+                            currentVersionEntry?.initialScan.targetUrl ??
                             workOrder.initialScan.targetUrl ??
                             workOrder.site.finalUrl ??
                             workOrder.site.baseUrl
@@ -489,7 +575,8 @@ export function WorkOrderPage() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          {workOrder.initialScan.targetUrl ??
+                          {currentVersionEntry?.initialScan.targetUrl ??
+                            workOrder.initialScan.targetUrl ??
                             workOrder.site.finalUrl ??
                             workOrder.site.baseUrl}
                         </a>
@@ -517,8 +604,8 @@ export function WorkOrderPage() {
                     </strong>
                     <small>
                       {isEnglish
-                        ? `Verification ${latestScoredVerificationAttempt.attemptNumber + 1} completed`
-                        : `${latestScoredVerificationAttempt.attemptNumber + 1}차 검수완료`}
+                        ? `Latest verification for version ${workOrder.version} completed`
+                        : `${workOrder.version}차 작업 후 재검수 완료`}
                     </small>
                   </div>
                 </div>
@@ -526,12 +613,15 @@ export function WorkOrderPage() {
             ) : (
               <>
                 <div className="work-order-score-range">
-                  <span>{isEnglish ? "Initial score" : "1차 점수"}</span>
+                  <span>
+                    {workOrderVersionScoreLabel(workOrder.version, isEnglish)}
+                  </span>
                   <strong>{workOrder.scoreBefore ?? "—"}</strong>
                   <small>
-                    {isEnglish
-                      ? "Initial diagnostic completed"
-                      : "1차 검수완료"}
+                    {workOrderVersionCompletedLabel(
+                      workOrder.version,
+                      isEnglish,
+                    )}
                   </small>
                 </div>
                 <div className="work-order-arrow" aria-hidden="true">
@@ -539,7 +629,9 @@ export function WorkOrderPage() {
                 </div>
                 <div className="work-order-score-range expected primary-target">
                   <span>
-                    {isEnglish ? "First improvement target" : "1차 개선 목표"}
+                    {isEnglish
+                      ? `Version ${workOrder.version} improvement target`
+                      : `${workOrder.version}차 개선 목표`}
                   </span>
                   <strong>
                     {formatGoalRange(
@@ -551,8 +643,8 @@ export function WorkOrderPage() {
                   </strong>
                   <small>
                     {isEnglish
-                      ? "Target for the first recheck"
-                      : "1차 반영 후 재검수 기준"}
+                      ? `Target for version ${workOrder.version} recheck`
+                      : `${workOrder.version}차 반영 후 재검수 기준`}
                   </small>
                 </div>
                 <div className="work-order-score-range expected final-target">
@@ -580,15 +672,21 @@ export function WorkOrderPage() {
                 <dl>
                   <div>
                     <dt>
-                      {isEnglish ? "Initial rules version" : "1차 규칙 버전"}
+                      {workOrderVersionMetaLabel(
+                        workOrder.version,
+                        "rules",
+                        isEnglish,
+                      )}
                     </dt>
                     <dd>{workOrder.initialScan.rulesVersion}</dd>
                   </div>
                   <div>
                     <dt>
-                      {isEnglish
-                        ? "Initial diagnostic completed at (KST)"
-                        : "1차 검수 완료 시각(KST)"}
+                      {workOrderVersionMetaLabel(
+                        workOrder.version,
+                        "completedAt",
+                        isEnglish,
+                      )}
                     </dt>
                     <dd>
                       {formatKST(workOrder.initialScan.completedAt, isEnglish)}
@@ -596,7 +694,11 @@ export function WorkOrderPage() {
                   </div>
                   <div>
                     <dt>
-                      {isEnglish ? "Initial diagnostic URL" : "1차 검사 URL"}
+                      {workOrderVersionMetaLabel(
+                        workOrder.version,
+                        "url",
+                        isEnglish,
+                      )}
                     </dt>
                     <dd>
                       <a

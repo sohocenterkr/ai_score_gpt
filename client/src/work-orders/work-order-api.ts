@@ -87,6 +87,21 @@ export interface VerificationAttempt {
   itemResults: VerificationItemResult[];
 }
 
+export interface WorkOrderVersionHistoryEntry {
+  id: string;
+  version: number;
+  scoreBefore: number | null;
+  gradeBefore: string | null;
+  initialScan: {
+    id: string;
+    score: number | null;
+    grade: string | null;
+    rulesVersion: string;
+    targetUrl: string | null;
+    completedAt: string | null;
+  };
+}
+
 export interface WorkOrderDetail {
   id: string;
   orderNumber: string;
@@ -124,6 +139,7 @@ export interface WorkOrderDetail {
   } | null;
   items: WorkOrderItem[];
   verificationAttempts: VerificationAttempt[];
+  versionHistory: WorkOrderVersionHistoryEntry[];
 }
 
 export interface WorkOrderSummary {
