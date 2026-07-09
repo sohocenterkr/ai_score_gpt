@@ -2,15 +2,10 @@ import { getRuleDefinition } from "../scans/scoring";
 
 type FindingStatus = "PASS" | "FAIL" | "BLOCKED" | "NA";
 
-export type VerificationEvaluationStatus =
-  | "PASSED"
-  | "REWORK_REQUIRED";
+export type VerificationEvaluationStatus = "PASSED" | "REWORK_REQUIRED";
 
 export type VerificationItemEvaluationStatus =
-  | "PASS"
-  | "FAIL"
-  | "BLOCKED"
-  | "NOT_APPLICABLE";
+  "PASS" | "FAIL" | "BLOCKED" | "NOT_APPLICABLE";
 
 export interface VerificationCriterionEvaluation {
   code: string;
@@ -83,9 +78,7 @@ interface AcceptanceCriterion {
 type EvidenceObject = Record<string, unknown>;
 
 function evidenceObject(value: unknown): EvidenceObject {
-  return value &&
-    typeof value === "object" &&
-    !Array.isArray(value)
+  return value && typeof value === "object" && !Array.isArray(value)
     ? (value as EvidenceObject)
     : {};
 }
@@ -94,39 +87,23 @@ function evidenceFor(finding: FindingInput | undefined): unknown {
   return finding?.evidenceJson ?? finding?.evidence ?? null;
 }
 
-function child(
-  record: EvidenceObject,
-  key: string,
-): EvidenceObject {
+function child(record: EvidenceObject, key: string): EvidenceObject {
   return evidenceObject(record[key]);
 }
 
-function numberValue(
-  record: EvidenceObject,
-  key: string,
-): number | null {
+function numberValue(record: EvidenceObject, key: string): number | null {
   const value = record[key];
 
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : null;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function stringValue(
-  record: EvidenceObject,
-  key: string,
-): string | null {
+function stringValue(record: EvidenceObject, key: string): string | null {
   const value = record[key];
 
-  return typeof value === "string" && value.trim()
-    ? value.trim()
-    : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function stringValues(
-  record: EvidenceObject,
-  key: string,
-): string[] {
+function stringValues(record: EvidenceObject, key: string): string[] {
   const value = record[key];
 
   if (!Array.isArray(value)) {
@@ -134,8 +111,7 @@ function stringValues(
   }
 
   return value.filter(
-    (item): item is string =>
-      typeof item === "string" && Boolean(item.trim()),
+    (item): item is string => typeof item === "string" && Boolean(item.trim()),
   );
 }
 
@@ -145,20 +121,13 @@ function criteria(value: unknown): AcceptanceCriterion[] {
   }
 
   return value.flatMap((item) => {
-    if (
-      !item ||
-      typeof item !== "object" ||
-      Array.isArray(item)
-    ) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
       return [];
     }
 
     const record = item as Record<string, unknown>;
 
-    if (
-      typeof record.code !== "string" ||
-      typeof record.label !== "string"
-    ) {
+    if (typeof record.code !== "string" || typeof record.label !== "string") {
       return [];
     }
 
@@ -175,8 +144,7 @@ function criteria(value: unknown): AcceptanceCriterion[] {
 function findingStatus(
   finding: FindingInput | undefined,
 ): FindingStatus | null {
-  return finding &&
-    ["PASS", "FAIL", "BLOCKED", "NA"].includes(finding.status)
+  return finding && ["PASS", "FAIL", "BLOCKED", "NA"].includes(finding.status)
     ? (finding.status as FindingStatus)
     : null;
 }
@@ -213,9 +181,7 @@ function sameSubmittedUrl(
   submittedUrl: string,
   scanTargetUrl: string | null,
 ): boolean {
-  return (
-    normalizeUrl(submittedUrl) === normalizeUrl(scanTargetUrl)
-  );
+  return normalizeUrl(submittedUrl) === normalizeUrl(scanTargetUrl);
 }
 
 function normalizedText(value: string | null): string {
@@ -230,9 +196,7 @@ function normalizedList(values: string[]): string {
     .join("|");
 }
 
-function renderedComparison(
-  verificationFindings: readonly FindingInput[],
-): {
+function renderedComparison(verificationFindings: readonly FindingInput[]): {
   status: string | null;
   initial: EvidenceObject;
   rendered: EvidenceObject;
@@ -279,25 +243,15 @@ function evaluateRenderedItem(
   const initialLinks = child(comparison.initial, "links");
   const renderedLinks = child(comparison.rendered, "links");
   const initialHeadings = child(comparison.initial, "headings");
-  const renderedHeadings = child(
-    comparison.rendered,
-    "headings",
-  );
+  const renderedHeadings = child(comparison.rendered, "headings");
   const initialJsonLd = child(comparison.initial, "jsonLd");
-  const renderedJsonLd = child(
-    comparison.rendered,
-    "jsonLd",
-  );
+  const renderedJsonLd = child(comparison.rendered, "jsonLd");
 
   if (itemCode === "RENDERED-ADDED-CONTENT") {
-    const initialText =
-      numberValue(comparison.initial, "textLength") ?? 0;
-    const renderedText =
-      numberValue(comparison.rendered, "textLength") ?? 0;
-    const initialInternal =
-      numberValue(initialLinks, "internal") ?? 0;
-    const renderedInternal =
-      numberValue(renderedLinks, "internal") ?? 0;
+    const initialText = numberValue(comparison.initial, "textLength") ?? 0;
+    const renderedText = numberValue(comparison.rendered, "textLength") ?? 0;
+    const initialInternal = numberValue(initialLinks, "internal") ?? 0;
+    const renderedInternal = numberValue(renderedLinks, "internal") ?? 0;
     const textDelta = renderedText - initialText;
     const linkDelta = renderedInternal - initialInternal;
     const textCoverage =
@@ -310,8 +264,7 @@ function evaluateRenderedItem(
       renderedInternal > 0
         ? Math.min(initialInternal / renderedInternal, 1)
         : 1;
-    const textReady =
-      initialText >= 200 && textCoverage >= 0.75;
+    const textReady = initialText >= 200 && textCoverage >= 0.75;
     const linksReady =
       renderedInternal === 0 ||
       (initialInternal >= 1 &&
@@ -329,20 +282,15 @@ function evaluateRenderedItem(
         renderedText,
         textDelta,
         initialTextCoverage: textCoverage,
-        initialTextCoveragePercent: Number(
-          (textCoverage * 100).toFixed(1),
-        ),
+        initialTextCoveragePercent: Number((textCoverage * 100).toFixed(1)),
         initialInternalLinks: initialInternal,
         renderedInternalLinks: renderedInternal,
         internalLinkDelta: linkDelta,
         initialLinkCoverage: linkCoverage,
-        initialLinkCoveragePercent: Number(
-          (linkCoverage * 100).toFixed(1),
-        ),
+        initialLinkCoveragePercent: Number((linkCoverage * 100).toFixed(1)),
         checks: {
           minimumInitialText: initialText >= 200,
-          textCoverageAtLeast75Percent:
-            textCoverage >= 0.75,
+          textCoverageAtLeast75Percent: textCoverage >= 0.75,
           importantLinksAvailable: linksReady,
         },
         thresholds: {
@@ -361,32 +309,18 @@ function evaluateRenderedItem(
   ) {
     const fields = {
       title:
-        normalizedText(
-          stringValue(comparison.initial, "title"),
-        ) ===
-        normalizedText(
-          stringValue(comparison.rendered, "title"),
-        ),
+        normalizedText(stringValue(comparison.initial, "title")) ===
+        normalizedText(stringValue(comparison.rendered, "title")),
       description:
-        normalizedText(
-          stringValue(comparison.initial, "metaDescription"),
-        ) ===
-        normalizedText(
-          stringValue(
-            comparison.rendered,
-            "metaDescription",
-          ),
-        ),
+        normalizedText(stringValue(comparison.initial, "metaDescription")) ===
+        normalizedText(stringValue(comparison.rendered, "metaDescription")),
       h1:
         normalizedList(stringValues(initialHeadings, "h1")) ===
         normalizedList(stringValues(renderedHeadings, "h1")),
-      singleRenderedH1:
-        stringValues(renderedHeadings, "h1").length === 1,
+      singleRenderedH1: stringValues(renderedHeadings, "h1").length === 1,
       jsonLdTypes:
         normalizedList(stringValues(initialJsonLd, "types")) ===
-        normalizedList(
-          stringValues(renderedJsonLd, "types"),
-        ),
+        normalizedList(stringValues(renderedJsonLd, "types")),
     };
     const passed = Object.values(fields).every(Boolean);
 
@@ -400,40 +334,26 @@ function evaluateRenderedItem(
         matchingFields: fields,
         initial: {
           title: stringValue(comparison.initial, "title"),
-          metaDescription: stringValue(
-            comparison.initial,
-            "metaDescription",
-          ),
+          metaDescription: stringValue(comparison.initial, "metaDescription"),
           h1: stringValues(initialHeadings, "h1"),
           jsonLdTypes: stringValues(initialJsonLd, "types"),
         },
         rendered: {
           title: stringValue(comparison.rendered, "title"),
-          metaDescription: stringValue(
-            comparison.rendered,
-            "metaDescription",
-          ),
+          metaDescription: stringValue(comparison.rendered, "metaDescription"),
           h1: stringValues(renderedHeadings, "h1"),
-          jsonLdTypes: stringValues(
-            renderedJsonLd,
-            "types",
-          ),
+          jsonLdTypes: stringValues(renderedJsonLd, "types"),
         },
       },
     };
   }
 
   if (itemCode === "INITIAL-HTML-MISSING-CORE") {
-    const textLength =
-      numberValue(comparison.initial, "textLength") ?? 0;
+    const textLength = numberValue(comparison.initial, "textLength") ?? 0;
     const h1 = stringValues(initialHeadings, "h1");
-    const internalLinks =
-      numberValue(initialLinks, "internal") ?? 0;
+    const internalLinks = numberValue(initialLinks, "internal") ?? 0;
     const title = stringValue(comparison.initial, "title");
-    const description = stringValue(
-      comparison.initial,
-      "metaDescription",
-    );
+    const description = stringValue(comparison.initial, "metaDescription");
     const checks = {
       title: Boolean(title),
       description: Boolean(description),
@@ -462,8 +382,7 @@ function evaluateRenderedItem(
 
   return {
     status: "BLOCKED",
-    message:
-      "이 개선안 코드는 현재 자동 판정 규칙에 연결되어 있지 않습니다.",
+    message: "이 개선안 코드는 현재 자동 판정 규칙에 연결되어 있지 않습니다.",
     evidence: {
       itemCode,
       renderedDomStatus: comparison.status,
@@ -480,11 +399,7 @@ function criterionEvaluation(
 ): VerificationCriterionEvaluation {
   const text = `${criterion.code} ${criterion.label}`;
 
-  if (
-    /디자인|사용자 기능|브라우저 스모크|수동 확인/.test(
-      text,
-    )
-  ) {
+  if (/디자인|사용자 기능|브라우저 스모크|수동 확인/.test(text)) {
     return {
       ...criterion,
       status: "BLOCKED",
@@ -543,16 +458,10 @@ export function evaluateVerification(
   input: EvaluateVerificationInput,
 ): VerificationEvaluation {
   const currentByRule = new Map(
-    input.verificationFindings.map((finding) => [
-      finding.ruleCode,
-      finding,
-    ]),
+    input.verificationFindings.map((finding) => [finding.ruleCode, finding]),
   );
   const initialByRule = new Map(
-    input.initialFindings.map((finding) => [
-      finding.ruleCode,
-      finding,
-    ]),
+    input.initialFindings.map((finding) => [finding.ruleCode, finding]),
   );
 
   const regressionRuleCodes = input.initialFindings
@@ -562,8 +471,7 @@ export function evaluateVerification(
         definition &&
         definition.weight > 0 &&
         findingStatus(finding) === "PASS" &&
-        findingStatus(currentByRule.get(finding.ruleCode)) !==
-          "PASS"
+        findingStatus(currentByRule.get(finding.ruleCode)) !== "PASS"
       );
     })
     .map((finding) => finding.ruleCode)
@@ -574,69 +482,65 @@ export function evaluateVerification(
     input.scanTargetUrl,
   );
 
-  const itemResults = input.items.map(
-    (item): VerificationItemEvaluation => {
-      const linkedRuleCode = item.finding?.ruleCode ?? null;
-      const initialFinding = linkedRuleCode
-        ? initialByRule.get(linkedRuleCode)
-        : undefined;
-      const currentFinding = linkedRuleCode
-        ? currentByRule.get(linkedRuleCode)
-        : undefined;
+  const itemResults = input.items.map((item): VerificationItemEvaluation => {
+    const itemRuleDefinition = getRuleDefinition(item.itemCode);
+    const linkedRuleCode =
+      item.finding?.ruleCode ?? (itemRuleDefinition ? item.itemCode : null);
+    const initialFinding = linkedRuleCode
+      ? initialByRule.get(linkedRuleCode)
+      : undefined;
+    const currentFinding = linkedRuleCode
+      ? currentByRule.get(linkedRuleCode)
+      : undefined;
 
-      let status: VerificationItemEvaluationStatus;
-      let message: string;
-      let evidence: Record<string, unknown>;
+    let status: VerificationItemEvaluationStatus;
+    let message: string;
+    let evidence: Record<string, unknown>;
 
-      if (linkedRuleCode) {
-        const currentStatus = findingStatus(currentFinding);
-        status = itemStatusFromFinding(currentStatus);
-        message =
-          status === "PASS"
-            ? `${linkedRuleCode} 규칙이 재검사에서 통과했습니다.`
-            : status === "FAIL"
-              ? `${linkedRuleCode} 규칙이 재검사에서도 통과하지 못했습니다.`
-              : status === "NOT_APPLICABLE"
-                ? `${linkedRuleCode} 규칙이 재검사에서 감점 제외로 판정되었습니다.`
-                : `${linkedRuleCode} 규칙의 재검사 결과를 자동으로 확인할 수 없습니다.`;
-        evidence = {
-          evaluationType: "RULE_STATUS",
-          ruleCode: linkedRuleCode,
-          initialStatus:
-            findingStatus(initialFinding) ?? "MISSING",
-          verificationStatus: currentStatus ?? "MISSING",
-          initialEvidence: evidenceFor(initialFinding),
-          verificationEvidence: evidenceFor(currentFinding),
-          submittedUrl: input.submittedUrl,
-          scanTargetUrl: input.scanTargetUrl,
-        };
-      } else {
-        const renderedResult = evaluateRenderedItem(
-          item.itemCode,
-          input.verificationFindings,
-        );
-        status = renderedResult.status;
-        message = renderedResult.message;
-        evidence = {
-          evaluationType: "RENDERED_IMPROVEMENT",
-          ...renderedResult.evidence,
-          submittedUrl: input.submittedUrl,
-          scanTargetUrl: input.scanTargetUrl,
-        };
-      }
-
-      if (
-        regressionRuleCodes.length > 0 &&
+    if (linkedRuleCode) {
+      const currentStatus = findingStatus(currentFinding);
+      status = itemStatusFromFinding(currentStatus);
+      message =
         status === "PASS"
-      ) {
-        status = "FAIL";
-        message =
-          "선택 항목 자체는 통과했지만 초기 검사에서 정상이던 가중 규칙에 회귀가 발견되었습니다.";
-      }
+          ? `${linkedRuleCode} 규칙이 재검사에서 통과했습니다.`
+          : status === "FAIL"
+            ? `${linkedRuleCode} 규칙이 재검사에서도 통과하지 못했습니다.`
+            : status === "NOT_APPLICABLE"
+              ? `${linkedRuleCode} 규칙이 재검사에서 감점 제외로 판정되었습니다.`
+              : `${linkedRuleCode} 규칙의 재검사 결과를 자동으로 확인할 수 없습니다.`;
+      evidence = {
+        evaluationType: "RULE_STATUS",
+        ruleCode: linkedRuleCode,
+        initialStatus: findingStatus(initialFinding) ?? "MISSING",
+        verificationStatus: currentStatus ?? "MISSING",
+        initialEvidence: evidenceFor(initialFinding),
+        verificationEvidence: evidenceFor(currentFinding),
+        submittedUrl: input.submittedUrl,
+        scanTargetUrl: input.scanTargetUrl,
+      };
+    } else {
+      const renderedResult = evaluateRenderedItem(
+        item.itemCode,
+        input.verificationFindings,
+      );
+      status = renderedResult.status;
+      message = renderedResult.message;
+      evidence = {
+        evaluationType: "RENDERED_IMPROVEMENT",
+        ...renderedResult.evidence,
+        submittedUrl: input.submittedUrl,
+        scanTargetUrl: input.scanTargetUrl,
+      };
+    }
 
-      const criterionResults = criteria(
-        item.acceptanceCriteriaJson,
-      ).map((criterion) =>
+    if (regressionRuleCodes.length > 0 && status === "PASS") {
+      status = "FAIL";
+      message =
+        "선택 항목 자체는 통과했지만 초기 검사에서 정상이던 가중 규칙에 회귀가 발견되었습니다.";
+    }
+
+    const criterionResults = criteria(item.acceptanceCriteriaJson).map(
+      (criterion) =>
         criterionEvaluation(
           criterion,
           status,
@@ -644,86 +548,68 @@ export function evaluateVerification(
           regressionRuleCodes,
           submittedUrlMatches,
         ),
-      );
+    );
 
-      const manualReviewRequired =
-        criterionResults.some(
-          (criterion) =>
-            !criterion.automated &&
-            criterion.status === "BLOCKED",
-        );
+    const manualReviewRequired = criterionResults.some(
+      (criterion) => !criterion.automated && criterion.status === "BLOCKED",
+    );
 
-      if (status === "PASS" && manualReviewRequired) {
-        status = "BLOCKED";
-        message =
-          "콘텐츠·구조 자동검수는 통과했지만 화면 디자인과 사용자 기능은 별도 확인이 필요합니다.";
-      }
+    if (status === "PASS" && manualReviewRequired) {
+      status = "BLOCKED";
+      message =
+        "콘텐츠·구조 자동검수는 통과했지만 화면 디자인과 사용자 기능은 별도 확인이 필요합니다.";
+    }
 
-      const requiredCriterionFailure =
-        criterionResults.some(
-          (criterion) =>
-            criterion.required &&
-            criterion.automated &&
-            !["PASS", "NOT_APPLICABLE"].includes(
-              criterion.status,
-            ),
-        );
+    const requiredCriterionFailure = criterionResults.some(
+      (criterion) =>
+        criterion.required &&
+        criterion.automated &&
+        !["PASS", "NOT_APPLICABLE"].includes(criterion.status),
+    );
 
-      if (
-        status === "PASS" &&
-        requiredCriterionFailure
-      ) {
-        status = "FAIL";
-        message =
-          "연결 규칙은 통과했지만 필수 완료 기준 중 통과하지 못한 항목이 있습니다.";
-      }
+    if (status === "PASS" && requiredCriterionFailure) {
+      status = "FAIL";
+      message =
+        "연결 규칙은 통과했지만 필수 완료 기준 중 통과하지 못한 항목이 있습니다.";
+    }
 
-      return {
-        workOrderItemId: item.id,
-        status,
-        criteriaResults: criterionResults,
-        evidence: {
-          ...evidence,
-          regressionRuleCodes,
-          submittedUrlMatches,
-        },
-        message,
-        nextItemStatus:
-          status === "PASS"
-            ? "COMPLETED"
-            : status === "FAIL"
-              ? "REWORK_REQUIRED"
-              : status === "BLOCKED"
-                ? "REVIEW_REQUIRED"
-                : status === "NOT_APPLICABLE"
-                  ? "NOT_APPLICABLE"
-                  : "IN_PROGRESS",
-        isRequired: item.isRequired,
-      };
-    },
-  );
+    return {
+      workOrderItemId: item.id,
+      status,
+      criteriaResults: criterionResults,
+      evidence: {
+        ...evidence,
+        regressionRuleCodes,
+        submittedUrlMatches,
+      },
+      message,
+      nextItemStatus:
+        status === "PASS"
+          ? "COMPLETED"
+          : status === "FAIL"
+            ? "REWORK_REQUIRED"
+            : status === "BLOCKED"
+              ? "REVIEW_REQUIRED"
+              : status === "NOT_APPLICABLE"
+                ? "NOT_APPLICABLE"
+                : "IN_PROGRESS",
+      isRequired: item.isRequired,
+    };
+  });
 
-  const hasRequiredItems = itemResults.some(
-    (item) => item.isRequired,
-  );
+  const hasRequiredItems = itemResults.some((item) => item.isRequired);
   const blockingResults = itemResults.filter(
     (item) =>
       (item.isRequired || !hasRequiredItems) &&
       !["PASS", "NOT_APPLICABLE"].includes(item.status),
   );
   const status: VerificationEvaluationStatus =
-    blockingResults.length === 0
-      ? "PASSED"
-      : "REWORK_REQUIRED";
+    blockingResults.length === 0 ? "PASSED" : "REWORK_REQUIRED";
 
   const summary = {
-    pass: itemResults.filter((item) => item.status === "PASS")
-      .length,
-    fail: itemResults.filter((item) => item.status === "FAIL")
-      .length,
-    blocked: itemResults.filter(
-      (item) => item.status === "BLOCKED",
-    ).length,
+    pass: itemResults.filter((item) => item.status === "PASS").length,
+    fail: itemResults.filter((item) => item.status === "FAIL").length,
+    blocked: itemResults.filter((item) => item.status === "BLOCKED").length,
     notApplicable: itemResults.filter(
       (item) => item.status === "NOT_APPLICABLE",
     ).length,
