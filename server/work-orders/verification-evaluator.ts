@@ -185,7 +185,12 @@ function sameSubmittedUrl(
 }
 
 function normalizedText(value: string | null): string {
-  return (value ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+  return (value ?? "")
+    .normalize("NFKC")
+    .replace(/\s*([,.;:!?()[\]{}"“”‘’·ㆍ・])\s*/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function normalizedList(values: string[]): string {
