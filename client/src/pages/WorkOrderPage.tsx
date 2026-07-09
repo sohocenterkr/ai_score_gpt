@@ -73,7 +73,7 @@ function workOrderVersionScoreLabel(
   version: number,
   isEnglish: boolean,
 ): string {
-  return isEnglish ? `Version ${version} diagnostic` : `${version}차 진단`;
+  return isEnglish ? `Version ${version} verification` : `${version}차 검수`;
 }
 
 function workOrderVersionCompletedLabel(
@@ -81,8 +81,8 @@ function workOrderVersionCompletedLabel(
   isEnglish: boolean,
 ): string {
   return isEnglish
-    ? `Version ${version} diagnostic completed`
-    : `${version}차 진단 완료`;
+    ? `Version ${version} verification completed`
+    : `${version}차 검수 완료`;
 }
 
 function workOrderVersionMetaLabel(
@@ -92,15 +92,15 @@ function workOrderVersionMetaLabel(
 ): string {
   if (isEnglish) {
     const prefix = `Version ${version}`;
-    if (label === "rules") return `${prefix} diagnostic rules version`;
+    if (label === "rules") return `${prefix} verification rules version`;
     if (label === "completedAt")
-      return `${prefix} diagnostic completed at (KST)`;
-    return `${prefix} diagnostic URL`;
+      return `${prefix} verification completed at (KST)`;
+    return `${prefix} verification URL`;
   }
 
-  if (label === "rules") return `${version}차 진단 규칙 버전`;
-  if (label === "completedAt") return `${version}차 진단 완료 시각(KST)`;
-  return `${version}차 진단 URL`;
+  if (label === "rules") return `${version}차 검수 규칙 버전`;
+  if (label === "completedAt") return `${version}차 검수 완료 시각(KST)`;
+  return `${version}차 검수 URL`;
 }
 
 function formatKST(value: string | null, isEnglish = false): string {
@@ -1253,7 +1253,7 @@ export function WorkOrderPage() {
               <h2>
                 {isEnglish
                   ? "Improvement items found in the initial diagnostic"
-                  : "1차 진단에서 발견된 수정 항목"}
+                  : "1차 검수에서 발견된 수정 항목"}
               </h2>
               <p>
                 {isEnglish
