@@ -113,11 +113,11 @@ const checkoutCopy = {
     domesticButton: "국내 결제 준비",
     extraVerificationTitle: "3차 작업지시서·4차 진단 추가 결제",
     extraVerificationBody:
-      "3차 이상 작업지시서 검수는 추가 검수권 결제 후 진행할 수 있습니다. 결제 1건은 해당 작업지시서의 검수 1회에 사용됩니다.",
+      "추가 결제 1건으로 3차 작업지시서와 해당 작업지시서 반영 후 4차 사이트 진단을 이용할 수 있습니다.",
     extraVerificationLabel: "3차 작업지시서·4차 진단",
     domesticExtraVerificationPrice: "33,000원 (VAT 포함)",
     extraVerificationItem: "3차 작업지시서와 수정 후 4차 사이트 진단",
-    extraVerificationButton: "결제 후 3차 작업지시서 진행",
+    extraVerificationButton: "추가 결제하고 계속 진행",
     loading: "결제창을 여는 중입니다... 잠시만 기다려 주세요..",
     globalPayment: "해외 카드와 글로벌 SaaS 결제 방식 지원",
     polarEyebrow: "해외 결제",
@@ -138,7 +138,7 @@ const checkoutCopy = {
       "작업 우선순위",
       "개발자 전달 문구",
       "완료 판정 기준",
-      "회귀 방지 기준과 자동검수 기준",
+      "회귀 방지 기준과 재진단 확인 기준",
     ],
     improvementTitle: "개선 후 추가 제공",
     improvementItems: [
@@ -191,13 +191,14 @@ const checkoutCopy = {
     nonDisclosure:
       "Full detailed reports, work orders, detailed issue lists, source evidence, scan data, and internal analysis materials will not be publicly disclosed.",
     domesticButton: "Prepare domestic payment",
-    extraVerificationTitle: "Work Order 3 and Diagnostic 4",
+    extraVerificationTitle:
+      "Additional Payment for Work Order 3 and Diagnostic 4",
     extraVerificationBody:
-      "Version 3 and later work order verification requires an additional verification ticket. One payment grants one verification run for the connected work order.",
+      "One additional payment provides access to Work Order 3 and Diagnostic 4 after the site updates are deployed.",
     extraVerificationLabel: "Work Order 3 and Diagnostic 4",
     domesticExtraVerificationPrice: "KRW 33,000 including VAT",
     extraVerificationItem: "Work Order 3 plus Diagnostic 4 after site updates",
-    extraVerificationButton: "Pay and continue",
+    extraVerificationButton: "Make additional payment and continue",
     loading: "Opening the payment window... Please wait.",
     globalPayment: "Supports international cards and global SaaS payment flow",
     polarEyebrow: "International Payment",
@@ -218,7 +219,7 @@ const checkoutCopy = {
       "Work priorities",
       "Developer handoff instructions",
       "Completion criteria",
-      "Regression prevention and automated review criteria",
+      "Regression prevention and re-diagnostic criteria",
     ],
     improvementTitle: "Additional Post-Improvement Guidance",
     improvementItems: [
@@ -359,7 +360,10 @@ export function CheckoutPage() {
     if (plan === "EXTRA_VERIFICATION" && !hasScanId && !hasWorkOrderId) {
       setMessage({
         tone: "error",
-        text: "결제할 3차 진단 결과가 연결되지 않았습니다. 사이트 진행 현황에서 다시 이동해 주세요.",
+        text:
+          locale === "en"
+            ? "No Diagnostic 3 result or Work Order 3 is connected for payment. Return to the site dashboard and try again."
+            : "결제할 3차 진단 결과 또는 3차 작업지시서가 연결되지 않았습니다. 사이트 관리에서 다시 이동해 주세요.",
       });
       return;
     }
@@ -570,30 +574,23 @@ export function CheckoutPage() {
             <h2>
               {isExtraVerificationCheckout
                 ? isEnglish
-                  ? "No work order is connected for payment."
-                  : "결제할 작업지시서가 연결되지 않았습니다."
+                  ? "No diagnostic result or work order is connected for payment."
+                  : "결제할 진단 결과 또는 작업지시서가 연결되지 않았습니다."
                 : copy.noScanTitle}
             </h2>
             <p>
               {isExtraVerificationCheckout
                 ? isEnglish
-                  ? "Please return to the work order page and use the payment button again."
-                  : "작업지시서 화면에서 결제 후 검수 버튼을 다시 눌러 주세요."
+                  ? "Please return to the site dashboard and use the additional payment button again."
+                  : "사이트 관리 화면으로 돌아가 추가 결제 버튼을 다시 눌러 주세요."
                 : copy.noScanBody}
             </p>
             <div className="checkout-contact-actions">
-              <Link
-                className="primary"
-                to={
-                  isExtraVerificationCheckout
-                    ? `/${locale}/work-orders`
-                    : `/${locale}/sites`
-                }
-              >
+              <Link className="primary" to={`/${locale}/sites`}>
                 {isExtraVerificationCheckout
                   ? isEnglish
-                    ? "Back to work orders"
-                    : "작업지시서 목록으로"
+                    ? "Back to site dashboard"
+                    : "사이트 관리로"
                   : copy.noScanAction}
               </Link>
               <Link className="secondary" to={`/${locale}/guide`}>
@@ -681,7 +678,7 @@ export function CheckoutPage() {
                   <button
                     className="primary checkout-price-action"
                     type="button"
-                    disabled={!hasWorkOrderId || submittingPlan !== null}
+                    disabled={!canCreatePayment || submittingPlan !== null}
                     onClick={() =>
                       void handleCreateDomesticOrder("EXTRA_VERIFICATION")
                     }
