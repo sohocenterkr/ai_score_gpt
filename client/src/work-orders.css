@@ -484,6 +484,11 @@
   color: #b91c1c;
 }
 
+.verification-count-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .verification-count-blocked {
   background: #ffedd5;
   color: #9a3412;
@@ -630,6 +635,11 @@
 .verification-criterion-fail {
   border-color: #fecaca;
   background: #fef2f2;
+}
+
+.verification-criterion-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
 }
 
 .verification-criterion-blocked {

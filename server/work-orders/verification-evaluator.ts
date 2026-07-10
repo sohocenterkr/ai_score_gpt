@@ -7,11 +7,14 @@ export type VerificationEvaluationStatus = "PASSED" | "REWORK_REQUIRED";
 export type VerificationItemEvaluationStatus =
   "PASS" | "FAIL" | "BLOCKED" | "NOT_APPLICABLE";
 
+export type VerificationCriterionEvaluationStatus =
+  VerificationItemEvaluationStatus | "WARNING";
+
 export interface VerificationCriterionEvaluation {
   code: string;
   label: string;
   required: boolean;
-  status: VerificationItemEvaluationStatus;
+  status: VerificationCriterionEvaluationStatus;
   automated: boolean;
   message: string;
 }
@@ -407,10 +410,10 @@ function criterionEvaluation(
   if (/디자인|사용자 기능|브라우저 스모크|수동 확인/.test(text)) {
     return {
       ...criterion,
-      status: "BLOCKED",
+      status: "WARNING",
       automated: false,
       message:
-        "현재 자동검수는 화면 디자인과 실제 사용자 기능의 정상 동작을 판정하지 않습니다. 주요 버튼·로그인·페이지 이동을 브라우저 스모크 테스트 또는 수동 확인으로 검증해 주세요.",
+        "자동검수 범위 밖의 항목입니다. 주요 버튼·로그인·페이지 이동과 화면 디자인은 브라우저 스모크 테스트 또는 수동 확인을 권장합니다.",
     };
   }
 
@@ -554,16 +557,6 @@ export function evaluateVerification(
           submittedUrlMatches,
         ),
     );
-
-    const manualReviewRequired = criterionResults.some(
-      (criterion) => !criterion.automated && criterion.status === "BLOCKED",
-    );
-
-    if (status === "PASS" && manualReviewRequired) {
-      status = "BLOCKED";
-      message =
-        "콘텐츠·구조 자동검수는 통과했지만 화면 디자인과 사용자 기능은 별도 확인이 필요합니다.";
-    }
 
     const requiredCriterionFailure = criterionResults.some(
       (criterion) =>

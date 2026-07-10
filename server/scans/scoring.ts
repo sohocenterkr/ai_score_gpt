@@ -309,8 +309,22 @@ export function calculateScore(
   }
 
   const cap = scoreCap(findingsByCode);
-  const score = Math.round(cap === null ? rawScore : Math.min(rawScore, cap));
-  const lostPoints = Math.max(0, 100 - score);
+  const hasScoredFailure = RULE_DEFINITIONS.some((definition) => {
+    if (definition.weight <= 0) {
+      return false;
+    }
+
+    const status = findingsByCode.get(definition.ruleCode)?.status;
+    return status !== undefined && status !== "PASS" && status !== "NA";
+  });
+  const automatedCeiling = hasScoredFailure ? 98 : 99;
+  const scoreBeforeCriticalCap = Math.min(rawScore, automatedCeiling);
+  const score = Math.round(
+    cap === null
+      ? scoreBeforeCriticalCap
+      : Math.min(scoreBeforeCriticalCap, cap),
+  );
+  const lostPoints = Math.max(0, 99 - score);
 
   return {
     score,
@@ -362,7 +376,10 @@ export function applyScoreToFindings(findings: readonly CollectedFinding[]): {
       return {
         ...finding,
         category: definition.category,
-        scoreDelta: finding.status === "PASS" || finding.status === "NA" ? 0 : -definition.weight,
+        scoreDelta:
+          finding.status === "PASS" || finding.status === "NA"
+            ? 0
+            : -definition.weight,
       };
     }),
   };

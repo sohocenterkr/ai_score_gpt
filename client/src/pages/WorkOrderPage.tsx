@@ -39,17 +39,17 @@ const statusLabels: Record<string, string> = {
 };
 
 function workOrderScoreGoal(scoreBefore: number | null | undefined) {
-  const current = Math.max(0, Math.min(100, Math.round(scoreBefore ?? 0)));
+  const current = Math.max(0, Math.min(99, Math.round(scoreBefore ?? 0)));
   const firstMin =
     current < 70 ? 70 : current < 80 ? 80 : current < 90 ? 90 : current;
-  const firstMax = firstMin < 80 ? 80 : 100;
-  const finalMin = Math.max(80, Math.min(100, firstMin));
+  const firstMax = firstMin < 80 ? 80 : 99;
+  const finalMin = Math.max(80, Math.min(99, firstMin));
 
   return {
     firstMin,
     firstMax,
     finalMin,
-    finalMax: 100,
+    finalMax: 99,
   };
 }
 
@@ -74,9 +74,7 @@ function workOrderVersionScoreLabel(
   version: number,
   isEnglish: boolean,
 ): string {
-  return isEnglish
-    ? `Diagnostic ${version}`
-    : `${version}차 사이트 진단`;
+  return isEnglish ? `Diagnostic ${version}` : `${version}차 사이트 진단`;
 }
 
 function workOrderVersionCompletedLabel(
@@ -100,8 +98,7 @@ function workOrderVersionMetaLabel(
   if (isEnglish) {
     const prefix = `Diagnostic ${version}`;
     if (label === "rules") return `${prefix} rules version`;
-    if (label === "completedAt")
-      return `${prefix} completed at (KST)`;
+    if (label === "completedAt") return `${prefix} completed at (KST)`;
     return `${prefix} URL`;
   }
 
@@ -146,7 +143,8 @@ function evidenceText(value: unknown): string {
 export const verificationItemStatusLabels: Record<string, string> = {
   PASS: "통과",
   FAIL: "실패",
-  BLOCKED: "확인 불가",
+  WARNING: "주의",
+  BLOCKED: "자동 확인 불가",
   NOT_APPLICABLE: "해당 없음",
 };
 
@@ -207,8 +205,9 @@ export function WorkOrderPage() {
   const [submittingVerification, setSubmittingVerification] = useState(false);
   const [selectedVerificationAttemptId, setSelectedVerificationAttemptId] =
     useState("");
-  const [selectedDiagnosticNumber, setSelectedDiagnosticNumber] =
-    useState<number | null>(null);
+  const [selectedDiagnosticNumber, setSelectedDiagnosticNumber] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -651,10 +650,10 @@ export function WorkOrderPage() {
                   ? hasRemainingVerificationItems
                     ? isEnglish
                       ? "The updated public URL has been verified. Create a follow-up work order only for the remaining failed or blocked items when additional improvement is needed."
-                      : "수정된 공개 URL 검수가 완료되었습니다. 추가 개선이 필요한 경우 실패 또는 확인 불가 항목만 모아 후속 작업지시서를 만들 수 있습니다."
+                      : "수정된 공개 URL 검수가 완료되었습니다. 추가 개선이 필요한 경우 실패 또는 자동 확인 불가 항목만 모아 후속 작업지시서를 만들 수 있습니다."
                     : isEnglish
                       ? "The updated public URL has been verified and no remaining failed or blocked items were found."
-                      : "수정된 공개 URL 검수가 완료되었고 남은 실패 또는 확인 불가 항목이 없습니다."
+                      : "수정된 공개 URL 검수가 완료되었고 남은 실패 또는 자동 확인 불가 항목이 없습니다."
                   : isEnglish
                     ? "Save this document as a PDF or send it to the developer to update the site. After deployment, submit the public URL below to verify whether the work was applied."
                     : "이 문서를 PDF로 저장하거나 개발자에게 전달해 사이트 수정을 진행하세요. 수정 사항을 배포한 뒤 아래 자동검수 영역에 공개 URL을 제출하면 작업 반영 여부를 확인할 수 있습니다."}
@@ -1093,6 +1092,14 @@ export function WorkOrderPage() {
                     const blockedCount = attempt.itemResults.filter(
                       (result) => result.status === "BLOCKED",
                     ).length;
+                    const warningCount = attempt.itemResults.reduce(
+                      (count, result) =>
+                        count +
+                        verificationCriteria(result.criteriaResults).filter(
+                          (criterion) => criterion.status === "WARNING",
+                        ).length,
+                      0,
+                    );
                     const notApplicableCount = attempt.itemResults.filter(
                       (result) => result.status === "NOT_APPLICABLE",
                     ).length;
@@ -1160,8 +1167,8 @@ export function WorkOrderPage() {
                           <div className="verification-result-summary">
                             <strong>
                               {isEnglish
-                                ? "Item-level automatic verification results"
-                                : "항목별 자동검수 결과"}
+                                ? "Item-level verification results"
+                                : "항목별 검수 결과"}
                             </strong>
                             <div>
                               <span className="verification-count-pass">
@@ -1170,8 +1177,13 @@ export function WorkOrderPage() {
                               <span className="verification-count-fail">
                                 {isEnglish ? "Fail" : "실패"} {failCount}
                               </span>
+                              <span className="verification-count-warning">
+                                {isEnglish ? "Warning" : "주의"} {warningCount}
+                              </span>
                               <span className="verification-count-blocked">
-                                {isEnglish ? "Blocked" : "확인 불가"}{" "}
+                                {isEnglish
+                                  ? "Automatic check unavailable"
+                                  : "자동 확인 불가"}{" "}
                                 {blockedCount}
                               </span>
                               <span className="verification-count-na">

@@ -35,7 +35,7 @@ function renderedEvidence(input: {
 }
 
 describe("verification evaluator trust rules", () => {
-  it("디자인과 사용자 기능은 자동 통과시키지 않고 수동 확인으로 표시한다", () => {
+  it("디자인과 사용자 기능의 수동 확인은 주의로 표시하고 자동 통과를 유지한다", () => {
     const result = evaluateVerification({
       items: [
         {
@@ -85,10 +85,10 @@ describe("verification evaluator trust rules", () => {
     });
 
     expect(result.status).toBe("PASSED");
-    expect(result.itemResults[1]?.status).toBe("BLOCKED");
-    expect(result.itemResults[1]?.nextItemStatus).toBe("REVIEW_REQUIRED");
+    expect(result.itemResults[1]?.status).toBe("PASS");
+    expect(result.itemResults[1]?.nextItemStatus).toBe("COMPLETED");
     expect(result.itemResults[1]?.criteriaResults[1]).toMatchObject({
-      status: "BLOCKED",
+      status: "WARNING",
       automated: false,
     });
   });

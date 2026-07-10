@@ -23,11 +23,11 @@ describe("scan scoring", () => {
     ).toBe(100);
   });
 
-  it("모든 규칙 통과 시 100점 A+를 반환한다", () => {
+  it("모든 규칙 통과 시 자동진단 최고점 99점 A+를 반환한다", () => {
     const summary = calculateScore(allFindings());
 
     expect(summary).toMatchObject({
-      score: 100,
+      score: 99,
       rawScore: 100,
       grade: "A+",
       cap: null,
@@ -49,7 +49,8 @@ describe("scan scoring", () => {
     canonical.status = "FAIL";
     const summary = calculateScore(findings);
 
-    expect(summary.score).toBe(99);
+    expect(summary.score).toBe(98);
+    expect(summary.lostPoints).toBe(1);
     expect(summary.grade).toBe("A+");
   });
 
@@ -66,9 +67,27 @@ describe("scan scoring", () => {
     searchAction.status = "NA";
     const summary = calculateScore(findings);
 
-    expect(summary.score).toBe(100);
+    expect(summary.score).toBe(99);
     expect(summary.lostPoints).toBe(0);
     expect(summary.grade).toBe("A+");
+  });
+
+  it("배점이 2점 이상인 실제 실패는 원점수를 추가로 이중 감점하지 않는다", () => {
+    const findings = allFindings();
+    const jsonLd = findings.find(
+      (finding) => finding.ruleCode === "STRUCT-JSONLD-001",
+    );
+
+    if (!jsonLd) {
+      throw new Error("JSON-LD rule missing");
+    }
+
+    jsonLd.status = "FAIL";
+    const summary = calculateScore(findings);
+
+    expect(summary.rawScore).toBe(97);
+    expect(summary.score).toBe(97);
+    expect(summary.lostPoints).toBe(2);
   });
 
   it("전체 noindex는 30점 상한을 적용한다", () => {
@@ -104,7 +123,8 @@ describe("scan scoring", () => {
     const summary = calculateScore(findings);
 
     expect(summary.rawScore).toBe(100);
-    expect(summary.score).toBe(100);
+    expect(summary.score).toBe(99);
+    expect(summary.lostPoints).toBe(0);
     expect(summary.grade).toBe("A+");
     expect(summary.cap).toBe(null);
   });
