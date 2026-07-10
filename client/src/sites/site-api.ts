@@ -17,6 +17,73 @@ export interface SiteScan {
   createdAt: string;
 }
 
+export interface SiteDiagnosticProgress {
+  diagnosticNumber: number;
+  sourceWorkOrderVersion: number;
+  source: "WORK_ORDER_INITIAL" | "WORK_ORDER_VERIFICATION";
+  scanId: string;
+  scanType: string;
+  status: string;
+  score: number | null;
+  grade: string | null;
+  rulesVersion: string;
+  targetUrl: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  reportAvailable: boolean;
+  verificationAttemptId: string | null;
+  verificationStatus: string | null;
+}
+
+export interface SiteWorkOrderProgress {
+  id: string;
+  orderNumber: string;
+  version: number;
+  status: string;
+  rulesVersion: string;
+  issuedAt: string | null;
+  createdAt: string;
+  itemCount: number;
+  requiredItemCount: number;
+  latestVerificationAttemptId: string | null;
+  latestVerificationStatus: string | null;
+}
+
+export type SiteProgressStageKind =
+  | "REGISTERED"
+  | "QUICK_SCAN"
+  | "INITIAL_PAYMENT"
+  | "DIAGNOSTIC"
+  | "WORK_ORDER"
+  | "EXTRA_PAYMENT"
+  | "COMPLETED";
+
+export type SiteProgressNextAction =
+  | "START_QUICK_SCAN"
+  | "WAIT"
+  | "PURCHASE_INITIAL"
+  | "VIEW_WORK_ORDER"
+  | "CREATE_NEXT_WORK_ORDER"
+  | "PURCHASE_EXTRA"
+  | "NONE";
+
+export interface SiteProgress {
+  payment: {
+    initialPaid: boolean;
+    extraPaid: boolean;
+  };
+  diagnostics: SiteDiagnosticProgress[];
+  workOrders: SiteWorkOrderProgress[];
+  latestDiagnosticNumber: number | null;
+  latestWorkOrderVersion: number | null;
+  currentStage: {
+    kind: SiteProgressStageKind;
+    number: number | null;
+    status: string;
+    nextAction: SiteProgressNextAction;
+  };
+}
+
 export interface RegisteredSite {
   id: string;
   organizationId: string;
@@ -32,6 +99,7 @@ export interface RegisteredSite {
   createdAt: string;
   updatedAt: string;
   latestScan: SiteScan | null;
+  progress?: SiteProgress;
 }
 
 export interface CreateSiteRequest {

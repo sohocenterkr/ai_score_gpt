@@ -8,7 +8,10 @@ import {
   SiteApiError,
   updateSiteRequest,
   type RegisteredSite,
+  type SiteDiagnosticProgress,
+  type SiteProgress,
   type SiteScan,
+  type SiteWorkOrderProgress,
 } from "../sites/site-api";
 import "../sites.css";
 
@@ -179,6 +182,266 @@ const sitesCopy = {
     },
   },
 } as const;
+
+const progressCopy = {
+  ko: {
+    progressTitle: "진행 현황",
+    progressHelp:
+      "간편진단부터 4차 정밀진단까지 현재 위치와 다음 작업을 차수별로 확인할 수 있습니다.",
+    currentStage: "현재 단계",
+    quickDiagnostic: "무료 간편진단",
+    quickNotStarted: "아직 간편진단을 실행하지 않았습니다.",
+    workflow: "차수별 진행",
+    initialPayment: "최초 결제",
+    extraPayment: "추가 결제",
+    paid: "결제 완료",
+    unpaid: "미결제",
+    extraPaymentGuide: "3차 진단 후 필요 시",
+    waitingPrevious: "이전 단계가 완료되면 열립니다.",
+    extraPaymentRequired: "추가 결제 후 열립니다.",
+    diagnosticTitle: (number: number) => `${number}차 정밀진단`,
+    workOrderTitle: (number: number) => `${number}차 작업지시서`,
+    score: (score: number, grade: string) => `${score}점 · ${grade}`,
+    itemCount: (count: number, required: number) =>
+      `개선 항목 ${count}개 · 필수 ${required}개`,
+    viewDiagnostic: "진단 보기",
+    viewWorkOrder: "작업지시서 보기",
+    purchaseInitial: "최초 결제하기",
+    purchaseExtra: "추가 결제하기",
+    createWorkOrder: "작업지시서 만들기",
+    processing: "처리 중",
+    stageRegistered: "사이트 등록 완료 · 간편진단 준비",
+    stageQuick: "무료 간편진단 진행 중",
+    stageInitialPayment: "최초 결제 필요",
+    stageDiagnostic: (number: number) => `${number}차 정밀진단 진행 중`,
+    stageWorkOrder: (number: number) => `${number}차 작업지시서 진행`,
+    stageExtraPayment: "3차 작업지시서·4차 진단 추가 결제 필요",
+    stageCompleted: (number: number) => `${number}차 정밀진단 완료`,
+    status: {
+      READY: "준비",
+      REQUIRED: "필요",
+      PENDING: "대기",
+      QUEUED: "대기 중",
+      RUNNING: "진행 중",
+      EVALUATING: "판정 중",
+      COMPLETED: "완료",
+      PARTIAL: "일부 완료",
+      PASSED: "완료",
+      REWORK_REQUIRED: "추가 개선 필요",
+      FAILED: "실패",
+      CANCELLED: "취소",
+      DRAFT: "초안",
+      ISSUED: "발급 완료",
+      ASSIGNED: "배정",
+      IN_PROGRESS: "작업 중",
+      SUBMITTED: "제출 완료",
+      VERIFYING: "다음 진단 진행 중",
+      REVIEW_REQUIRED: "확인 필요",
+    } as Record<string, string>,
+  },
+  en: {
+    progressTitle: "Progress",
+    progressHelp:
+      "Track the current position and next action from the simple diagnostic through Diagnostic 4.",
+    currentStage: "Current stage",
+    quickDiagnostic: "Free Simple Diagnostic",
+    quickNotStarted: "The simple diagnostic has not been run yet.",
+    workflow: "Round-by-round progress",
+    initialPayment: "Initial payment",
+    extraPayment: "Additional payment",
+    paid: "Paid",
+    unpaid: "Not paid",
+    extraPaymentGuide: "If needed after Diagnostic 3",
+    waitingPrevious: "Available after the previous step is completed.",
+    extraPaymentRequired: "Available after the additional payment.",
+    diagnosticTitle: (number: number) => `Diagnostic ${number}`,
+    workOrderTitle: (number: number) => `Work Order ${number}`,
+    score: (score: number, grade: string) => `${score} points · ${grade}`,
+    itemCount: (count: number, required: number) =>
+      `${count} improvement items · ${required} required`,
+    viewDiagnostic: "View Diagnostic",
+    viewWorkOrder: "View Work Order",
+    purchaseInitial: "Make Initial Payment",
+    purchaseExtra: "Make Additional Payment",
+    createWorkOrder: "Create Work Order",
+    processing: "Processing",
+    stageRegistered: "Website registered · Ready for simple diagnostic",
+    stageQuick: "Free simple diagnostic in progress",
+    stageInitialPayment: "Initial payment required",
+    stageDiagnostic: (number: number) => `Diagnostic ${number} in progress`,
+    stageWorkOrder: (number: number) => `Work Order ${number} in progress`,
+    stageExtraPayment:
+      "Additional payment required for Work Order 3 and Diagnostic 4",
+    stageCompleted: (number: number) => `Diagnostic ${number} completed`,
+    status: {
+      READY: "Ready",
+      REQUIRED: "Required",
+      PENDING: "Pending",
+      QUEUED: "Queued",
+      RUNNING: "In progress",
+      EVALUATING: "Evaluating",
+      COMPLETED: "Completed",
+      PARTIAL: "Partially completed",
+      PASSED: "Completed",
+      REWORK_REQUIRED: "More improvements needed",
+      FAILED: "Failed",
+      CANCELLED: "Cancelled",
+      DRAFT: "Draft",
+      ISSUED: "Issued",
+      ASSIGNED: "Assigned",
+      IN_PROGRESS: "In progress",
+      SUBMITTED: "Submitted",
+      VERIFYING: "Next diagnostic in progress",
+      REVIEW_REQUIRED: "Review required",
+    } as Record<string, string>,
+  },
+} as const;
+
+type DashboardLocale = "ko" | "en";
+type ProgressCopy = (typeof progressCopy)[DashboardLocale];
+
+interface DiagnosticStepView {
+  scanId: string;
+  status: string;
+  score: number | null;
+  grade: string | null;
+  completedAt: string | null;
+}
+
+function diagnosticStep(
+  site: RegisteredSite,
+  number: number,
+): DiagnosticStepView | null {
+  const diagnostic = site.progress?.diagnostics.find(
+    (item) => item.diagnosticNumber === number,
+  );
+
+  if (diagnostic) {
+    return {
+      scanId: diagnostic.scanId,
+      status: diagnostic.status,
+      score: diagnostic.score,
+      grade: diagnostic.grade,
+      completedAt: diagnostic.completedAt,
+    };
+  }
+
+  if (
+    number === 1 &&
+    site.progress?.payment.initialPaid &&
+    site.latestScan &&
+    site.latestScan.type !== "VERIFICATION" &&
+    ["COMPLETED", "PARTIAL"].includes(site.latestScan.status)
+  ) {
+    return {
+      scanId: site.latestScan.id,
+      status: site.latestScan.status,
+      score: site.latestScan.score,
+      grade: site.latestScan.grade,
+      completedAt: site.latestScan.completedAt,
+    };
+  }
+
+  return null;
+}
+
+function statusLabel(
+  status: string,
+  locale: DashboardLocale,
+  copy: ProgressCopy,
+): string {
+  return copy.status[status] ?? status.replaceAll("_", " ").toLowerCase();
+}
+
+function statusTone(status: string): string {
+  if (["COMPLETED", "PARTIAL", "PASSED", "ISSUED"].includes(status)) {
+    return "complete";
+  }
+
+  if (
+    ["QUEUED", "RUNNING", "EVALUATING", "VERIFYING", "IN_PROGRESS"].includes(
+      status,
+    )
+  ) {
+    return "active";
+  }
+
+  if (["FAILED", "CANCELLED", "REWORK_REQUIRED"].includes(status)) {
+    return "attention";
+  }
+
+  return "pending";
+}
+
+function currentStageLabel(
+  progress: SiteProgress | undefined,
+  locale: DashboardLocale,
+  copy: ProgressCopy,
+  latestScan: SiteScan | null,
+): string {
+  if (!progress) {
+    if (!latestScan) {
+      return copy.stageRegistered;
+    }
+
+    if (["QUEUED", "RUNNING"].includes(latestScan.status)) {
+      return copy.stageQuick;
+    }
+
+    return locale === "en"
+      ? "Simple diagnostic completed"
+      : "무료 간편진단 완료";
+  }
+
+  const number = progress.currentStage.number ?? 1;
+
+  switch (progress.currentStage.kind) {
+    case "REGISTERED":
+      return copy.stageRegistered;
+    case "QUICK_SCAN":
+      return copy.stageQuick;
+    case "INITIAL_PAYMENT":
+      return copy.stageInitialPayment;
+    case "DIAGNOSTIC":
+      return copy.stageDiagnostic(number);
+    case "WORK_ORDER":
+      return copy.stageWorkOrder(number);
+    case "EXTRA_PAYMENT":
+      return copy.stageExtraPayment;
+    case "COMPLETED":
+      return copy.stageCompleted(number);
+  }
+}
+
+function isCurrentStep(
+  progress: SiteProgress | undefined,
+  kind: "DIAGNOSTIC" | "WORK_ORDER",
+  number: number,
+): boolean {
+  if (!progress) {
+    return false;
+  }
+
+  const stage = progress.currentStage;
+
+  if (stage.kind === kind && stage.number === number) {
+    return true;
+  }
+
+  if (stage.kind === "COMPLETED" && kind === "DIAGNOSTIC") {
+    return stage.number === number;
+  }
+
+  if (stage.kind === "INITIAL_PAYMENT" && kind === "DIAGNOSTIC") {
+    return number === 1;
+  }
+
+  if (stage.kind === "EXTRA_PAYMENT" && kind === "WORK_ORDER") {
+    return number === 3;
+  }
+
+  return false;
+}
 
 function formatKST(value: string, locale: "ko" | "en"): string {
   return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "ko-KR", {
@@ -484,20 +747,22 @@ export function SitesPage() {
               <p>{copy.createHelp}</p>
             </div>
 
-            <SiteFields
-              prefix="create"
-              form={form}
-              labels={copy.fields}
-              onChange={(key, value) => updateForm(key, value)}
-            />
+            <div className="site-create-body">
+              <SiteFields
+                prefix="create"
+                form={form}
+                labels={copy.fields}
+                onChange={(key, value) => updateForm(key, value)}
+              />
 
-            <button
-              className="site-primary-button"
-              type="submit"
-              disabled={submitting}
-            >
-              {submitting ? copy.checking : copy.createButton}
-            </button>
+              <button
+                className="site-primary-button site-create-submit"
+                type="submit"
+                disabled={submitting}
+              >
+                {submitting ? copy.checking : copy.createButton}
+              </button>
+            </div>
           </form>
 
           <div className="site-list-panel">
@@ -517,208 +782,499 @@ export function SitesPage() {
               <div className="surface sites-empty">{copy.empty}</div>
             ) : (
               <div className="site-list">
-                {sites.map((site) => {
-                  const scanPending =
-                    site.latestScan?.status === "QUEUED" ||
-                    site.latestScan?.status === "RUNNING";
-                  const scanCompleted =
-                    site.latestScan?.status === "COMPLETED" ||
-                    site.latestScan?.status === "PARTIAL";
-                  const scanOutdated = Boolean(
-                    scanCompleted && site.latestScan?.isOutdatedRulesVersion,
-                  );
-                  const working = workingSiteId === site.id;
-
-                  return (
-                    <article className="surface site-card" key={site.id}>
-                      {editingId === site.id ? (
-                        <form
-                          className="site-form site-edit-form"
-                          onSubmit={(event) =>
-                            void handleUpdate(event, site.id)
-                          }
-                        >
-                          <div className="site-card-header">
-                            <h3>{copy.editTitle}</h3>
-                          </div>
-                          <SiteFields
-                            prefix={`edit-${site.id}`}
-                            form={editForm}
-                            labels={copy.fields}
-                            onChange={(key, value) =>
-                              updateForm(key, value, true)
-                            }
-                          />
-                          {scanOutdated ? (
-                            <p className="site-upgrade-notice">
-                              {copy.scanOutdatedNotice}
-                            </p>
-                          ) : null}
-
-                          <div className="site-card-actions">
-                            <button
-                              className="site-primary-button"
-                              type="submit"
-                              disabled={working}
-                            >
-                              {working ? copy.saving : copy.saveEdit}
-                            </button>
-                            <button
-                              className="site-secondary-button"
-                              type="button"
-                              onClick={() => setEditingId(null)}
-                              disabled={working}
-                            >
-                              {copy.cancel}
-                            </button>
-                          </div>
-                        </form>
-                      ) : (
-                        <>
-                          <div className="site-card-header">
-                            <div>
-                              <span className="site-status">
-                                {copy.registered}
-                              </span>
-                              <h3>{site.name}</h3>
-                            </div>
-                            <span className="site-locale">
-                              {site.country} · {site.primaryLocale}
-                            </span>
-                          </div>
-
-                          <a
-                            className="site-url"
-                            href={site.baseUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {site.baseUrl}
-                          </a>
-
-                          <dl className="site-meta">
-                            <div>
-                              <dt>{copy.industry}</dt>
-                              <dd>
-                                {formatSiteType(
-                                  site.siteType,
-                                  normalizedLocale,
-                                ) ?? copy.notEntered}
-                              </dd>
-                            </div>
-                            <div>
-                              <dt>{copy.region}</dt>
-                              <dd>{site.region ?? copy.notEntered}</dd>
-                            </div>
-                            <div>
-                              <dt>{copy.finalUrl}</dt>
-                              <dd>{site.finalUrl ?? copy.checkedAfterScan}</dd>
-                            </div>
-                            <div>
-                              <dt>{copy.createdAt}</dt>
-                              <dd>
-                                {formatKST(site.createdAt, normalizedLocale)}
-                              </dd>
-                            </div>
-                          </dl>
-
-                          <div className="scan-summary">
-                            <strong>{copy.latestScan}</strong>
-                            {site.latestScan ? (
-                              <span>
-                                {scanLabels[site.latestScan.status]} ·{" "}
-                                {site.latestScan.type}
-                                {site.latestScan.score !== null ? (
-                                  <>
-                                    {" "}
-                                    ·{" "}
-                                    {copy.score(
-                                      Math.round(site.latestScan.score),
-                                      site.latestScan.grade ?? "-",
-                                    )}
-                                  </>
-                                ) : null}{" "}
-                                ·{" "}
-                                {formatKST(
-                                  site.latestScan.createdAt,
-                                  normalizedLocale,
-                                )}
-                              </span>
-                            ) : (
-                              <span>{copy.noScan}</span>
-                            )}
-                          </div>
-
-                          <div className="site-card-actions">
-                            <button
-                              className="site-primary-button"
-                              type="button"
-                              onClick={() => void handleQueueScan(site)}
-                              disabled={
-                                working ||
-                                scanPending ||
-                                (scanCompleted && !scanOutdated)
-                              }
-                            >
-                              {working
-                                ? copy.processing
-                                : scanPending
-                                  ? copy.scanWaiting
-                                  : scanOutdated
-                                    ? copy.rescanCurrent
-                                    : scanCompleted
-                                      ? copy.scanComplete
-                                      : copy.startScan}
-                            </button>
-                            {site.latestScan &&
-                            (site.latestScan.status === "COMPLETED" ||
-                              site.latestScan.status === "PARTIAL" ||
-                              site.latestScan.status === "FAILED") ? (
-                              <Link
-                                className="site-secondary-button"
-                                to={
-                                  site.latestScan.type === "VERIFICATION" &&
-                                  site.latestScan.verificationWorkOrderId
-                                    ? `/${locale}/work-orders/${site.latestScan.verificationWorkOrderId}`
-                                    : `/${locale}/sites/${site.id}/scans/${site.latestScan.id}`
-                                }
-                              >
-                                {site.latestScan.type === "VERIFICATION" &&
-                                site.latestScan.verificationWorkOrderId
-                                  ? normalizedLocale === "en"
-                                    ? "View Recheck Comparison"
-                                    : "검수 비교 보기"
-                                  : copy.viewResult}
-                              </Link>
-                            ) : null}
-                            <button
-                              className="site-secondary-button"
-                              type="button"
-                              onClick={() => beginEdit(site)}
-                              disabled={working}
-                            >
-                              {copy.edit}
-                            </button>
-                            <button
-                              className="site-danger-button"
-                              type="button"
-                              onClick={() => void handleArchive(site)}
-                              disabled={working}
-                            >
-                              {copy.delete}
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </article>
-                  );
-                })}
+                {sites.map((site) => (
+                  <SiteDashboardCard
+                    key={site.id}
+                    site={site}
+                    locale={normalizedLocale}
+                    copy={copy}
+                    scanLabels={scanLabels}
+                    editing={editingId === site.id}
+                    editForm={editForm}
+                    working={workingSiteId === site.id}
+                    onBeginEdit={() => beginEdit(site)}
+                    onCancelEdit={() => setEditingId(null)}
+                    onEditChange={(key, value) => updateForm(key, value, true)}
+                    onUpdate={(event) => void handleUpdate(event, site.id)}
+                    onQueueScan={() => void handleQueueScan(site)}
+                    onArchive={() => void handleArchive(site)}
+                  />
+                ))}
               </div>
             )}
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+interface SiteDashboardCardProps {
+  site: RegisteredSite;
+  locale: DashboardLocale;
+  copy: typeof sitesCopy.ko | typeof sitesCopy.en;
+  scanLabels: Record<SiteScan["status"], string>;
+  editing: boolean;
+  editForm: SiteFormState;
+  working: boolean;
+  onBeginEdit: () => void;
+  onCancelEdit: () => void;
+  onEditChange: (key: keyof SiteFormState, value: string) => void;
+  onUpdate: (event: FormEvent<HTMLFormElement>) => void;
+  onQueueScan: () => void;
+  onArchive: () => void;
+}
+
+function SiteDashboardCard({
+  site,
+  locale,
+  copy,
+  scanLabels,
+  editing,
+  editForm,
+  working,
+  onBeginEdit,
+  onCancelEdit,
+  onEditChange,
+  onUpdate,
+  onQueueScan,
+  onArchive,
+}: SiteDashboardCardProps) {
+  const progress = site.progress;
+  const progressText = progressCopy[locale];
+  const latestSimpleScan =
+    site.latestScan?.type === "VERIFICATION" ? null : site.latestScan;
+  const scanPending =
+    latestSimpleScan?.status === "QUEUED" ||
+    latestSimpleScan?.status === "RUNNING";
+  const scanCompleted =
+    latestSimpleScan?.status === "COMPLETED" ||
+    latestSimpleScan?.status === "PARTIAL";
+  const scanOutdated = Boolean(
+    scanCompleted && latestSimpleScan?.isOutdatedRulesVersion,
+  );
+  const workflowSteps = [
+    { kind: "DIAGNOSTIC" as const, number: 1 },
+    { kind: "WORK_ORDER" as const, number: 1 },
+    { kind: "DIAGNOSTIC" as const, number: 2 },
+    { kind: "WORK_ORDER" as const, number: 2 },
+    { kind: "DIAGNOSTIC" as const, number: 3 },
+    { kind: "WORK_ORDER" as const, number: 3 },
+    { kind: "DIAGNOSTIC" as const, number: 4 },
+  ];
+  const currentWorkOrder =
+    progress?.workOrders.find(
+      (item) => item.version === progress.currentStage.number,
+    ) ?? progress?.workOrders.at(-1);
+  const workOrderDiagnostic =
+    progress?.currentStage.number === 1
+      ? diagnosticStep(site, 1)
+      : progress?.diagnostics.find(
+          (item) => item.diagnosticNumber === progress.currentStage.number,
+        );
+  const simpleDiagnostic =
+    diagnosticStep(site, 1) ??
+    (latestSimpleScan
+      ? {
+          scanId: latestSimpleScan.id,
+          status: latestSimpleScan.status,
+          score: latestSimpleScan.score,
+          grade: latestSimpleScan.grade,
+          completedAt: latestSimpleScan.completedAt,
+        }
+      : null);
+  const thirdDiagnostic = diagnosticStep(site, 3);
+
+  function renderNextAction() {
+    const action = progress?.currentStage.nextAction;
+
+    if (!progress || action === "START_QUICK_SCAN") {
+      return (
+        <button
+          className="site-primary-button"
+          type="button"
+          onClick={onQueueScan}
+          disabled={working || scanPending}
+        >
+          {working
+            ? copy.processing
+            : scanPending
+              ? copy.scanWaiting
+              : scanOutdated
+                ? copy.rescanCurrent
+                : copy.startScan}
+        </button>
+      );
+    }
+
+    if (action === "WAIT") {
+      return (
+        <button className="site-primary-button" type="button" disabled>
+          {progressText.processing}
+        </button>
+      );
+    }
+
+    if (action === "PURCHASE_INITIAL" && site.latestScan) {
+      return (
+        <Link
+          className="site-primary-button"
+          to={`/${locale}/checkout?scanId=${encodeURIComponent(
+            site.latestScan.id,
+          )}`}
+        >
+          {progressText.purchaseInitial}
+        </Link>
+      );
+    }
+
+    if (action === "VIEW_WORK_ORDER" && currentWorkOrder) {
+      return (
+        <Link
+          className="site-primary-button"
+          to={`/${locale}/work-orders/${currentWorkOrder.id}`}
+        >
+          {progressText.viewWorkOrder}
+        </Link>
+      );
+    }
+
+    if (action === "CREATE_NEXT_WORK_ORDER" && workOrderDiagnostic) {
+      return (
+        <Link
+          className="site-primary-button"
+          to={`/${locale}/sites/${site.id}/scans/${workOrderDiagnostic.scanId}`}
+        >
+          {progressText.createWorkOrder}
+        </Link>
+      );
+    }
+
+    if (action === "PURCHASE_EXTRA" && thirdDiagnostic) {
+      const params = new URLSearchParams({
+        scanId: thirdDiagnostic.scanId,
+        plan: "EXTRA_VERIFICATION",
+        returnTo: `/${locale}/sites`,
+      });
+
+      return (
+        <Link
+          className="site-primary-button"
+          to={`/${locale}/checkout?${params.toString()}`}
+        >
+          {progressText.purchaseExtra}
+        </Link>
+      );
+    }
+
+    return null;
+  }
+
+  if (editing) {
+    return (
+      <article className="surface site-card">
+        <form className="site-form site-edit-form" onSubmit={onUpdate}>
+          <div className="site-card-header">
+            <h3>{copy.editTitle}</h3>
+          </div>
+          <SiteFields
+            prefix={`edit-${site.id}`}
+            form={editForm}
+            labels={copy.fields}
+            onChange={onEditChange}
+          />
+          {scanOutdated ? (
+            <p className="site-upgrade-notice">{copy.scanOutdatedNotice}</p>
+          ) : null}
+
+          <div className="site-card-actions">
+            <button
+              className="site-primary-button"
+              type="submit"
+              disabled={working}
+            >
+              {working ? copy.saving : copy.saveEdit}
+            </button>
+            <button
+              className="site-secondary-button"
+              type="button"
+              onClick={onCancelEdit}
+              disabled={working}
+            >
+              {copy.cancel}
+            </button>
+          </div>
+        </form>
+      </article>
+    );
+  }
+
+  return (
+    <article className="surface site-card">
+      <div className="site-card-header">
+        <div>
+          <span className="site-status">{copy.registered}</span>
+          <h3>{site.name}</h3>
+        </div>
+        <span className="site-locale">
+          {site.country} · {site.primaryLocale}
+        </span>
+      </div>
+
+      <a
+        className="site-url"
+        href={site.baseUrl}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {site.baseUrl}
+      </a>
+
+      <dl className="site-meta">
+        <div>
+          <dt>{copy.industry}</dt>
+          <dd>{formatSiteType(site.siteType, locale) ?? copy.notEntered}</dd>
+        </div>
+        <div>
+          <dt>{copy.region}</dt>
+          <dd>{site.region ?? copy.notEntered}</dd>
+        </div>
+        <div>
+          <dt>{copy.finalUrl}</dt>
+          <dd>{site.finalUrl ?? copy.checkedAfterScan}</dd>
+        </div>
+        <div>
+          <dt>{copy.createdAt}</dt>
+          <dd>{formatKST(site.createdAt, locale)}</dd>
+        </div>
+      </dl>
+
+      <section className="site-progress-section">
+        <div className="site-progress-heading">
+          <div>
+            <h4>{progressText.progressTitle}</h4>
+            <p>{progressText.progressHelp}</p>
+          </div>
+          <div
+            className="site-payment-summary"
+            aria-label={progressText.progressTitle}
+          >
+            <span className={progress?.payment.initialPaid ? "paid" : "unpaid"}>
+              {progressText.initialPayment}:{" "}
+              {progress?.payment.initialPaid
+                ? progressText.paid
+                : progressText.unpaid}
+            </span>
+            <span className={progress?.payment.extraPaid ? "paid" : "pending"}>
+              {progressText.extraPayment}:{" "}
+              {progress?.payment.extraPaid
+                ? progressText.paid
+                : progressText.extraPaymentGuide}
+            </span>
+          </div>
+        </div>
+
+        <div className="site-current-stage">
+          <div>
+            <span>{progressText.currentStage}</span>
+            <strong>
+              {currentStageLabel(
+                progress,
+                locale,
+                progressText,
+                site.latestScan,
+              )}
+            </strong>
+          </div>
+          <div className="site-current-action">{renderNextAction()}</div>
+        </div>
+
+        <div className="site-quick-diagnostic">
+          <div>
+            <span>{progressText.quickDiagnostic}</span>
+            <strong>
+              {simpleDiagnostic
+                ? statusLabel(simpleDiagnostic.status, locale, progressText)
+                : progressText.quickNotStarted}
+            </strong>
+            {simpleDiagnostic?.score !== null &&
+            simpleDiagnostic?.score !== undefined ? (
+              <small>
+                {progressText.score(
+                  Math.round(simpleDiagnostic.score),
+                  simpleDiagnostic.grade ?? "-",
+                )}
+              </small>
+            ) : null}
+          </div>
+          <div className="site-quick-actions">
+            {simpleDiagnostic &&
+            ["COMPLETED", "PARTIAL", "FAILED"].includes(
+              simpleDiagnostic.status,
+            ) ? (
+              <Link
+                className="site-secondary-button"
+                to={`/${locale}/sites/${site.id}/scans/${simpleDiagnostic.scanId}`}
+              >
+                {copy.viewResult}
+              </Link>
+            ) : null}
+            {scanOutdated ? (
+              <button
+                className="site-secondary-button"
+                type="button"
+                onClick={onQueueScan}
+                disabled={working || scanPending}
+              >
+                {working ? copy.processing : copy.rescanCurrent}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="site-workflow-heading">
+          <strong>{progressText.workflow}</strong>
+        </div>
+
+        <div className="site-progress-flow">
+          {workflowSteps.map((step, index) => {
+            const current = isCurrentStep(progress, step.kind, step.number);
+
+            if (step.kind === "DIAGNOSTIC") {
+              const diagnostic = diagnosticStep(site, step.number);
+              const status = diagnostic?.status ?? "PENDING";
+
+              return (
+                <div
+                  className={`site-progress-step ${current ? "current" : ""}`}
+                  key={`diagnostic-${step.number}`}
+                >
+                  <span className="site-step-index">{index + 1}</span>
+                  <div className="site-step-title">
+                    <strong>{progressText.diagnosticTitle(step.number)}</strong>
+                    <span className={`site-step-status ${statusTone(status)}`}>
+                      {diagnostic
+                        ? statusLabel(status, locale, progressText)
+                        : progressText.status.PENDING}
+                    </span>
+                  </div>
+                  <div className="site-step-detail">
+                    {diagnostic ? (
+                      <>
+                        {diagnostic.score !== null ? (
+                          <span>
+                            {progressText.score(
+                              Math.round(diagnostic.score),
+                              diagnostic.grade ?? "-",
+                            )}
+                          </span>
+                        ) : null}
+                        {diagnostic.completedAt ? (
+                          <small>
+                            {formatKST(diagnostic.completedAt, locale)}
+                          </small>
+                        ) : null}
+                      </>
+                    ) : (
+                      <span>{progressText.waitingPrevious}</span>
+                    )}
+                  </div>
+                  <div className="site-step-action">
+                    {diagnostic ? (
+                      <Link
+                        className="site-secondary-button"
+                        to={`/${locale}/sites/${site.id}/scans/${diagnostic.scanId}`}
+                      >
+                        {progressText.viewDiagnostic}
+                      </Link>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            }
+
+            const workOrder = progress?.workOrders.find(
+              (item) => item.version === step.number,
+            );
+            const status = workOrder?.status ?? "PENDING";
+            const needsExtraPayment =
+              step.number === 3 &&
+              Boolean(diagnosticStep(site, 3)) &&
+              !progress?.payment.extraPaid;
+
+            return (
+              <div
+                className={`site-progress-step ${current ? "current" : ""}`}
+                key={`work-order-${step.number}`}
+              >
+                <span className="site-step-index">{index + 1}</span>
+                <div className="site-step-title">
+                  <strong>{progressText.workOrderTitle(step.number)}</strong>
+                  <span className={`site-step-status ${statusTone(status)}`}>
+                    {workOrder
+                      ? statusLabel(status, locale, progressText)
+                      : progressText.status.PENDING}
+                  </span>
+                </div>
+                <div className="site-step-detail">
+                  {workOrder ? (
+                    <>
+                      <span>
+                        {progressText.itemCount(
+                          workOrder.itemCount,
+                          workOrder.requiredItemCount,
+                        )}
+                      </span>
+                      <small>
+                        {formatKST(
+                          workOrder.issuedAt ?? workOrder.createdAt,
+                          locale,
+                        )}
+                      </small>
+                    </>
+                  ) : (
+                    <span>
+                      {needsExtraPayment
+                        ? progressText.extraPaymentRequired
+                        : progressText.waitingPrevious}
+                    </span>
+                  )}
+                </div>
+                <div className="site-step-action">
+                  {workOrder ? (
+                    <Link
+                      className="site-secondary-button"
+                      to={`/${locale}/work-orders/${workOrder.id}`}
+                    >
+                      {progressText.viewWorkOrder}
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <div className="site-card-management">
+        <button
+          className="site-secondary-button"
+          type="button"
+          onClick={onBeginEdit}
+          disabled={working}
+        >
+          {copy.edit}
+        </button>
+        <button
+          className="site-danger-button"
+          type="button"
+          onClick={onArchive}
+          disabled={working}
+        >
+          {copy.delete}
+        </button>
+      </div>
+    </article>
   );
 }
 
