@@ -9,7 +9,7 @@ import type {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-scan-locale-v4";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-scan-locale-v5";
 
 let cachedFontHash: string | undefined;
 
@@ -1315,6 +1315,15 @@ function comparisonMetricText(
   )} (${delta})`;
 }
 
+function scanResultReportTitle(result: PublicScanResult): string {
+  const siteName = cleanText(result.site.name);
+  const diagnosticNumber = result.scan.diagnosticNumber;
+
+  return result.scan.locale === "en"
+    ? `${siteName} Diagnostic ${diagnosticNumber} Report`
+    : `${siteName} ${diagnosticNumber}차 사이트 진단 보고서`;
+}
+
 function writeCover(
   document: PDFKit.PDFDocument,
   result: PublicScanResult,
@@ -1331,9 +1340,7 @@ function writeCover(
   });
 
   setText(document, 24, COLORS.white).text(
-    result.scan.locale === "en"
-      ? `${cleanText(result.site.name)} Diagnostic Report`
-      : `${cleanText(result.site.name)} 진단 보고서`,
+    scanResultReportTitle(result),
     x + 22,
     top + 43,
     {
@@ -2503,7 +2510,10 @@ export function scanResultPdfFontHash(): string {
 export function scanResultPdfFilename(
   result: Pick<PublicScanResult, "scan">,
 ): string {
-  return `site-ai-score-${result.scan.id}.pdf`.replace(/[^A-Za-z0-9._-]/g, "-");
+  return `site-ai-score-diagnostic-${result.scan.diagnosticNumber}-${result.scan.id}.pdf`.replace(
+    /[^A-Za-z0-9._-]/g,
+    "-",
+  );
 }
 
 export async function renderScanResultPdf(
@@ -2523,10 +2533,7 @@ export async function renderScanResultPdf(
       left: 46,
     },
     info: {
-      Title:
-        safeResult.scan.locale === "en"
-          ? `${cleanText(safeResult.site.name)} Diagnostic Report`
-          : `${cleanText(safeResult.site.name)} 진단 보고서`,
+      Title: scanResultReportTitle(safeResult),
       Author: "Site AI Score",
       Subject: `${cleanText(safeResult.scan.id)} / ${cleanText(
         safeResult.scan.rulesVersion,

@@ -56,6 +56,7 @@ export interface PublicScanResult {
   scan: {
     id: string;
     type: string;
+    diagnosticNumber: number;
     status: string;
     rulesVersion: string;
     locale: "ko" | "en";
@@ -85,14 +86,9 @@ export interface PublicScanResult {
 }
 
 export interface ScanResultService {
-  getScanResult(
-    user: PublicUser,
-    scanId: string,
-  ): Promise<PublicScanResult>;
+  getScanResult(user: PublicUser, scanId: string): Promise<PublicScanResult>;
 
-  getScanResultForAdmin?(
-    scanId: string,
-  ): Promise<PublicScanResult>;
+  getScanResultForAdmin?(scanId: string): Promise<PublicScanResult>;
 }
 
 export class ScanResultServiceError extends Error {
@@ -107,11 +103,7 @@ export class ScanResultServiceError extends Error {
 }
 
 function evidenceRecord(value: unknown): Record<string, unknown> {
-  if (
-    value &&
-    typeof value === "object" &&
-    !Array.isArray(value)
-  ) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
   }
 
@@ -123,14 +115,10 @@ function evidenceString(
   ruleCode: string,
   key: string,
 ): string | null {
-  const finding = findings.find(
-    (item) => item.ruleCode === ruleCode,
-  );
+  const finding = findings.find((item) => item.ruleCode === ruleCode);
   const value = evidenceRecord(finding?.evidenceJson)[key];
 
-  return typeof value === "string" && value.trim()
-    ? value.trim()
-    : null;
+  return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
 function evidenceNumber(
@@ -138,14 +126,10 @@ function evidenceNumber(
   ruleCode: string,
   key: string,
 ): number | null {
-  const finding = findings.find(
-    (item) => item.ruleCode === ruleCode,
-  );
+  const finding = findings.find((item) => item.ruleCode === ruleCode);
   const value = evidenceRecord(finding?.evidenceJson)[key];
 
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : null;
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
 function evidenceStrings(
@@ -153,9 +137,7 @@ function evidenceStrings(
   ruleCode: string,
   key: string,
 ): string[] {
-  const finding = findings.find(
-    (item) => item.ruleCode === ruleCode,
-  );
+  const finding = findings.find((item) => item.ruleCode === ruleCode);
   const value = evidenceRecord(finding?.evidenceJson)[key];
 
   if (!Array.isArray(value)) {
@@ -163,14 +145,11 @@ function evidenceStrings(
   }
 
   return value.filter(
-    (item): item is string =>
-      typeof item === "string" && Boolean(item.trim()),
+    (item): item is string => typeof item === "string" && Boolean(item.trim()),
   );
 }
 
-function publicFinding(
-  finding: Finding,
-): PublicScanResultFinding {
+function publicFinding(finding: Finding): PublicScanResultFinding {
   return {
     id: finding.id,
     ruleCode: finding.ruleCode,
@@ -214,21 +193,13 @@ function buildFoundInformation(
   finalUrl: string | null,
 ): Array<{ label: string; value: string }> {
   const values: Array<{ label: string; value: string }> = [];
-  const title = evidenceString(
-    findings,
-    "META-TITLE-001",
-    "title",
-  );
+  const title = evidenceString(findings, "META-TITLE-001", "title");
   const description = evidenceString(
     findings,
     "META-DESCRIPTION-001",
     "metaDescription",
   );
-  const language = evidenceString(
-    findings,
-    "STRUCT-LANG-001",
-    "htmlLang",
-  );
+  const language = evidenceString(findings, "STRUCT-LANG-001", "htmlLang");
   const h1 = evidenceStrings(findings, "STRUCT-H1-001", "h1");
   const jsonLdTypes = evidenceStrings(
     findings,
@@ -275,23 +246,16 @@ function buildUnderstandingSummary(
   siteName: string,
   findings: Finding[],
 ): string {
-  const title =
-    evidenceString(findings, "META-TITLE-001", "title") ??
-    siteName;
+  const title = evidenceString(findings, "META-TITLE-001", "title") ?? siteName;
   const description = evidenceString(
     findings,
     "META-DESCRIPTION-001",
     "metaDescription",
   );
   const language =
-    evidenceString(findings, "STRUCT-LANG-001", "htmlLang") ??
-    "언어 미확인";
+    evidenceString(findings, "STRUCT-LANG-001", "htmlLang") ?? "언어 미확인";
   const textLength =
-    evidenceNumber(
-      findings,
-      "CONTENT-INITIAL-001",
-      "textLength",
-    ) ?? 0;
+    evidenceNumber(findings, "CONTENT-INITIAL-001", "textLength") ?? 0;
   const jsonLdTypes = evidenceStrings(
     findings,
     "STRUCT-JSONLD-TYPES-001",
@@ -327,6 +291,11 @@ function buildPublicScanResult(result: {
   completedAt: Date | null;
   errorCode: string | null;
   createdAt: Date;
+  verificationAttempt: {
+    workOrder: {
+      version: number;
+    };
+  } | null;
   site: {
     id: string;
     name: string;
@@ -340,8 +309,7 @@ function buildPublicScanResult(result: {
   pages: ScanPage[];
   findings: Finding[];
 }): PublicScanResult {
-  const isOutdatedRulesVersion =
-    result.rulesVersion !== CURRENT_RULES_VERSION;
+  const isOutdatedRulesVersion = result.rulesVersion !== CURRENT_RULES_VERSION;
   const scoreSummary =
     !isOutdatedRulesVersion && result.findings.length > 0
       ? calculateScore(result.findings)
@@ -349,15 +317,12 @@ function buildPublicScanResult(result: {
   const findings = result.findings.map(publicFinding);
   const primaryIssues = findings
     .filter(
-      (finding) =>
-        finding.status === "FAIL" ||
-        finding.status === "BLOCKED",
+      (finding) => finding.status === "FAIL" || finding.status === "BLOCKED",
     )
     .sort(
       (left, right) =>
         right.weight - left.weight ||
-        severityOrder(right.severity) -
-          severityOrder(left.severity),
+        severityOrder(right.severity) - severityOrder(left.severity),
     )
     .slice(0, 5);
 
@@ -375,6 +340,9 @@ function buildPublicScanResult(result: {
     scan: {
       id: result.id,
       type: result.type,
+      diagnosticNumber: result.verificationAttempt
+        ? result.verificationAttempt.workOrder.version + 1
+        : 1,
       status: result.status,
       rulesVersion: result.rulesVersion,
       locale: result.locale === "en" ? "en" : "ko",
@@ -405,8 +373,7 @@ function buildPublicScanResult(result: {
       .filter(
         (finding) =>
           finding.weight > 0 &&
-          (finding.status === "FAIL" ||
-            finding.status === "BLOCKED"),
+          (finding.status === "FAIL" || finding.status === "BLOCKED"),
       )
       .map((finding) => ({
         ruleCode: finding.ruleCode,
@@ -437,6 +404,15 @@ export function createPrismaScanResultService(): ScanResultService {
         },
         include: {
           site: true,
+          verificationAttempt: {
+            select: {
+              workOrder: {
+                select: {
+                  version: true,
+                },
+              },
+            },
+          },
           pages: {
             orderBy: {
               createdAt: "asc",
@@ -472,6 +448,15 @@ export function createPrismaScanResultService(): ScanResultService {
         },
         include: {
           site: true,
+          verificationAttempt: {
+            select: {
+              workOrder: {
+                select: {
+                  version: true,
+                },
+              },
+            },
+          },
           pages: {
             orderBy: {
               createdAt: "asc",

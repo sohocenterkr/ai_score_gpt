@@ -240,6 +240,7 @@ export interface ScanResultResponse {
   scan: {
     id: string;
     type: string;
+    diagnosticNumber: number;
     status: string;
     rulesVersion: string;
     score: number | null;
@@ -249,6 +250,7 @@ export interface ScanResultResponse {
     errorCode: string | null;
     createdAt: string;
   };
+  paidFeatureAccess: boolean;
   scoreSummary: ScanScoreSummary | null;
   currentRulesVersion: string;
   isOutdatedRulesVersion: boolean;

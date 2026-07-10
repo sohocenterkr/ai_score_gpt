@@ -24,6 +24,7 @@ const sampleResult: PublicScanResult = {
   scan: {
     id: "scan-1",
     type: "QUICK",
+    diagnosticNumber: 1,
     status: "COMPLETED",
     rulesVersion: "2026.06-core-v2",
     locale: "ko",
@@ -64,10 +65,7 @@ const sampleResult: PublicScanResult = {
     status: "PARTIAL",
     label: "일부 보완 필요",
     summary: "예제 사이트의 콘텐츠 일부를 확인했습니다.",
-    confirmedSignals: [
-      "초기 HTML 본문: 1,200자",
-      "문서 제목: 예제 사이트",
-    ],
+    confirmedSignals: ["초기 HTML 본문: 1,200자", "문서 제목: 예제 사이트"],
     topics: [
       {
         code: "CONTENT-TOPIC-SERVICE-DEFINITION",
@@ -76,19 +74,13 @@ const sampleResult: PublicScanResult = {
         reason: "서비스 개요 일부를 확인했습니다.",
         questions: ["예제 사이트는 무엇인가요?"],
         suggestedSections: ["예제 사이트란?"],
-        contentWriterInstruction:
-          "실제 제공 사실만 사용해 작성하세요.",
-        developerInstruction:
-          "사용자 화면과 초기 HTML에 함께 제공하세요.",
-        acceptanceCriteria: [
-          "서비스 정의를 페이지 내용으로 설명할 수 있다.",
-        ],
+        contentWriterInstruction: "실제 제공 사실만 사용해 작성하세요.",
+        developerInstruction: "사용자 화면과 초기 HTML에 함께 제공하세요.",
+        acceptanceCriteria: ["서비스 정의를 페이지 내용으로 설명할 수 있다."],
       },
     ],
-    benchmarkNote:
-      "800자는 Site AI Score 내부 참고 기준입니다.",
-    disclaimer:
-      "운영자가 사실관계를 확인해야 합니다.",
+    benchmarkNote: "800자는 Site AI Score 내부 참고 기준입니다.",
+    disclaimer: "운영자가 사실관계를 확인해야 합니다.",
   },
   understandingSummary:
     '"예제 사이트" 페이지는 ko 문서로 확인되었고 초기 HTML에서 약 1,200자의 본문을 읽었습니다.',
@@ -184,11 +176,9 @@ const sampleResult: PublicScanResult = {
       severity: "INFO",
       status: "PASS",
       title: "실제 공개 URL 측정 환경",
-      description:
-        "초기 HTML과 JavaScript 실행 후 DOM을 함께 비교했습니다.",
+      description: "초기 HTML과 JavaScript 실행 후 DOM을 함께 비교했습니다.",
       evidence: {
-        rulesScope:
-          "QUICK_INITIAL_HTML_WITH_RENDERED_DOM_EVIDENCE",
+        rulesScope: "QUICK_INITIAL_HTML_WITH_RENDERED_DOM_EVIDENCE",
         renderedDom: {
           status: "SUCCESS",
           browserVersion: "Chromium 92.0.4515.159",
@@ -230,24 +220,18 @@ const sampleResult: PublicScanResult = {
 };
 
 describe("scan result PDF", () => {
-  it(
-    "한글 진단 보고서를 유효한 PDF로 생성한다",
-    async () => {
-      const result = await renderScanResultPdf(sampleResult);
-      const source = result.toString("latin1");
-      const pageCount =
-        source.match(/\/Type\s*\/Page\b/g)?.length ?? 0;
+  it("한글 진단 보고서를 유효한 PDF로 생성한다", async () => {
+    const result = await renderScanResultPdf(sampleResult);
+    const source = result.toString("latin1");
+    const pageCount = source.match(/\/Type\s*\/Page\b/g)?.length ?? 0;
 
-      expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
-      expect(result.length).toBeGreaterThan(10_000);
-      expect(pageCount).toBeGreaterThanOrEqual(8);
-    },
-    45_000,
-  );
+    expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+    expect(result.length).toBeGreaterThan(10_000);
+    expect(pageCount).toBeGreaterThanOrEqual(8);
+  }, 45_000);
 
   it("렌더링 DOM 비교 증거를 구조화한다", () => {
-    const comparison =
-      scanResultRenderedDomComparison(sampleResult);
+    const comparison = scanResultRenderedDomComparison(sampleResult);
 
     expect(comparison).toMatchObject({
       status: "SUCCESS",
@@ -272,8 +256,7 @@ describe("scan result PDF", () => {
 
     expect(plans[0]).toMatchObject({
       code: "RENDERED-ADDED-CONTENT",
-      title:
-        "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
+      title: "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
     });
     expect(
       plans[0]?.developerInstructions.some((instruction) =>
@@ -281,14 +264,12 @@ describe("scan result PDF", () => {
       ),
     ).toBe(true);
     expect(plans[0]?.acceptanceCriteria.length).toBeGreaterThanOrEqual(4);
-    expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.07-scan-locale-v4",
-    );
+    expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe("2026.07-scan-locale-v5");
   });
 
   it("안전한 진단 보고서 파일명을 만든다", () => {
     expect(scanResultPdfFilename(sampleResult)).toBe(
-      "site-ai-score-scan-1.pdf",
+      "site-ai-score-diagnostic-1-scan-1.pdf",
     );
   });
 

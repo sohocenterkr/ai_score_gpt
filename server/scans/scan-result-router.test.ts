@@ -48,6 +48,7 @@ const sampleResult: PublicScanResult = {
   scan: {
     id: "scan-1",
     type: "QUICK",
+    diagnosticNumber: 1,
     status: "COMPLETED",
     rulesVersion: "2026.06-core-v2",
     locale: "ko",
@@ -102,16 +103,15 @@ describe("scan result router", () => {
 
   it("인증 회원의 검사 결과를 반환한다", async () => {
     const getScanResult = vi.fn().mockResolvedValue(sampleResult);
-    const response = await request(
-      createApp({ getScanResult }),
-    ).get("/api/scan-results/scan-1");
+    const response = await request(createApp({ getScanResult })).get(
+      "/api/scan-results/scan-1",
+    );
 
     expect(response.status).toBe(200);
     expect(response.body.result.scan.id).toBe("scan-1");
-    expect(getScanResult).toHaveBeenCalledWith(
-      sampleUser,
-      "scan-1",
-    );
+    expect(response.body.result.scan.diagnosticNumber).toBe(1);
+    expect(response.body.result.paidFeatureAccess).toBe(true);
+    expect(getScanResult).toHaveBeenCalledWith(sampleUser, "scan-1");
   });
 
   it("일반 회원의 진단 보고서 PDF 다운로드를 차단한다", async () => {
@@ -123,11 +123,7 @@ describe("scan result router", () => {
     const getScanResult = vi.fn().mockResolvedValue(sampleResult);
 
     const response = await request(
-      createApp(
-        { getScanResult },
-        undefined,
-        regularUser,
-      ),
+      createApp({ getScanResult }, undefined, regularUser),
     ).get("/api/scan-results/scan-1/export.pdf");
 
     expect(response.status).toBe(402);
@@ -152,18 +148,11 @@ describe("scan result router", () => {
     });
 
     const response = await request(
-      createApp(
-        { getScanResult },
-        { getOrCreate },
-        regularUser,
-      ),
+      createApp({ getScanResult }, { getOrCreate }, regularUser),
     ).get("/api/scan-results/scan-1/export.pdf");
 
     expect(response.status).toBe(200);
-    expect(getScanResult).toHaveBeenCalledWith(
-      regularUser,
-      "scan-1",
-    );
+    expect(getScanResult).toHaveBeenCalledWith(regularUser, "scan-1");
     expect(dbMocks.paidEntitlementFindFirst).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -185,17 +174,13 @@ describe("scan result router", () => {
     ).get("/api/scan-results/scan-1/export.pdf");
 
     expect(response.status).toBe(200);
-    expect(response.headers["content-type"]).toContain(
-      "application/pdf",
-    );
+    expect(response.headers["content-type"]).toContain("application/pdf");
     expect(response.headers["content-disposition"]).toContain(
-      "site-ai-score-scan-1.pdf",
+      "site-ai-score-diagnostic-1-scan-1.pdf",
     );
     expect(response.headers["x-site-ai-report-cache"]).toBe("HIT");
     expect(Buffer.isBuffer(response.body)).toBe(true);
-    expect(response.body.subarray(0, 5).toString("ascii")).toBe(
-      "%PDF-",
-    );
+    expect(response.body.subarray(0, 5).toString("ascii")).toBe("%PDF-");
     expect(getOrCreate).toHaveBeenCalledWith(sampleResult);
   });
 
@@ -222,16 +207,18 @@ describe("scan result router", () => {
   });
 
   it("접근할 수 없는 검사 결과를 404로 반환한다", async () => {
-    const getScanResult = vi.fn().mockRejectedValue(
-      new ScanResultServiceError(
-        "SCAN_RESULT_NOT_FOUND",
-        "검사 결과를 찾을 수 없습니다.",
-        404,
-      ),
+    const getScanResult = vi
+      .fn()
+      .mockRejectedValue(
+        new ScanResultServiceError(
+          "SCAN_RESULT_NOT_FOUND",
+          "검사 결과를 찾을 수 없습니다.",
+          404,
+        ),
+      );
+    const response = await request(createApp({ getScanResult })).get(
+      "/api/scan-results/other-scan",
     );
-    const response = await request(
-      createApp({ getScanResult }),
-    ).get("/api/scan-results/other-scan");
 
     expect(response.status).toBe(404);
     expect(response.body.code).toBe("SCAN_RESULT_NOT_FOUND");

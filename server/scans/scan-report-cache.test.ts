@@ -20,6 +20,7 @@ const sampleResult: PublicScanResult = {
   scan: {
     id: "scan-1",
     type: "QUICK",
+    diagnosticNumber: 1,
     status: "COMPLETED",
     rulesVersion: "2026.06-core-v2",
     locale: "ko",
@@ -58,28 +59,25 @@ const sampleResult: PublicScanResult = {
 };
 
 function createMemoryRepository(): ScanReportCacheRepository {
-  let record:
-    | {
-        id: string;
-        scanId: string;
-        reportType: string;
-        cacheKey: string;
-        sourceHash: string;
-        rendererVersion: string;
-        fontHash: string;
-        status: "GENERATING" | "READY" | "FAILED";
-        pdfBytes: Uint8Array | null;
-        pdfSha256: string | null;
-        sizeBytes: number | null;
-        generationToken: string | null;
-        lockExpiresAt: Date | null;
-      }
-    | null = null;
+  let record: {
+    id: string;
+    scanId: string;
+    reportType: string;
+    cacheKey: string;
+    sourceHash: string;
+    rendererVersion: string;
+    fontHash: string;
+    status: "GENERATING" | "READY" | "FAILED";
+    pdfBytes: Uint8Array | null;
+    pdfSha256: string | null;
+    sizeBytes: number | null;
+    generationToken: string | null;
+    lockExpiresAt: Date | null;
+  } | null = null;
 
   return {
     async find(scanId, reportType) {
-      return record?.scanId === scanId &&
-        record.reportType === reportType
+      return record?.scanId === scanId && record.reportType === reportType
         ? record
         : null;
     },
@@ -220,14 +218,10 @@ describe("scan report cache", () => {
     };
 
     const firstIdentity = buildScanReportCacheIdentity(sampleResult);
-    const changedIdentity =
-      buildScanReportCacheIdentity(changedResult);
+    const changedIdentity = buildScanReportCacheIdentity(changedResult);
 
     await service.getOrCreate(sampleResult, renderer);
-    const changed = await service.getOrCreate(
-      changedResult,
-      renderer,
-    );
+    const changed = await service.getOrCreate(changedResult, renderer);
 
     expect(firstIdentity.cacheKey).not.toBe(changedIdentity.cacheKey);
     expect(changed.cacheStatus).toBe("MISS");
@@ -270,17 +264,17 @@ describe("scan report cache", () => {
 
     expect(renderer).toHaveBeenCalledTimes(1);
     expect(first.pdf.equals(second.pdf)).toBe(true);
-    expect(
-      [first.cacheStatus, second.cacheStatus].sort(),
-    ).toEqual(["HIT", "MISS"]);
+    expect([first.cacheStatus, second.cacheStatus].sort()).toEqual([
+      "HIT",
+      "MISS",
+    ]);
   });
 
   it("캐시 저장본의 민감정보와 무결성을 검증한다", async () => {
     const repository = createMemoryRepository();
     const service = createScanReportCacheService(repository);
-    const renderer = vi.fn(
-      async (safeResult: PublicScanResult) =>
-        Buffer.from(JSON.stringify(safeResult), "utf8"),
+    const renderer = vi.fn(async (safeResult: PublicScanResult) =>
+      Buffer.from(JSON.stringify(safeResult), "utf8"),
     );
 
     const first = await service.getOrCreate(sampleResult, renderer);
@@ -304,11 +298,7 @@ describe("scan report cache", () => {
     repository.find = async (scanId, reportType) => {
       const record = await originalFind(scanId, reportType);
 
-      if (
-        !returnCorruptedPdf ||
-        !record ||
-        !record.pdfBytes
-      ) {
+      if (!returnCorruptedPdf || !record || !record.pdfBytes) {
         return record;
       }
 
@@ -336,32 +326,24 @@ describe("scan report cache", () => {
 
   it("PDF 생성 실패 메시지의 인증정보를 숨겨 저장한다", async () => {
     const repository = createMemoryRepository();
-    const originalStoreFailed =
-      repository.storeFailed.bind(repository);
+    const originalStoreFailed = repository.storeFailed.bind(repository);
     const storeFailed = vi.fn(originalStoreFailed);
 
     repository.storeFailed = storeFailed;
 
     const service = createScanReportCacheService(repository);
-    const renderer = vi.fn().mockRejectedValue(
-      new Error(
-        "Authorization: Bearer failure-secret-token",
-      ),
-    );
+    const renderer = vi
+      .fn()
+      .mockRejectedValue(
+        new Error("Authorization: Bearer failure-secret-token"),
+      );
 
-    await expect(
-      service.getOrCreate(sampleResult, renderer),
-    ).rejects.toThrow();
+    await expect(service.getOrCreate(sampleResult, renderer)).rejects.toThrow();
 
     expect(storeFailed).toHaveBeenCalledTimes(1);
 
     const failedInput = storeFailed.mock.calls[0]?.[0];
-    expect(failedInput?.errorMessage).not.toContain(
-      "failure-secret-token",
-    );
-    expect(failedInput?.errorMessage).toContain(
-      "[보안상 숨김]",
-    );
+    expect(failedInput?.errorMessage).not.toContain("failure-secret-token");
+    expect(failedInput?.errorMessage).toContain("[보안상 숨김]");
   });
-
 });

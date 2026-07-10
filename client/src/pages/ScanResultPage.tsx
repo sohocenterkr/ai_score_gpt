@@ -850,10 +850,6 @@ function metricDelta(value: number | null, suffix: string): string {
 
 export function ScanResultPage() {
   const { state: authState } = useAuth();
-  const canAccessPaidOutputs =
-    authState.status === "authenticated" &&
-    authState.user.role === "SUPER_ADMIN" &&
-    authState.user.email.trim().toLowerCase() === "sohocenter.kr@gmail.com";
   const isSuperAdmin =
     authState.status === "authenticated" &&
     authState.user.role === "SUPER_ADMIN";
@@ -876,6 +872,7 @@ export function ScanResultPage() {
     selectedRenderedImprovementCodes,
     setSelectedRenderedImprovementCodes,
   ] = useState<string[]>([]);
+  const canAccessPaidOutputs = result?.paidFeatureAccess === true;
 
   useEffect(() => {
     let cancelled = false;
@@ -1108,6 +1105,7 @@ export function ScanResultPage() {
   const grade = result.scan.grade;
   const scoreSummary = result.scoreSummary;
   const isVerificationScan = result.scan.type === "VERIFICATION";
+  const diagnosticNumber = result.scan.diagnosticNumber;
   const missingInformationSummary = buildMissingInformationSummary(
     result.missingInformation,
   );
@@ -1122,10 +1120,10 @@ export function ScanResultPage() {
             <p className="eyebrow">SCAN RESULT</p>
             <h1>
               {result.site.name}{" "}
-              {isVerificationScan
+              {isVerificationScan || canAccessPaidOutputs
                 ? isEnglish
-                  ? "Post-Improvement Verification Result"
-                  : "사이트 개선 후 검수 결과"
+                  ? `Diagnostic ${diagnosticNumber} Report`
+                  : `${diagnosticNumber}차 사이트 진단 보고서`
                 : isEnglish
                   ? "Simple Diagnostic Result"
                   : "간편진단 결과"}
@@ -1220,18 +1218,18 @@ export function ScanResultPage() {
             <div>
               <p className="eyebrow">
                 {isEnglish
-                  ? "POST-IMPROVEMENT VERIFICATION"
-                  : "사이트 개선 후 검수 결과"}
+                  ? `DIAGNOSTIC ${diagnosticNumber} REPORT`
+                  : `${diagnosticNumber}차 사이트 진단 보고서`}
               </p>
               <h2>
                 {isEnglish
-                  ? "Review the before-and-after comparison in the work order."
-                  : "1차 진단과 2차 검수 비교는 작업지시서에서 확인하세요."}
+                  ? `Diagnostic ${diagnosticNumber} was created after verifying the deployed updates.`
+                  : `사이트 수정·배포 결과를 반영한 ${diagnosticNumber}차 진단 보고서입니다.`}
               </h2>
               <p>
                 {isEnglish
-                  ? "This page is the technical scan result created for a work order verification. The work order page shows the initial score, latest recheck score, and item-level verification results together."
-                  : "이 화면은 작업지시서 검수를 위해 생성된 기술 검사 결과입니다. 1차 점수, 최근 재검수 점수, 항목별 자동검수 결과는 기존 작업지시서 화면에서 함께 확인할 수 있습니다."}
+                  ? "This report re-diagnoses the entire public website after the work order was applied. Use the linked work order to review item-level pass, failure, and manual-review details."
+                  : "작업지시서 반영 후 공개 사이트 전체를 다시 진단한 결과입니다. 항목별 통과·실패·수동 확인 내용은 연결된 작업지시서에서 확인할 수 있습니다."}
               </p>
             </div>
             {linkedWorkOrderId ? (
@@ -1867,9 +1865,7 @@ export function ScanResultPage() {
               <div
                 className="scan-admin-actions"
                 role="group"
-                aria-label={
-                  isEnglish ? "Super admin deliverables" : "수퍼관리자 산출물"
-                }
+                aria-label={isEnglish ? "Paid deliverables" : "유료 산출물"}
               >
                 <a
                   className="scan-report-link"
@@ -1881,8 +1877,8 @@ export function ScanResultPage() {
                   rel="noreferrer"
                 >
                   {isEnglish
-                    ? "Detailed Diagnostic Report"
-                    : "상세 진단 보고서"}
+                    ? `Save Diagnostic ${diagnosticNumber} PDF`
+                    : `${diagnosticNumber}차 진단 보고서 PDF 저장`}
                 </a>
                 <button
                   className="scan-report-link secondary"
@@ -1930,8 +1926,8 @@ export function ScanResultPage() {
                   disabled
                 >
                   {isEnglish
-                    ? "Detailed Diagnostic Report"
-                    : "상세 진단 보고서"}
+                    ? `Diagnostic ${diagnosticNumber} Report`
+                    : `${diagnosticNumber}차 진단 보고서`}
                 </button>
                 <button
                   className="scan-report-link secondary scan-paid-locked-action"
