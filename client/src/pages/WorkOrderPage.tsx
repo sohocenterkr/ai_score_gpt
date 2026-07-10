@@ -1348,8 +1348,12 @@ export function WorkOrderPage() {
             <div>
               <h2>
                 {isEnglish
-                  ? "Improvement items found in the initial diagnostic"
-                  : "1차 검수에서 발견된 수정 항목"}
+                  ? workOrder.version <= 1
+                    ? "Improvement items found in the initial verification"
+                    : `Remaining improvement items from version ${workOrder.version} verification`
+                  : workOrder.version <= 1
+                    ? "1차 검수에서 발견된 수정 항목"
+                    : `${workOrder.version}차 검수에서 남은 수정 항목`}
               </h2>
               <p>
                 {isEnglish
