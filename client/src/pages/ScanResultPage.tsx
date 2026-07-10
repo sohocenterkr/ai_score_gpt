@@ -3,16 +3,19 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import {
   getScanResultRequest,
+  listSitesRequest,
   queueSiteScanRequest,
   scanResultPdfUrl,
   SiteApiError,
   type ScanResultFinding,
   type ScanResultResponse,
+  type SiteProgress,
 } from "../sites/site-api";
 import "../scan-results.css";
 import {
   createWorkOrderRequest,
   getLatestWorkOrderByScanRequest,
+  reviseWorkOrderRequest,
   WorkOrderApiError,
 } from "../work-orders/work-order-api";
 import "../work-orders.css";
@@ -865,6 +868,9 @@ export function ScanResultPage() {
   const [linkedWorkOrderId, setLinkedWorkOrderId] = useState<string | null>(
     null,
   );
+  const [linkedWorkOrderVersion, setLinkedWorkOrderVersion] = useState<
+    number | null
+  >(null);
   const [linkedWorkOrderLoading, setLinkedWorkOrderLoading] = useState(false);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
   const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>([]);
@@ -872,6 +878,9 @@ export function ScanResultPage() {
     selectedRenderedImprovementCodes,
     setSelectedRenderedImprovementCodes,
   ] = useState<string[]>([]);
+  const [siteProgress, setSiteProgress] = useState<
+    SiteProgress | null | undefined
+  >(undefined);
   const canAccessPaidOutputs = result?.paidFeatureAccess === true;
 
   useEffect(() => {
@@ -936,8 +945,37 @@ export function ScanResultPage() {
   }, [scanId, siteId]);
 
   useEffect(() => {
+    if (!result?.site.id) {
+      setSiteProgress(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    setSiteProgress(undefined);
+
+    void listSitesRequest()
+      .then((sites) => {
+        if (!cancelled) {
+          setSiteProgress(
+            sites.find((site) => site.id === result.site.id)?.progress ?? null,
+          );
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSiteProgress(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.site.id]);
+
+  useEffect(() => {
     if (!result?.scan.id) {
       setLinkedWorkOrderId(null);
+      setLinkedWorkOrderVersion(null);
       return;
     }
 
@@ -948,11 +986,13 @@ export function ScanResultPage() {
       .then((workOrder) => {
         if (!cancelled) {
           setLinkedWorkOrderId(workOrder.id);
+          setLinkedWorkOrderVersion(workOrder.version);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setLinkedWorkOrderId(null);
+          setLinkedWorkOrderVersion(null);
         }
       })
       .finally(() => {
@@ -991,19 +1031,95 @@ export function ScanResultPage() {
   }
 
   async function handleCreateWorkOrder() {
-    if (linkedWorkOrderId) {
-      navigate(`/${locale}/work-orders/${linkedWorkOrderId}`);
+    if (!result) {
+      return;
+    }
+
+    const diagnosticNumber = result.scan.diagnosticNumber;
+    const targetVersion = Math.max(1, Math.min(3, diagnosticNumber));
+    const progressTarget = siteProgress?.workOrders.find(
+      (workOrder) => workOrder.version === targetVersion,
+    );
+    const existingTargetId =
+      progressTarget?.id ??
+      (linkedWorkOrderVersion === targetVersion ? linkedWorkOrderId : null);
+
+    if (existingTargetId) {
+      navigate(`/${locale}/work-orders/${existingTargetId}`);
+      return;
+    }
+
+    if (diagnosticNumber >= 4) {
+      setWorkOrderError(
+        isEnglish
+          ? "Diagnostic 4 is the final diagnostic in the current workflow."
+          : "4차 진단은 현재 진행 과정의 최종 진단입니다.",
+      );
+      return;
+    }
+
+    const extraPaymentParams = new URLSearchParams({
+      scanId: result.scan.id,
+      plan: "EXTRA_VERIFICATION",
+      returnTo: `/${locale}/sites/${result.site.id}/scans/${result.scan.id}`,
+    });
+    const extraPaymentPath = `/${locale}/checkout?${extraPaymentParams.toString()}`;
+
+    if (
+      diagnosticNumber === 3 &&
+      !isSuperAdmin &&
+      siteProgress?.currentStage.nextAction === "PURCHASE_EXTRA"
+    ) {
+      navigate(extraPaymentPath);
       return;
     }
 
     const selectedCount =
       selectedFindingIds.length + selectedRenderedImprovementCodes.length;
 
-    if (!result || selectedCount === 0) {
+    if (diagnosticNumber === 1 && selectedCount === 0) {
       setWorkOrderError(
         isEnglish
-          ? "Payment integration is required to access detailed deliverables."
-          : "상세 산출물 이용을 위해 결제 기능 연결이 필요합니다.",
+          ? "There are no improvement items to include in Work Order 1."
+          : "1차 작업지시서에 포함할 개선 항목이 없습니다.",
+      );
+      return;
+    }
+
+    const previousVersion = diagnosticNumber - 1;
+    const progressPrevious = siteProgress?.workOrders.find(
+      (workOrder) => workOrder.version === previousVersion,
+    );
+    const previousWorkOrderId =
+      progressPrevious?.id ??
+      (linkedWorkOrderVersion === previousVersion ? linkedWorkOrderId : null);
+
+    if (diagnosticNumber > 1 && !previousWorkOrderId) {
+      setWorkOrderError(
+        isEnglish
+          ? `Could not find Work Order ${previousVersion}, which produced this diagnostic.`
+          : `이 진단을 생성한 ${previousVersion}차 작업지시서를 찾을 수 없습니다.`,
+      );
+      return;
+    }
+
+    if (
+      diagnosticNumber > 1 &&
+      !isSuperAdmin &&
+      siteProgress?.currentStage.nextAction !== "CREATE_NEXT_WORK_ORDER"
+    ) {
+      setWorkOrderError(
+        siteProgress === undefined
+          ? isEnglish
+            ? "The site progress is still loading. Please try again shortly."
+            : "사이트 진행 상태를 확인하고 있습니다. 잠시 후 다시 시도해 주세요."
+          : siteProgress === null
+            ? isEnglish
+              ? "Could not confirm the site progress. Return to the site dashboard and try again."
+              : "사이트 진행 상태를 확인하지 못했습니다. 사이트 관리 화면에서 다시 시도해 주세요."
+            : isEnglish
+              ? "There are no remaining improvement items for the next work order."
+              : "다음 작업지시서로 만들 남은 개선 항목이 없습니다.",
       );
       return;
     }
@@ -1012,20 +1128,32 @@ export function ScanResultPage() {
     setWorkOrderError("");
 
     try {
-      const workOrder = await createWorkOrderRequest({
-        scanId: result.scan.id,
-        findingIds: selectedFindingIds,
-        renderedImprovementCodes: selectedRenderedImprovementCodes,
-        locale: isEnglish ? "en" : "ko",
-      });
+      const workOrder =
+        diagnosticNumber === 1
+          ? await createWorkOrderRequest({
+              scanId: result.scan.id,
+              findingIds: selectedFindingIds,
+              renderedImprovementCodes: selectedRenderedImprovementCodes,
+              locale: isEnglish ? "en" : "ko",
+            })
+          : await reviseWorkOrderRequest(previousWorkOrderId as string);
+
       navigate(`/${locale}/work-orders/${workOrder.id}`);
     } catch (error) {
+      if (
+        error instanceof WorkOrderApiError &&
+        error.code === "EXTRA_VERIFICATION_PAYMENT_REQUIRED"
+      ) {
+        navigate(extraPaymentPath);
+        return;
+      }
+
       setWorkOrderError(
         error instanceof WorkOrderApiError
           ? error.message
           : isEnglish
-            ? "Could not create the work order."
-            : "작업지시서를 만들지 못했습니다.",
+            ? `Could not create Work Order ${targetVersion}.`
+            : `${targetVersion}차 작업지시서를 만들지 못했습니다.`,
       );
     } finally {
       setCreatingWorkOrder(false);
@@ -1106,6 +1234,55 @@ export function ScanResultPage() {
   const scoreSummary = result.scoreSummary;
   const isVerificationScan = result.scan.type === "VERIFICATION";
   const diagnosticNumber = result.scan.diagnosticNumber;
+  const targetWorkOrderVersion = Math.max(1, Math.min(3, diagnosticNumber));
+  const previousWorkOrderVersion = Math.max(1, diagnosticNumber - 1);
+  const targetWorkOrder =
+    siteProgress?.workOrders.find(
+      (workOrder) => workOrder.version === targetWorkOrderVersion,
+    ) ?? null;
+  const previousWorkOrder =
+    siteProgress?.workOrders.find(
+      (workOrder) => workOrder.version === previousWorkOrderVersion,
+    ) ?? null;
+  const targetWorkOrderId =
+    targetWorkOrder?.id ??
+    (linkedWorkOrderVersion === targetWorkOrderVersion
+      ? linkedWorkOrderId
+      : null);
+  const previousWorkOrderId =
+    previousWorkOrder?.id ??
+    (linkedWorkOrderVersion === previousWorkOrderVersion
+      ? linkedWorkOrderId
+      : null);
+  const isFinalDiagnostic = diagnosticNumber >= 4;
+  const needsExtraPayment =
+    diagnosticNumber === 3 &&
+    !targetWorkOrderId &&
+    !isSuperAdmin &&
+    siteProgress?.currentStage.nextAction === "PURCHASE_EXTRA";
+  const checkingSiteProgress =
+    diagnosticNumber > 1 &&
+    diagnosticNumber < 4 &&
+    !targetWorkOrderId &&
+    siteProgress === undefined;
+  const siteProgressUnavailable =
+    diagnosticNumber > 1 &&
+    diagnosticNumber < 4 &&
+    !targetWorkOrderId &&
+    siteProgress === null;
+  const canCreateTargetWorkOrder =
+    diagnosticNumber === 1
+      ? selectedWorkOrderItemCount > 0
+      : diagnosticNumber < 4 &&
+        Boolean(previousWorkOrderId) &&
+        (isSuperAdmin ||
+          siteProgress?.currentStage.nextAction === "CREATE_NEXT_WORK_ORDER");
+  const extraPaymentParams = new URLSearchParams({
+    scanId: result.scan.id,
+    plan: "EXTRA_VERIFICATION",
+    returnTo: `/${locale}/sites/${result.site.id}/scans/${result.scan.id}`,
+  });
+  const extraPaymentPath = `/${locale}/checkout?${extraPaymentParams.toString()}`;
   const missingInformationSummary = buildMissingInformationSummary(
     result.missingInformation,
   );
@@ -1138,7 +1315,6 @@ export function ScanResultPage() {
             {isEnglish ? "Site dashboard" : "사이트 관리로"}
           </Link>
         </header>
-
         {isOutdatedRulesVersion ? (
           <section className="surface scan-rules-version-alert" role="status">
             <div>
@@ -1174,7 +1350,6 @@ export function ScanResultPage() {
             </button>
           </section>
         ) : null}
-
         <section className="surface scan-score-hero">
           <div className="scan-score-main">
             <span>Site AI Score</span>
@@ -1212,7 +1387,6 @@ export function ScanResultPage() {
             </div>
           </dl>
         </section>
-
         {isVerificationScan ? (
           <section className="surface scan-linked-work-order-notice">
             <div>
@@ -1223,41 +1397,37 @@ export function ScanResultPage() {
               </p>
               <h2>
                 {isEnglish
-                  ? `Diagnostic ${diagnosticNumber} was created after verifying the deployed updates.`
+                  ? `Diagnostic ${diagnosticNumber} reflects the submitted site updates.`
                   : `사이트 수정·배포 결과를 반영한 ${diagnosticNumber}차 진단 보고서입니다.`}
               </h2>
               <p>
                 {isEnglish
-                  ? "This report re-diagnoses the entire public website after the work order was applied. Use the linked work order to review item-level pass, failure, and manual-review details."
-                  : "작업지시서 반영 후 공개 사이트 전체를 다시 진단한 결과입니다. 항목별 통과·실패·수동 확인 내용은 연결된 작업지시서에서 확인할 수 있습니다."}
+                  ? "This report re-diagnoses the entire public website after the previous work order was applied. If more improvements remain, continue with the next work order from this report."
+                  : "이전 작업지시서 반영 후 공개 사이트 전체를 다시 진단한 결과입니다. 추가 개선 항목이 남아 있으면 이 진단서에서 다음 차수 작업지시서를 진행하세요."}
               </p>
             </div>
-            {linkedWorkOrderId ? (
+            {previousWorkOrderId ? (
               <Link
                 className="scan-report-link"
-                to={`/${locale}/work-orders/${linkedWorkOrderId}`}
+                to={`/${locale}/work-orders/${previousWorkOrderId}`}
               >
                 {isEnglish
-                  ? "View linked work order"
-                  : "검수 결과가 반영된 작업지시서 보기"}
+                  ? `View Work Order ${previousWorkOrderVersion}`
+                  : `${previousWorkOrderVersion}차 작업지시서 보기`}
               </Link>
             ) : (
-              <Link
-                className="scan-report-link ghost"
-                to={`/${locale}/work-orders`}
-              >
-                {linkedWorkOrderLoading
+              <Link className="scan-report-link ghost" to={`/${locale}/sites`}>
+                {linkedWorkOrderLoading || siteProgress === undefined
                   ? isEnglish
-                    ? "Finding linked work order..."
-                    : "연결된 작업지시서 확인 중..."
+                    ? "Finding the previous work order..."
+                    : "이전 작업지시서 확인 중..."
                   : isEnglish
-                    ? "Go to work orders"
-                    : "작업지시서 목록으로 이동"}
+                    ? "Site dashboard"
+                    : "사이트 관리로 이동"}
               </Link>
             )}
           </section>
-        ) : null}
-
+        ) : null}{" "}
         {scoreSummary ? (
           <section className="surface scan-category-section">
             <div className="scan-section-heading">
@@ -1320,7 +1490,6 @@ export function ScanResultPage() {
               : "이 결과는 이전 규칙 버전으로 생성되어 점수가 없습니다. 새 간편검사를 실행하면 현재 규칙으로 점수를 계산합니다."}
           </section>
         )}
-
         <section className="surface scan-understanding-section">
           <div className="scan-section-heading">
             <div>
@@ -1403,7 +1572,6 @@ export function ScanResultPage() {
             </div>
           </div>
         </section>
-
         <section className="surface scan-issues-section">
           <div className="scan-section-heading">
             <div>
@@ -1486,7 +1654,6 @@ export function ScanResultPage() {
             </p>
           ) : null}
         </section>
-
         {renderedDomComparison ? (
           <section className="surface scan-rendered-section">
             <div className="scan-section-heading">
@@ -1744,7 +1911,6 @@ export function ScanResultPage() {
             </p>
           </section>
         ) : null}
-
         <section className="surface scan-page-section">
           <div className="scan-section-heading">
             <div>
@@ -1880,36 +2046,74 @@ export function ScanResultPage() {
                     ? `Save Diagnostic ${diagnosticNumber} PDF`
                     : `${diagnosticNumber}차 진단 보고서 PDF 저장`}
                 </a>
-                <button
-                  className="scan-report-link secondary"
-                  type="button"
-                  onClick={handleCreateWorkOrder}
-                  disabled={
-                    creatingWorkOrder ||
-                    (!linkedWorkOrderId && selectedWorkOrderItemCount === 0)
-                  }
-                >
-                  {linkedWorkOrderId
-                    ? isEnglish
-                      ? "View Existing Work Order"
-                      : "기존 작업지시서 보기"
-                    : creatingWorkOrder
+                {isFinalDiagnostic ? (
+                  <button
+                    className="scan-report-link secondary"
+                    type="button"
+                    disabled
+                  >
+                    {isEnglish
+                      ? "Diagnostic workflow completed"
+                      : "4차 진단까지 완료"}
+                  </button>
+                ) : targetWorkOrderId ? (
+                  <button
+                    className="scan-report-link secondary"
+                    type="button"
+                    onClick={handleCreateWorkOrder}
+                    disabled={creatingWorkOrder}
+                  >
+                    {isEnglish
+                      ? `View Work Order ${targetWorkOrderVersion}`
+                      : `${targetWorkOrderVersion}차 작업지시서 보기`}
+                  </button>
+                ) : needsExtraPayment ? (
+                  <Link
+                    className="scan-report-link secondary"
+                    to={extraPaymentPath}
+                  >
+                    {isEnglish
+                      ? "Pay and continue to Work Order 3"
+                      : "추가 결제 후 3차 작업지시서 진행"}
+                  </Link>
+                ) : (
+                  <button
+                    className="scan-report-link secondary"
+                    type="button"
+                    onClick={handleCreateWorkOrder}
+                    disabled={
+                      creatingWorkOrder ||
+                      checkingSiteProgress ||
+                      siteProgressUnavailable ||
+                      !canCreateTargetWorkOrder
+                    }
+                  >
+                    {checkingSiteProgress
                       ? isEnglish
-                        ? "Creating work order..."
-                        : "작업지시서 생성 중..."
-                      : selectedWorkOrderItemCount > 0
+                        ? "Checking site progress..."
+                        : "사이트 진행 상태 확인 중..."
+                      : siteProgressUnavailable
                         ? isEnglish
-                          ? "Create Work Order"
-                          : "작업지시서 생성"
-                        : isEnglish
-                          ? "No work order items"
-                          : "작업지시서 대상 없음"}
-                </button>
+                          ? "Could not confirm site progress"
+                          : "사이트 진행 상태 확인 필요"
+                        : creatingWorkOrder
+                          ? isEnglish
+                            ? `Creating Work Order ${targetWorkOrderVersion}...`
+                            : `${targetWorkOrderVersion}차 작업지시서 생성 중...`
+                          : canCreateTargetWorkOrder
+                            ? isEnglish
+                              ? `Create Work Order ${targetWorkOrderVersion}`
+                              : `${targetWorkOrderVersion}차 작업지시서 생성`
+                            : isEnglish
+                              ? "No remaining improvement items"
+                              : "남은 개선 항목 없음"}
+                  </button>
+                )}
                 <Link
                   className="scan-report-link ghost"
-                  to={`/${locale}/work-orders`}
+                  to={`/${locale}/sites`}
                 >
-                  {isEnglish ? "Work Orders" : "작업지시서 목록"}
+                  {isEnglish ? "Site dashboard" : "사이트 관리"}
                 </Link>
               </div>
             ) : (
@@ -1938,14 +2142,14 @@ export function ScanResultPage() {
                 </button>
                 <Link
                   className="scan-report-link ghost"
-                  to={`/${locale}/work-orders`}
+                  to={`/${locale}/sites`}
                 >
-                  {isEnglish ? "Work Orders" : "작업지시서 목록"}
+                  {isEnglish ? "Site dashboard" : "사이트 관리"}
                 </Link>
               </div>
             )}
 
-            {!isVerificationScan ? (
+            {!isVerificationScan && !canAccessPaidOutputs ? (
               <Link
                 className="primary"
                 to={`/${locale}/checkout?scanId=${encodeURIComponent(
