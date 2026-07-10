@@ -1,4 +1,10 @@
-import { Prisma, type Scan, type ScanType, type Site } from "@prisma/client";
+import {
+  Prisma,
+  type PaidPlan,
+  type Scan,
+  type ScanType,
+  type Site,
+} from "@prisma/client";
 import type { PublicUser } from "../auth/auth-service";
 import { getDatabase } from "../db";
 import { CURRENT_RULES_VERSION } from "../scans/scoring";
@@ -45,6 +51,73 @@ export interface PublicScan {
   createdAt: string;
 }
 
+export interface PublicSiteDiagnosticProgress {
+  diagnosticNumber: number;
+  sourceWorkOrderVersion: number;
+  source: "WORK_ORDER_INITIAL" | "WORK_ORDER_VERIFICATION";
+  scanId: string;
+  scanType: string;
+  status: string;
+  score: number | null;
+  grade: string | null;
+  rulesVersion: string;
+  targetUrl: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  reportAvailable: boolean;
+  verificationAttemptId: string | null;
+  verificationStatus: string | null;
+}
+
+export interface PublicSiteWorkOrderProgress {
+  id: string;
+  orderNumber: string;
+  version: number;
+  status: string;
+  rulesVersion: string;
+  issuedAt: string | null;
+  createdAt: string;
+  itemCount: number;
+  requiredItemCount: number;
+  latestVerificationAttemptId: string | null;
+  latestVerificationStatus: string | null;
+}
+
+export type PublicSiteProgressStageKind =
+  | "REGISTERED"
+  | "QUICK_SCAN"
+  | "INITIAL_PAYMENT"
+  | "DIAGNOSTIC"
+  | "WORK_ORDER"
+  | "EXTRA_PAYMENT"
+  | "COMPLETED";
+
+export type PublicSiteProgressNextAction =
+  | "START_QUICK_SCAN"
+  | "WAIT"
+  | "PURCHASE_INITIAL"
+  | "VIEW_WORK_ORDER"
+  | "CREATE_NEXT_WORK_ORDER"
+  | "PURCHASE_EXTRA"
+  | "NONE";
+
+export interface PublicSiteProgress {
+  payment: {
+    initialPaid: boolean;
+    extraPaid: boolean;
+  };
+  diagnostics: PublicSiteDiagnosticProgress[];
+  workOrders: PublicSiteWorkOrderProgress[];
+  latestDiagnosticNumber: number | null;
+  latestWorkOrderVersion: number | null;
+  currentStage: {
+    kind: PublicSiteProgressStageKind;
+    number: number | null;
+    status: string;
+    nextAction: PublicSiteProgressNextAction;
+  };
+}
+
 export interface PublicSite {
   id: string;
   organizationId: string;
@@ -60,6 +133,7 @@ export interface PublicSite {
   createdAt: string;
   updatedAt: string;
   latestScan: PublicScan | null;
+  progress?: PublicSiteProgress;
 }
 
 export interface SiteService {
@@ -103,6 +177,305 @@ interface SiteWithSummary extends Site {
   scans: Array<Scan & { verificationAttempt?: { workOrderId: string } | null }>;
 }
 
+const siteProgressScanSelect = {
+  id: true,
+  type: true,
+  status: true,
+  rulesVersion: true,
+  score: true,
+  grade: true,
+  targetUrl: true,
+  completedAt: true,
+  createdAt: true,
+} satisfies Prisma.ScanSelect;
+
+const siteProgressWorkOrderSelect = {
+  id: true,
+  orderNumber: true,
+  version: true,
+  status: true,
+  rulesVersion: true,
+  issuedAt: true,
+  createdAt: true,
+  initialScan: {
+    select: siteProgressScanSelect,
+  },
+  items: {
+    select: {
+      isRequired: true,
+    },
+  },
+  verificationAttempts: {
+    orderBy: {
+      attemptNumber: "asc",
+    },
+    select: {
+      id: true,
+      attemptNumber: true,
+      status: true,
+      scoreAfter: true,
+      gradeAfter: true,
+      completedAt: true,
+      createdAt: true,
+      scan: {
+        select: siteProgressScanSelect,
+      },
+    },
+  },
+} satisfies Prisma.WorkOrderSelect;
+
+type SiteProgressWorkOrderRecord = Prisma.WorkOrderGetPayload<{
+  select: typeof siteProgressWorkOrderSelect;
+}>;
+
+export interface SiteProgressSource {
+  latestScan: PublicScan | null;
+  workOrders: readonly SiteProgressWorkOrderRecord[];
+  paidPlans: readonly PaidPlan[];
+  hasAdminAccess?: boolean;
+}
+
+function progressDiagnostic(
+  diagnosticNumber: number,
+  sourceWorkOrderVersion: number,
+  source: PublicSiteDiagnosticProgress["source"],
+  scan: SiteProgressWorkOrderRecord["initialScan"],
+  verificationAttemptId: string | null,
+  verificationStatus: string | null,
+): PublicSiteDiagnosticProgress {
+  return {
+    diagnosticNumber,
+    sourceWorkOrderVersion,
+    source,
+    scanId: scan.id,
+    scanType: scan.type,
+    status: scan.status,
+    score: scan.score,
+    grade: scan.grade,
+    rulesVersion: scan.rulesVersion,
+    targetUrl: scan.targetUrl,
+    completedAt: scan.completedAt?.toISOString() ?? null,
+    createdAt: scan.createdAt.toISOString(),
+    reportAvailable:
+      scan.score !== null &&
+      scan.completedAt !== null &&
+      ["COMPLETED", "PARTIAL"].includes(scan.status),
+    verificationAttemptId,
+    verificationStatus,
+  };
+}
+
+export function buildSiteProgress(
+  input: SiteProgressSource,
+): PublicSiteProgress {
+  const initialPaid =
+    Boolean(input.hasAdminAccess) ||
+    input.paidPlans.some(
+      (plan) => plan === "BASIC" || plan === "CASE_STUDY_DISCOUNT",
+    );
+  const extraPaid =
+    Boolean(input.hasAdminAccess) ||
+    input.paidPlans.includes("EXTRA_VERIFICATION");
+  const orderedWorkOrders = [...input.workOrders].sort(
+    (left, right) =>
+      left.version - right.version ||
+      left.createdAt.getTime() - right.createdAt.getTime(),
+  );
+  const diagnosticsByNumber = new Map<number, PublicSiteDiagnosticProgress>();
+
+  for (const workOrder of orderedWorkOrders) {
+    diagnosticsByNumber.set(
+      workOrder.version,
+      progressDiagnostic(
+        workOrder.version,
+        workOrder.version,
+        "WORK_ORDER_INITIAL",
+        workOrder.initialScan,
+        null,
+        null,
+      ),
+    );
+
+    for (const attempt of workOrder.verificationAttempts) {
+      diagnosticsByNumber.set(
+        workOrder.version + 1,
+        progressDiagnostic(
+          workOrder.version + 1,
+          workOrder.version,
+          "WORK_ORDER_VERIFICATION",
+          attempt.scan,
+          attempt.id,
+          attempt.status,
+        ),
+      );
+    }
+  }
+
+  const diagnostics = [...diagnosticsByNumber.values()].sort(
+    (left, right) => left.diagnosticNumber - right.diagnosticNumber,
+  );
+  const workOrders: PublicSiteWorkOrderProgress[] = orderedWorkOrders.map(
+    (workOrder) => {
+      const latestAttempt =
+        workOrder.verificationAttempts[
+          workOrder.verificationAttempts.length - 1
+        ] ?? null;
+
+      return {
+        id: workOrder.id,
+        orderNumber: workOrder.orderNumber,
+        version: workOrder.version,
+        status: workOrder.status,
+        rulesVersion: workOrder.rulesVersion,
+        issuedAt: workOrder.issuedAt?.toISOString() ?? null,
+        createdAt: workOrder.createdAt.toISOString(),
+        itemCount: workOrder.items.length,
+        requiredItemCount: workOrder.items.filter((item) => item.isRequired)
+          .length,
+        latestVerificationAttemptId: latestAttempt?.id ?? null,
+        latestVerificationStatus: latestAttempt?.status ?? null,
+      };
+    },
+  );
+
+  let currentStage: PublicSiteProgress["currentStage"];
+
+  if (!input.latestScan) {
+    currentStage = {
+      kind: "REGISTERED",
+      number: null,
+      status: "READY",
+      nextAction: "START_QUICK_SCAN",
+    };
+  } else if (orderedWorkOrders.length === 0) {
+    if (["QUEUED", "RUNNING"].includes(input.latestScan.status)) {
+      currentStage = {
+        kind: "QUICK_SCAN",
+        number: null,
+        status: input.latestScan.status,
+        nextAction: "WAIT",
+      };
+    } else if (input.latestScan.status === "FAILED") {
+      currentStage = {
+        kind: "QUICK_SCAN",
+        number: null,
+        status: "FAILED",
+        nextAction: "START_QUICK_SCAN",
+      };
+    } else if (!initialPaid) {
+      currentStage = {
+        kind: "INITIAL_PAYMENT",
+        number: 1,
+        status: "REQUIRED",
+        nextAction: "PURCHASE_INITIAL",
+      };
+    } else {
+      currentStage = {
+        kind: "WORK_ORDER",
+        number: 1,
+        status: "PENDING",
+        nextAction: "CREATE_NEXT_WORK_ORDER",
+      };
+    }
+  } else {
+    const latestWorkOrder = orderedWorkOrders[orderedWorkOrders.length - 1];
+    const latestAttempt =
+      latestWorkOrder.verificationAttempts[
+        latestWorkOrder.verificationAttempts.length - 1
+      ] ?? null;
+
+    if (
+      latestAttempt &&
+      ["QUEUED", "RUNNING", "EVALUATING"].includes(latestAttempt.status)
+    ) {
+      currentStage = {
+        kind: "DIAGNOSTIC",
+        number: latestWorkOrder.version + 1,
+        status: "RUNNING",
+        nextAction: "WAIT",
+      };
+    } else if (latestAttempt?.status === "FAILED") {
+      currentStage = {
+        kind: "DIAGNOSTIC",
+        number: latestWorkOrder.version + 1,
+        status: "FAILED",
+        nextAction: "VIEW_WORK_ORDER",
+      };
+    } else if (
+      latestAttempt &&
+      ["PASSED", "REWORK_REQUIRED"].includes(latestAttempt.status) &&
+      latestAttempt.scan.score !== null &&
+      latestAttempt.scan.completedAt !== null
+    ) {
+      const diagnosticNumber = latestWorkOrder.version + 1;
+
+      if (latestAttempt.status === "PASSED") {
+        currentStage = {
+          kind: "COMPLETED",
+          number: diagnosticNumber,
+          status: "PASSED",
+          nextAction: "NONE",
+        };
+      } else if (latestWorkOrder.version === 1) {
+        currentStage = {
+          kind: "WORK_ORDER",
+          number: 2,
+          status: "PENDING",
+          nextAction: "CREATE_NEXT_WORK_ORDER",
+        };
+      } else if (latestWorkOrder.version === 2 && !extraPaid) {
+        currentStage = {
+          kind: "EXTRA_PAYMENT",
+          number: 3,
+          status: "REQUIRED",
+          nextAction: "PURCHASE_EXTRA",
+        };
+      } else if (latestWorkOrder.version === 2) {
+        currentStage = {
+          kind: "WORK_ORDER",
+          number: 3,
+          status: "PENDING",
+          nextAction: "CREATE_NEXT_WORK_ORDER",
+        };
+      } else {
+        currentStage = {
+          kind: "COMPLETED",
+          number: diagnosticNumber,
+          status: "REVIEW_REQUIRED",
+          nextAction: "NONE",
+        };
+      }
+    } else if (latestWorkOrder.version >= 3 && !extraPaid) {
+      currentStage = {
+        kind: "EXTRA_PAYMENT",
+        number: 3,
+        status: "REQUIRED",
+        nextAction: "PURCHASE_EXTRA",
+      };
+    } else {
+      currentStage = {
+        kind: "WORK_ORDER",
+        number: latestWorkOrder.version,
+        status: latestWorkOrder.status,
+        nextAction: "VIEW_WORK_ORDER",
+      };
+    }
+  }
+
+  return {
+    payment: {
+      initialPaid,
+      extraPaid,
+    },
+    diagnostics,
+    workOrders,
+    latestDiagnosticNumber:
+      diagnostics[diagnostics.length - 1]?.diagnosticNumber ?? null,
+    latestWorkOrderVersion: workOrders[workOrders.length - 1]?.version ?? null,
+    currentStage,
+  };
+}
+
 function normalizeName(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
@@ -144,7 +517,10 @@ function toPublicScan(
   };
 }
 
-function toPublicSite(site: SiteWithSummary): PublicSite {
+function toPublicSite(
+  site: SiteWithSummary,
+  progress?: PublicSiteProgress,
+): PublicSite {
   return {
     id: site.id,
     organizationId: site.organizationId,
@@ -160,6 +536,7 @@ function toPublicSite(site: SiteWithSummary): PublicSite {
     createdAt: site.createdAt.toISOString(),
     updatedAt: site.updatedAt.toISOString(),
     latestScan: site.scans[0] ? toPublicScan(site.scans[0]) : null,
+    progress,
   };
 }
 
@@ -332,11 +709,45 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
               },
             },
           },
+          workOrders: {
+            orderBy: [
+              {
+                version: "asc",
+              },
+              {
+                createdAt: "asc",
+              },
+            ],
+            select: siteProgressWorkOrderSelect,
+          },
+          paidEntitlements: {
+            where: {
+              userId: user.id,
+              status: "ACTIVE",
+            },
+            select: {
+              plan: true,
+            },
+          },
         },
         orderBy: { updatedAt: "desc" },
       });
 
-      return sites.map(toPublicSite);
+      return sites.map((site) => {
+        const latestScan = site.scans[0] ? toPublicScan(site.scans[0]) : null;
+
+        return toPublicSite(
+          site,
+          buildSiteProgress({
+            latestScan,
+            workOrders: site.workOrders,
+            paidPlans: site.paidEntitlements.map(
+              (entitlement) => entitlement.plan,
+            ),
+            hasAdminAccess: user.role === "SUPER_ADMIN",
+          }),
+        );
+      });
     },
 
     async createSite(user, input) {
