@@ -85,6 +85,10 @@ function workOrderVersionCompletedLabel(
     : `${version}차 검수 완료`;
 }
 
+function verificationAttemptVersion(workOrderVersion: number): number {
+  return workOrderVersion + 1;
+}
+
 function workOrderVersionMetaLabel(
   version: number,
   label: "rules" | "completedAt" | "url",
@@ -629,9 +633,9 @@ export function WorkOrderPage() {
               latestScoreAttempt?.itemResults.filter(
                 (result) => result.status === "NOT_APPLICABLE",
               ).length ?? 0;
-            const latestScoreVersion = latestScoreAttempt
-              ? latestScoreAttempt.attemptNumber + 1
-              : workOrder.version + 1;
+            const latestScoreVersion = verificationAttemptVersion(
+              workOrder.version,
+            );
             const scoreGoal = workOrderScoreGoal(workOrder.scoreBefore);
             const versionHistory =
               workOrder.versionHistory.length > 0
@@ -1135,8 +1139,8 @@ export function WorkOrderPage() {
                     >
                       <strong>
                         {isEnglish
-                          ? `Verification ${attempt.attemptNumber + 1}`
-                          : `${attempt.attemptNumber + 1}차 검수`}
+                          ? `Verification ${verificationAttemptVersion(workOrder.version)}`
+                          : `${verificationAttemptVersion(workOrder.version)}차 검수`}
                       </strong>
                       <span
                         className={`verification-attempt-status verification-attempt-status-${verificationStatusClass(
@@ -1178,8 +1182,8 @@ export function WorkOrderPage() {
                         <div>
                           <strong>
                             {isEnglish
-                              ? `Verification ${attempt.attemptNumber + 1}`
-                              : `${attempt.attemptNumber + 1}차 검수`}
+                              ? `Verification ${verificationAttemptVersion(workOrder.version)}`
+                              : `${verificationAttemptVersion(workOrder.version)}차 검수`}
                           </strong>
                           <span
                             className={`verification-attempt-status verification-attempt-status-${verificationStatusClass(
