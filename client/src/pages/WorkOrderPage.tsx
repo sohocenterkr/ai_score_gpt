@@ -539,8 +539,20 @@ export function WorkOrderPage() {
             </>
           ) : (
             <>
+              {hasLaterVerificationResult && followUpWorkOrderEntry ? (
+                <Link
+                  className="work-order-primary-link"
+                  to={`/${locale}/work-orders/${followUpWorkOrderEntry.id}`}
+                >
+                  {isEnglish
+                    ? `View V${followUpWorkOrderVersion} work order`
+                    : `V${followUpWorkOrderVersion} 수정 작업지시서 보기`}
+                </Link>
+              ) : null}
               <a
-                className="work-order-primary-link"
+                className={
+                  hasLaterVerificationResult ? "secondary" : "work-order-primary-link"
+                }
                 href={`${workOrderExportUrl(workOrder.id, "pdf")}${isEnglish ? "?locale=en" : ""}`}
               >
                 {isEnglish ? "Save PDF" : "PDF 저장"}
@@ -634,106 +646,82 @@ export function WorkOrderPage() {
             return latestScoreAttempt ? (
               <>
                 <div className="work-order-score-comparison">
-                  {versionHistory.map((entry) => {
-                    const isFollowUpEntry = entry.version > workOrder.version;
+                  {versionHistory.map((entry) => (
+                    <article
+                      className={`work-order-score-card${
+                        entry.version === workOrder.version ? " current" : ""
+                      }`}
+                      key={entry.id}
+                    >
+                      <span>
+                        {workOrderVersionScoreLabel(entry.version, isEnglish)}
+                      </span>
+                      <strong>
+                        {entry.scoreBefore ?? "—"}
+                        {entry.gradeBefore ? (
+                          <small> {entry.gradeBefore}</small>
+                        ) : null}
+                      </strong>
+                      <small>
+                        {workOrderVersionCompletedLabel(
+                          entry.version,
+                          isEnglish,
+                        )}
+                      </small>
 
-                    return (
-                      <article
-                        className={`work-order-score-card${
-                          entry.version === workOrder.version ? " current" : ""
-                        }${isFollowUpEntry ? " follow-up" : ""}`}
-                        key={entry.id}
-                      >
-                        <span>
-                          {isFollowUpEntry
-                            ? isEnglish
-                              ? `V${entry.version} improvement work order`
-                              : `V${entry.version} 수정 작업지시서`
-                            : workOrderVersionScoreLabel(entry.version, isEnglish)}
-                        </span>
-                        <strong>
-                          {entry.scoreBefore ?? "—"}
-                          {entry.gradeBefore ? (
-                            <small> {entry.gradeBefore}</small>
-                          ) : null}
-                        </strong>
-                        <small>
-                          {isFollowUpEntry
-                            ? isEnglish
-                              ? "Issued"
-                              : "발행됨"
-                            : workOrderVersionCompletedLabel(
-                                entry.version,
-                                isEnglish,
-                              )}
-                        </small>
-
-                        <dl className="work-order-score-card-meta">
-                          <div>
-                            <dt>
-                              {isFollowUpEntry
-                                ? isEnglish
-                                  ? "Baseline rules version"
-                                  : "기준 규칙 버전"
-                                : workOrderVersionMetaLabel(
-                                    entry.version,
-                                    "rules",
-                                    isEnglish,
-                                  )}
-                            </dt>
-                            <dd>{entry.initialScan.rulesVersion}</dd>
-                          </div>
-                          <div>
-                            <dt>
-                              {isFollowUpEntry
-                                ? isEnglish
-                                  ? "Issued from verification completed at (KST)"
-                                  : "발행 기준 검수 완료 시각(KST)"
-                                : workOrderVersionMetaLabel(
-                                    entry.version,
-                                    "completedAt",
-                                    isEnglish,
-                                  )}
-                            </dt>
-                            <dd>
-                              {formatKST(
-                                entry.initialScan.completedAt,
-                                isEnglish,
-                              )}
-                            </dd>
-                          </div>
-                          <div>
-                            <dt>
-                              {isFollowUpEntry
-                                ? isEnglish
-                                  ? "Target URL"
-                                  : "대상 URL"
-                                : workOrderVersionMetaLabel(
-                                    entry.version,
-                                    "url",
-                                    isEnglish,
-                                  )}
-                            </dt>
-                            <dd>
-                              <a
-                                href={
-                                  entry.initialScan.targetUrl ??
-                                  workOrder.site.finalUrl ??
-                                  workOrder.site.baseUrl
-                                }
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                {entry.initialScan.targetUrl ??
-                                  workOrder.site.finalUrl ??
-                                  workOrder.site.baseUrl}
-                              </a>
-                            </dd>
-                          </div>
-                        </dl>
-                      </article>
-                    );
-                  })}
+                      <dl className="work-order-score-card-meta">
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              entry.version,
+                              "rules",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>{entry.initialScan.rulesVersion}</dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              entry.version,
+                              "completedAt",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>
+                            {formatKST(
+                              entry.initialScan.completedAt,
+                              isEnglish,
+                            )}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              entry.version,
+                              "url",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>
+                            <a
+                              href={
+                                entry.initialScan.targetUrl ??
+                                workOrder.site.finalUrl ??
+                                workOrder.site.baseUrl
+                              }
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {entry.initialScan.targetUrl ??
+                                workOrder.site.finalUrl ??
+                                workOrder.site.baseUrl}
+                            </a>
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
+                  ))}
                   {!hasLaterVerificationResult ? (
                   <article className="work-order-score-card verification">
                     <span>
@@ -935,11 +923,23 @@ export function WorkOrderPage() {
           </div>
 
           {hasLaterVerificationResult ? (
-            <p className="work-order-verification-notice">
-              {isEnglish
-                ? `The V${followUpWorkOrderVersion} work order has been issued. Continue updates and verification from the latest work order.`
-                : `V${followUpWorkOrderVersion} 수정 작업지시서가 발행되었습니다. 이후 수정과 검수는 최신 작업지시서에서 진행해 주세요.`}
-            </p>
+            <div className="work-order-verification-notice">
+              <p>
+                {isEnglish
+                  ? `The V${followUpWorkOrderVersion} work order has been issued. Continue updates and verification from the latest work order.`
+                  : `V${followUpWorkOrderVersion} 수정 작업지시서가 발행되었습니다. 이후 수정과 검수는 최신 작업지시서에서 진행해 주세요.`}
+              </p>
+              {followUpWorkOrderEntry ? (
+                <Link
+                  className="secondary work-order-revision-button"
+                  to={`/${locale}/work-orders/${followUpWorkOrderEntry.id}`}
+                >
+                  {isEnglish
+                    ? `View V${followUpWorkOrderVersion} work order`
+                    : `V${followUpWorkOrderVersion} 수정 작업지시서 보기`}
+                </Link>
+              ) : null}
+            </div>
           ) : isLatestVerificationConclusive ? (
             <p className="work-order-verification-notice">
               {hasRemainingVerificationItems
