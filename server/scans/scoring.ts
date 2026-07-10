@@ -233,7 +233,7 @@ export interface ScorableFinding {
 }
 
 function earnedWeight(status: CollectedFindingStatus, weight: number): number {
-  return status === "PASS" ? weight : 0;
+  return status === "PASS" || status === "NA" ? weight : 0;
 }
 
 function gradeFor(score: number): string {
@@ -362,7 +362,7 @@ export function applyScoreToFindings(findings: readonly CollectedFinding[]): {
       return {
         ...finding,
         category: definition.category,
-        scoreDelta: finding.status === "PASS" ? 0 : -definition.weight,
+        scoreDelta: finding.status === "PASS" || finding.status === "NA" ? 0 : -definition.weight,
       };
     }),
   };

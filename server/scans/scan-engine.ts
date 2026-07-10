@@ -834,19 +834,22 @@ function metadataFindings(
     finding({
       ruleCode: "STRUCT-JSONLD-SEARCHACTION-001",
       category: "핵심정보 인식 정확도",
-      severity: analysis.jsonLd.hasSearchAction ? "INFO" : "LOW",
-      status: analysis.jsonLd.hasSearchAction ? "PASS" : "FAIL",
+      severity: "INFO",
+      status: analysis.jsonLd.hasSearchAction ? "PASS" : "NA",
       title: "사이트 검색 SearchAction",
       description: analysis.jsonLd.hasSearchAction
         ? "WebSite JSON-LD에서 SearchAction을 확인했습니다."
-        : "WebSite JSON-LD에서 SearchAction을 확인하지 못했습니다.",
+        : "검사 대상 사이트에서 내부 검색 기능을 확정하지 못해 SearchAction은 해당 없음으로 처리했습니다.",
       evidence: {
         hasSearchAction: analysis.jsonLd.hasSearchAction,
         types: analysis.jsonLd.types,
+        applicability: analysis.jsonLd.hasSearchAction
+          ? "SEARCH_ACTION_PRESENT"
+          : "NO_CONFIRMED_INTERNAL_SEARCH_FEATURE",
       },
       recommendation: analysis.jsonLd.hasSearchAction
         ? null
-        : "사이트 내부 검색이 있다면 WebSite JSON-LD의 potentialAction에 SearchAction을 추가하세요. 내부 검색이 없는 단순 사이트라면 낮은 우선순위로 검토하세요.",
+        : "상품·문서·게시글처럼 검색할 내부 콘텐츠가 많고 실제 내부 검색 페이지가 있는 사이트라면 WebSite JSON-LD의 potentialAction에 실제 검색 URL과 일치하는 SearchAction을 추가하세요. 내부 검색 기능이 없는 랜딩페이지나 허브 사이트에는 허위 SearchAction을 추가하지 마세요.",
     }),
     finding({
       ruleCode: "STRUCT-JSONLD-ENTITY-TRUST-001",

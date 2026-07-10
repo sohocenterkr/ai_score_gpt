@@ -118,6 +118,10 @@ const faqItems = [
     "기술 설정, 초기 HTML, canonical, JSON-LD, 콘텐츠 보강 등을 개발자가 바로 사이트를 개선할 수 있도록 일목요연하게 정리하여 제공합니다.",
   ],
   [
+    "SearchAction이 없으면 AI 인식에 불리한가요?",
+    "SearchAction은 실제 내부 검색 기능이 있는 사이트에서 검색 진입점을 설명하는 보조 신호입니다. 상품·문서가 많은 사이트에는 도움이 될 수 있지만, 내부 검색 기능이 없는 랜딩페이지나 허브 사이트에는 허위로 추가하지 않는 것이 맞습니다.",
+  ],
+  [
     "입력한 사이트 정보와 진단 결과는 어떻게 처리되나요?",
     "사이트명, URL, 진단 점수와 주요 발견 사항은 고객지원과 서비스 품질 향상을 위해 저장될 수 있습니다. 상세 보고서와 작업지시서 자료는 별도 동의 없이 공개하지 않습니다.",
   ],
@@ -143,6 +147,10 @@ const faqItemsEn = [
   [
     "What is included in an improvement work order?",
     "It clearly organizes technical settings, initial HTML, canonical URLs, JSON-LD, and content improvements so developers can improve the site right away.",
+  ],
+  [
+    "Does missing SearchAction hurt AI recognition?",
+    "SearchAction is a supporting signal for sites that have a real internal search feature. It can help content-heavy product or documentation sites, but landing pages and hub sites without internal search should not add a fake SearchAction.",
   ],
   [
     "How is submitted site data handled?",

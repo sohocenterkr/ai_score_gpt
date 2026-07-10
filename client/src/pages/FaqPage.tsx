@@ -68,6 +68,11 @@ const faqContent = {
         "사이트명, URL, 진단 결과 점수, 주요 발견 사항은 서비스 제공과 이력 확인을 위해 저장될 수 있습니다. 상세 보고서와 작업지시서 관련 자료는 별도 동의 없이 공개하지 않으며, 서비스 개선과 품질 향상을 위해 내부적으로만 활용합니다.",
     },
     {
+      question: "SearchAction은 무엇이고 AI 인식에 꼭 필요한가요?",
+      answer:
+        "SearchAction은 WebSite JSON-LD에서 실제 내부 검색 기능의 검색 URL을 기계가 이해할 수 있게 설명하는 보조 신호입니다. 쇼핑몰이나 문서 사이트처럼 상품·문서·게시글이 많고 사용자가 사이트 안에서 검색하는 경우, AI 에이전트가 example-shop.com 안에서 ‘무선 마우스’를 찾는 상황처럼 내부 검색 진입점을 이해하는 데 도움이 될 수 있습니다. 그러나 사이트명, H1, 초기 HTML 본문, 서비스 정의, FAQ, 내부 링크, WebApplication·Organization JSON-LD 같은 핵심 신호보다 영향은 작습니다. 내부 검색 기능이 없는 랜딩페이지나 허브 사이트에는 허위 SearchAction을 넣지 않는 것이 맞습니다.",
+    },
+    {
       question: "오류가 발생하면 어떻게 하나요?",
       answer:
         "오류 화면이 표시되거나 진단이 실패하면 문의 연락처로 상황을 알려 주세요. 확인 후 필요한 지원을 제공합니다.",
@@ -143,6 +148,11 @@ const faqContent = {
       question: "Is my submitted data stored?",
       answer:
         "Website names, URLs, diagnostic scores, and key findings may be stored to provide the service and maintain user history. Detailed reports and work order materials are not publicly disclosed without separate consent and are used internally for service improvement and quality enhancement.",
+    },
+    {
+      question: "What is SearchAction, and is it required for AI recognition?",
+      answer:
+        "SearchAction is a supporting signal in WebSite JSON-LD that tells machines how a real internal site search URL works. For e-commerce stores or documentation sites with many products, documents, or posts, it may help an AI agent understand the internal search entry point, for example when checking whether example-shop.com has a wireless mouse. However, it is less important than core identity signals such as the site title, H1, initial HTML body, service definition, FAQs, internal links, and WebApplication or Organization JSON-LD. If a landing page or hub site has no internal search feature, it should not add a fake SearchAction.",
     },
     {
       question: "What should I do if an error occurs?",

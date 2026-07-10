@@ -53,6 +53,24 @@ describe("scan scoring", () => {
     expect(summary.grade).toBe("A+");
   });
 
+  it("해당 없음 규칙은 감점하지 않는다", () => {
+    const findings = allFindings();
+    const searchAction = findings.find(
+      (finding) => finding.ruleCode === "STRUCT-JSONLD-SEARCHACTION-001",
+    );
+
+    if (!searchAction) {
+      throw new Error("SearchAction rule missing");
+    }
+
+    searchAction.status = "NA";
+    const summary = calculateScore(findings);
+
+    expect(summary.score).toBe(100);
+    expect(summary.lostPoints).toBe(0);
+    expect(summary.grade).toBe("A+");
+  });
+
   it("전체 noindex는 30점 상한을 적용한다", () => {
     const findings = allFindings();
     const indexability = findings.find(

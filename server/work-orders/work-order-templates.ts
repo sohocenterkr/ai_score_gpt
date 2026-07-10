@@ -406,14 +406,14 @@ const templates: Record<string, WorkOrderTemplate> = {
   },
   "STRUCT-JSONLD-SEARCHACTION-001": {
     requirement:
-      "사이트 내부 검색 기능이 있다면 WebSite JSON-LD에 SearchAction을 추가합니다.",
+      "사이트 내부 검색 기능이 실제로 확인되는 경우에만 WebSite JSON-LD에 SearchAction을 추가합니다.",
     developerMessage:
-      "내부 검색 페이지가 실제로 존재하는 사이트에만 WebSite JSON-LD의 potentialAction으로 SearchAction을 선언해 주세요. 검색 URL 템플릿은 실제 검색 결과 페이지와 일치해야 하며, 내부 검색 기능이 없는 단순 랜딩 사이트라면 기능을 억지로 만들거나 잘못된 SearchAction을 추가하지 마세요.",
+      "내부 검색 페이지가 실제로 존재하는 사이트에만 WebSite JSON-LD의 potentialAction으로 SearchAction을 선언해 주세요. 검색 URL 템플릿은 실제 검색 결과 페이지와 일치해야 합니다. 쇼핑몰·문서 사이트처럼 상품이나 문서를 사이트 안에서 검색하는 경우에는 AI 에이전트가 내부 검색 진입점을 이해하는 데 도움이 될 수 있지만, 내부 검색 기능이 없는 단순 랜딩 사이트나 허브 사이트라면 기능을 억지로 만들거나 허위 SearchAction을 추가하지 마세요.",
     acceptanceCriteria: [
       {
         code: "JSONLD-SEARCH-01",
         label:
-          "내부 검색 기능이 있는 경우 초기 HTML WebSite JSON-LD에서 SearchAction을 확인할 수 있다.",
+          "내부 검색 기능이 있는 사이트인 경우 초기 HTML WebSite JSON-LD에서 SearchAction을 확인할 수 있다.",
         required: true,
       },
       {
@@ -425,7 +425,7 @@ const templates: Record<string, WorkOrderTemplate> = {
       {
         code: "JSONLD-SEARCH-03",
         label:
-          "내부 검색 기능이 없는 사이트에는 허위 SearchAction을 추가하지 않는다.",
+          "내부 검색 기능이 없는 사이트는 SearchAction 대상이 아니며 허위 SearchAction을 추가하지 않는다.",
         required: true,
       },
     ],
