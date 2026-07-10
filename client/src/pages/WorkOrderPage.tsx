@@ -438,13 +438,32 @@ export function WorkOrderPage() {
     );
   }
 
-  const canSubmitVerification = [
-    "ISSUED",
-    "ASSIGNED",
-    "IN_PROGRESS",
-    "SUBMITTED",
-    "REWORK_REQUIRED",
-  ].includes(workOrder.status);
+  const latestVerificationAttempt = workOrder.verificationAttempts[0] ?? null;
+  const latestScoredVerificationAttempt =
+    workOrder.verificationAttempts.find(
+      (attempt) => attempt.scoreAfter !== null,
+    ) ?? null;
+  const isLatestVerificationConclusive =
+    latestVerificationAttempt !== null &&
+    (latestVerificationAttempt.status === "PASSED" ||
+      latestVerificationAttempt.status === "REWORK_REQUIRED" ||
+      (latestVerificationAttempt.completedAt !== null &&
+        latestVerificationAttempt.scoreAfter !== null &&
+        latestVerificationAttempt.status !== "FAILED"));
+  const remainingVerificationItemResults =
+    latestVerificationAttempt?.itemResults.filter(
+      (result) => result.status === "FAIL" || result.status === "BLOCKED",
+    ) ?? [];
+  const hasRemainingVerificationItems =
+    remainingVerificationItemResults.length > 0;
+  const canSubmitVerification =
+    [
+      "ISSUED",
+      "ASSIGNED",
+      "IN_PROGRESS",
+      "SUBMITTED",
+      "REWORK_REQUIRED",
+    ].includes(workOrder.status) && !isLatestVerificationConclusive;
   const hasLaterVerificationResult = workOrder.versionHistory.some(
     (entry) => entry.version > workOrder.version,
   );
@@ -541,24 +560,52 @@ export function WorkOrderPage() {
         {workOrder.status !== "DRAFT" ? (
           <div className="work-order-process-guide" role="note">
             <strong>
-              {isEnglish
-                ? "Current step: update the site using this work order"
-                : "현재 단계: 작업지시서로 사이트 수정 진행"}
+              {isLatestVerificationConclusive
+                ? isEnglish
+                  ? "Current step: verification completed"
+                  : "현재 단계: 2차 검수 완료"
+                : isEnglish
+                  ? "Current step: update the site using this work order"
+                  : "현재 단계: 작업지시서로 사이트 수정 진행"}
             </strong>
             <p>
-              {isEnglish
-                ? "Save this document as a PDF or send it to the developer to update the site. After deployment, submit the public URL below to verify whether the work was applied."
-                : "이 문서를 PDF로 저장하거나 개발자에게 전달해 사이트 수정을 진행하세요. 수정 사항을 배포한 뒤 아래 자동검수 영역에 공개 URL을 제출하면 작업 반영 여부를 확인할 수 있습니다."}
+              {isLatestVerificationConclusive
+                ? hasRemainingVerificationItems
+                  ? isEnglish
+                    ? "The updated public URL has been verified. Create a follow-up work order only for the remaining failed or blocked items when additional improvement is needed."
+                    : "수정된 공개 URL 검수가 완료되었습니다. 추가 개선이 필요한 경우 실패 또는 확인 불가 항목만 모아 후속 작업지시서를 만들 수 있습니다."
+                  : isEnglish
+                    ? "The updated public URL has been verified and no remaining failed or blocked items were found."
+                    : "수정된 공개 URL 검수가 완료되었고 남은 실패 또는 확인 불가 항목이 없습니다."
+                : isEnglish
+                  ? "Save this document as a PDF or send it to the developer to update the site. After deployment, submit the public URL below to verify whether the work was applied."
+                  : "이 문서를 PDF로 저장하거나 개발자에게 전달해 사이트 수정을 진행하세요. 수정 사항을 배포한 뒤 아래 자동검수 영역에 공개 URL을 제출하면 작업 반영 여부를 확인할 수 있습니다."}
             </p>
           </div>
         ) : null}
 
         <section className="surface work-order-overview">
           {(() => {
-            const latestScoredVerificationAttempt =
-              workOrder.verificationAttempts.find(
-                (attempt) => attempt.scoreAfter !== null,
-              );
+            const latestScoreAttempt = latestScoredVerificationAttempt;
+            const latestScorePassCount =
+              latestScoreAttempt?.itemResults.filter(
+                (result) => result.status === "PASS",
+              ).length ?? 0;
+            const latestScoreFailCount =
+              latestScoreAttempt?.itemResults.filter(
+                (result) => result.status === "FAIL",
+              ).length ?? 0;
+            const latestScoreBlockedCount =
+              latestScoreAttempt?.itemResults.filter(
+                (result) => result.status === "BLOCKED",
+              ).length ?? 0;
+            const latestScoreNotApplicableCount =
+              latestScoreAttempt?.itemResults.filter(
+                (result) => result.status === "NOT_APPLICABLE",
+              ).length ?? 0;
+            const latestScoreVersion = latestScoreAttempt
+              ? latestScoreAttempt.attemptNumber + 1
+              : workOrder.version + 1;
             const scoreGoal = workOrderScoreGoal(workOrder.scoreBefore);
             const versionHistory =
               workOrder.versionHistory.length > 0
@@ -572,7 +619,7 @@ export function WorkOrderPage() {
                       initialScan: workOrder.initialScan,
                     },
                   ];
-            return latestScoredVerificationAttempt ? (
+            return latestScoreAttempt ? (
               <>
                 <div className="work-order-score-comparison">
                   {versionHistory.map((entry) => (
@@ -651,6 +698,91 @@ export function WorkOrderPage() {
                       </dl>
                     </article>
                   ))}
+                  <article className="work-order-score-card verification">
+                    <span>
+                      {workOrderVersionScoreLabel(
+                        latestScoreVersion,
+                        isEnglish,
+                      )}
+                    </span>
+                    <strong>
+                      {latestScoreAttempt.scoreAfter ?? "—"}
+                      {latestScoreAttempt.gradeAfter ? (
+                        <small> {latestScoreAttempt.gradeAfter}</small>
+                      ) : null}
+                    </strong>
+                    <small>
+                      {workOrderVersionCompletedLabel(
+                        latestScoreVersion,
+                        isEnglish,
+                      )}
+                    </small>
+
+                    <dl className="work-order-score-card-meta">
+                      <div>
+                        <dt>
+                          {isEnglish
+                            ? "Verification status"
+                            : String(latestScoreVersion) + "차 검수 상태"}
+                        </dt>
+                        <dd>
+                          {isEnglish
+                            ? latestScoreAttempt.status
+                                .replaceAll("_", " ")
+                                .toLowerCase()
+                            : (verificationStatusLabels[
+                                latestScoreAttempt.status
+                              ] ?? latestScoreAttempt.status)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>
+                          {workOrderVersionMetaLabel(
+                            latestScoreVersion,
+                            "completedAt",
+                            isEnglish,
+                          )}
+                        </dt>
+                        <dd>
+                          {formatKST(
+                            latestScoreAttempt.completedAt ??
+                              latestScoreAttempt.scan.completedAt,
+                            isEnglish,
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>
+                          {workOrderVersionMetaLabel(
+                            latestScoreVersion,
+                            "url",
+                            isEnglish,
+                          )}
+                        </dt>
+                        <dd>
+                          <a
+                            href={latestScoreAttempt.submittedUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            {latestScoreAttempt.submittedUrl}
+                          </a>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>
+                          {isEnglish
+                            ? "Item-level result"
+                            : "항목별 자동검수 결과"}
+                        </dt>
+                        <dd>
+                          {isEnglish
+                            ? "Pass " + latestScorePassCount + " · Fail " + latestScoreFailCount + " · Blocked " + latestScoreBlockedCount + " · N/A " + latestScoreNotApplicableCount
+                            : "통과 " + latestScorePassCount + " · 실패 " + latestScoreFailCount + " · 확인 불가 " + latestScoreBlockedCount + " · 해당 없음 " + latestScoreNotApplicableCount}
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
                 </div>
               </>
             ) : (
@@ -763,11 +895,21 @@ export function WorkOrderPage() {
             ) : null}
           </div>
 
-          {canSubmitVerification && hasLaterVerificationResult ? (
+          {hasLaterVerificationResult ? (
             <p className="work-order-verification-notice">
               {isEnglish
                 ? "A later verification result already exists. Create the follow-up work order, then run verification from the latest work order."
                 : "이미 다음 차수 검수 결과가 생성되었습니다. 남은 항목으로 후속 작업지시서를 만든 뒤 최신 작업지시서에서 검수를 진행해 주세요."}
+            </p>
+          ) : isLatestVerificationConclusive ? (
+            <p className="work-order-verification-notice">
+              {hasRemainingVerificationItems
+                ? isEnglish
+                  ? "Verification is complete. The start button is disabled for this completed work order. Create a follow-up work order from the remaining items if additional improvement is needed."
+                  : "2차 검수가 완료되어 이 작업지시서의 검수시작 버튼은 비활성화되었습니다. 추가 개선이 필요하면 남은 항목으로 후속 작업지시서를 만들어 진행해 주세요."
+                : isEnglish
+                  ? "Verification is complete. No additional verification is needed for this work order."
+                  : "2차 검수가 완료되었습니다. 이 작업지시서에서 추가 검수는 필요하지 않습니다."}
             </p>
           ) : canSubmitVerification ? (
             <form
@@ -888,7 +1030,9 @@ export function WorkOrderPage() {
 
           {workOrder.status !== "DRAFT" &&
           workOrder.status !== "CANCELLED" &&
-          !hasLaterVerificationResult ? (
+          !hasLaterVerificationResult &&
+          isLatestVerificationConclusive &&
+          hasRemainingVerificationItems ? (
             <div className="work-order-revision-panel" role="note">
               <div>
                 <strong>
@@ -906,17 +1050,7 @@ export function WorkOrderPage() {
                 className="secondary work-order-revision-button"
                 type="button"
                 onClick={handleRevise}
-                disabled={
-                  working ||
-                  workOrder.status === "VERIFYING" ||
-                  workOrder.verificationAttempts.length === 0 ||
-                  workOrder.verificationAttempts.some(
-                    (attempt) =>
-                      attempt.status === "PASSED" ||
-                      (attempt.scoreAfter ?? -1) >=
-                        workOrderScoreGoal(workOrder.scoreBefore).finalMax,
-                  )
-                }
+                disabled={working || workOrder.status === "VERIFYING"}
               >
                 {isEnglish
                   ? "Create follow-up from remaining items"
