@@ -111,13 +111,13 @@ const checkoutCopy = {
     nonDisclosure:
       "상세 보고서 전체, 작업지시서, 상세 문제 목록, 원문 증거, 스캔 데이터와 내부 분석 자료는 공개하지 않습니다.",
     domesticButton: "국내 결제 준비",
-    extraVerificationTitle: "추가 검수권 1회 결제",
+    extraVerificationTitle: "3차 작업지시서·4차 진단 추가 결제",
     extraVerificationBody:
       "3차 이상 작업지시서 검수는 추가 검수권 결제 후 진행할 수 있습니다. 결제 1건은 해당 작업지시서의 검수 1회에 사용됩니다.",
-    extraVerificationLabel: "추가 검수권 1회",
+    extraVerificationLabel: "3차 작업지시서·4차 진단",
     domesticExtraVerificationPrice: "33,000원 (VAT 포함)",
-    extraVerificationItem: "해당 작업지시서 자동검수 1회",
-    extraVerificationButton: "결제 후 검수 진행",
+    extraVerificationItem: "3차 작업지시서와 수정 후 4차 사이트 진단",
+    extraVerificationButton: "결제 후 3차 작업지시서 진행",
     loading: "결제창을 여는 중입니다... 잠시만 기다려 주세요..",
     globalPayment: "해외 카드와 글로벌 SaaS 결제 방식 지원",
     polarEyebrow: "해외 결제",
@@ -191,13 +191,13 @@ const checkoutCopy = {
     nonDisclosure:
       "Full detailed reports, work orders, detailed issue lists, source evidence, scan data, and internal analysis materials will not be publicly disclosed.",
     domesticButton: "Prepare domestic payment",
-    extraVerificationTitle: "Additional Verification Ticket",
+    extraVerificationTitle: "Work Order 3 and Diagnostic 4",
     extraVerificationBody:
       "Version 3 and later work order verification requires an additional verification ticket. One payment grants one verification run for the connected work order.",
-    extraVerificationLabel: "One additional verification",
+    extraVerificationLabel: "Work Order 3 and Diagnostic 4",
     domesticExtraVerificationPrice: "KRW 33,000 including VAT",
-    extraVerificationItem: "One automatic verification for this work order",
-    extraVerificationButton: "Pay to verify",
+    extraVerificationItem: "Work Order 3 plus Diagnostic 4 after site updates",
+    extraVerificationButton: "Pay and continue",
     loading: "Opening the payment window... Please wait.",
     globalPayment: "Supports international cards and global SaaS payment flow",
     polarEyebrow: "International Payment",
@@ -243,7 +243,7 @@ const domesticPrices: Record<PaymentPlan, string> = {
 
 function planLabel(plan: PaymentPlan): string {
   if (plan === "EXTRA_VERIFICATION") {
-    return "추가 검수권 1회";
+    return "3차 작업지시서·4차 진단";
   }
 
   return plan === "CASE_STUDY_DISCOUNT"
@@ -284,7 +284,7 @@ export function CheckoutPage() {
   const hasWorkOrderId = useMemo(() => workOrderId.length > 0, [workOrderId]);
   const isExtraVerificationCheckout = requestedPlan === "EXTRA_VERIFICATION";
   const canCreatePayment = isExtraVerificationCheckout
-    ? hasWorkOrderId
+    ? hasScanId || hasWorkOrderId
     : hasScanId;
   const safeReturnTo = safeCheckoutReturnPath(returnTo, locale);
   const copy = locale === "en" ? checkoutCopy.en : checkoutCopy.ko;
@@ -319,8 +319,8 @@ export function CheckoutPage() {
             tone: "success",
             text:
               locale === "en"
-                ? "Payment has been confirmed. Returning to the work order."
-                : "결제가 확인되었습니다. 작업지시서 화면으로 돌아갑니다.",
+                ? "Payment has been confirmed. Returning to the previous page."
+                : "결제가 확인되었습니다. 이전 화면으로 돌아갑니다.",
           });
           window.setTimeout(() => {
             window.location.assign(`${safeReturnTo}?payment=completed`);
@@ -356,10 +356,10 @@ export function CheckoutPage() {
   ]);
 
   async function handleCreateDomesticOrder(plan: PaymentPlan) {
-    if (plan === "EXTRA_VERIFICATION" && !hasWorkOrderId) {
+    if (plan === "EXTRA_VERIFICATION" && !hasScanId && !hasWorkOrderId) {
       setMessage({
         tone: "error",
-        text: "결제할 작업지시서가 연결되지 않았습니다. 작업지시서 화면에서 다시 이동해 주세요.",
+        text: "결제할 3차 진단 결과가 연결되지 않았습니다. 사이트 진행 현황에서 다시 이동해 주세요.",
       });
       return;
     }
@@ -402,8 +402,16 @@ export function CheckoutPage() {
 
     try {
       const result = await createPaymentOrderRequest({
-        scanId: plan === "EXTRA_VERIFICATION" ? undefined : scanId,
-        workOrderId: plan === "EXTRA_VERIFICATION" ? workOrderId : undefined,
+        scanId:
+          plan === "EXTRA_VERIFICATION"
+            ? hasScanId
+              ? scanId
+              : undefined
+            : scanId,
+        workOrderId:
+          plan === "EXTRA_VERIFICATION" && hasWorkOrderId
+            ? workOrderId
+            : undefined,
         plan,
       });
 
@@ -444,8 +452,16 @@ export function CheckoutPage() {
         },
         redirectUrl: checkoutRedirectUrl({
           locale,
-          scanId: plan === "EXTRA_VERIFICATION" ? undefined : scanId,
-          workOrderId: plan === "EXTRA_VERIFICATION" ? workOrderId : undefined,
+          scanId:
+            plan === "EXTRA_VERIFICATION"
+              ? hasScanId
+                ? scanId
+                : undefined
+              : scanId,
+          workOrderId:
+            plan === "EXTRA_VERIFICATION" && hasWorkOrderId
+              ? workOrderId
+              : undefined,
           orderId: result.paymentOrder.id,
           plan,
           returnTo: safeReturnTo ?? undefined,
@@ -470,8 +486,8 @@ export function CheckoutPage() {
           tone: "success",
           text:
             locale === "en"
-              ? "Payment has been confirmed. Returning to the work order."
-              : "결제가 확인되었습니다. 작업지시서 화면으로 돌아갑니다.",
+              ? "Payment has been confirmed. Returning to the previous page."
+              : "결제가 확인되었습니다. 이전 화면으로 돌아갑니다.",
         });
         window.setTimeout(() => {
           window.location.assign(`${safeReturnTo}?payment=completed`);

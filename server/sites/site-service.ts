@@ -723,7 +723,7 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
           paidEntitlements: {
             where: {
               userId: user.id,
-              status: "ACTIVE",
+              OR: [{ status: "ACTIVE" }, { plan: "EXTRA_VERIFICATION" }],
             },
             select: {
               plan: true,

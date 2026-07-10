@@ -191,7 +191,7 @@ function orderName(siteName: string, plan: PaymentPlan): string {
   const compactSiteName = siteName.trim().slice(0, 24) || "사이트";
 
   if (plan === "EXTRA_VERIFICATION") {
-    return `Site AI Score 추가 검수권 1회 - ${compactSiteName}`;
+    return `Site AI Score 3차 작업지시서·4차 진단 - ${compactSiteName}`;
   }
 
   const suffix =
@@ -637,61 +637,149 @@ export function createPrismaPaymentService(): PaymentService {
         if (input.provider !== "PORTONE") {
           throw new PaymentServiceError(
             "EXTRA_VERIFICATION_PROVIDER_NOT_SUPPORTED",
-            "추가 검수권은 국내 카드결제만 지원합니다.",
+            "추가 작업지시서와 4차 진단은 국내 카드결제만 지원합니다.",
             400,
           );
         }
 
-        if (!workOrderId) {
+        if (!scanId && !workOrderId) {
           throw new PaymentServiceError(
-            "PAYMENT_WORK_ORDER_REQUIRED",
-            "결제할 작업지시서를 확인해 주세요.",
+            "PAYMENT_EXTRA_TARGET_REQUIRED",
+            "결제할 3차 진단 결과 또는 3차 작업지시서를 확인해 주세요.",
             400,
           );
         }
 
         const prisma = getDatabase();
-        const workOrder = await prisma.workOrder.findFirst({
-          where: {
-            id: workOrderId,
-            site: {
-              status: "ACTIVE",
-              organization: {
-                members: {
-                  some: {
-                    userId: user.id,
+        let targetSite: {
+          id: string;
+          name: string;
+          baseUrl: string;
+          finalUrl: string | null;
+        };
+        let targetScanId: string | null = null;
+        let targetWorkOrderId: string | null = null;
+        let targetOrderNumber: string | null = null;
+        let targetVersion = 3;
+
+        if (workOrderId) {
+          const workOrder = await prisma.workOrder.findFirst({
+            where: {
+              id: workOrderId,
+              site: {
+                status: "ACTIVE",
+                organization: {
+                  members: {
+                    some: {
+                      userId: user.id,
+                    },
                   },
                 },
               },
             },
-          },
-          include: {
-            site: true,
-          },
-        });
+            include: {
+              site: true,
+            },
+          });
 
-        if (!workOrder) {
-          throw new PaymentServiceError(
-            "PAYMENT_WORK_ORDER_NOT_FOUND",
-            "결제 가능한 작업지시서를 찾을 수 없습니다.",
-            404,
-          );
+          if (!workOrder) {
+            throw new PaymentServiceError(
+              "PAYMENT_WORK_ORDER_NOT_FOUND",
+              "결제 가능한 작업지시서를 찾을 수 없습니다.",
+              404,
+            );
+          }
+
+          if (workOrder.version < 3) {
+            throw new PaymentServiceError(
+              "EXTRA_VERIFICATION_NOT_REQUIRED",
+              "1차와 2차 작업지시서 및 후속 진단은 최초 결제에 포함됩니다.",
+              409,
+            );
+          }
+
+          targetSite = workOrder.site;
+          targetWorkOrderId = workOrder.id;
+          targetOrderNumber = workOrder.orderNumber;
+          targetVersion = workOrder.version;
+        } else {
+          const thirdDiagnosticAttempt =
+            await prisma.verificationAttempt.findFirst({
+              where: {
+                scanId,
+                status: "REWORK_REQUIRED",
+                scan: {
+                  status: {
+                    in: ["COMPLETED", "PARTIAL"],
+                  },
+                  score: {
+                    not: null,
+                  },
+                },
+                workOrder: {
+                  version: 2,
+                  site: {
+                    status: "ACTIVE",
+                    organization: {
+                      members: {
+                        some: {
+                          userId: user.id,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              include: {
+                scan: {
+                  include: {
+                    site: true,
+                  },
+                },
+                workOrder: {
+                  select: {
+                    id: true,
+                    orderNumber: true,
+                    version: true,
+                  },
+                },
+              },
+            });
+
+          if (!thirdDiagnosticAttempt) {
+            throw new PaymentServiceError(
+              "PAYMENT_THIRD_DIAGNOSTIC_NOT_FOUND",
+              "추가 작업이 필요한 3차 진단 결과를 찾을 수 없습니다.",
+              404,
+            );
+          }
+
+          targetSite = thirdDiagnosticAttempt.scan.site;
+          targetScanId = thirdDiagnosticAttempt.scanId;
+          targetOrderNumber = thirdDiagnosticAttempt.workOrder.orderNumber;
+          targetVersion = thirdDiagnosticAttempt.workOrder.version + 1;
         }
 
-        if (workOrder.version < 3) {
-          throw new PaymentServiceError(
-            "EXTRA_VERIFICATION_NOT_REQUIRED",
-            "1차와 2차 작업지시서 검수는 무료로 제공됩니다.",
-            409,
-          );
+        const targetConditions: Prisma.PaidEntitlementWhereInput[] = [];
+
+        if (targetScanId) {
+          targetConditions.push({
+            scanId: targetScanId,
+          });
+        }
+
+        if (targetWorkOrderId) {
+          targetConditions.push({
+            workOrderId: targetWorkOrderId,
+          });
         }
 
         const existingEntitlement = await prisma.paidEntitlement.findFirst({
           where: {
             userId: user.id,
-            workOrderId: workOrder.id,
+            siteId: targetSite.id,
             plan: "EXTRA_VERIFICATION",
-            status: "ACTIVE",
+            OR: targetConditions,
           },
           select: {
             id: true,
@@ -701,14 +789,14 @@ export function createPrismaPaymentService(): PaymentService {
         if (existingEntitlement) {
           throw new PaymentServiceError(
             "EXTRA_VERIFICATION_ENTITLEMENT_EXISTS",
-            "이미 추가 검수권 결제가 완료된 작업지시서입니다.",
+            "이미 3차 작업지시서와 4차 진단 결제가 완료되었습니다.",
             409,
           );
         }
 
         const amount = DOMESTIC_PRICES.EXTRA_VERIFICATION;
         const providerPaymentId = createProviderPaymentId();
-        const title = orderName(workOrder.site.name, input.plan);
+        const title = orderName(targetSite.name, input.plan);
         const configured = Boolean(
           env.PORTONE_STORE_ID && env.PORTONE_CHANNEL_KEY,
         );
@@ -716,9 +804,9 @@ export function createPrismaPaymentService(): PaymentService {
         const order = await prisma.paymentOrder.create({
           data: {
             userId: user.id,
-            siteId: workOrder.siteId,
-            scanId: null,
-            workOrderId: workOrder.id,
+            siteId: targetSite.id,
+            scanId: targetScanId,
+            workOrderId: targetWorkOrderId,
             provider: "PORTONE",
             status: "PENDING",
             plan: input.plan,
@@ -728,12 +816,15 @@ export function createPrismaPaymentService(): PaymentService {
             idempotencyKey: providerPaymentId,
             metadata: {
               provider: "PORTONE",
-              source: "extra_verification_checkout",
-              workOrderId: workOrder.id,
-              orderNumber: workOrder.orderNumber,
-              version: workOrder.version,
-              siteId: workOrder.siteId,
-              siteName: workOrder.site.name,
+              source: targetScanId
+                ? "third_diagnostic_follow_up_checkout"
+                : "legacy_extra_verification_checkout",
+              scanId: targetScanId,
+              workOrderId: targetWorkOrderId,
+              orderNumber: targetOrderNumber,
+              version: targetVersion,
+              siteId: targetSite.id,
+              siteName: targetSite.name,
             } satisfies Prisma.InputJsonValue,
           },
           include: {

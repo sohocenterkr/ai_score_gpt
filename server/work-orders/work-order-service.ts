@@ -1216,12 +1216,21 @@ export function createPrismaWorkOrderService(
       const attemptNumber = (latest._max.attemptNumber ?? 0) + 1;
 
       const extraVerificationEntitlement =
-        current.version >= 3
+        current.version >= 3 && user.role !== "SUPER_ADMIN"
           ? await prisma.paidEntitlement.findFirst({
               where: {
-                workOrderId: current.id,
+                userId: user.id,
+                siteId: current.siteId,
                 plan: "EXTRA_VERIFICATION",
                 status: "ACTIVE",
+                OR: [
+                  {
+                    workOrderId: current.id,
+                  },
+                  {
+                    scanId: current.initialScanId,
+                  },
+                ],
               },
               select: {
                 id: true,
@@ -1232,10 +1241,14 @@ export function createPrismaWorkOrderService(
             })
           : null;
 
-      if (current.version >= 3 && !extraVerificationEntitlement) {
+      if (
+        current.version >= 3 &&
+        user.role !== "SUPER_ADMIN" &&
+        !extraVerificationEntitlement
+      ) {
         throw new WorkOrderServiceError(
           "EXTRA_VERIFICATION_PAYMENT_REQUIRED",
-          "3차 이상 작업지시서 검수는 추가 검수권 결제 후 진행할 수 있습니다.",
+          "3차 작업지시서와 4차 사이트 진단은 추가 결제 후 진행할 수 있습니다.",
           402,
         );
       }
@@ -1477,27 +1490,79 @@ export function createPrismaWorkOrderService(
         },
       });
       const nextVersion = (latest._max.version ?? current.version) + 1;
+      const extraVerificationEntitlement =
+        nextVersion >= 3 && user.role !== "SUPER_ADMIN"
+          ? await prisma.paidEntitlement.findFirst({
+              where: {
+                userId: user.id,
+                siteId: current.siteId,
+                scanId: verificationScan.id,
+                plan: "EXTRA_VERIFICATION",
+                status: "ACTIVE",
+              },
+              select: {
+                id: true,
+              },
+              orderBy: {
+                grantedAt: "asc",
+              },
+            })
+          : null;
 
-      const created = await prisma.workOrder.create({
-        data: {
-          orderNumber: current.orderNumber,
-          siteId: current.siteId,
-          initialScanId: verificationScan.id,
-          customerOrganizationId: current.customerOrganizationId,
-          agencyOrganizationId: current.agencyOrganizationId,
-          version: nextVersion,
-          status: "DRAFT",
-          rulesVersion: verificationScan.rulesVersion,
-          scoreBefore: verificationScan.score,
-          gradeBefore: verificationScan.grade,
-          expectedScoreMin: range.min,
-          expectedScoreMax: range.max,
-          createdBy: user.id,
-          items: {
-            create: itemInputs,
+      if (
+        nextVersion >= 3 &&
+        user.role !== "SUPER_ADMIN" &&
+        !extraVerificationEntitlement
+      ) {
+        throw new WorkOrderServiceError(
+          "EXTRA_VERIFICATION_PAYMENT_REQUIRED",
+          "3차 작업지시서는 추가 결제 후 생성할 수 있습니다.",
+          402,
+        );
+      }
+
+      const created = await prisma.$transaction(async (transaction) => {
+        const createdWorkOrder = await transaction.workOrder.create({
+          data: {
+            orderNumber: current.orderNumber,
+            siteId: current.siteId,
+            initialScanId: verificationScan.id,
+            customerOrganizationId: current.customerOrganizationId,
+            agencyOrganizationId: current.agencyOrganizationId,
+            version: nextVersion,
+            status: "DRAFT",
+            rulesVersion: verificationScan.rulesVersion,
+            scoreBefore: verificationScan.score,
+            gradeBefore: verificationScan.grade,
+            expectedScoreMin: range.min,
+            expectedScoreMax: range.max,
+            createdBy: user.id,
+            items: {
+              create: itemInputs,
+            },
           },
-        },
-        include: workOrderInclude,
+          select: {
+            id: true,
+          },
+        });
+
+        if (extraVerificationEntitlement) {
+          await transaction.paidEntitlement.update({
+            where: {
+              id: extraVerificationEntitlement.id,
+            },
+            data: {
+              workOrderId: createdWorkOrder.id,
+            },
+          });
+        }
+
+        return transaction.workOrder.findUniqueOrThrow({
+          where: {
+            id: createdWorkOrder.id,
+          },
+          include: workOrderInclude,
+        });
       });
 
       return publicWorkOrderWithHistory(created);
