@@ -60,9 +60,9 @@ const STATUS_LABELS: Record<PublicWorkOrder["status"], string> = {
   ASSIGNED: "배정",
   IN_PROGRESS: "작업 중",
   SUBMITTED: "제출",
-  VERIFYING: "검수 중",
-  REWORK_REQUIRED: "재작업 필요",
-  PASSED: "통과",
+  VERIFYING: "다음 진단 중",
+  REWORK_REQUIRED: "추가 개선 필요",
+  PASSED: "진단 완료",
   CANCELLED: "취소",
 };
 
@@ -72,9 +72,9 @@ const STATUS_LABELS_EN: Record<PublicWorkOrder["status"], string> = {
   ASSIGNED: "Assigned",
   IN_PROGRESS: "In progress",
   SUBMITTED: "Submitted",
-  VERIFYING: "Verifying",
-  REWORK_REQUIRED: "Rework required",
-  PASSED: "Passed",
+  VERIFYING: "Next diagnostic in progress",
+  REWORK_REQUIRED: "Additional improvement needed",
+  PASSED: "Diagnostic completed",
   CANCELLED: "Cancelled",
 };
 
@@ -226,24 +226,24 @@ const WORK_ORDER_RENDERED_TEXT_EN: Record<string, string> = {
     "If FAQPage JSON-LD is added, its questions and answers match the visible FAQ.",
   "서로 충돌하거나 오래된 메타데이터가 남아 있지 않습니다.":
     "No conflicting or outdated metadata remains.",
-  "재검사에서 렌더링 전후 핵심정보 불일치가 사라집니다.":
-    "A recheck confirms that key-information inconsistencies before and after rendering are resolved.",
+  "이번 차수 진단에서 렌더링 전후 핵심정보 불일치가 사라졌음이 확인됩니다.":
+    "The current diagnostic confirms that key-information inconsistencies before and after rendering have been resolved.",
   "초기 HTML만 확인해도 페이지의 주제와 주요 서비스가 이해됩니다.":
     "The page topic and main service can be understood from the initial HTML alone.",
   "title, meta description, H1과 핵심 본문의 의미가 서로 일관됩니다.":
     "The title, meta description, H1, and core body content are semantically consistent.",
   "사용자에게 보이는 내용과 AI에 제공되는 핵심 정보가 일치합니다.":
     "The content visible to users matches the core information provided to AI.",
-  "재검사에서 누락된 초기 HTML 핵심 항목이 확인됩니다.":
-    "A recheck confirms that the previously missing initial HTML core items are now present.",
+  "이번 차수 진단에서 이전에 누락된 초기 HTML 핵심 항목이 보완되었음이 확인됩니다.":
+    "The current diagnostic confirms that the previously missing initial HTML core items are now present.",
   "초기 HTML에는 단순 글자 채우기가 아니라 서비스 정의와 핵심 가치, 이용 대상과 대표 활용 사례, 3~5단계 이용 절차를 자연스러운 본문 섹션으로 포함해 주세요.":
     "Do not add filler text to the initial HTML. Include the service definition and core value, target users and representative use cases, and a 3-5 step usage flow as natural body sections.",
   "초기 HTML 본문이 200자 이상이며 렌더링 DOM 본문의 75% 이상을 포함합니다.":
     "The initial HTML body has at least 200 characters and contains at least 75% of the rendered DOM body.",
   "초기 HTML만 확인해도 서비스 정의, 대상 고객, 대표 활용 사례, 이용 절차, 요금·데이터 처리 요약을 이해할 수 있습니다.":
     "The service definition, target customers, representative use cases, usage process, and pricing/data handling summary can be understood from the initial HTML alone.",
-  "재검사에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.":
-    "A recheck confirms that initial HTML body and link coverage meet the criteria.",
+  "이번 차수 진단에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.":
+    "The current diagnostic confirms that initial HTML body and link coverage meet the criteria.",
 };
 
 function workOrderRenderedText(value: string, isEnglish: boolean): string {
@@ -864,8 +864,8 @@ function writeExecutionPlanPage(
 
   setRegular(document, 8.6, COLORS.muted).text(
     isEnglish
-      ? "Automatic verification items have been reorganized into Epic-level bundles that are easier for developers to implement."
-      : "자동검수 항목을 개발자가 실제로 처리하기 좋은 Epic 단위로 재구성했습니다.",
+      ? "Work items have been reorganized into Epic-level bundles that are easier for developers to implement."
+      : "작업 항목을 개발자가 실제로 처리하기 좋은 Epic 단위로 재구성했습니다.",
     {
       width: contentWidth(document),
       lineGap: 2,
@@ -880,8 +880,8 @@ function writeExecutionPlanPage(
         ? "The work bundles below are an implementation guide for fixing items that share the same root cause together, not for hiding or removing scoring items."
         : "아래 작업 묶음은 점수 항목을 숨기거나 제거하는 것이 아니라, 같은 원인에서 나온 항목을 한 번에 구현하도록 정리한 실행 가이드입니다.",
       isEnglish
-        ? "Automatic verification and scoring still follow the detailed items later in this document. Developers should implement the P0 to P4 bundles in order, then review the detailed completion criteria for each linked automatic verification item."
-        : "자동검수와 점수 계산은 뒤쪽 상세 항목 기준으로 유지되며, 개발자는 P0~P4 묶음을 순서대로 구현한 뒤 각 연결 자동검수 항목의 상세 완료 기준을 확인하면 됩니다.",
+        ? "The next diagnostic and scoring follow the detailed items later in this document. Developers should implement the P0 to P4 bundles in order, then review the detailed completion criteria for each linked item."
+        : "다음 차수 진단과 점수 계산은 뒤쪽 상세 항목 기준으로 진행되며, 개발자는 P0~P4 묶음을 순서대로 구현한 뒤 각 연결 항목의 상세 완료 기준을 확인하면 됩니다.",
     ].join("\n\n"),
     {
       width: contentWidth(document),
@@ -1020,10 +1020,10 @@ function writeExecutionPlanPage(
 
   writeTextBox(
     document,
-    isEnglish ? "Verification principles" : "검증 원칙",
+    isEnglish ? "Re-diagnostic principles" : "재진단 원칙",
     isEnglish
-      ? "P0 is the technical gate. After deploying P0, run a Site AI Score recheck against the same production URL before treating P1 to P4 as complete. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
-      : "P0는 기술 게이트입니다. P0 배포 후 같은 운영 URL로 Site AI Score 재검사를 실행한 뒤 P1~P4 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
+      ? "P0 is the technical gate. After deploying P0, start the next Site AI Score diagnostic against the same production URL before treating P1 to P4 as complete. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
+      : "P0는 기술 게이트입니다. P0 배포 후 같은 운영 URL로 다음 차수 Site AI Score 진단을 실행한 뒤 P1~P4 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",
@@ -1298,7 +1298,7 @@ export async function renderWorkOrderPdf(
   setRegular(document, 9.2, COLORS.text).text(
     isEnglish
       ? "This work order is based on issues found for the specified diagnostic URL and rules version. The customer site source code does not need to be submitted; after changes are deployed, the completion criteria must be verifiable on the public URL."
-      : "이 작업지시서는 명시된 검사 URL과 규칙 버전에서 발견된 문제를 기준으로 작성되었습니다. 고객 사이트의 소스코드를 제출할 필요는 없으며, 수정 후 배포된 공개 URL에서 완료 기준을 자동검수할 수 있어야 합니다.",
+      : "이 작업지시서는 명시된 진단 URL과 규칙 버전에서 발견된 문제를 기준으로 작성되었습니다. 고객 사이트의 소스코드를 제출할 필요는 없으며, 수정 후 배포된 공개 URL에서 완료 기준을 다음 차수 진단으로 확인할 수 있어야 합니다.",
     {
       width: contentWidth(document),
       lineGap: 4,
@@ -1317,8 +1317,8 @@ export async function renderWorkOrderPdf(
   document.moveDown(1.2);
   setBold(document, 9, COLORS.primaryDark).text(
     isEnglish
-      ? "Site AI Score - Diagnostics, work orders, and independent automatic verification"
-      : "Site AI Score - 진단, 작업지시서, 독립 자동검수",
+      ? "Site AI Score - Diagnostics, work orders, and numbered re-diagnostics"
+      : "Site AI Score - 진단, 작업지시서, 차수별 재진단",
     {
       width: contentWidth(document),
     },

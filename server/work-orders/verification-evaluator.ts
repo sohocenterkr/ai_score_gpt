@@ -413,7 +413,7 @@ function criterionEvaluation(
       status: "WARNING",
       automated: false,
       message:
-        "자동검수 범위 밖의 항목입니다. 주요 버튼·로그인·페이지 이동과 화면 디자인은 브라우저 스모크 테스트 또는 수동 확인을 권장합니다.",
+        "자동 판정 범위 밖의 항목입니다. 주요 버튼·로그인·페이지 이동과 화면 디자인은 브라우저 스모크 테스트 또는 수동 확인을 권장합니다.",
     };
   }
 
@@ -425,10 +425,10 @@ function criterionEvaluation(
       status: passed ? "PASS" : "FAIL",
       automated: true,
       message: passed
-        ? "초기 검사에서 통과한 가중 규칙의 신규 실패를 확인하지 못했습니다."
+        ? "이전 진단에서 통과한 가중 규칙의 신규 실패를 확인하지 못했습니다."
         : `초기 통과 규칙 중 ${regressionRuleCodes.join(
             ", ",
-          )} 항목이 재검사에서 통과하지 못했습니다.`,
+          )} 항목이 이번 차수 진단에서 통과하지 못했습니다.`,
     };
   }
 
@@ -442,8 +442,8 @@ function criterionEvaluation(
       status: submittedUrlMatches ? "PASS" : "FAIL",
       automated: true,
       message: submittedUrlMatches
-        ? "제출된 공개 URL을 검수 검사의 대상 URL로 사용했습니다."
-        : "제출 URL과 실제 검수 대상 URL이 일치하지 않습니다.",
+        ? "제출된 공개 URL을 이번 차수 진단의 대상 URL로 사용했습니다."
+        : "제출 URL과 실제 진단 대상 URL이 일치하지 않습니다.",
     };
   }
 
@@ -453,11 +453,11 @@ function criterionEvaluation(
     automated: true,
     message:
       baseStatus === "PASS"
-        ? `${baseMessage} 세부 완료 기준은 연결된 규칙의 자동검사 결과로 판정했습니다.`
+        ? `${baseMessage} 세부 완료 기준은 연결된 규칙의 이번 차수 진단 결과로 판정했습니다.`
         : baseStatus === "FAIL"
           ? baseMessage
           : baseStatus === "NOT_APPLICABLE"
-            ? "재검사에서 감점 제외 항목으로 판정되었습니다."
+            ? "이번 차수 진단에서 감점 제외 항목으로 판정되었습니다."
             : baseMessage,
   };
 }
@@ -510,12 +510,12 @@ export function evaluateVerification(
       status = itemStatusFromFinding(currentStatus);
       message =
         status === "PASS"
-          ? `${linkedRuleCode} 규칙이 재검사에서 통과했습니다.`
+          ? `${linkedRuleCode} 규칙이 이번 차수 진단에서 통과했습니다.`
           : status === "FAIL"
-            ? `${linkedRuleCode} 규칙이 재검사에서도 통과하지 못했습니다.`
+            ? `${linkedRuleCode} 규칙이 이번 차수 진단에서도 통과하지 못했습니다.`
             : status === "NOT_APPLICABLE"
-              ? `${linkedRuleCode} 규칙이 재검사에서 감점 제외로 판정되었습니다.`
-              : `${linkedRuleCode} 규칙의 재검사 결과를 자동으로 확인할 수 없습니다.`;
+              ? `${linkedRuleCode} 규칙이 이번 차수 진단에서 감점 제외로 판정되었습니다.`
+              : `${linkedRuleCode} 규칙의 이번 차수 진단 결과를 자동으로 확인할 수 없습니다.`;
       evidence = {
         evaluationType: "RULE_STATUS",
         ruleCode: linkedRuleCode,

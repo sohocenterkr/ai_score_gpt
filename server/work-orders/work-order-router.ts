@@ -229,7 +229,7 @@ export function createWorkOrderRouter(options: CreateWorkOrderRouterOptions) {
       if (!parsed.success) {
         response.status(400).json({
           code: "VALIDATION_ERROR",
-          message: "검수할 공개 배포 URL을 확인해 주세요.",
+          message: "다음 진단에 사용할 공개 배포 URL을 확인해 주세요.",
         });
         return;
       }

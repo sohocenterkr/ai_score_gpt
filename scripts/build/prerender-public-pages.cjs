@@ -597,7 +597,7 @@ const pages = [
     path: "/ko",
     title: "Site AI Score | AI 검색 친화도 진단",
     description:
-      "Site AI Score는 웹사이트의 AI 검색 접근성, 초기 HTML, 구조화 데이터, 핵심 콘텐츠, 수정 작업지시서와 재검수까지 한 흐름으로 점검하는 AEO 진단 서비스입니다.",
+      "Site AI Score는 웹사이트의 AI 검색 접근성, 초기 HTML, 구조화 데이터, 핵심 콘텐츠, 수정 작업지시서와 차수별 재진단까지 한 흐름으로 제공하는 AEO 진단 서비스입니다.",
     jsonLd: [homePageJsonLd],
   },
   {
@@ -764,7 +764,7 @@ ${section.paragraphs.map((paragraph) => `          <p>${escapeHtml(paragraph)}</
 const koreanFallbackPages = {
   "/ko/guide": {
     title: "이용가이드",
-    lead: "회원가입부터 사이트 등록, 무료 간편진단, 유료 보고서, 결제, 개선 후 재검수까지 Site AI Score 이용 흐름을 안내합니다.",
+    lead: "회원가입부터 사이트 등록, 무료 간편진단, 유료 보고서, 결제, 개선 후 재진단까지 Site AI Score 이용 흐름을 안내합니다.",
     sections: [
       {
         heading: "1. 계정 만들기",
@@ -781,7 +781,7 @@ const koreanFallbackPages = {
       {
         heading: "3. 진단과 결과 확인",
         paragraphs: [
-          "간편진단은 AI 검색 친화도, 구조화 데이터, 초기 HTML 콘텐츠, 접근성, 링크 구조를 확인합니다. 개선 후에는 같은 기준으로 다시 검수하고 점수 변화를 비교합니다.",
+          "간편진단은 AI 검색 친화도, 구조화 데이터, 초기 HTML 콘텐츠, 접근성, 링크 구조를 확인합니다. 개선 후에는 같은 기준으로 다음 차수 진단을 진행하고 점수 변화를 비교합니다.",
         ],
       },
     ],
@@ -801,7 +801,7 @@ const koreanFallbackPages = {
       {
         heading: "유료 산출물",
         paragraphs: [
-          "유료 산출물에는 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 재검수 비교 자료, AI 답변을 위한 추가 콘텐츠 제안이 포함될 수 있습니다.",
+          "유료 산출물에는 상세 진단 PDF 보고서, 수정 작업지시서, 개선 후 재진단 비교 자료, AI 답변을 위한 추가 콘텐츠 제안이 포함될 수 있습니다.",
         ],
       },
       {

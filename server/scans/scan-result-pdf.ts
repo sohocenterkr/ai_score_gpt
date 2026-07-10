@@ -1120,7 +1120,7 @@ export function buildRenderedDomImprovementPlans(
         "실제 화면 FAQ와 FAQPage JSON-LD의 질문·답변이 일치합니다.",
         "기존 화면 디자인과 주요 사용자 기능은 브라우저 스모크 테스트 또는 수동 확인으로 검증합니다.",
         "배포 파이프라인 또는 수동 점검에 초기 HTML H1과 본문 200자 이상 확인 스모크 테스트를 추가합니다.",
-        "재검사에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.",
+        "이번 차수 진단에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.",
         "수정 후 ChatGPT, Perplexity, Claude 등 실제 AI 도구에 사이트 설명 질문을 해 보고 서비스 설명이 왜곡되지 않는지 확인합니다.",
       ],
     });
@@ -1198,7 +1198,7 @@ export function buildRenderedDomImprovementPlans(
         "대표 제목과 구조화 정보의 핵심 사실이 실제 화면 내용과 일치합니다.",
         "FAQPage JSON-LD를 추가한 경우 실제 화면 FAQ와 질문·답변이 일치합니다.",
         "서로 충돌하거나 오래된 메타데이터가 남아 있지 않습니다.",
-        "재검사에서 렌더링 전후 핵심정보 불일치가 사라집니다.",
+        "이번 차수 진단에서 렌더링 전후 핵심정보 불일치가 사라졌음이 확인됩니다.",
       ],
     });
   }
@@ -1250,7 +1250,7 @@ export function buildRenderedDomImprovementPlans(
         "title, meta description, H1과 핵심 본문의 의미가 서로 일관됩니다.",
         "서비스 정의, 대상 고객, 이용 절차, 요금·데이터 처리 요약, FAQ 또는 도움말 경로가 사용자 화면과 초기 HTML에서 함께 확인됩니다.",
         "사용자에게 보이는 내용과 AI에 제공되는 핵심 정보가 일치합니다.",
-        "재검사에서 누락된 초기 HTML 핵심 항목이 확인됩니다.",
+        "이번 차수 진단에서 이전에 누락된 초기 HTML 핵심 항목이 보완되었음이 확인됩니다.",
       ],
     });
   }
@@ -2423,7 +2423,7 @@ function writeMethodology(
         "5. 현재 QUICK 점수는 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 합산해 계산합니다. 실제 AI 답변·추천 가능성은 요금, 환불, 고객지원, 차별점, 사례, 데이터 처리 같은 핵심 콘텐츠의 충분성에도 영향을 받으므로 콘텐츠 부족 항목을 함께 확인해야 합니다.",
         "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·환불·고객지원·데이터 처리·FAQ의 정확성과 충분성이 중요합니다.",
         "7. 이 보고서는 AI 검색 노출, 추천 결과, 사이트 전체 보안성, 모든 기능의 무결성을 보증하지 않습니다.",
-        "8. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 재검사해야 하며, 가능하면 실제 AI 질의응답 수동 확인도 함께 진행해야 합니다.",
+        "8. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 다음 차수 진단을 진행해야 하며, 가능하면 실제 AI 질의응답 수동 확인도 함께 진행해야 합니다.",
       ];
 
   setText(document, 9.1, COLORS.text).text(notes.join("\n\n"), {
@@ -2447,8 +2447,8 @@ function writeMethodology(
   document.moveDown(1.1);
   setText(document, 9, COLORS.primaryDark).text(
     isEnglish
-      ? "Site AI Score - Public URL diagnostics, work orders, and independent automated verification"
-      : "Site AI Score - 공개 URL 진단, 수정 작업지시서, 독립 자동검수",
+      ? "Site AI Score - Public URL diagnostics, work orders, and numbered re-diagnostics"
+      : "Site AI Score - 공개 URL 진단, 수정 작업지시서, 차수별 재진단",
     {
       width: contentWidth(document),
     },

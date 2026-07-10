@@ -1162,7 +1162,7 @@ export function createPrismaWorkOrderService(
       if (laterWorkOrderForVerification) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_OUTDATED",
-          "이미 후속 작업지시서가 있습니다. 최신 작업지시서에서 검수를 진행해 주세요.",
+          "이미 다음 차수 작업지시서가 있습니다. 최신 작업지시서에서 사이트 수정 완료 후 다음 진단을 진행해 주세요.",
           409,
         );
       }
@@ -1356,7 +1356,7 @@ export function createPrismaWorkOrderService(
       ) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_STATUS",
-          "후속 작업지시서는 완료된 재검수 결과가 있어야 만들 수 있습니다.",
+          "다음 작업지시서는 완료된 다음 차수 진단 결과가 있어야 만들 수 있습니다.",
           409,
         );
       }
@@ -1375,7 +1375,7 @@ export function createPrismaWorkOrderService(
       if (remainingCurrentItems.length === 0) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_STATUS",
-          "후속 작업지시서로 만들 남은 실패 항목이 없습니다.",
+          "다음 작업지시서로 만들 남은 개선 항목이 없습니다.",
           409,
         );
       }
@@ -1400,7 +1400,7 @@ export function createPrismaWorkOrderService(
       if (!verificationScan || verificationScan.score === null) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_SCAN",
-          "점수가 계산된 재검수 결과에서만 후속 작업지시서를 만들 수 있습니다.",
+          "점수가 계산된 다음 차수 진단 결과에서만 다음 작업지시서를 만들 수 있습니다.",
           400,
         );
       }

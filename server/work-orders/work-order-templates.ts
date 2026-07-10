@@ -57,7 +57,7 @@ const templates: Record<string, WorkOrderTemplate> = {
       {
         code: "H1-04",
         label:
-          "검사 대상 운영 URL에서 자동검수 가능하며 기존 정상 항목을 깨뜨리지 않는다.",
+          "검사 대상 운영 URL에서 다음 차수 진단으로 확인할 수 있으며 기존 정상 항목을 깨뜨리지 않는다.",
         required: true,
       },
     ],
@@ -511,7 +511,7 @@ const templates: Record<string, WorkOrderTemplate> = {
     requirement:
       "서비스 시작부터 결과 확인까지의 이용 절차와 최종 결과물을 3~5단계로 설명합니다.",
     developerMessage:
-      "사용자가 어떤 순서로 서비스를 이용하고 어떤 산출물을 받는지 AI가 오독 없이 설명할 수 있어야 합니다. 가입, URL 입력, 진단 실행, 보고서/작업지시서 확인, 재검수 같은 실제 흐름을 3~5단계로 정리해 주세요.",
+      "사용자가 어떤 순서로 서비스를 이용하고 어떤 산출물을 받는지 AI가 오독 없이 설명할 수 있어야 합니다. 가입, URL 입력, 진단 실행, 보고서/작업지시서 확인, 수정 후 재진단 같은 실제 흐름을 3~5단계로 정리해 주세요.",
     acceptanceCriteria: [
       {
         code: "WORKFLOW-OUTCOME-01",
@@ -1051,15 +1051,15 @@ export function buildWorkOrderTemplate(
 
   const requirement =
     locale === "en"
-      ? `Fix the ${finding.ruleCode} issue so that the same rule can pass when the production URL is rechecked.`
+      ? `Fix the ${finding.ruleCode} issue so that the same rule can pass in the next diagnostic of the production URL.`
       : finding.recommendation?.trim() ||
-        `${finding.title} 문제를 해결하여 같은 규칙으로 재검사했을 때 통과할 수 있도록 수정합니다.`;
+        `${finding.title} 문제를 해결하여 다음 차수 진단에서 같은 규칙을 통과할 수 있도록 수정합니다.`;
 
   return {
     requirement,
     developerMessage:
       `${finding.ruleCode} 진단의 현재 증거와 설명을 확인한 뒤 운영 URL에 수정사항을 반영해 주세요. ` +
-      "소스코드 제출은 필요하지 않으며 배포된 공개 URL에서 자동검수할 수 있어야 합니다.",
+      "소스코드 제출은 필요하지 않으며 배포된 공개 URL에서 다음 차수 진단으로 완료 여부를 확인할 수 있어야 합니다.",
     acceptanceCriteria: genericCriteria(finding.ruleCode),
     isRequired:
       finding.severity === "CRITICAL" ||
