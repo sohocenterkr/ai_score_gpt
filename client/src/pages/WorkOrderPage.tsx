@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { scanResultPdfUrl } from "../sites/site-api";
 import {
   cancelWorkOrderRequest,
   getWorkOrderRequest,
@@ -73,7 +74,9 @@ function workOrderVersionScoreLabel(
   version: number,
   isEnglish: boolean,
 ): string {
-  return isEnglish ? `Version ${version} verification` : `${version}차 검수`;
+  return isEnglish
+    ? `Diagnostic ${version}`
+    : `${version}차 사이트 진단`;
 }
 
 function workOrderVersionCompletedLabel(
@@ -81,8 +84,8 @@ function workOrderVersionCompletedLabel(
   isEnglish: boolean,
 ): string {
   return isEnglish
-    ? `Version ${version} verification completed`
-    : `${version}차 검수 완료`;
+    ? `Diagnostic ${version} completed`
+    : `${version}차 사이트 진단 완료`;
 }
 
 function verificationAttemptVersion(workOrderVersion: number): number {
@@ -95,16 +98,16 @@ function workOrderVersionMetaLabel(
   isEnglish: boolean,
 ): string {
   if (isEnglish) {
-    const prefix = `Version ${version}`;
-    if (label === "rules") return `${prefix} verification rules version`;
+    const prefix = `Diagnostic ${version}`;
+    if (label === "rules") return `${prefix} rules version`;
     if (label === "completedAt")
-      return `${prefix} verification completed at (KST)`;
-    return `${prefix} verification URL`;
+      return `${prefix} completed at (KST)`;
+    return `${prefix} URL`;
   }
 
-  if (label === "rules") return `${version}차 검수 규칙 버전`;
-  if (label === "completedAt") return `${version}차 검수 완료 시각(KST)`;
-  return `${version}차 검수 URL`;
+  if (label === "rules") return `${version}차 진단 규칙 버전`;
+  if (label === "completedAt") return `${version}차 진단 완료 시각(KST)`;
+  return `${version}차 진단 URL`;
 }
 
 function formatKST(value: string | null, isEnglish = false): string {
@@ -204,6 +207,8 @@ export function WorkOrderPage() {
   const [submittingVerification, setSubmittingVerification] = useState(false);
   const [selectedVerificationAttemptId, setSelectedVerificationAttemptId] =
     useState("");
+  const [selectedDiagnosticNumber, setSelectedDiagnosticNumber] =
+    useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -274,6 +279,21 @@ export function WorkOrderPage() {
         : (attempts[0]?.id ?? "");
     });
   }, [workOrder?.verificationAttempts]);
+
+  useEffect(() => {
+    const history = workOrder?.diagnosticHistory ?? [];
+
+    setSelectedDiagnosticNumber((current) => {
+      if (history.length === 0) {
+        return null;
+      }
+
+      return current !== null &&
+        history.some((entry) => entry.diagnosticNumber === current)
+        ? current
+        : (history[history.length - 1]?.diagnosticNumber ?? null);
+    });
+  }, [workOrder?.diagnosticHistory]);
 
   async function runAction(
     action: () => Promise<WorkOrderDetail>,
@@ -486,6 +506,34 @@ export function WorkOrderPage() {
       ? "Start verification"
       : "검수시작";
 
+  const fallbackDiagnosticHistory = workOrder.versionHistory.map((entry) => ({
+    diagnosticNumber: entry.version,
+    sourceWorkOrderVersion: entry.version,
+    scan: {
+      id: entry.initialScan.id,
+      type: "QUICK",
+      status: entry.initialScan.completedAt ? "COMPLETED" : "QUEUED",
+      score: entry.initialScan.score,
+      grade: entry.initialScan.grade,
+      rulesVersion: entry.initialScan.rulesVersion,
+      targetUrl: entry.initialScan.targetUrl,
+      completedAt: entry.initialScan.completedAt,
+    },
+  }));
+  const diagnosticHistory =
+    (workOrder.diagnosticHistory ?? []).length > 0
+      ? (workOrder.diagnosticHistory ?? [])
+      : fallbackDiagnosticHistory;
+  const selectedDiagnostic =
+    diagnosticHistory.find(
+      (entry) => entry.diagnosticNumber === selectedDiagnosticNumber,
+    ) ??
+    diagnosticHistory[diagnosticHistory.length - 1] ??
+    null;
+  const selectedDiagnosticGoal = workOrderScoreGoal(
+    selectedDiagnostic?.scan.score ?? workOrder.scoreBefore,
+  );
+
   return (
     <section className="full-bleed-section work-orders-section">
       <div className="content-container work-order-detail-content">
@@ -614,283 +662,108 @@ export function WorkOrderPage() {
           </div>
         ) : null}
 
-        <section className="surface work-order-overview">
-          {(() => {
-            const latestScoreAttempt = latestScoredVerificationAttempt;
-            const latestScorePassCount =
-              latestScoreAttempt?.itemResults.filter(
-                (result) => result.status === "PASS",
-              ).length ?? 0;
-            const latestScoreFailCount =
-              latestScoreAttempt?.itemResults.filter(
-                (result) => result.status === "FAIL",
-              ).length ?? 0;
-            const latestScoreBlockedCount =
-              latestScoreAttempt?.itemResults.filter(
-                (result) => result.status === "BLOCKED",
-              ).length ?? 0;
-            const latestScoreNotApplicableCount =
-              latestScoreAttempt?.itemResults.filter(
-                (result) => result.status === "NOT_APPLICABLE",
-              ).length ?? 0;
-            const latestScoreVersion = verificationAttemptVersion(
-              workOrder.version,
-            );
-            const scoreGoal = workOrderScoreGoal(workOrder.scoreBefore);
-            const versionHistory =
-              workOrder.versionHistory.length > 0
-                ? workOrder.versionHistory
-                : [
-                    {
-                      id: workOrder.id,
-                      version: workOrder.version,
-                      scoreBefore: workOrder.scoreBefore,
-                      gradeBefore: workOrder.gradeBefore,
-                      initialScan: workOrder.initialScan,
-                    },
-                  ];
-            return latestScoreAttempt ? (
-              <>
-                <div className="work-order-score-comparison">
-                  {versionHistory.map((entry) => (
-                    <article
-                      className={`work-order-score-card${
-                        entry.version === workOrder.version ? " current" : ""
-                      }`}
-                      key={entry.id}
-                    >
-                      <span>
-                        {workOrderVersionScoreLabel(entry.version, isEnglish)}
-                      </span>
-                      <strong>
-                        {entry.scoreBefore ?? "—"}
-                        {entry.gradeBefore ? (
-                          <small> {entry.gradeBefore}</small>
-                        ) : null}
-                      </strong>
-                      <small>
-                        {workOrderVersionCompletedLabel(
-                          entry.version,
-                          isEnglish,
-                        )}
-                      </small>
+        <section className="surface work-order-overview work-order-diagnostic-overview">
+          <div className="work-order-diagnostic-heading">
+            <div>
+              <p className="eyebrow">
+                {isEnglish ? "DIAGNOSTIC REPORT HISTORY" : "사이트 진단 보고서"}
+              </p>
+              <h2>
+                {isEnglish
+                  ? "Review each diagnostic report separately."
+                  : "차수별 진단 보고서를 각각 확인하세요."}
+              </h2>
+              <p>
+                {isEnglish
+                  ? "The initial scan is Diagnostic 1. Verification after V1 produces Diagnostic 2, and verification after V2 produces Diagnostic 3."
+                  : "최초 진단은 1차 진단입니다. V1 수정 후 검수는 2차 진단, V2 수정 후 검수는 3차 진단으로 발행됩니다."}
+              </p>
+            </div>
 
-                      <dl className="work-order-score-card-meta">
-                        <div>
-                          <dt>
-                            {workOrderVersionMetaLabel(
-                              entry.version,
-                              "rules",
-                              isEnglish,
-                            )}
-                          </dt>
-                          <dd>{entry.initialScan.rulesVersion}</dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {workOrderVersionMetaLabel(
-                              entry.version,
-                              "completedAt",
-                              isEnglish,
-                            )}
-                          </dt>
-                          <dd>
-                            {formatKST(
-                              entry.initialScan.completedAt,
-                              isEnglish,
-                            )}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {workOrderVersionMetaLabel(
-                              entry.version,
-                              "url",
-                              isEnglish,
-                            )}
-                          </dt>
-                          <dd>
-                            <a
-                              href={
-                                entry.initialScan.targetUrl ??
-                                workOrder.site.finalUrl ??
-                                workOrder.site.baseUrl
-                              }
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {entry.initialScan.targetUrl ??
-                                workOrder.site.finalUrl ??
-                                workOrder.site.baseUrl}
-                            </a>
-                          </dd>
-                        </div>
-                      </dl>
-                    </article>
-                  ))}
-                  {!hasLaterVerificationResult ? (
-                    <article className="work-order-score-card verification">
-                      <span>
-                        {workOrderVersionScoreLabel(
-                          latestScoreVersion,
-                          isEnglish,
-                        )}
-                      </span>
-                      <strong>
-                        {latestScoreAttempt.scoreAfter ?? "—"}
-                        {latestScoreAttempt.gradeAfter ? (
-                          <small> {latestScoreAttempt.gradeAfter}</small>
-                        ) : null}
-                      </strong>
-                      <small>
-                        {workOrderVersionCompletedLabel(
-                          latestScoreVersion,
-                          isEnglish,
-                        )}
-                      </small>
+            <div
+              className="work-order-diagnostic-tabs"
+              role="tablist"
+              aria-label={
+                isEnglish ? "Diagnostic report history" : "진단 보고서 차수"
+              }
+            >
+              {diagnosticHistory.map((entry) => {
+                const selected =
+                  entry.diagnosticNumber ===
+                  selectedDiagnostic?.diagnosticNumber;
 
-                      <dl className="work-order-score-card-meta">
-                        <div>
-                          <dt>
-                            {isEnglish
-                              ? "Verification status"
-                              : String(latestScoreVersion) + "차 검수 상태"}
-                          </dt>
-                          <dd>
-                            {isEnglish
-                              ? latestScoreAttempt.status
-                                  .replaceAll("_", " ")
-                                  .toLowerCase()
-                              : (verificationStatusLabels[
-                                  latestScoreAttempt.status
-                                ] ?? latestScoreAttempt.status)}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {workOrderVersionMetaLabel(
-                              latestScoreVersion,
-                              "completedAt",
-                              isEnglish,
-                            )}
-                          </dt>
-                          <dd>
-                            {formatKST(
-                              latestScoreAttempt.completedAt ??
-                                latestScoreAttempt.scan.completedAt,
-                              isEnglish,
-                            )}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {workOrderVersionMetaLabel(
-                              latestScoreVersion,
-                              "url",
-                              isEnglish,
-                            )}
-                          </dt>
-                          <dd>
-                            <a
-                              href={latestScoreAttempt.submittedUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              {latestScoreAttempt.submittedUrl}
-                            </a>
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>
-                            {isEnglish
-                              ? "Item-level result"
-                              : "항목별 자동검수 결과"}
-                          </dt>
-                          <dd>
-                            {isEnglish
-                              ? "Pass " +
-                                latestScorePassCount +
-                                " · Fail " +
-                                latestScoreFailCount +
-                                " · Blocked " +
-                                latestScoreBlockedCount +
-                                " · N/A " +
-                                latestScoreNotApplicableCount
-                              : "통과 " +
-                                latestScorePassCount +
-                                " · 실패 " +
-                                latestScoreFailCount +
-                                " · 확인 불가 " +
-                                latestScoreBlockedCount +
-                                " · 해당 없음 " +
-                                latestScoreNotApplicableCount}
-                          </dd>
-                        </div>
-                      </dl>
-                    </article>
+                return (
+                  <button
+                    aria-selected={selected}
+                    className={selected ? "selected" : ""}
+                    key={entry.scan.id}
+                    onClick={() =>
+                      setSelectedDiagnosticNumber(entry.diagnosticNumber)
+                    }
+                    role="tab"
+                    type="button"
+                  >
+                    {isEnglish
+                      ? `Diagnostic ${entry.diagnosticNumber}`
+                      : `${entry.diagnosticNumber}차 진단`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {selectedDiagnostic ? (
+            <div className="work-order-diagnostic-panel" role="tabpanel">
+              <article className="work-order-score-card current">
+                <span>
+                  {workOrderVersionScoreLabel(
+                    selectedDiagnostic.diagnosticNumber,
+                    isEnglish,
+                  )}
+                </span>
+                <strong>
+                  {selectedDiagnostic.scan.score ?? "—"}
+                  {selectedDiagnostic.scan.grade ? (
+                    <small> {selectedDiagnostic.scan.grade}</small>
                   ) : null}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="work-order-score-range">
-                  <span>
-                    {workOrderVersionScoreLabel(workOrder.version, isEnglish)}
-                  </span>
-                  <strong>{workOrder.scoreBefore ?? "—"}</strong>
-                  <small>
-                    {workOrderVersionCompletedLabel(
-                      workOrder.version,
-                      isEnglish,
-                    )}
-                  </small>
-                </div>
-                <div className="work-order-arrow" aria-hidden="true">
-                  →
-                </div>
-                <div className="work-order-score-range expected primary-target">
-                  <span>{isEnglish ? "Target score" : "목표 점수"}</span>
-                  <strong>
-                    {formatGoalRange(
-                      scoreGoal.finalMin,
-                      scoreGoal.finalMax,
-                      isEnglish,
-                    )}
-                  </strong>
-                </div>
+                </strong>
+                <small>
+                  {workOrderVersionCompletedLabel(
+                    selectedDiagnostic.diagnosticNumber,
+                    isEnglish,
+                  )}
+                </small>
 
-                <p className="work-order-target-note">
-                  {isEnglish
-                    ? "This work order is written to target the displayed score range and improve the remaining items. Actual scores may vary depending on deployment status, server responses, robots.txt, llms.txt, structured data, and AI bot accessibility."
-                    : "이 작업지시서는 표시된 목표 점수 범위와 남은 항목 개선을 기준으로 작성되었습니다. 실제 점수는 배포 상태, 서버 응답, robots.txt, llms.txt, 구조화 데이터 반영 여부, AI 봇 접근성에 따라 달라질 수 있습니다."}
-                </p>
-                <dl>
+                <dl className="work-order-score-card-meta">
                   <div>
                     <dt>
                       {workOrderVersionMetaLabel(
-                        workOrder.version,
+                        selectedDiagnostic.diagnosticNumber,
                         "rules",
                         isEnglish,
                       )}
                     </dt>
-                    <dd>{workOrder.initialScan.rulesVersion}</dd>
+                    <dd>{selectedDiagnostic.scan.rulesVersion}</dd>
                   </div>
                   <div>
                     <dt>
                       {workOrderVersionMetaLabel(
-                        workOrder.version,
+                        selectedDiagnostic.diagnosticNumber,
                         "completedAt",
                         isEnglish,
                       )}
                     </dt>
                     <dd>
-                      {formatKST(workOrder.initialScan.completedAt, isEnglish)}
+                      {formatKST(
+                        selectedDiagnostic.scan.completedAt,
+                        isEnglish,
+                      )}
                     </dd>
                   </div>
                   <div>
                     <dt>
                       {workOrderVersionMetaLabel(
-                        workOrder.version,
+                        selectedDiagnostic.diagnosticNumber,
                         "url",
                         isEnglish,
                       )}
@@ -898,23 +771,70 @@ export function WorkOrderPage() {
                     <dd>
                       <a
                         href={
-                          workOrder.initialScan.targetUrl ??
+                          selectedDiagnostic.scan.targetUrl ??
                           workOrder.site.finalUrl ??
                           workOrder.site.baseUrl
                         }
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {workOrder.initialScan.targetUrl ??
+                        {selectedDiagnostic.scan.targetUrl ??
                           workOrder.site.finalUrl ??
                           workOrder.site.baseUrl}
                       </a>
                     </dd>
                   </div>
                 </dl>
-              </>
-            );
-          })()}
+
+                <div className="work-order-diagnostic-actions">
+                  <Link
+                    className="work-order-primary-link"
+                    to={`/${locale}/sites/${workOrder.site.id}/scans/${selectedDiagnostic.scan.id}`}
+                  >
+                    {isEnglish
+                      ? `View Diagnostic ${selectedDiagnostic.diagnosticNumber} report`
+                      : `${selectedDiagnostic.diagnosticNumber}차 진단 보고서 보기`}
+                  </Link>
+                  <a
+                    className="secondary"
+                    href={scanResultPdfUrl(
+                      selectedDiagnostic.scan.id,
+                      isEnglish ? "en" : "ko",
+                    )}
+                  >
+                    {isEnglish
+                      ? `Save Diagnostic ${selectedDiagnostic.diagnosticNumber} PDF`
+                      : `${selectedDiagnostic.diagnosticNumber}차 진단 PDF 저장`}
+                  </a>
+                </div>
+              </article>
+
+              {selectedDiagnostic.diagnosticNumber === workOrder.version &&
+              !latestScoredVerificationAttempt ? (
+                <div className="work-order-diagnostic-target">
+                  <span>{isEnglish ? "Target score" : "다음 목표 점수"}</span>
+                  <strong>
+                    {formatGoalRange(
+                      selectedDiagnosticGoal.finalMin,
+                      selectedDiagnosticGoal.finalMax,
+                      isEnglish,
+                    )}
+                  </strong>
+                  <p>
+                    {isEnglish
+                      ? "Update and deploy the site using this work order, then start verification to create the next diagnostic report."
+                      : "이 작업지시서에 따라 사이트를 수정·배포한 뒤 검수를 시작하면 다음 차수 진단 보고서가 생성됩니다."}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="work-order-diagnostic-empty">
+              {isEnglish
+                ? "No completed diagnostic report is available."
+                : "완료된 진단 보고서가 없습니다."}
+            </p>
+          )}
         </section>
 
         <section className="surface work-order-verification">

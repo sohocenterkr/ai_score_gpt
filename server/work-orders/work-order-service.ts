@@ -171,6 +171,21 @@ export interface PublicWorkOrderVersionHistoryEntry {
   };
 }
 
+export interface PublicDiagnosticHistoryEntry {
+  diagnosticNumber: number;
+  sourceWorkOrderVersion: number;
+  scan: {
+    id: string;
+    type: string;
+    status: string;
+    score: number | null;
+    grade: string | null;
+    rulesVersion: string;
+    targetUrl: string | null;
+    completedAt: string | null;
+  };
+}
+
 export interface PublicWorkOrder {
   id: string;
   orderNumber: string;
@@ -215,6 +230,7 @@ export interface PublicWorkOrder {
     priceAmount: number;
     currency: "KRW";
   };
+  diagnosticHistory?: PublicDiagnosticHistoryEntry[];
   versionHistory: PublicWorkOrderVersionHistoryEntry[];
 }
 
@@ -334,6 +350,7 @@ function acceptanceCriteria(value: Prisma.JsonValue): AcceptanceCriterion[] {
 function publicWorkOrder(
   record: WorkOrderRecord,
   versionHistory: PublicWorkOrderVersionHistoryEntry[] = [],
+  diagnosticHistory: PublicDiagnosticHistoryEntry[] = [],
 ): PublicWorkOrder {
   return {
     id: record.id,
@@ -435,6 +452,7 @@ function publicWorkOrder(
         createdAt: result.createdAt.toISOString(),
       })),
     })),
+    diagnosticHistory,
     versionHistory,
   };
 }
@@ -460,11 +478,33 @@ async function publicWorkOrderWithHistory(
       initialScan: {
         select: {
           id: true,
+          type: true,
+          status: true,
           score: true,
           grade: true,
           rulesVersion: true,
           targetUrl: true,
           completedAt: true,
+        },
+      },
+      verificationAttempts: {
+        select: {
+          attemptNumber: true,
+          scan: {
+            select: {
+              id: true,
+              type: true,
+              status: true,
+              score: true,
+              grade: true,
+              rulesVersion: true,
+              targetUrl: true,
+              completedAt: true,
+            },
+          },
+        },
+        orderBy: {
+          attemptNumber: "asc",
         },
       },
     },
@@ -488,7 +528,62 @@ async function publicWorkOrderWithHistory(
     },
   }));
 
-  return publicWorkOrder(record, versionHistory);
+  const diagnosticHistoryByNumber = new Map<
+    number,
+    PublicDiagnosticHistoryEntry
+  >();
+
+  for (const item of historyRecords) {
+    diagnosticHistoryByNumber.set(item.version, {
+      diagnosticNumber: item.version,
+      sourceWorkOrderVersion: item.version,
+      scan: {
+        id: item.initialScan.id,
+        type: item.initialScan.type,
+        status: item.initialScan.status,
+        score: item.initialScan.score,
+        grade: item.initialScan.grade,
+        rulesVersion: item.initialScan.rulesVersion,
+        targetUrl: item.initialScan.targetUrl,
+        completedAt: item.initialScan.completedAt?.toISOString() ?? null,
+      },
+    });
+
+    for (const attempt of item.verificationAttempts) {
+      const verificationScan = attempt.scan;
+
+      if (
+        verificationScan.score === null ||
+        verificationScan.completedAt === null ||
+        !["COMPLETED", "PARTIAL"].includes(verificationScan.status)
+      ) {
+        continue;
+      }
+
+      diagnosticHistoryByNumber.set(item.version + 1, {
+        diagnosticNumber: item.version + 1,
+        sourceWorkOrderVersion: item.version,
+        scan: {
+          id: verificationScan.id,
+          type: verificationScan.type,
+          status: verificationScan.status,
+          score: verificationScan.score,
+          grade: verificationScan.grade,
+          rulesVersion: verificationScan.rulesVersion,
+          targetUrl: verificationScan.targetUrl,
+          completedAt: verificationScan.completedAt.toISOString(),
+        },
+      });
+    }
+  }
+
+  const diagnosticHistory = [...diagnosticHistoryByNumber.values()].sort(
+    (left, right) =>
+      left.diagnosticNumber - right.diagnosticNumber ||
+      left.scan.id.localeCompare(right.scan.id),
+  );
+
+  return publicWorkOrder(record, versionHistory, diagnosticHistory);
 }
 
 function formatKstDate(date: Date): string {

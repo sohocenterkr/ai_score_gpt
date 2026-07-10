@@ -1116,3 +1116,110 @@
 .work-order-score-range.final-target strong {
   color: var(--foreground);
 }
+
+.work-order-diagnostic-overview {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.work-order-diagnostic-heading {
+  display: grid;
+  gap: 1rem;
+}
+
+.work-order-diagnostic-heading h2,
+.work-order-diagnostic-heading p {
+  margin: 0;
+}
+
+.work-order-diagnostic-heading > div:first-child {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.work-order-diagnostic-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.work-order-diagnostic-tabs button {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--foreground);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.work-order-diagnostic-tabs button.selected {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.work-order-diagnostic-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.42fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.work-order-diagnostic-panel .work-order-score-card {
+  min-height: 100%;
+}
+
+.work-order-diagnostic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.work-order-diagnostic-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.work-order-diagnostic-target {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.85rem;
+  background: var(--surface-muted);
+}
+
+.work-order-diagnostic-target span {
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.work-order-diagnostic-target strong {
+  font-size: clamp(1.8rem, 4vw, 2.7rem);
+}
+
+.work-order-diagnostic-target p,
+.work-order-diagnostic-empty {
+  margin: 0;
+  color: var(--muted-foreground);
+  line-height: 1.65;
+}
+
+@media (max-width: 720px) {
+  .work-order-diagnostic-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .work-order-diagnostic-actions a {
+    width: 100%;
+  }
+}
