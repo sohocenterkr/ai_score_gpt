@@ -1986,8 +1986,8 @@ export function ScanResultPage() {
                 <li>{isEnglish ? "Completion criteria" : "완료 판정 기준"}</li>
                 <li>
                   {isEnglish
-                    ? "Regression prevention and automated review criteria"
-                    : "회귀 방지 기준과 자동검수 기준"}
+                    ? "Regression prevention and re-diagnostic criteria"
+                    : "회귀 방지 기준과 재진단 확인 기준"}
                 </li>
               </ul>
             </div>

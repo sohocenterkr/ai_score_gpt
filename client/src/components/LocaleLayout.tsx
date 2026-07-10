@@ -14,7 +14,7 @@ const layoutCopy = {
     admin: "관리자",
     settings: "설정",
     login: "로그인",
-    footerTagline: "AI 친화도 진단·작업지시·독립 검수 플랫폼",
+    footerTagline: "AI 친화도 진단·작업지시·차수별 재진단 플랫폼",
     company: "소호센터 | 대표 : 김은식 | 개인정보보호 책임자 : 김천식",
     address: "주소 : 서울시 강동구 양재대로 1522-10, 202호(길동)",
     registration: "사업자등록번호 : 232-02-03802 | 전화번호 : 070-4513-4093",
@@ -35,7 +35,7 @@ const layoutCopy = {
     settings: "Settings",
     login: "Log in",
     footerTagline:
-      "AI readiness diagnostics, work orders, and independent review",
+      "AI readiness diagnostics, work orders, and numbered re-diagnostics",
     company:
       "SOHO Center | Representative: Eunsik Kim | Privacy Officer: Cheonsik Kim",
     address: "Address: 202, 1522-10 Yangjae-daero, Gangdong-gu, Seoul, Korea",

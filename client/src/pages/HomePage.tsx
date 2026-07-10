@@ -14,12 +14,16 @@ const serviceSteps = [
     "사이트 진단",
     "공개 URL을 기준으로 AI가 읽을 수 있는 내용을 검사합니다.",
   ],
-  ["02", "수정 작업지시", "문제별 요구사항과 자동검수 완료 기준을 제공합니다."],
-  ["03", "배포 결과 검수", "수정된 운영 URL을 같은 규칙으로 다시 검사합니다."],
+  ["02", "수정 작업지시", "문제별 요구사항과 완료 판정 기준을 제공합니다."],
+  [
+    "03",
+    "수정 후 사이트 재진단",
+    "수정된 운영 URL을 같은 기준으로 다시 진단합니다.",
+  ],
   [
     "04",
-    "필요시 작업지시서 재발행",
-    "개선 정도가 불충분하다고 판단되면 다시 한 번 진행할 수 있습니다.",
+    "필요시 다음 작업지시서 발행",
+    "재진단 후 남은 개선 항목이 있으면 다음 차수 작업지시서를 발행합니다.",
   ],
 ];
 
@@ -32,13 +36,13 @@ const serviceStepsEn = [
   ],
   [
     "03",
-    "Deployment recheck",
-    "Recheck the updated production URL with the same rules.",
+    "Post-update diagnosis",
+    "Run the next diagnostic on the updated production URL with the same rules.",
   ],
   [
     "04",
-    "Issue a follow-up work order if needed",
-    "If the improvement is not sufficient, you can run another work order.",
+    "Create the next work order if needed",
+    "If the next diagnostic finds remaining issues, create the next work order for those items.",
   ],
 ];
 
@@ -57,7 +61,7 @@ const serviceDetailSections = [
   },
   {
     title: "이런 분께 적합합니다",
-    body: "AI 검색에서 자사 사이트가 잘 발견되고 설명되기를 원하는 소상공인, SaaS 운영자, 병원·학원·로컬 매장 운영자, 마케팅 대행사, 웹 개발팀이 사용할 수 있습니다. 신규 사이트 공개 전 AI 친화도 점검, 기존 사이트의 구조화 데이터 보강, 고객 질문에 대한 AI 답변 품질 개선, 수정 전후 비교 검수에 활용할 수 있습니다.",
+    body: "AI 검색에서 자사 사이트가 잘 발견되고 설명되기를 원하는 소상공인, SaaS 운영자, 병원·학원·로컬 매장 운영자, 마케팅 대행사, 웹 개발팀이 사용할 수 있습니다. 신규 사이트 공개 전 AI 친화도 점검, 기존 사이트의 구조화 데이터 보강, 고객 질문에 대한 AI 답변 품질 개선, 수정 전후 비교 진단에 활용할 수 있습니다.",
   },
   {
     title: "요금과 무료·유료 범위",
@@ -69,11 +73,11 @@ const serviceDetailSections = [
   },
   {
     title: "고객지원과 문의",
-    body: "카카오톡 오픈채팅, 이메일 sohocenter.kr@gmail.com, 전화 070-4513-4093으로 문의할 수 있습니다. 서비스 오류, 결제, 상세 보고서, 작업지시서, 재검수 관련 문의를 지원합니다.",
+    body: "카카오톡 오픈채팅, 이메일 sohocenter.kr@gmail.com, 전화 070-4513-4093으로 문의할 수 있습니다. 서비스 오류, 결제, 상세 보고서, 작업지시서, 재진단 관련 문의를 지원합니다.",
   },
   {
     title: "차별점과 신뢰 근거",
-    body: "Site AI Score는 단순한 점수 표시보다 진단 증거, 수정 요구사항, 완료 판정 기준, 재검수 흐름을 함께 제공합니다. 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 나누어 보면서도, 작업지시서에서는 초기 HTML과 구조화 데이터 같은 기술 게이트를 우선 처리하도록 안내합니다.",
+    body: "Site AI Score는 단순한 점수 표시보다 진단 증거, 수정 요구사항, 완료 판정 기준, 차수별 재진단 흐름을 함께 제공합니다. 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 나누어 보면서도, 작업지시서에서는 초기 HTML과 구조화 데이터 같은 기술 게이트를 우선 처리하도록 안내합니다.",
   },
 ];
 
@@ -266,7 +270,7 @@ export function HomePage() {
       />
       <section className="hero-section full-bleed-section">
         <div className="content-container hero-content">
-          <p className="eyebrow">AEO WEB QUALITY VERIFICATION</p>
+          <p className="eyebrow">AEO WEBSITE DIAGNOSTICS</p>
           <h1>
             {isEnglish
               ? "See how well AI can understand your website."
@@ -274,8 +278,8 @@ export function HomePage() {
           </h1>
           <p className="hero-description">
             {isEnglish
-              ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and recheck the updated site with the same criteria. If needed, you can issue another work order for remaining improvements."
-              : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다시 검수합니다. 필요시 작업지시서를 한 번 더 발행할 수 있습니다."}
+              ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and start the next diagnostic after the updated site is deployed. If issues remain, create the next work order from that diagnostic report."
+              : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다음 차수 진단을 진행합니다. 남은 항목이 있으면 다음 작업지시서를 발행할 수 있습니다."}
           </p>
           <div className="hero-actions">
             <Link className="primary-action" to={`/${activeLocale}/sites`}>
@@ -291,8 +295,8 @@ export function HomePage() {
             <p className="eyebrow">HOW IT WORKS</p>
             <h2>
               {isEnglish
-                ? "From diagnosis to improvement verification in one flow"
-                : "기술 진단부터 콘텐츠 보완 과제와 수정 검수까지"}
+                ? "From diagnosis to site improvement and re-diagnosis"
+                : "사이트 진단부터 수정 작업지시서와 재진단까지"}
             </h2>
           </div>
           <div className="step-grid">
