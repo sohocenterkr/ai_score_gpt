@@ -545,13 +545,15 @@ export function WorkOrderPage() {
                   to={`/${locale}/work-orders/${followUpWorkOrderEntry.id}`}
                 >
                   {isEnglish
-                    ? `View V${followUpWorkOrderVersion} work order`
-                    : `V${followUpWorkOrderVersion} 수정 작업지시서 보기`}
+                    ? `Continue in V${followUpWorkOrderVersion} work order`
+                    : `V${followUpWorkOrderVersion} 작업지시서에서 수정·검수 진행하기`}
                 </Link>
               ) : null}
               <a
                 className={
-                  hasLaterVerificationResult ? "secondary" : "work-order-primary-link"
+                  hasLaterVerificationResult
+                    ? "secondary"
+                    : "work-order-primary-link"
                 }
                 href={`${workOrderExportUrl(workOrder.id, "pdf")}${isEnglish ? "?locale=en" : ""}`}
               >
@@ -591,8 +593,8 @@ export function WorkOrderPage() {
             <p>
               {hasLaterVerificationResult
                 ? isEnglish
-                  ? `The V${followUpWorkOrderVersion} follow-up work order has been issued from the remaining items. Continue updates and verification from the latest work order.`
-                  : `남은 항목을 기준으로 V${followUpWorkOrderVersion} 수정 작업지시서가 발행되었습니다. 이후 수정과 검수는 최신 작업지시서에서 진행하세요.`
+                  ? `The V${followUpWorkOrderVersion} follow-up work order has been issued from the remaining items. This is the previous work order. Open the V${followUpWorkOrderVersion} work order, review the remaining items, update and deploy the site, then run verification from that work order.`
+                  : `남은 항목을 기준으로 V${followUpWorkOrderVersion} 수정 작업지시서가 발행되었습니다. 이 화면은 이전 작업지시서입니다. V${followUpWorkOrderVersion} 작업지시서를 열어 남은 수정 항목을 확인하고, 사이트를 수정·배포한 뒤 V${followUpWorkOrderVersion} 작업지시서 화면에서 검수시작을 진행해 주세요.`
                 : isLatestVerificationConclusive
                   ? hasRemainingVerificationItems
                     ? isEnglish
@@ -723,92 +725,105 @@ export function WorkOrderPage() {
                     </article>
                   ))}
                   {!hasLaterVerificationResult ? (
-                  <article className="work-order-score-card verification">
-                    <span>
-                      {workOrderVersionScoreLabel(
-                        latestScoreVersion,
-                        isEnglish,
-                      )}
-                    </span>
-                    <strong>
-                      {latestScoreAttempt.scoreAfter ?? "—"}
-                      {latestScoreAttempt.gradeAfter ? (
-                        <small> {latestScoreAttempt.gradeAfter}</small>
-                      ) : null}
-                    </strong>
-                    <small>
-                      {workOrderVersionCompletedLabel(
-                        latestScoreVersion,
-                        isEnglish,
-                      )}
-                    </small>
+                    <article className="work-order-score-card verification">
+                      <span>
+                        {workOrderVersionScoreLabel(
+                          latestScoreVersion,
+                          isEnglish,
+                        )}
+                      </span>
+                      <strong>
+                        {latestScoreAttempt.scoreAfter ?? "—"}
+                        {latestScoreAttempt.gradeAfter ? (
+                          <small> {latestScoreAttempt.gradeAfter}</small>
+                        ) : null}
+                      </strong>
+                      <small>
+                        {workOrderVersionCompletedLabel(
+                          latestScoreVersion,
+                          isEnglish,
+                        )}
+                      </small>
 
-                    <dl className="work-order-score-card-meta">
-                      <div>
-                        <dt>
-                          {isEnglish
-                            ? "Verification status"
-                            : String(latestScoreVersion) + "차 검수 상태"}
-                        </dt>
-                        <dd>
-                          {isEnglish
-                            ? latestScoreAttempt.status
-                                .replaceAll("_", " ")
-                                .toLowerCase()
-                            : (verificationStatusLabels[
-                                latestScoreAttempt.status
-                              ] ?? latestScoreAttempt.status)}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>
-                          {workOrderVersionMetaLabel(
-                            latestScoreVersion,
-                            "completedAt",
-                            isEnglish,
-                          )}
-                        </dt>
-                        <dd>
-                          {formatKST(
-                            latestScoreAttempt.completedAt ??
-                              latestScoreAttempt.scan.completedAt,
-                            isEnglish,
-                          )}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>
-                          {workOrderVersionMetaLabel(
-                            latestScoreVersion,
-                            "url",
-                            isEnglish,
-                          )}
-                        </dt>
-                        <dd>
-                          <a
-                            href={latestScoreAttempt.submittedUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {latestScoreAttempt.submittedUrl}
-                          </a>
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>
-                          {isEnglish
-                            ? "Item-level result"
-                            : "항목별 자동검수 결과"}
-                        </dt>
-                        <dd>
-                          {isEnglish
-                            ? "Pass " + latestScorePassCount + " · Fail " + latestScoreFailCount + " · Blocked " + latestScoreBlockedCount + " · N/A " + latestScoreNotApplicableCount
-                            : "통과 " + latestScorePassCount + " · 실패 " + latestScoreFailCount + " · 확인 불가 " + latestScoreBlockedCount + " · 해당 없음 " + latestScoreNotApplicableCount}
-                        </dd>
-                      </div>
-                    </dl>
-                  </article>
-
+                      <dl className="work-order-score-card-meta">
+                        <div>
+                          <dt>
+                            {isEnglish
+                              ? "Verification status"
+                              : String(latestScoreVersion) + "차 검수 상태"}
+                          </dt>
+                          <dd>
+                            {isEnglish
+                              ? latestScoreAttempt.status
+                                  .replaceAll("_", " ")
+                                  .toLowerCase()
+                              : (verificationStatusLabels[
+                                  latestScoreAttempt.status
+                                ] ?? latestScoreAttempt.status)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              latestScoreVersion,
+                              "completedAt",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>
+                            {formatKST(
+                              latestScoreAttempt.completedAt ??
+                                latestScoreAttempt.scan.completedAt,
+                              isEnglish,
+                            )}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {workOrderVersionMetaLabel(
+                              latestScoreVersion,
+                              "url",
+                              isEnglish,
+                            )}
+                          </dt>
+                          <dd>
+                            <a
+                              href={latestScoreAttempt.submittedUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {latestScoreAttempt.submittedUrl}
+                            </a>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>
+                            {isEnglish
+                              ? "Item-level result"
+                              : "항목별 자동검수 결과"}
+                          </dt>
+                          <dd>
+                            {isEnglish
+                              ? "Pass " +
+                                latestScorePassCount +
+                                " · Fail " +
+                                latestScoreFailCount +
+                                " · Blocked " +
+                                latestScoreBlockedCount +
+                                " · N/A " +
+                                latestScoreNotApplicableCount
+                              : "통과 " +
+                                latestScorePassCount +
+                                " · 실패 " +
+                                latestScoreFailCount +
+                                " · 확인 불가 " +
+                                latestScoreBlockedCount +
+                                " · 해당 없음 " +
+                                latestScoreNotApplicableCount}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
                   ) : null}
                 </div>
               </>
@@ -926,8 +941,8 @@ export function WorkOrderPage() {
             <div className="work-order-verification-notice">
               <p>
                 {isEnglish
-                  ? `The V${followUpWorkOrderVersion} work order has been issued. Continue updates and verification from the latest work order.`
-                  : `V${followUpWorkOrderVersion} 수정 작업지시서가 발행되었습니다. 이후 수정과 검수는 최신 작업지시서에서 진행해 주세요.`}
+                  ? `The V${followUpWorkOrderVersion} work order has been issued. This is the previous work order. Open the V${followUpWorkOrderVersion} work order, review the remaining items, update and deploy the site, then run verification from that work order.`
+                  : `V${followUpWorkOrderVersion} 수정 작업지시서가 발행되었습니다. 이 화면은 이전 작업지시서입니다. V${followUpWorkOrderVersion} 작업지시서를 열어 남은 수정 항목을 확인하고, 사이트를 수정·배포한 뒤 V${followUpWorkOrderVersion} 작업지시서 화면에서 검수시작을 진행해 주세요.`}
               </p>
               {followUpWorkOrderEntry ? (
                 <Link
@@ -935,8 +950,8 @@ export function WorkOrderPage() {
                   to={`/${locale}/work-orders/${followUpWorkOrderEntry.id}`}
                 >
                   {isEnglish
-                    ? `View V${followUpWorkOrderVersion} work order`
-                    : `V${followUpWorkOrderVersion} 수정 작업지시서 보기`}
+                    ? `Continue in V${followUpWorkOrderVersion} work order`
+                    : `V${followUpWorkOrderVersion} 작업지시서에서 수정·검수 진행하기`}
                 </Link>
               ) : null}
             </div>
