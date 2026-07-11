@@ -841,3 +841,11 @@ h3 {
   font-size: 0.92rem;
   line-height: 1.6;
 }
+
+/* mobile and tablet public page side spacing */
+@media (max-width: 1023px) {
+  .hero-content,
+  .section-content {
+    padding-inline: clamp(16px, 3vw, 24px);
+  }
+}

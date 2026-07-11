@@ -2031,29 +2031,29 @@ export function ScanResultPage() {
               >
                 <strong>
                   {isEnglish
-                    ? "Complete Improvement Support After Payment"
-                    : "결제 후 전체 개선 절차 지원"}
+                    ? "Site Improvement Support Process After Payment"
+                    : "결제 후 사이트 개선 정보 제공 절차"}
                 </strong>
                 <p>
                   {isEnglish
-                    ? "One payment includes the detailed Diagnostic 1 report, two improvement work orders, and two re-diagnostics so you can review the applied changes and remaining improvement items."
-                    : "한 번의 결제로 1차 상세 진단 보고서부터 두 번의 수정 작업지시서와 두 번의 재진단을 제공하여, 사이트 수정 결과와 남은 개선 항목까지 확인할 수 있습니다."}
+                    ? "With one payment, you can receive two detailed diagnostic reports and review the results after up to two rounds of site improvements."
+                    : "한 번의 결제로 2번의 상세 진단 보고서와 2번의 사이트 수정 작업 후 결과까지 확인할 수 있습니다."}
                 </p>
                 <ul className="scan-paid-feature-list">
                   <li>
                     {isEnglish
-                      ? "Detailed Diagnostic 1 PDF report"
-                      : "1차 상세 진단 PDF 보고서"}
+                      ? "Diagnostic 1 PDF report and Work Order 1 → Site Improvement 1"
+                      : "1차 상세 진단 PDF 보고서, 1차 수정 작업지시서 → 1차 사이트 수정"}
                   </li>
                   <li>
                     {isEnglish
-                      ? "Two work orders: Work Orders 1 and 2"
-                      : "1차·2차 수정 작업지시서 총 2회"}
+                      ? "Diagnostic 2 PDF report and Work Order 2 → Site Improvement 2 (if needed)"
+                      : "2차 상세 진단 PDF 보고서, 2차 수정 작업지시서 → 2차 사이트 수정 (필요 시)"}
                   </li>
                   <li>
                     {isEnglish
-                      ? "Diagnostics 2 and 3 after site updates, including before-and-after comparison"
-                      : "사이트 수정 후 2차·3차 정밀진단으로 수정 전후 결과 비교"}
+                      ? "Diagnostic 3 PDF report (when Site Improvement 2 is performed)"
+                      : "3차 상세 진단 PDF 보고서 (2차 사이트 수정 시)"}
                   </li>
                 </ul>
                 <Link
