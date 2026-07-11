@@ -742,3 +742,11 @@
     grid-column: span 1;
   }
 }
+
+.site-quick-actions a.site-result-primary-button {
+  display: inline-flex;
+  min-width: 112px;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}

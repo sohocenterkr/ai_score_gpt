@@ -2024,10 +2024,52 @@ export function ScanResultPage() {
                 </li>
               </ul>
             </div>
+            {!isVerificationScan && !canAccessPaidOutputs ? (
+              <div
+                className="work-order-selection scan-paid-product-card scan-paid-payment-card"
+                role="note"
+              >
+                <strong>
+                  {isEnglish
+                    ? "Complete Improvement Support After Payment"
+                    : "결제 후 전체 개선 절차 지원"}
+                </strong>
+                <p>
+                  {isEnglish
+                    ? "One payment includes the detailed Diagnostic 1 report, two improvement work orders, and two re-diagnostics so you can review the applied changes and remaining improvement items."
+                    : "한 번의 결제로 1차 상세 진단 보고서부터 두 번의 수정 작업지시서와 두 번의 재진단을 제공하여, 사이트 수정 결과와 남은 개선 항목까지 확인할 수 있습니다."}
+                </p>
+                <ul className="scan-paid-feature-list">
+                  <li>
+                    {isEnglish
+                      ? "Detailed Diagnostic 1 PDF report"
+                      : "1차 상세 진단 PDF 보고서"}
+                  </li>
+                  <li>
+                    {isEnglish
+                      ? "Two work orders: Work Orders 1 and 2"
+                      : "1차·2차 수정 작업지시서 총 2회"}
+                  </li>
+                  <li>
+                    {isEnglish
+                      ? "Diagnostics 2 and 3 after site updates, including before-and-after comparison"
+                      : "사이트 수정 후 2차·3차 정밀진단으로 수정 전후 결과 비교"}
+                  </li>
+                </ul>
+                <Link
+                  className="scan-paid-payment-button"
+                  to={`/${locale}/checkout?scanId=${encodeURIComponent(
+                    result.scan.id,
+                  )}`}
+                >
+                  {isEnglish ? "Proceed to Payment" : "결제하기"}
+                </Link>
+              </div>
+            ) : null}
           </div>
 
-          <div className="scan-paywall-button-wrap">
-            {canAccessPaidOutputs ? (
+          {canAccessPaidOutputs ? (
+            <div className="scan-paywall-button-wrap">
               <div
                 className="scan-admin-actions"
                 role="group"
@@ -2116,50 +2158,8 @@ export function ScanResultPage() {
                   {isEnglish ? "Site dashboard" : "사이트 관리"}
                 </Link>
               </div>
-            ) : (
-              <div
-                className="scan-admin-actions"
-                role="group"
-                aria-label={
-                  isEnglish ? "Paid deliverables guide" : "유료 산출물 안내"
-                }
-              >
-                <button
-                  className="scan-report-link scan-paid-locked-action"
-                  type="button"
-                  disabled
-                >
-                  {isEnglish
-                    ? `Diagnostic ${diagnosticNumber} Report`
-                    : `${diagnosticNumber}차 진단 보고서`}
-                </button>
-                <button
-                  className="scan-report-link secondary scan-paid-locked-action"
-                  type="button"
-                  disabled
-                >
-                  {isEnglish ? "Create Work Order" : "작업지시서 생성"}
-                </button>
-                <Link
-                  className="scan-report-link ghost"
-                  to={`/${locale}/sites`}
-                >
-                  {isEnglish ? "Site dashboard" : "사이트 관리"}
-                </Link>
-              </div>
-            )}
-
-            {!isVerificationScan && !canAccessPaidOutputs ? (
-              <Link
-                className="primary"
-                to={`/${locale}/checkout?scanId=${encodeURIComponent(
-                  result.scan.id,
-                )}`}
-              >
-                {isEnglish ? "Proceed to Payment" : "결제하기"}
-              </Link>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </section>
       </div>
     </section>

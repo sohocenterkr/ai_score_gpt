@@ -206,13 +206,12 @@ const progressCopy = {
       `개선 항목 ${count}개 · 필수 ${required}개`,
     viewDiagnostic: "진단 보기",
     viewWorkOrder: "작업지시서 보기",
-    purchaseInitial: "최초 결제하기",
     purchaseExtra: "추가 결제하기",
     createWorkOrder: "작업지시서 만들기",
     processing: "처리 중",
     stageRegistered: "사이트 등록 완료 · 간편진단 준비",
     stageQuick: "무료 간편진단 진행 중",
-    stageInitialPayment: "최초 결제 필요",
+    stageInitialPayment: "무료 간편진단 발행완료",
     stageDiagnostic: (number: number) => `${number}차 정밀진단 진행 중`,
     stageWorkOrder: (number: number) => `${number}차 작업지시서 진행`,
     stageExtraPayment: "3차 작업지시서·4차 진단 추가 결제 필요",
@@ -261,13 +260,12 @@ const progressCopy = {
       `${count} improvement items · ${required} required`,
     viewDiagnostic: "View Diagnostic",
     viewWorkOrder: "View Work Order",
-    purchaseInitial: "Make Initial Payment",
     purchaseExtra: "Make Additional Payment",
     createWorkOrder: "Create Work Order",
     processing: "Processing",
     stageRegistered: "Website registered · Ready for simple diagnostic",
     stageQuick: "Free simple diagnostic in progress",
-    stageInitialPayment: "Initial payment required",
+    stageInitialPayment: "Free simple diagnostic issued",
     stageDiagnostic: (number: number) => `Diagnostic ${number} in progress`,
     stageWorkOrder: (number: number) => `Work Order ${number} in progress`,
     stageExtraPayment:
@@ -389,8 +387,8 @@ function currentStageLabel(
     }
 
     return locale === "en"
-      ? "Simple diagnostic completed"
-      : "무료 간편진단 완료";
+      ? "Free simple diagnostic issued"
+      : "무료 간편진단 발행완료";
   }
 
   const number = progress.currentStage.number ?? 1;
@@ -915,17 +913,8 @@ function SiteDashboardCard({
       );
     }
 
-    if (action === "PURCHASE_INITIAL" && site.latestScan) {
-      return (
-        <Link
-          className="site-primary-button"
-          to={`/${locale}/checkout?scanId=${encodeURIComponent(
-            site.latestScan.id,
-          )}`}
-        >
-          {progressText.purchaseInitial}
-        </Link>
-      );
+    if (action === "PURCHASE_INITIAL") {
+      return null;
     }
 
     if (action === "VIEW_WORK_ORDER" && currentWorkOrder) {
@@ -1113,7 +1102,7 @@ function SiteDashboardCard({
               simpleDiagnostic.status,
             ) ? (
               <Link
-                className="site-secondary-button"
+                className="site-primary-button site-result-primary-button"
                 to={`/${locale}/sites/${site.id}/scans/${simpleDiagnostic.scanId}`}
               >
                 {copy.viewResult}

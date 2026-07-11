@@ -1617,3 +1617,39 @@
   font-size: 0.92rem;
   line-height: 1.6;
 }
+
+.scan-paid-payment-card {
+  display: flex;
+  flex-direction: column;
+  border-color: #c7d2fe;
+  background: linear-gradient(135deg, #eef2ff 0%, #f8fbff 100%);
+}
+
+.scan-paid-payment-card .scan-paid-feature-list {
+  margin-bottom: 22px;
+}
+
+.scan-paid-payment-button {
+  width: 100%;
+  min-height: 48px;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 0 18px;
+  background: var(--brand);
+  color: #ffffff;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.scan-paid-payment-button:hover {
+  filter: brightness(0.96);
+}
+
+@media (min-width: 1024px) {
+  .scan-paid-payment-card {
+    grid-column: 2;
+  }
+}
