@@ -1653,3 +1653,51 @@
     grid-column: 2;
   }
 }
+
+/* diagnostic 1 report action cards */
+.scan-first-diagnostic-actions {
+  display: grid;
+  gap: 16px;
+}
+
+.scan-first-diagnostic-action-card {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(129, 140, 248, 0.42);
+  border-radius: 14px;
+  padding: 18px;
+  background: linear-gradient(135deg, #ffffff, #eef2ff);
+}
+
+.scan-first-diagnostic-action-card:nth-child(2) {
+  border-color: rgba(56, 189, 248, 0.42);
+  background: linear-gradient(135deg, #ffffff, #ecfeff);
+}
+
+.scan-first-diagnostic-action-card strong {
+  color: #312e81;
+  font-size: 1rem;
+}
+
+.scan-first-diagnostic-action-card p {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+.scan-first-diagnostic-action-card .scan-report-link {
+  width: 100%;
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (min-width: 769px) {
+  .scan-first-diagnostic-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

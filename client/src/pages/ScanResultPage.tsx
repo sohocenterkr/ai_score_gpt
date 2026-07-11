@@ -1311,9 +1311,11 @@ export function ScanResultPage() {
                 : "공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 QUICK 점수를 계산합니다. JavaScript 렌더링 결과는 점수에 직접 반영하지 않고 AI 수집 개선안과 렌더링 비교에 활용하며, 모바일·PC 별도 비교·업종별 기준정보·질문 정답률은 정밀진단 단계에서 추가됩니다."}
             </p>
           </div>
-          <Link className="scan-result-back" to={`/${locale}/sites`}>
-            {isEnglish ? "Site dashboard" : "사이트 관리로"}
-          </Link>
+          {!isVerificationScan && !canAccessPaidOutputs ? (
+            <Link className="scan-result-back" to={`/${locale}/sites`}>
+              {isEnglish ? "Site dashboard" : "사이트 관리로"}
+            </Link>
+          ) : null}
         </header>
         {isOutdatedRulesVersion ? (
           <section className="surface scan-rules-version-alert" role="status">
@@ -2070,94 +2072,172 @@ export function ScanResultPage() {
 
           {canAccessPaidOutputs ? (
             <div className="scan-paywall-button-wrap">
-              <div
-                className="scan-admin-actions"
-                role="group"
-                aria-label={isEnglish ? "Paid deliverables" : "유료 산출물"}
-              >
-                <a
-                  className="scan-report-link"
-                  href={scanResultPdfUrl(
-                    result.scan.id,
-                    isEnglish ? "en" : "ko",
-                  )}
-                  target="_blank"
-                  rel="noreferrer"
+              {diagnosticNumber === 1 ? (
+                <div
+                  className="scan-first-diagnostic-actions"
+                  role="group"
+                  aria-label={
+                    isEnglish
+                      ? "Diagnostic 1 report actions"
+                      : "1차 진단 보고서 실행 항목"
+                  }
                 >
-                  {isEnglish
-                    ? `Save Diagnostic ${diagnosticNumber} PDF`
-                    : `${diagnosticNumber}차 진단 보고서 PDF 저장`}
-                </a>
-                {isFinalDiagnostic ? (
-                  <button
-                    className="scan-report-link secondary"
-                    type="button"
-                    disabled
-                  >
-                    {isEnglish
-                      ? "Diagnostic workflow completed"
-                      : "4차 진단까지 완료"}
-                  </button>
-                ) : targetWorkOrderId ? (
-                  <button
-                    className="scan-report-link secondary"
-                    type="button"
-                    onClick={handleCreateWorkOrder}
-                    disabled={creatingWorkOrder}
-                  >
-                    {isEnglish
-                      ? `View Work Order ${targetWorkOrderVersion}`
-                      : `${targetWorkOrderVersion}차 작업지시서 보기`}
-                  </button>
-                ) : needsExtraPayment ? (
-                  <Link
-                    className="scan-report-link secondary"
-                    to={extraPaymentPath}
-                  >
-                    {isEnglish
-                      ? "Pay and continue to Work Order 3"
-                      : "추가 결제 후 3차 작업지시서 진행"}
-                  </Link>
-                ) : (
-                  <button
-                    className="scan-report-link secondary"
-                    type="button"
-                    onClick={handleCreateWorkOrder}
-                    disabled={
-                      creatingWorkOrder ||
-                      checkingSiteProgress ||
-                      siteProgressUnavailable ||
-                      !canCreateTargetWorkOrder
-                    }
-                  >
-                    {checkingSiteProgress
-                      ? isEnglish
-                        ? "Checking site progress..."
-                        : "사이트 진행 상태 확인 중..."
-                      : siteProgressUnavailable
-                        ? isEnglish
-                          ? "Could not confirm site progress"
-                          : "사이트 진행 상태 확인 필요"
-                        : creatingWorkOrder
+                  <article className="scan-first-diagnostic-action-card">
+                    <strong>
+                      {isEnglish
+                        ? "Diagnostic 1 PDF Report"
+                        : "1차 진단 보고서 PDF"}
+                    </strong>
+                    <p>
+                      {isEnglish
+                        ? "Save the full site diagnostic results, measurement evidence, key issues, and improvement direction as a PDF report."
+                        : "사이트 전체 진단 결과와 측정 근거, 주요 문제와 개선 방향을 PDF 보고서로 저장합니다."}
+                    </p>
+                    <a
+                      className="scan-report-link"
+                      href={scanResultPdfUrl(
+                        result.scan.id,
+                        isEnglish ? "en" : "ko",
+                      )}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {isEnglish
+                        ? "Save Diagnostic 1 PDF"
+                        : "1차 진단 보고서 PDF 저장"}
+                    </a>
+                  </article>
+
+                  <article className="scan-first-diagnostic-action-card">
+                    <strong>
+                      {isEnglish ? "Work Order 1" : "1차 수정 작업지시서"}
+                    </strong>
+                    <p>
+                      {isEnglish
+                        ? "Select improvement items from the diagnostic results, then create a work order containing the required site updates and completion criteria."
+                        : "진단 결과에서 개선 항목을 선택한 뒤, 사이트 수정 내용과 완료 판정 기준이 포함된 작업지시서를 생성합니다."}
+                    </p>
+                    {targetWorkOrderId ? (
+                      <button
+                        className="scan-report-link secondary"
+                        type="button"
+                        onClick={handleCreateWorkOrder}
+                        disabled={creatingWorkOrder}
+                      >
+                        {isEnglish
+                          ? "View Work Order 1"
+                          : "1차 작업지시서 보기"}
+                      </button>
+                    ) : (
+                      <button
+                        className="scan-report-link secondary"
+                        type="button"
+                        onClick={handleCreateWorkOrder}
+                        disabled={
+                          creatingWorkOrder || !canCreateTargetWorkOrder
+                        }
+                      >
+                        {creatingWorkOrder
                           ? isEnglish
-                            ? `Creating Work Order ${targetWorkOrderVersion}...`
-                            : `${targetWorkOrderVersion}차 작업지시서 생성 중...`
-                          : canCreateTargetWorkOrder
-                            ? isEnglish
-                              ? `Create Work Order ${targetWorkOrderVersion}`
-                              : `${targetWorkOrderVersion}차 작업지시서 생성`
-                            : isEnglish
-                              ? "No remaining improvement items"
-                              : "남은 개선 항목 없음"}
-                  </button>
-                )}
-                <Link
-                  className="scan-report-link ghost"
-                  to={`/${locale}/sites`}
+                            ? "Creating Work Order 1..."
+                            : "1차 작업지시서 생성 중..."
+                          : isEnglish
+                            ? "Create Work Order 1"
+                            : "1차 작업지시서 생성"}
+                      </button>
+                    )}
+                  </article>
+                </div>
+              ) : (
+                <div
+                  className="scan-admin-actions"
+                  role="group"
+                  aria-label={isEnglish ? "Paid deliverables" : "유료 산출물"}
                 >
-                  {isEnglish ? "Site dashboard" : "사이트 관리"}
-                </Link>
-              </div>
+                  <a
+                    className="scan-report-link"
+                    href={scanResultPdfUrl(
+                      result.scan.id,
+                      isEnglish ? "en" : "ko",
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {isEnglish
+                      ? `Save Diagnostic ${diagnosticNumber} PDF`
+                      : `${diagnosticNumber}차 진단 보고서 PDF 저장`}
+                  </a>
+                  {isFinalDiagnostic ? (
+                    <button
+                      className="scan-report-link secondary"
+                      type="button"
+                      disabled
+                    >
+                      {isEnglish
+                        ? "Diagnostic workflow completed"
+                        : "4차 진단까지 완료"}
+                    </button>
+                  ) : targetWorkOrderId ? (
+                    <button
+                      className="scan-report-link secondary"
+                      type="button"
+                      onClick={handleCreateWorkOrder}
+                      disabled={creatingWorkOrder}
+                    >
+                      {isEnglish
+                        ? `View Work Order ${targetWorkOrderVersion}`
+                        : `${targetWorkOrderVersion}차 작업지시서 보기`}
+                    </button>
+                  ) : needsExtraPayment ? (
+                    <Link
+                      className="scan-report-link secondary"
+                      to={extraPaymentPath}
+                    >
+                      {isEnglish
+                        ? "Pay and continue to Work Order 3"
+                        : "추가 결제 후 3차 작업지시서 진행"}
+                    </Link>
+                  ) : (
+                    <button
+                      className="scan-report-link secondary"
+                      type="button"
+                      onClick={handleCreateWorkOrder}
+                      disabled={
+                        creatingWorkOrder ||
+                        checkingSiteProgress ||
+                        siteProgressUnavailable ||
+                        !canCreateTargetWorkOrder
+                      }
+                    >
+                      {checkingSiteProgress
+                        ? isEnglish
+                          ? "Checking site progress..."
+                          : "사이트 진행 상태 확인 중..."
+                        : siteProgressUnavailable
+                          ? isEnglish
+                            ? "Could not confirm site progress"
+                            : "사이트 진행 상태 확인 필요"
+                          : creatingWorkOrder
+                            ? isEnglish
+                              ? `Creating Work Order ${targetWorkOrderVersion}...`
+                              : `${targetWorkOrderVersion}차 작업지시서 생성 중...`
+                            : canCreateTargetWorkOrder
+                              ? isEnglish
+                                ? `Create Work Order ${targetWorkOrderVersion}`
+                                : `${targetWorkOrderVersion}차 작업지시서 생성`
+                              : isEnglish
+                                ? "No remaining improvement items"
+                                : "남은 개선 항목 없음"}
+                    </button>
+                  )}
+                  <Link
+                    className="scan-report-link ghost"
+                    to={`/${locale}/sites`}
+                  >
+                    {isEnglish ? "Site dashboard" : "사이트 관리"}
+                  </Link>
+                </div>
+              )}
             </div>
           ) : null}
         </section>
