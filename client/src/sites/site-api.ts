@@ -254,6 +254,7 @@ export interface ScanResultFinding {
 export interface ScanCategoryScore {
   category: string;
   score: number;
+  pendingScore?: number;
   maxScore: number;
   percentage: number;
 }
@@ -261,6 +262,9 @@ export interface ScanCategoryScore {
 export interface ScanScoreSummary {
   score: number;
   rawScore: number;
+  pendingScore?: number;
+  scoreRangeMin?: number;
+  scoreRangeMax?: number;
   grade: string;
   cap: number | null;
   coverage: number;

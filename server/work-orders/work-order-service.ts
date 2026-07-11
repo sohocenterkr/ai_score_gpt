@@ -12,7 +12,7 @@ import {
   buildRenderedDomImprovementPlans,
   scanResultRenderedDomComparison,
 } from "../scans/scan-result-pdf";
-import { getRuleDefinition } from "../scans/scoring";
+import { getRuleDefinition, isPendingContentFinding } from "../scans/scoring";
 import {
   SiteUrlError,
   validatePublicSiteUrl,
@@ -877,7 +877,8 @@ export function createPrismaWorkOrderService(
           return (
             definition !== undefined &&
             definition.weight > 0 &&
-            (finding.status === "FAIL" || finding.status === "BLOCKED")
+            (finding.status === "FAIL" || finding.status === "BLOCKED") &&
+            !isPendingContentFinding(finding)
           );
         })
         .map((finding) => finding.id);
@@ -936,11 +937,12 @@ export function createPrismaWorkOrderService(
         if (
           !definition ||
           definition.weight <= 0 ||
-          (finding.status !== "FAIL" && finding.status !== "BLOCKED")
+          (finding.status !== "FAIL" && finding.status !== "BLOCKED") ||
+          isPendingContentFinding(finding)
         ) {
           throw new WorkOrderServiceError(
             "WORK_ORDER_INVALID_FINDINGS",
-            "실패 또는 확인 불가 상태의 점수 항목만 선택할 수 있습니다.",
+            "개선이 확정된 실패 또는 기술 확인 불가 점수 항목만 선택할 수 있습니다. 콘텐츠 판정 보류 항목은 작업지시서에서 제외됩니다.",
             400,
           );
         }
@@ -1436,7 +1438,8 @@ export function createPrismaWorkOrderService(
         if (
           finding &&
           definition &&
-          (finding.status === "FAIL" || finding.status === "BLOCKED")
+          (finding.status === "FAIL" || finding.status === "BLOCKED") &&
+          !isPendingContentFinding(finding)
         ) {
           const template = buildWorkOrderTemplate(finding, locale);
           const targetUrl =

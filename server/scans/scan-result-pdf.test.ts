@@ -264,7 +264,9 @@ describe("scan result PDF", () => {
       ),
     ).toBe(true);
     expect(plans[0]?.acceptanceCriteria.length).toBeGreaterThanOrEqual(4);
-    expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe("2026.07-scan-locale-v5");
+    expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
+      "2026.07-content-evidence-v6",
+    );
   });
 
   it("안전한 진단 보고서 파일명을 만든다", () => {

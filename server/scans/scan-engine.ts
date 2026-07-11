@@ -3,7 +3,13 @@ import {
   type SafeHttpFetcher,
   type SafeHttpResponse,
 } from "./http-fetcher";
-import { analyzeHtml, type HtmlAnalysis } from "./html-analyzer";
+import {
+  analyzeHtml,
+  type ContentEvidenceLevel,
+  type ContentSignalEvidence,
+  type ContentSignalKey,
+  type HtmlAnalysis,
+} from "./html-analyzer";
 import type { RenderedDomCollector, RenderedDomResult } from "./rendered-dom";
 import {
   evaluateRobotsPolicy,
@@ -114,18 +120,94 @@ function finding(
   };
 }
 
-type ContentSignalKey =
-  | "hasServiceDefinition"
-  | "hasAudienceOrUseCase"
-  | "hasWorkflowOrOutcome"
-  | "hasPricingOrTerms"
-  | "hasSupportOrContact"
-  | "hasDataPolicy"
-  | "hasDifferentiationOrProof"
-  | "hasTransactionPolicy";
+type FinalContentEvidenceLevel =
+  ContentEvidenceLevel | "RENDERED" | "UNAVAILABLE";
+
+const CONTENT_SCORE_RATIOS: Record<
+  Exclude<FinalContentEvidenceLevel, "UNAVAILABLE">,
+  number
+> = {
+  FULL: 1,
+  BODY: 0.7,
+  HINT: 0.3,
+  RENDERED: 0.2,
+  NONE: 0,
+};
+
+function contentSignalEvidence(
+  analysis: HtmlAnalysis,
+  key: ContentSignalKey,
+): ContentSignalEvidence {
+  return (
+    analysis.contentSignals.evidenceByKey?.[key] ?? {
+      level: analysis.contentSignals[key] ? "BODY" : "NONE",
+      matchedSources: [],
+    }
+  );
+}
+
+function resolveContentEvidence(
+  initial: HtmlAnalysis | null,
+  renderedDom: RenderedDomResult,
+  key: ContentSignalKey,
+): {
+  level: FinalContentEvidenceLevel;
+  initialEvidence: ContentSignalEvidence | null;
+  renderedEvidence: ContentSignalEvidence | null;
+} {
+  const initialEvidence = initial ? contentSignalEvidence(initial, key) : null;
+
+  if (initialEvidence && initialEvidence.level !== "NONE") {
+    return {
+      level: initialEvidence.level,
+      initialEvidence,
+      renderedEvidence: null,
+    };
+  }
+
+  if (renderedDom.status === "SUCCESS") {
+    const renderedEvidence = contentSignalEvidence(renderedDom.analysis, key);
+
+    return {
+      level: renderedEvidence.level === "NONE" ? "NONE" : "RENDERED",
+      initialEvidence,
+      renderedEvidence,
+    };
+  }
+
+  return {
+    level: "UNAVAILABLE",
+    initialEvidence,
+    renderedEvidence: null,
+  };
+}
+
+function contentLevelDescription(
+  level: FinalContentEvidenceLevel,
+  input: {
+    passDescription: string;
+    failDescription: string;
+  },
+): string {
+  switch (level) {
+    case "FULL":
+      return input.passDescription;
+    case "BODY":
+      return "본문 문장에서 관련 정보를 확인했지만 제목 구조와 충분한 설명을 함께 확인하지 못했습니다.";
+    case "HINT":
+      return "제목·메타데이터·링크에서 관련 정보의 짧은 단서만 확인했습니다.";
+    case "RENDERED":
+      return "초기 HTML에서는 확인하지 못했으며 JavaScript 렌더링 후 관련 정보를 확인했습니다.";
+    case "UNAVAILABLE":
+      return "초기 HTML에서 관련 정보를 확인하지 못했고 렌더링 검사를 완료하지 못해 관련 정보의 존재 여부를 확인할 수 없습니다.";
+    case "NONE":
+      return input.failDescription;
+  }
+}
 
 function contentReadinessFinding(
-  analysis: HtmlAnalysis,
+  initial: HtmlAnalysis | null,
+  renderedDom: RenderedDomResult,
   input: {
     ruleCode: string;
     key: ContentSignalKey;
@@ -135,36 +217,68 @@ function contentReadinessFinding(
     recommendation: string;
   },
 ): CollectedFinding {
-  const passed = Boolean(analysis.contentSignals[input.key]);
+  const resolved = resolveContentEvidence(initial, renderedDom, input.key);
+  const passed = resolved.level === "FULL";
+  const unavailable = resolved.level === "UNAVAILABLE";
+  const scoreRatio =
+    resolved.level === "UNAVAILABLE"
+      ? null
+      : CONTENT_SCORE_RATIOS[resolved.level];
+
+  const sourceAnalysis =
+    initial ?? (renderedDom.status === "SUCCESS" ? renderedDom.analysis : null);
 
   return finding({
     ruleCode: input.ruleCode,
     category: "AI 답변 준비 콘텐츠",
-    severity: passed ? "INFO" : "MEDIUM",
-    status: passed ? "PASS" : "FAIL",
+    severity: passed ? "INFO" : unavailable ? "LOW" : "MEDIUM",
+    status: passed ? "PASS" : unavailable ? "BLOCKED" : "FAIL",
     title: input.title,
-    description: passed ? input.passDescription : input.failDescription,
+    description: contentLevelDescription(resolved.level, input),
     evidence: {
-      conversionIntent: analysis.contentSignals.conversionIntent,
-      detectedSignals: analysis.contentSignals.detectedSignals,
-      missingSignals: analysis.contentSignals.missingSignals,
+      conversionIntent:
+        sourceAnalysis?.contentSignals.conversionIntent ?? "INFORMATIONAL",
+      detectedSignals: sourceAnalysis?.contentSignals.detectedSignals ?? [],
+      missingSignals: sourceAnalysis?.contentSignals.missingSignals ?? [],
+      contentEvidenceLevel: resolved.level,
+      scoreRatio,
+      initialEvidence: resolved.initialEvidence,
+      renderedEvidence: resolved.renderedEvidence,
+      renderedStatus: renderedDom.status,
+      renderedErrorCode:
+        renderedDom.status === "FAILED" ? renderedDom.errorCode : null,
+      renderedMessage:
+        renderedDom.status === "FAILED"
+          ? renderedDom.message
+          : renderedDom.status === "NOT_RUN"
+            ? renderedDom.reason
+            : null,
     },
-    recommendation: passed ? null : input.recommendation,
+    recommendation: passed
+      ? null
+      : unavailable
+        ? "렌더링 측정 문제를 해결한 뒤 다시 진단하여 관련 정보의 존재 여부를 확인하세요."
+        : input.recommendation,
   });
 }
 
 function buildContentReadinessFindings(
-  analysis: HtmlAnalysis,
+  initial: HtmlAnalysis | null,
+  renderedDom: RenderedDomResult,
 ): CollectedFinding[] {
+  const sourceAnalysis =
+    initial ?? (renderedDom.status === "SUCCESS" ? renderedDom.analysis : null);
+  const conversionIntent =
+    sourceAnalysis?.contentSignals.conversionIntent ?? "INFORMATIONAL";
   const transactionTitle =
-    analysis.contentSignals.conversionIntent === "DIRECT_PAYMENT"
+    conversionIntent === "DIRECT_PAYMENT"
       ? "환불·취소·해지 정책"
-      : analysis.contentSignals.conversionIntent === "INQUIRY_OR_RESERVATION"
+      : conversionIntent === "INQUIRY_OR_RESERVATION"
         ? "예약·상담 취소/변경 기준"
         : "운영 주체와 문의 정책";
 
   return [
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-CORE-DEFINITION-001",
       key: "hasServiceDefinition",
       title: "서비스 정의와 핵심 가치",
@@ -175,7 +289,7 @@ function buildContentReadinessFindings(
       recommendation:
         "서비스 정의, 해결하는 문제, 핵심 기능, 사용자가 얻는 결과를 사용자 화면과 초기 HTML에 명확히 추가하세요.",
     }),
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-AUDIENCE-USECASE-001",
       key: "hasAudienceOrUseCase",
       title: "이용 대상과 활용 사례",
@@ -186,7 +300,7 @@ function buildContentReadinessFindings(
       recommendation:
         "이런 분께 추천합니다, 대표 활용 사례, 사용 전후 변화 같은 섹션을 보강하세요.",
     }),
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-WORKFLOW-OUTCOME-001",
       key: "hasWorkflowOrOutcome",
       title: "이용 절차와 결과물",
@@ -196,7 +310,7 @@ function buildContentReadinessFindings(
       recommendation:
         "가입, 입력, 처리, 결과 확인처럼 실제 이용 흐름을 3~5단계로 설명하세요.",
     }),
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-PRICING-TERMS-001",
       key: "hasPricingOrTerms",
       title: "요금과 무료·유료 범위",
@@ -207,7 +321,7 @@ function buildContentReadinessFindings(
       recommendation:
         "무료 범위, 유료 범위, 요금제, 외부 비용 부담 여부를 표나 FAQ로 명확히 안내하세요.",
     }),
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-SUPPORT-CONTACT-001",
       key: "hasSupportOrContact",
       title: "고객지원과 문의 채널",
@@ -217,7 +331,7 @@ function buildContentReadinessFindings(
       recommendation:
         "문의 채널, 상담 가능 시간, 응답 예상 시간, 지원 범위를 명확히 표시하세요.",
     }),
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-DATA-POLICY-001",
       key: "hasDataPolicy",
       title: "개인정보와 입력자료 처리",
@@ -228,7 +342,7 @@ function buildContentReadinessFindings(
       recommendation:
         "개인정보 처리, 입력자료 보관·삭제, 보안, 이용약관·개인정보처리방침 링크를 보강하세요.",
     }),
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-DIFFERENTIATION-PROOF-001",
       key: "hasDifferentiationOrProof",
       title: "차별점과 신뢰 근거",
@@ -239,7 +353,7 @@ function buildContentReadinessFindings(
       recommendation:
         "대안과의 차이, 대표 사례, 고객 후기, 실적, 사용 예시를 사실 기반으로 보강하세요.",
     }),
-    contentReadinessFinding(analysis, {
+    contentReadinessFinding(initial, renderedDom, {
       ruleCode: "CONTENT-TRANSACTION-POLICY-001",
       key: "hasTransactionPolicy",
       title: transactionTitle,
@@ -478,7 +592,6 @@ function sitemapFinding(
   });
 }
 
-
 function llmsTxtFinding(resource: OptionalResource): CollectedFinding {
   if (!resource.response) {
     return finding({
@@ -502,7 +615,8 @@ function llmsTxtFinding(resource: OptionalResource): CollectedFinding {
     .subarray(0, 4_000)
     .toString("utf8")
     .trim();
-  const passed = isSuccessful(resource.response.statusCode) && textSample.length > 0;
+  const passed =
+    isSuccessful(resource.response.statusCode) && textSample.length > 0;
 
   return finding({
     ruleCode: "ACCESS-LLMS-TXT-001",
@@ -561,6 +675,7 @@ function renderedAnalysisSummary(analysis: HtmlAnalysis) {
       hasEntityContact: analysis.jsonLd.hasEntityContact,
     },
     iframeCount: analysis.iframeCount,
+    contentSignals: analysis.contentSignals,
   };
 }
 
@@ -902,7 +1017,6 @@ function metadataFindings(
         ? null
         : "서비스·장소·이용방법 등 주요 질문에 답할 수 있는 설명을 초기 HTML에 보강하세요.",
     }),
-    ...buildContentReadinessFindings(analysis),
     finding({
       ruleCode: "STRUCT-LINKS-001",
       category: "AI 에이전트 사용 가능성",
@@ -1271,6 +1385,8 @@ export async function collectSiteScan(
   }
 
   const renderedDom = await renderedDomPromise;
+
+  findings.push(...buildContentReadinessFindings(analysis, renderedDom));
 
   findings.push(
     finding({

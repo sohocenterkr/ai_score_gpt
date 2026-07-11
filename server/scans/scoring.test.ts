@@ -128,4 +128,80 @@ describe("scan scoring", () => {
     expect(summary.grade).toBe("A+");
     expect(summary.cap).toBe(null);
   });
+
+  it("콘텐츠 근거 수준의 비율에 따라 부분 점수를 계산한다", () => {
+    const findings = allFindings().map((finding) =>
+      finding.ruleCode === "CONTENT-CORE-DEFINITION-001"
+        ? {
+            ...finding,
+            status: "FAIL" as const,
+            evidence: {
+              scoreRatio: 0.7,
+            },
+          }
+        : finding,
+    );
+
+    const summary = calculateScore(findings);
+    const contentCategory = summary.categories.find(
+      (category) => category.category === "AI 답변 준비 콘텐츠",
+    );
+
+    expect(summary.rawScore).toBe(97.6);
+    expect(summary.score).toBe(98);
+    expect(summary.pendingScore).toBe(0);
+    expect(summary.scoreRangeMin).toBe(98);
+    expect(summary.scoreRangeMax).toBe(98);
+    expect(contentCategory?.score).toBe(47.6);
+    expect(contentCategory?.pendingScore).toBe(0);
+  });
+
+  it("콘텐츠 확인 불가는 감점 대신 보류 점수와 가능 범위를 반환한다", () => {
+    const findings = allFindings().map((finding) =>
+      finding.ruleCode === "CONTENT-CORE-DEFINITION-001"
+        ? {
+            ...finding,
+            status: "BLOCKED" as const,
+            evidence: {
+              contentEvidenceLevel: "UNAVAILABLE",
+              scoreRatio: null,
+            },
+          }
+        : finding,
+    );
+
+    const summary = calculateScore(findings);
+    const contentCategory = summary.categories.find(
+      (category) => category.category === "AI 답변 준비 콘텐츠",
+    );
+
+    expect(summary.rawScore).toBe(92);
+    expect(summary.pendingScore).toBe(8);
+    expect(summary.score).toBe(92);
+    expect(summary.scoreRangeMin).toBe(92);
+    expect(summary.scoreRangeMax).toBe(99);
+    expect(summary.coverage).toBe(92);
+    expect(summary.lostPoints).toBe(0);
+    expect(contentCategory?.score).toBe(42);
+    expect(contentCategory?.pendingScore).toBe(8);
+  });
+
+  it("기술 항목의 확인 불가는 기존처럼 실패 점수로 계산한다", () => {
+    const findings = allFindings().map((finding) =>
+      finding.ruleCode === "META-TITLE-001"
+        ? {
+            ...finding,
+            status: "BLOCKED" as const,
+          }
+        : finding,
+    );
+
+    const summary = calculateScore(findings);
+
+    expect(summary.rawScore).toBe(98);
+    expect(summary.pendingScore).toBe(0);
+    expect(summary.scoreRangeMin).toBe(98);
+    expect(summary.scoreRangeMax).toBe(98);
+    expect(summary.coverage).toBe(100);
+  });
 });

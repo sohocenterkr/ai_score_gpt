@@ -90,6 +90,7 @@ const categoryEnglishLabels: Record<string, string> = {
   "신뢰성 및 추적 환경": "Trust and tracking environment",
   "AI 에이전트 사용 가능성": "AI agent usability",
   "최신성 및 추적 환경": "Freshness and tracking environment",
+  "AI 답변 준비 콘텐츠": "AI answer-ready content",
 };
 
 type MissingInformationSummaryKey = "technical" | "content" | "structured";
@@ -313,6 +314,16 @@ function translateRenderedText(value: string, isEnglish: boolean): string {
       "Reduce rendering dependency so the initial HTML contains enough core body text and key navigation paths.",
     "초기 HTML과 JavaScript 렌더링 후 화면의 핵심 제목·설명·구조화 정보가 같은 의미를 전달하도록 정합성 점검이 필요합니다.":
       "Check consistency so the initial HTML and rendered page communicate the same core title, description, and structured information.",
+    "본문 문장에서 관련 정보를 확인했지만 제목 구조와 충분한 설명을 함께 확인하지 못했습니다.":
+      "Related information was found in body text, but a clear heading structure and sufficiently detailed explanation were not both confirmed.",
+    "제목·메타데이터·링크에서 관련 정보의 짧은 단서만 확인했습니다.":
+      "Only a short clue was found in the title, metadata, or links.",
+    "초기 HTML에서는 확인하지 못했으며 JavaScript 렌더링 후 관련 정보를 확인했습니다.":
+      "The information was not found in the initial HTML and was found only after JavaScript rendering.",
+    "초기 HTML에서 관련 정보를 확인하지 못했고 렌더링 검사를 완료하지 못해 관련 정보의 존재 여부를 확인할 수 없습니다.":
+      "The information was not found in the initial HTML, and rendering did not complete, so its presence could not be fully checked.",
+    "렌더링 측정 문제를 해결한 뒤 다시 진단하여 관련 정보의 존재 여부를 확인하세요.":
+      "Resolve the rendering measurement issue and run the diagnostic again to verify whether the information exists.",
     "AI가 첫 응답만 보더라도 페이지 주제와 주요 서비스를 이해할 수 있도록 핵심 정보 보강이 필요합니다.":
       "Add core information so AI can understand the page topic and main service even from the first response.",
   };
@@ -366,6 +377,28 @@ function translateRenderedText(value: string, isEnglish: boolean): string {
   return translated;
 }
 
+function contentEvidenceRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function isPendingContentFinding(finding: ScanResultFinding): boolean {
+  return (
+    finding.status === "BLOCKED" &&
+    finding.category === "AI 답변 준비 콘텐츠" &&
+    contentEvidenceRecord(finding.evidence).contentEvidenceLevel ===
+      "UNAVAILABLE"
+  );
+}
+
+function formatPointValue(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded)
+    ? String(rounded)
+    : rounded.toFixed(1).replace(/\.0$/, "");
+}
+
 function pointImpactLabel(
   finding: ScanResultFinding,
   locale: "ko" | "en" = "ko",
@@ -376,13 +409,26 @@ function pointImpactLabel(
     return isEnglish ? "No score impact" : "점수 영향 없음";
   }
 
-  return finding.status === "PASS"
-    ? isEnglish
-      ? `Earned ${finding.weight} pts`
-      : `배점 ${finding.weight}점`
-    : isEnglish
-      ? `Lost ${finding.weight} pts`
-      : `감점 ${finding.weight}점`;
+  if (isPendingContentFinding(finding)) {
+    return isEnglish
+      ? `${formatPointValue(finding.weight)} pts pending`
+      : `판정 보류 ${formatPointValue(finding.weight)}점`;
+  }
+
+  const earned = Math.max(
+    0,
+    Math.min(finding.weight, finding.weight + finding.scoreDelta),
+  );
+
+  if (earned > 0) {
+    return isEnglish
+      ? `Earned ${formatPointValue(earned)}/${formatPointValue(finding.weight)} pts`
+      : `획득 ${formatPointValue(earned)}/${formatPointValue(finding.weight)}점`;
+  }
+
+  return isEnglish
+    ? `${formatPointValue(finding.weight)} pts not earned`
+    : `미획득 ${formatPointValue(finding.weight)}점`;
 }
 
 function pointImpactDescription(
@@ -397,15 +443,26 @@ function pointImpactDescription(
       : "이 항목은 현재 종합 점수 계산에 영향을 주지 않습니다.";
   }
 
-  if (finding.status === "PASS") {
+  if (isPendingContentFinding(finding)) {
     return isEnglish
-      ? `This item passed and earned ${finding.weight} points for this rule.`
-      : `통과하여 이 규칙의 배점 ${finding.weight}점을 획득했습니다.`;
+      ? `The related information could not be fully checked because rendering did not complete. ${formatPointValue(finding.weight)} points are pending rather than deducted.`
+      : `렌더링 검사를 완료하지 못해 관련 정보의 존재 여부를 끝까지 확인하지 못했습니다. ${formatPointValue(finding.weight)}점은 감점하지 않고 판정을 보류합니다.`;
+  }
+
+  const earned = Math.max(
+    0,
+    Math.min(finding.weight, finding.weight + finding.scoreDelta),
+  );
+
+  if (earned > 0) {
+    return isEnglish
+      ? `This rule earned ${formatPointValue(earned)} of ${formatPointValue(finding.weight)} points based on the confirmed evidence level.`
+      : `확인된 근거 수준에 따라 배점 ${formatPointValue(finding.weight)}점 중 ${formatPointValue(earned)}점을 획득했습니다.`;
   }
 
   return isEnglish
-    ? `This item did not pass, so ${finding.weight} points for this rule were not earned.`
-    : `통과하지 못해 이 규칙의 배점 ${finding.weight}점이 반영되지 않았습니다.`;
+    ? `No points were earned for this ${formatPointValue(finding.weight)}-point rule.`
+    : `이 ${formatPointValue(finding.weight)}점 규칙에서는 점수를 획득하지 못했습니다.`;
 }
 
 function translateUiErrorMessage(message: string, isEnglish: boolean): string {
@@ -916,7 +973,8 @@ export function ScanResultPage() {
             .filter(
               (finding) =>
                 finding.weight > 0 &&
-                (finding.status === "FAIL" || finding.status === "BLOCKED"),
+                (finding.status === "FAIL" || finding.status === "BLOCKED") &&
+                !isPendingContentFinding(finding),
             )
             .map((finding) => finding.id),
         );
@@ -1232,6 +1290,12 @@ export function ScanResultPage() {
   const score = result.scan.score;
   const grade = result.scan.grade;
   const scoreSummary = result.scoreSummary;
+  const pendingScore = scoreSummary?.pendingScore ?? 0;
+  const scoreRangeMin = scoreSummary?.scoreRangeMin ?? score ?? 0;
+  const scoreRangeMax = scoreSummary?.scoreRangeMax ?? score ?? 0;
+  const pendingContentCount = result.findings.filter(
+    isPendingContentFinding,
+  ).length;
   const isVerificationScan = result.scan.type === "VERIFICATION";
   const diagnosticNumber = result.scan.diagnosticNumber;
   const targetWorkOrderVersion = Math.max(1, Math.min(3, diagnosticNumber));
@@ -1307,8 +1371,8 @@ export function ScanResultPage() {
             </h1>
             <p>
               {isEnglish
-                ? "The QUICK score is calculated from the real HTTP response and initial HTML of the public URL. JavaScript rendering results are not directly included in the score; they are used for AI collection improvement suggestions and rendering comparison. Mobile/desktop comparison, industry-specific reference data, and question-answer accuracy are added in the deep diagnostic stage."
-                : "공개 URL의 실제 HTTP 응답과 초기 HTML을 기준으로 QUICK 점수를 계산합니다. JavaScript 렌더링 결과는 점수에 직접 반영하지 않고 AI 수집 개선안과 렌더링 비교에 활용하며, 모바일·PC 별도 비교·업종별 기준정보·질문 정답률은 정밀진단 단계에서 추가됩니다."}
+                ? "The QUICK score combines technical readiness (50 points) and AI answer-ready content (50 points). Content found only after JavaScript rendering receives limited credit, while content that cannot be checked because rendering failed is shown as pending rather than deducted. Mobile/desktop comparison, industry-specific reference data, and question-answer accuracy are added in the deep diagnostic stage."
+                : "QUICK 점수는 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 합산합니다. JavaScript 렌더링 후에만 확인되는 콘텐츠는 제한적으로 반영하고, 렌더링 실패로 확인하지 못한 콘텐츠는 감점하지 않고 판정을 보류합니다. 모바일·PC 별도 비교·업종별 기준정보·질문 정답률은 정밀진단 단계에서 추가됩니다."}
             </p>
           </div>
           {!isVerificationScan && !canAccessPaidOutputs ? (
@@ -1360,6 +1424,13 @@ export function ScanResultPage() {
               <small>/100</small>
             </strong>
             <em>{grade ?? (isEnglish ? "Not calculated" : "미계산")}</em>
+            {pendingScore > 0 ? (
+              <p className="scan-score-range">
+                {isEnglish
+                  ? `Confirmed ${formatPointValue(scoreRangeMin)} · possible range ${formatPointValue(scoreRangeMin)}–${formatPointValue(scoreRangeMax)}`
+                  : `확정 ${formatPointValue(scoreRangeMin)}점 · 가능 범위 ${formatPointValue(scoreRangeMin)}~${formatPointValue(scoreRangeMax)}점`}
+              </p>
+            ) : null}
           </div>
 
           <dl className="scan-score-meta">
@@ -1437,8 +1508,8 @@ export function ScanResultPage() {
                 <h2>{isEnglish ? "Scores by Category" : "영역별 점수"}</h2>
                 <p>
                   {isEnglish
-                    ? "The score is based on seven planned categories with a total of 100 points."
-                    : "기획서의 7개 영역, 총 100점 배점입니다."}
+                    ? "The current rules combine 50 points for technical readiness and 50 points for AI answer-ready content."
+                    : "현재 규칙은 기술 준비 50점과 AI 답변 준비 콘텐츠 50점, 총 100점으로 계산합니다."}
                 </p>
               </div>
               <span>
@@ -1455,8 +1526,14 @@ export function ScanResultPage() {
                       {translateCategoryLabel(category.category, isEnglish)}
                     </strong>
                     <span>
-                      {category.score}/{category.maxScore}
+                      {formatPointValue(category.score)}/
+                      {formatPointValue(category.maxScore)}
                       {isEnglish ? " pts" : "점"}
+                      {(category.pendingScore ?? 0) > 0
+                        ? isEnglish
+                          ? ` · ${formatPointValue(category.pendingScore ?? 0)} pending`
+                          : ` · 보류 ${formatPointValue(category.pendingScore ?? 0)}점`
+                        : ""}
                     </span>
                   </div>
                   <div
@@ -1476,6 +1553,21 @@ export function ScanResultPage() {
                 </article>
               ))}
             </div>
+
+            {pendingScore > 0 ? (
+              <div className="scan-pending-score-notice" role="note">
+                <strong>
+                  {isEnglish
+                    ? `${formatPointValue(pendingScore)} points pending`
+                    : `판정 보류 ${formatPointValue(pendingScore)}점`}
+                </strong>
+                <p>
+                  {isEnglish
+                    ? `${pendingContentCount} content ${pendingContentCount === 1 ? "item could" : "items could"} not be fully checked because rendering did not complete. These points were not deducted. The confirmed score is ${formatPointValue(scoreRangeMin)}, and the possible range is ${formatPointValue(scoreRangeMin)}–${formatPointValue(scoreRangeMax)}.`
+                    : `렌더링 검사를 완료하지 못해 콘텐츠 ${pendingContentCount}개 항목의 존재 여부를 끝까지 확인하지 못했습니다. 해당 점수는 감점하지 않았으며, 확정 점수는 ${formatPointValue(scoreRangeMin)}점이고 가능 범위는 ${formatPointValue(scoreRangeMin)}~${formatPointValue(scoreRangeMax)}점입니다.`}
+                </p>
+              </div>
+            ) : null}
 
             {scoreSummary.cap !== null ? (
               <p className="scan-cap-notice">
@@ -1621,8 +1713,8 @@ export function ScanResultPage() {
                 <dt>{isEnglish ? "Score impact" : "점수 영향"}</dt>
                 <dd>
                   {isEnglish
-                    ? "Passed items show earned points, while failed or blocked items show lost points."
-                    : "통과한 항목은 배점, 실패·확인 불가 항목은 감점으로 표시합니다."}
+                    ? "Content items may earn partial points by evidence level. A content item blocked by a rendering failure is shown as pending rather than lost."
+                    : "콘텐츠 항목은 근거 수준에 따라 부분 점수를 받을 수 있습니다. 렌더링 실패로 확인하지 못한 콘텐츠는 감점하지 않고 판정 보류로 표시합니다."}
                 </dd>
               </div>
             </dl>
@@ -2262,9 +2354,14 @@ function FindingCard({
   onToggle?: (findingId: string, checked: boolean) => void;
 }) {
   const isEnglish = locale === "en";
-  const statusLabel = isEnglish
-    ? englishStatusLabels[finding.status]
-    : statusLabels[finding.status];
+  const pendingContent = isPendingContentFinding(finding);
+  const statusLabel = pendingContent
+    ? isEnglish
+      ? "Related information unavailable"
+      : "관련 정보 확인 불가"
+    : isEnglish
+      ? englishStatusLabels[finding.status]
+      : statusLabels[finding.status];
   const severityLabel = isEnglish
     ? englishSeverityLabels[finding.severity]
     : severityLabels[finding.severity];
@@ -2308,9 +2405,14 @@ function FindingCard({
             className={`scan-badge scan-badge-points ${
               finding.weight <= 0 || finding.status === "NA"
                 ? "scan-badge-points-none"
-                : finding.status === "PASS"
-                  ? "scan-badge-points-earned"
-                  : "scan-badge-points-lost"
+                : pendingContent
+                  ? "scan-badge-points-pending"
+                  : finding.scoreDelta < 0 &&
+                      finding.scoreDelta > -finding.weight
+                    ? "scan-badge-points-partial"
+                    : finding.status === "PASS"
+                      ? "scan-badge-points-earned"
+                      : "scan-badge-points-lost"
             }`}
             title={pointImpactDescription(finding, locale)}
           >

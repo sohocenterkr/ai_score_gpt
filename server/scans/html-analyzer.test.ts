@@ -54,8 +54,6 @@ describe("HTML analyzer", () => {
     expect(result.rawHtmlHash).toMatch(/^[a-f0-9]{64}$/);
   });
 
-
-
   it("JSON-LD 신뢰 신호를 추출한다", () => {
     const result = analyzeHtml(
       Buffer.from(`
@@ -150,6 +148,45 @@ describeContentSignals("html content signals", () => {
       expectContentSignals(
         result.contentSignals.hasDifferentiationOrProof,
       ).toBe(true);
+      expectContentSignals(
+        result.contentSignals.evidenceByKey?.hasPricingOrTerms.level,
+      ).toBe("BODY");
+      expectContentSignals(
+        result.contentSignals.evidenceByKey?.hasDifferentiationOrProof.level,
+      ).toBe("BODY");
+    },
+  );
+
+  itContentSignals(
+    "본문 설명 없이 제목·메타·링크에만 있는 표현은 짧은 단서로 분류한다",
+    () => {
+      const result = analyzeHtmlForContentSignals(
+        Buffer.from(`
+          <!doctype html>
+          <html lang="ko">
+            <head>
+              <title>예제 서비스</title>
+              <meta
+                name="description"
+                content="온라인 업무 지원 서비스"
+              >
+            </head>
+            <body>
+              <h1>예제 서비스</h1>
+              <p>필요한 업무를 온라인에서 간편하게 처리할 수 있습니다.</p>
+              <a href="/pricing">요금제</a>
+            </body>
+          </html>
+        `),
+        "https://example.com/",
+      );
+
+      expectContentSignals(
+        result.contentSignals.evidenceByKey?.hasPricingOrTerms,
+      ).toMatchObject({
+        level: "HINT",
+        matchedSources: ["LINK"],
+      });
     },
   );
 });

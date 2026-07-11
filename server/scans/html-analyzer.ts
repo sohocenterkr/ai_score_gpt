@@ -4,10 +4,31 @@ import { load } from "cheerio";
 export type ConversionIntent =
   "DIRECT_PAYMENT" | "INQUIRY_OR_RESERVATION" | "INFORMATIONAL";
 
+export type ContentSignalKey =
+  | "hasServiceDefinition"
+  | "hasAudienceOrUseCase"
+  | "hasWorkflowOrOutcome"
+  | "hasPricingOrTerms"
+  | "hasSupportOrContact"
+  | "hasDataPolicy"
+  | "hasDifferentiationOrProof"
+  | "hasTransactionPolicy";
+
+export type ContentEvidenceLevel = "FULL" | "BODY" | "HINT" | "NONE";
+
+export type ContentEvidenceSource =
+  "TITLE" | "META_DESCRIPTION" | "HEADING" | "BODY" | "LINK";
+
+export interface ContentSignalEvidence {
+  level: ContentEvidenceLevel;
+  matchedSources: ContentEvidenceSource[];
+}
+
 export interface ContentSignals {
   conversionIntent: ConversionIntent;
   detectedSignals: string[];
   missingSignals: string[];
+  evidenceByKey?: Record<ContentSignalKey, ContentSignalEvidence>;
   hasServiceDefinition: boolean;
   hasAudienceOrUseCase: boolean;
   hasWorkflowOrOutcome: boolean;
@@ -178,11 +199,11 @@ function collectJsonLdSignals(
   );
   const hasContactField = Boolean(
     record.name &&
-      (record.url ||
-        record.telephone ||
-        record.email ||
-        record.address ||
-        record.contactPoint),
+    (record.url ||
+      record.telephone ||
+      record.email ||
+      record.address ||
+      record.contactPoint),
   );
   if (isEntityType && hasContactField) {
     target.hasEntityContact = true;
@@ -319,20 +340,68 @@ function textMatches(value: string, pattern: RegExp): boolean {
   return pattern.test(value);
 }
 
+function classifyContentEvidence(
+  input: {
+    title: string;
+    metaDescription: string;
+    headings: string;
+    bodyText: string;
+    links: string;
+  },
+  pattern: RegExp,
+  fullBodyLength = 120,
+): ContentSignalEvidence {
+  const matchedSources: ContentEvidenceSource[] = [];
+  const titleMatched = textMatches(input.title, pattern);
+  const metaMatched = textMatches(input.metaDescription, pattern);
+  const headingMatched = textMatches(input.headings, pattern);
+  const bodyMatched = textMatches(input.bodyText, pattern);
+  const linkMatched = textMatches(input.links, pattern);
+
+  if (titleMatched) matchedSources.push("TITLE");
+  if (metaMatched) matchedSources.push("META_DESCRIPTION");
+  if (headingMatched) matchedSources.push("HEADING");
+  if (bodyMatched) matchedSources.push("BODY");
+  if (linkMatched) matchedSources.push("LINK");
+
+  const level: ContentEvidenceLevel =
+    headingMatched && bodyMatched && input.bodyText.length >= fullBodyLength
+      ? "FULL"
+      : bodyMatched
+        ? "BODY"
+        : matchedSources.length > 0
+          ? "HINT"
+          : "NONE";
+
+  return {
+    level,
+    matchedSources,
+  };
+}
+
 function detectContentSignals(input: {
   title: string | null;
   metaDescription: string | null;
   headings: HtmlAnalysis["headings"];
   links: HtmlAnalysis["links"];
   text: string;
+  bodyText: string;
 }): ContentSignals {
+  const sources = {
+    title: normalizeText(input.title ?? "").toLowerCase(),
+    metaDescription: normalizeText(input.metaDescription ?? "").toLowerCase(),
+    headings: normalizeText(
+      [...input.headings.h1, ...input.headings.h2].join(" "),
+    ).toLowerCase(),
+    bodyText: normalizeText(input.bodyText).toLowerCase(),
+    links: normalizeText(input.links.sample.join(" ")).toLowerCase(),
+  };
   const haystack = normalizeText(
     [
-      input.title ?? "",
-      input.metaDescription ?? "",
-      ...input.headings.h1,
-      ...input.headings.h2,
-      ...input.links.sample,
+      sources.title,
+      sources.metaDescription,
+      sources.headings,
+      sources.links,
       input.text,
     ].join(" "),
   ).toLowerCase();
@@ -346,50 +415,68 @@ function detectContentSignals(input: {
     /예약|상담|견적|문의|전화|카카오|방문|예약하기|상담신청|contact|booking|reservation|quote|inquiry/i,
   );
 
-  const hasServiceDefinition =
-    input.text.length >= 300 &&
-    Boolean(input.title || input.metaDescription || input.headings.h1.length);
-  const hasAudienceOrUseCase = textMatches(
-    haystack,
-    /이용 대상|대상 고객|이런 분|추천합니다|누구에게|프리랜서|개인사업자|소상공인|고객|사용 사례|활용 사례|대표 사례|use case|for whom|target user/i,
-  );
-  const hasWorkflowOrOutcome = textMatches(
-    haystack,
-    /이용 절차|사용 방법|이용 방법|단계|시작하기|회원가입|업로드|등록|분석|결과물|결과 확인|how it works|step|workflow|getting started/i,
-  );
-  const hasPricingOrTerms = textMatches(
-    haystack,
-    /요금|가격|무료|유료|플랜|구독|비용|수수료|이용 범위|pricing|price|plan|free|paid|subscription/i,
-  );
-  const hasSupportOrContact = textMatches(
-    haystack,
-    /고객지원|고객 지원|문의|상담|전화|이메일|카카오|운영시간|응답|지원 채널|contact|support|help|email|phone/i,
-  );
-  const hasDataPolicy = textMatches(
-    haystack,
-    /개인정보|자료 처리|데이터 처리|입력자료|보안|보관|삭제|암호화|이용약관|privacy|security|data|retention|delete|terms/i,
-  );
-  const hasDifferentiationOrProof = textMatches(
-    haystack,
-    /차별|다른 서비스|비교|대안|장점|후기|사례|실적|고객사|리뷰|포트폴리오|왜.*선택|compare|alternative|review|case study|testimonial/i,
-  );
-  const hasCancelPolicy = textMatches(
-    haystack,
-    /환불|취소|해지|변경|예약 취소|예약 변경|반품|교환|refund|cancel|cancellation|termination|return|change/i,
-  );
-
   const conversionIntent: ConversionIntent = directPayment
     ? "DIRECT_PAYMENT"
     : inquiryOrReservation
       ? "INQUIRY_OR_RESERVATION"
       : "INFORMATIONAL";
 
-  const hasTransactionPolicy =
+  const serviceDefinitionPattern =
+    /서비스|플랫폼|솔루션|도구|앱|웹사이트|센터|학원|병원|의원|식당|음식점|카페|매장|쇼핑몰|회사|기관|제공|지원|판매|운영|service|platform|solution|tool|app|website|center|academy|clinic|restaurant|cafe|store|company|organization|provide|offer/i;
+  const audiencePattern =
+    /이용 대상|대상 고객|이런 분|추천합니다|누구에게|프리랜서|개인사업자|소상공인|고객|사용 사례|활용 사례|대표 사례|use case|for whom|target user/i;
+  const workflowPattern =
+    /이용 절차|사용 방법|이용 방법|단계|시작하기|회원가입|업로드|등록|분석|결과물|결과 확인|how it works|step|workflow|getting started/i;
+  const pricingPattern =
+    /요금|가격|무료|유료|플랜|구독|비용|수수료|이용 범위|pricing|price|plan|free|paid|subscription/i;
+  const supportPattern =
+    /고객지원|고객 지원|문의|상담|전화|이메일|카카오|운영시간|응답|지원 채널|contact|support|help|email|phone/i;
+  const dataPolicyPattern =
+    /개인정보|자료 처리|데이터 처리|입력자료|보안|보관|삭제|암호화|이용약관|privacy|security|data|retention|delete|terms/i;
+  const differentiationPattern =
+    /차별|다른 서비스|비교|대안|장점|후기|사례|실적|고객사|리뷰|포트폴리오|왜.*선택|compare|alternative|review|case study|testimonial/i;
+  const cancelPattern =
+    /환불|취소|해지|변경|예약 취소|예약 변경|반품|교환|refund|cancel|cancellation|termination|return|change/i;
+
+  const transactionPattern =
     conversionIntent === "DIRECT_PAYMENT"
-      ? hasCancelPolicy
+      ? cancelPattern
       : conversionIntent === "INQUIRY_OR_RESERVATION"
-        ? hasCancelPolicy || hasSupportOrContact
-        : hasSupportOrContact || hasDataPolicy;
+        ? /예약 취소|예약 변경|상담 취소|상담 변경|취소|변경|문의|상담|운영시간|cancel|change|contact|support/i
+        : /운영 주체|사업자|회사|기관|문의|고객지원|개인정보|이용약관|organization|company|contact|support|privacy|terms/i;
+
+  const evidenceByKey: Record<ContentSignalKey, ContentSignalEvidence> = {
+    hasServiceDefinition: classifyContentEvidence(
+      sources,
+      serviceDefinitionPattern,
+      220,
+    ),
+    hasAudienceOrUseCase: classifyContentEvidence(sources, audiencePattern),
+    hasWorkflowOrOutcome: classifyContentEvidence(sources, workflowPattern),
+    hasPricingOrTerms: classifyContentEvidence(sources, pricingPattern),
+    hasSupportOrContact: classifyContentEvidence(sources, supportPattern),
+    hasDataPolicy: classifyContentEvidence(sources, dataPolicyPattern),
+    hasDifferentiationOrProof: classifyContentEvidence(
+      sources,
+      differentiationPattern,
+    ),
+    hasTransactionPolicy: classifyContentEvidence(sources, transactionPattern),
+  };
+
+  const hasServiceDefinition =
+    evidenceByKey.hasServiceDefinition.level !== "NONE";
+  const hasAudienceOrUseCase =
+    evidenceByKey.hasAudienceOrUseCase.level !== "NONE";
+  const hasWorkflowOrOutcome =
+    evidenceByKey.hasWorkflowOrOutcome.level !== "NONE";
+  const hasPricingOrTerms = evidenceByKey.hasPricingOrTerms.level !== "NONE";
+  const hasSupportOrContact =
+    evidenceByKey.hasSupportOrContact.level !== "NONE";
+  const hasDataPolicy = evidenceByKey.hasDataPolicy.level !== "NONE";
+  const hasDifferentiationOrProof =
+    evidenceByKey.hasDifferentiationOrProof.level !== "NONE";
+  const hasTransactionPolicy =
+    evidenceByKey.hasTransactionPolicy.level !== "NONE";
 
   const signalEntries: Array<[string, boolean]> = [
     ["서비스 정의", hasServiceDefinition],
@@ -417,6 +504,7 @@ function detectContentSignals(input: {
     missingSignals: signalEntries
       .filter(([, detected]) => !detected)
       .map(([label]) => label),
+    evidenceByKey,
     hasServiceDefinition,
     hasAudienceOrUseCase,
     hasWorkflowOrOutcome,
@@ -445,12 +533,16 @@ export function analyzeHtml(body: Buffer, finalUrl: string): HtmlAnalysis {
 
   html("script,style,noscript,template,svg,canvas").remove();
   const text = normalizeText(html("body").text() || html.root().text());
+  const contentBody = html("body").clone();
+  contentBody.find("nav,header,footer,aside,a,h1,h2,h3,h4,h5,h6").remove();
+  const bodyText = normalizeText(contentBody.text());
   const contentSignals = detectContentSignals({
     title,
     metaDescription,
     headings,
     links,
     text,
+    bodyText,
   });
 
   return {

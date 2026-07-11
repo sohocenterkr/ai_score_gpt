@@ -6,10 +6,11 @@ import type {
   PublicScanResult,
   PublicScanResultFinding,
 } from "./scan-result-service";
+import { isPendingContentFinding } from "./scoring";
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-scan-locale-v5";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-content-evidence-v6";
 
 let cachedFontHash: string | undefined;
 
@@ -696,6 +697,26 @@ function statusColors(status: PublicScanResultFinding["status"]): {
   return { text: COLORS.neutral, soft: COLORS.neutralSoft };
 }
 
+function formatPointValue(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return Number.isInteger(rounded)
+    ? String(rounded)
+    : rounded.toFixed(1).replace(/\.0$/, "");
+}
+
+function findingStatusLabel(
+  finding: PublicScanResultFinding,
+  locale: "ko" | "en",
+): string {
+  if (isPendingContentFinding(finding)) {
+    return locale === "en"
+      ? "Related information unavailable"
+      : "관련 정보 확인 불가";
+  }
+
+  return statusLabel(finding.status, locale);
+}
+
 function pointImpact(
   finding: PublicScanResultFinding,
   locale: "ko" | "en" = "ko",
@@ -706,13 +727,26 @@ function pointImpact(
     return isEnglish ? "No score impact" : "점수 영향 없음";
   }
 
-  return finding.status === "PASS"
-    ? isEnglish
-      ? `Earned ${finding.weight} pts`
-      : `배점 ${finding.weight}점 획득`
-    : isEnglish
-      ? `${finding.weight} pts not earned`
-      : `배점 ${finding.weight}점 미반영`;
+  if (isPendingContentFinding(finding)) {
+    return isEnglish
+      ? `${formatPointValue(finding.weight)} pts pending`
+      : `판정 보류 ${formatPointValue(finding.weight)}점`;
+  }
+
+  const earned = Math.max(
+    0,
+    Math.min(finding.weight, finding.weight + finding.scoreDelta),
+  );
+
+  if (earned > 0) {
+    return isEnglish
+      ? `Earned ${formatPointValue(earned)}/${formatPointValue(finding.weight)} pts`
+      : `획득 ${formatPointValue(earned)}/${formatPointValue(finding.weight)}점`;
+  }
+
+  return isEnglish
+    ? `${formatPointValue(finding.weight)} pts not earned`
+    : `미획득 ${formatPointValue(finding.weight)}점`;
 }
 
 function sanitizeSensitiveString(value: string): string {
@@ -1416,20 +1450,27 @@ function writeCover(
   );
 
   const coverage = result.scoreSummary?.coverage;
+  const pendingScore = result.scoreSummary?.pendingScore ?? 0;
+  const rangeMin = result.scoreSummary?.scoreRangeMin ?? result.scan.score ?? 0;
+  const rangeMax = result.scoreSummary?.scoreRangeMax ?? result.scan.score ?? 0;
 
-  setText(document, 15, COLORS.primary).text(
+  setText(document, pendingScore > 0 ? 9.5 : 15, COLORS.primary).text(
     coverage === undefined
       ? result.scan.locale === "en"
         ? "No current rule score"
         : "현재 규칙 점수 없음"
-      : result.scan.locale === "en"
-        ? `Measured ${coverage}%`
-        : `측정 ${coverage}%`,
+      : pendingScore > 0
+        ? result.scan.locale === "en"
+          ? `Measured ${coverage}%\nConfirmed ${formatPointValue(rangeMin)} · range ${formatPointValue(rangeMin)}–${formatPointValue(rangeMax)}\nPending ${formatPointValue(pendingScore)} pts`
+          : `측정 ${coverage}%\n확정 ${formatPointValue(rangeMin)}점 · 범위 ${formatPointValue(rangeMin)}~${formatPointValue(rangeMax)}점\n판정 보류 ${formatPointValue(pendingScore)}점`
+        : result.scan.locale === "en"
+          ? `Measured ${coverage}%`
+          : `측정 ${coverage}%`,
     x + cardWidth + gap + 14,
-    cardY + 42,
+    cardY + 38,
     {
       width: cardWidth - 28,
-      lineGap: 3,
+      lineGap: pendingScore > 0 ? 2 : 3,
     },
   );
 
@@ -1493,8 +1534,8 @@ function writeCover(
   document.moveDown(0.5);
   setText(document, 7.9, COLORS.muted).text(
     result.scan.locale === "en"
-      ? "The current QUICK score is calculated from the public URL HTTP response and initial HTML. JavaScript-rendered DOM comparison is used for rendering notes and improvement suggestions. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are added in the detailed diagnostic stage."
-      : "현재 QUICK 점수는 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 합산해 계산합니다. 기술적으로 읽을 수 있는 사이트라도 요금, 환불, 고객지원, 차별점, 사례, 데이터 처리 같은 핵심 콘텐츠가 부족하면 실제 AI 답변·추천 가능성은 낮아질 수 있습니다.",
+      ? "The QUICK score combines 50 points for technical readiness and 50 points for AI answer-ready content. Content found only after JavaScript rendering receives limited credit. When rendering fails and the presence of content cannot be fully checked, those points are shown as pending rather than deducted."
+      : "현재 QUICK 점수는 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 합산합니다. JavaScript 렌더링 후에만 확인되는 콘텐츠는 제한적으로 반영하며, 렌더링 실패로 존재 여부를 끝까지 확인하지 못한 콘텐츠는 감점하지 않고 판정을 보류합니다.",
     {
       width,
       lineGap: 3,
@@ -1511,8 +1552,8 @@ function writeCategoryScores(
     document,
     result.scan.locale === "en" ? "Category scores" : "영역별 점수",
     result.scan.locale === "en"
-      ? "Calculated from the current rule version across 7 categories and 100 total points."
-      : "현재 규칙 버전의 기술 준비 50점과 AI 답변 준비 콘텐츠 50점, 총 100점 배점을 기준으로 계산했습니다.",
+      ? "Calculated from 50 points for technical readiness and 50 points for AI answer-ready content."
+      : "현재 규칙 버전의 기술 준비 50점과 AI 답변 준비 콘텐츠 50점, 총 100점을 기준으로 계산했습니다.",
   );
 
   if (!result.scoreSummary) {
@@ -1539,18 +1580,26 @@ function writeCategoryScores(
       x,
       y,
       {
-        width: width - 105,
+        width: width - 185,
       },
     );
 
-    setText(document, 9.2, COLORS.primaryDark).text(
+    setText(document, 8.2, COLORS.primaryDark).text(
       result.scan.locale === "en"
-        ? `${category.score}/${category.maxScore} pts`
-        : `${category.score}/${category.maxScore}점`,
-      x + width - 100,
+        ? `${formatPointValue(category.score)}/${formatPointValue(category.maxScore)} pts${
+            (category.pendingScore ?? 0) > 0
+              ? ` · ${formatPointValue(category.pendingScore ?? 0)} pending`
+              : ""
+          }`
+        : `${formatPointValue(category.score)}/${formatPointValue(category.maxScore)}점${
+            (category.pendingScore ?? 0) > 0
+              ? ` · 보류 ${formatPointValue(category.pendingScore ?? 0)}점`
+              : ""
+          }`,
+      x + width - 180,
       y,
       {
-        width: 100,
+        width: 180,
         align: "right",
       },
     );
@@ -1570,6 +1619,23 @@ function writeCategoryScores(
     });
 
     document.y = barY + 34;
+  }
+
+  if ((result.scoreSummary.pendingScore ?? 0) > 0) {
+    writeTextBox(
+      document,
+      result.scan.locale === "en"
+        ? "Content score pending"
+        : "콘텐츠 점수 판정 보류",
+      result.scan.locale === "en"
+        ? `${formatPointValue(result.scoreSummary.pendingScore ?? 0)} points are pending because rendering did not complete for some content checks. The confirmed score is ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}, and the possible range is ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}–${formatPointValue(result.scoreSummary.scoreRangeMax ?? result.scoreSummary.score)}.`
+        : `일부 콘텐츠 항목은 렌더링 검사를 완료하지 못해 ${formatPointValue(result.scoreSummary.pendingScore ?? 0)}점의 판정을 보류했습니다. 확정 점수는 ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}점이며 가능 범위는 ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}~${formatPointValue(result.scoreSummary.scoreRangeMax ?? result.scoreSummary.score)}점입니다.`,
+      {
+        background: "#FFFBEB",
+        border: "#FDE68A",
+        accent: COLORS.blocked,
+      },
+    );
   }
 
   if (result.scoreSummary.cap !== null) {
@@ -1844,8 +1910,8 @@ function writeRenderedDomComparison(
       ? "Technical note: JavaScript rendering comparison"
       : "추가 기술 참고: JavaScript 렌더링 비교",
     result.scan.locale === "en"
-      ? "Changes after JavaScript execution are provided as supporting reference, not as required scoring items. Use this for content improvement and technical review when needed."
-      : "JavaScript 실행 후 화면 변화는 점수 산정 필수 항목이 아니라 보조 참고 자료로 제공합니다. 필요한 경우 추가 콘텐츠 보완과 기술 검토에 활용합니다.",
+      ? "JavaScript-rendered changes are provided as technical comparison evidence. Content found only after rendering receives limited credit, while content that cannot be checked because rendering fails is shown as pending rather than deducted."
+      : "JavaScript 실행 후 화면 변화는 기술 비교 자료로 제공하며, 초기 HTML에 없고 렌더링 후에만 확인되는 콘텐츠에는 제한 점수를 반영합니다. 렌더링 실패로 확인하지 못한 콘텐츠는 감점하지 않고 판정을 보류합니다.",
   );
 
   if (comparison.status !== "SUCCESS") {
@@ -1862,8 +1928,8 @@ function writeRenderedDomComparison(
           ? `Error code: ${comparison.errorCode ?? "Not recorded"}`
           : `오류 코드: ${comparison.errorCode ?? "미기록"}`,
         result.scan.locale === "en"
-          ? `Note: ${comparison.message ?? "Changes after JavaScript execution were not compared in this simple diagnostic. This is supporting reference, not a required scoring item."}`
-          : `안내: ${comparison.message ?? "JavaScript 실행 후 화면 변화는 이번 간편진단에서 비교하지 않았습니다. 이 항목은 점수 산정 필수 항목이 아니라 보조 참고 자료입니다."}`,
+          ? `Note: ${comparison.message ?? "JavaScript-rendered changes could not be compared. Content not found in the initial HTML may be shown as pending rather than deducted when rendering does not complete."}`
+          : `안내: ${comparison.message ?? "JavaScript 실행 후 화면 변화를 비교하지 못했습니다. 초기 HTML에서도 관련 콘텐츠를 확인하지 못한 항목은 감점하지 않고 판정을 보류할 수 있습니다."}`,
       ].join("\n"),
       {
         background: COLORS.neutralSoft,
@@ -2065,8 +2131,8 @@ function writeFindingDetail(
 
   setText(document, 8.4, colors.text).text(
     locale === "en"
-      ? `Status · ${statusLabel(finding.status, locale)}`
-      : `판정 · ${statusLabel(finding.status, locale)}`,
+      ? `Status · ${findingStatusLabel(finding, locale)}`
+      : `판정 · ${findingStatusLabel(finding, locale)}`,
     x + 13,
     metaY,
     {
@@ -2237,7 +2303,7 @@ function writeCompactFinding(
   let currentY = y + padding + titleHeight + 5;
 
   setText(document, 7.6, colors.text).text(
-    `${statusLabel(finding.status, locale)} / ${severityLabel(
+    `${findingStatusLabel(finding, locale)} / ${severityLabel(
       finding.severity,
       locale,
     )} / ${pointImpact(finding, locale)}`,
@@ -2410,7 +2476,7 @@ function writeMethodology(
         "2. The total score and judgment are calculated from the scoring rules and completion criteria defined in the rule version. They are not arbitrarily decided by an LLM.",
         "3. OAI-SearchBot is marked as search access, ChatGPT-User as user-requested access, and GPTBot as training-related access.",
         "4. Raw HTML is not stored. SHA-256 hashes and structured diagnostic evidence are retained.",
-        "5. The current QUICK score is calculated from 25 rules based on initial HTML. JavaScript-rendered DOM comparison is not directly reflected in the score; it is used for rendering notes and improvement suggestions. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are not included.",
+        "5. The current QUICK score combines 50 points for technical readiness and 50 points for AI answer-ready content. Content receives partial credit based on sufficient explanation, body evidence, short clues, or rendered-only evidence. Items that cannot be checked because rendering fails are shown as pending rather than deducted. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are not included.",
         "6. Values such as 800 characters and 75% coverage are Site AI Score internal reference criteria. They are not official standards of every search engine or AI service. Accuracy of service definition, target users, process, pricing, data handling, and FAQs matters more than character count alone.",
         "7. This report does not guarantee AI search exposure, recommendation results, overall site security, or the integrity of every site function.",
         "8. Before-and-after comparison should be performed under the same rule version and scan conditions. When possible, manual AI question-and-answer checks should also be performed.",
@@ -2420,7 +2486,7 @@ function writeMethodology(
         "2. 종합점수와 판정은 규칙 버전에 정의된 배점과 완료 조건으로 계산하며 LLM이 임의로 결정하지 않습니다.",
         "3. OAI-SearchBot은 검색용, ChatGPT-User는 사용자 요청용, GPTBot은 학습용 접근으로 구분하여 표시합니다.",
         "4. 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 검사 증거를 보관합니다.",
-        "5. 현재 QUICK 점수는 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 합산해 계산합니다. 실제 AI 답변·추천 가능성은 요금, 환불, 고객지원, 차별점, 사례, 데이터 처리 같은 핵심 콘텐츠의 충분성에도 영향을 받으므로 콘텐츠 부족 항목을 함께 확인해야 합니다.",
+        "5. 현재 QUICK 점수는 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 합산합니다. 콘텐츠는 충분한 설명, 본문 확인, 짧은 단서, 렌더링 후 확인 수준에 따라 부분 점수를 반영하며, 렌더링 실패로 확인하지 못한 항목은 감점하지 않고 판정을 보류합니다.",
         "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·환불·고객지원·데이터 처리·FAQ의 정확성과 충분성이 중요합니다.",
         "7. 이 보고서는 AI 검색 노출, 추천 결과, 사이트 전체 보안성, 모든 기능의 무결성을 보증하지 않습니다.",
         "8. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 다음 차수 진단을 진행해야 하며, 가능하면 실제 AI 질의응답 수동 확인도 함께 진행해야 합니다.",

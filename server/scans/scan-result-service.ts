@@ -11,6 +11,7 @@ import {
   calculateScore,
   getRuleDefinition,
   type ScoreSummary,
+  isPendingContentFinding,
 } from "./scoring";
 import {
   buildContentReadinessAssessment,
@@ -317,7 +318,9 @@ function buildPublicScanResult(result: {
   const findings = result.findings.map(publicFinding);
   const primaryIssues = findings
     .filter(
-      (finding) => finding.status === "FAIL" || finding.status === "BLOCKED",
+      (finding) =>
+        (finding.status === "FAIL" || finding.status === "BLOCKED") &&
+        !isPendingContentFinding(finding),
     )
     .sort(
       (left, right) =>
@@ -373,7 +376,8 @@ function buildPublicScanResult(result: {
       .filter(
         (finding) =>
           finding.weight > 0 &&
-          (finding.status === "FAIL" || finding.status === "BLOCKED"),
+          (finding.status === "FAIL" || finding.status === "BLOCKED") &&
+          !isPendingContentFinding(finding),
       )
       .map((finding) => ({
         ruleCode: finding.ruleCode,

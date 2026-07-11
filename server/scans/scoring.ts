@@ -1,6 +1,6 @@
 import type { CollectedFinding, CollectedFindingStatus } from "./scan-engine";
 
-export const CURRENT_RULES_VERSION = "2026.07-core-v5";
+export const CURRENT_RULES_VERSION = "2026.07-content-evidence-v6";
 
 export const SCORE_CATEGORIES = [
   "접근 및 수집 정책",
@@ -211,6 +211,7 @@ const rulesByCode = new Map(
 export interface ScoreCategoryResult {
   category: ScoreCategory;
   score: number;
+  pendingScore?: number;
   maxScore: number;
   percentage: number;
 }
@@ -218,6 +219,9 @@ export interface ScoreCategoryResult {
 export interface ScoreSummary {
   score: number;
   rawScore: number;
+  pendingScore?: number;
+  scoreRangeMin?: number;
+  scoreRangeMax?: number;
   grade: string;
   cap: number | null;
   coverage: number;
@@ -229,11 +233,62 @@ export interface ScoreSummary {
 
 export interface ScorableFinding {
   ruleCode: string;
+  category?: string;
   status: CollectedFindingStatus;
+  evidence?: unknown;
+  evidenceJson?: unknown;
 }
 
 function earnedWeight(status: CollectedFindingStatus, weight: number): number {
   return status === "PASS" || status === "NA" ? weight : 0;
+}
+
+function roundOne(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function evidenceRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function findingEvidence(finding: ScorableFinding): Record<string, unknown> {
+  return evidenceRecord(finding.evidence ?? finding.evidenceJson);
+}
+
+function isContentDefinition(definition: RuleDefinition): boolean {
+  return definition.category === "AI 답변 준비 콘텐츠";
+}
+
+export function isPendingContentFinding(
+  finding: ScorableFinding,
+  definition: RuleDefinition | undefined = getRuleDefinition(finding.ruleCode),
+): boolean {
+  return (
+    finding.status === "BLOCKED" &&
+    definition?.category === "AI 답변 준비 콘텐츠" &&
+    findingEvidence(finding).contentEvidenceLevel === "UNAVAILABLE"
+  );
+}
+
+function earnedWeightForFinding(
+  finding: ScorableFinding,
+  definition: RuleDefinition,
+): number | null {
+  if (isContentDefinition(definition)) {
+    if (isPendingContentFinding(finding, definition)) {
+      return null;
+    }
+
+    const scoreRatio = findingEvidence(finding).scoreRatio;
+
+    if (typeof scoreRatio === "number" && Number.isFinite(scoreRatio)) {
+      return definition.weight * Math.max(0, Math.min(1, scoreRatio));
+    }
+  }
+
+  return earnedWeight(finding.status, definition.weight);
 }
 
 function gradeFor(score: number): string {
@@ -285,9 +340,15 @@ export function calculateScore(
   );
   const categoryValues = new Map<
     ScoreCategory,
-    { score: number; maxScore: number }
-  >(SCORE_CATEGORIES.map((category) => [category, { score: 0, maxScore: 0 }]));
+    { score: number; pendingScore: number; maxScore: number }
+  >(
+    SCORE_CATEGORIES.map((category) => [
+      category,
+      { score: 0, pendingScore: 0, maxScore: 0 },
+    ]),
+  );
   let rawScore = 0;
+  let pendingScore = 0;
   let measuredWeight = 0;
 
   for (const definition of RULE_DEFINITIONS) {
@@ -301,34 +362,60 @@ export function calculateScore(
     category.maxScore += definition.weight;
 
     if (finding) {
-      measuredWeight += definition.weight;
-      const earned = earnedWeight(finding.status, definition.weight);
-      category.score += earned;
-      rawScore += earned;
+      const earned = earnedWeightForFinding(finding, definition);
+
+      if (earned === null) {
+        category.pendingScore += definition.weight;
+        pendingScore += definition.weight;
+      } else {
+        measuredWeight += definition.weight;
+        category.score += earned;
+        rawScore += earned;
+      }
     }
   }
 
   const cap = scoreCap(findingsByCode);
-  const hasScoredFailure = RULE_DEFINITIONS.some((definition) => {
+  const hasConfirmedFailure = RULE_DEFINITIONS.some((definition) => {
     if (definition.weight <= 0) {
       return false;
     }
 
-    const status = findingsByCode.get(definition.ruleCode)?.status;
-    return status !== undefined && status !== "PASS" && status !== "NA";
+    const finding = findingsByCode.get(definition.ruleCode);
+    if (!finding) {
+      return false;
+    }
+
+    if (isPendingContentFinding(finding, definition)) {
+      return false;
+    }
+
+    return finding.status !== "PASS" && finding.status !== "NA";
   });
-  const automatedCeiling = hasScoredFailure ? 98 : 99;
-  const scoreBeforeCriticalCap = Math.min(rawScore, automatedCeiling);
+  const automatedCeiling = hasConfirmedFailure ? 98 : 99;
+  const confirmedBeforeCriticalCap = Math.min(rawScore, automatedCeiling);
+  const possibleBeforeCriticalCap = Math.min(
+    rawScore + pendingScore,
+    automatedCeiling,
+  );
   const score = Math.round(
     cap === null
-      ? scoreBeforeCriticalCap
-      : Math.min(scoreBeforeCriticalCap, cap),
+      ? confirmedBeforeCriticalCap
+      : Math.min(confirmedBeforeCriticalCap, cap),
   );
-  const lostPoints = Math.max(0, 99 - score);
+  const scoreRangeMax = Math.round(
+    cap === null
+      ? possibleBeforeCriticalCap
+      : Math.min(possibleBeforeCriticalCap, cap),
+  );
+  const lostPoints = Math.max(0, 99 - scoreRangeMax);
 
   return {
     score,
-    rawScore: Math.round(rawScore),
+    rawScore: roundOne(rawScore),
+    pendingScore: roundOne(pendingScore),
+    scoreRangeMin: score,
+    scoreRangeMax,
     grade: gradeFor(score),
     cap,
     coverage: Math.round(measuredWeight),
@@ -339,12 +426,14 @@ export function calculateScore(
     categories: SCORE_CATEGORIES.map((category) => {
       const value = categoryValues.get(category) ?? {
         score: 0,
+        pendingScore: 0,
         maxScore: 0,
       };
 
       return {
         category,
-        score: Math.round(value.score),
+        score: roundOne(value.score),
+        pendingScore: roundOne(value.pendingScore),
         maxScore: value.maxScore,
         percentage:
           value.maxScore === 0
@@ -373,13 +462,12 @@ export function applyScoreToFindings(findings: readonly CollectedFinding[]): {
         };
       }
 
+      const earned = earnedWeightForFinding(finding, definition);
+
       return {
         ...finding,
         category: definition.category,
-        scoreDelta:
-          finding.status === "PASS" || finding.status === "NA"
-            ? 0
-            : -definition.weight,
+        scoreDelta: earned === null ? 0 : roundOne(earned - definition.weight),
       };
     }),
   };
