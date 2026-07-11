@@ -1,6 +1,6 @@
 import type { CollectedFinding, CollectedFindingStatus } from "./scan-engine";
 
-export const CURRENT_RULES_VERSION = "2026.07-content-evidence-v6";
+export const CURRENT_RULES_VERSION = "2026.07-summary-groups-v7";
 
 export const SCORE_CATEGORIES = [
   "접근 및 수집 정책",
@@ -15,9 +15,13 @@ export const SCORE_CATEGORIES = [
 
 export type ScoreCategory = (typeof SCORE_CATEGORIES)[number];
 
+export const SUMMARY_GROUPS = ["TECHNICAL", "CONTENT", "TRUST"] as const;
+export type SummaryGroup = (typeof SUMMARY_GROUPS)[number];
+
 export interface RuleDefinition {
   ruleCode: string;
   category: ScoreCategory;
+  summaryGroup: SummaryGroup;
   weight: number;
 }
 
@@ -25,181 +29,217 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
   {
     ruleCode: "ACCESS-HTTP-001",
     category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "ACCESS-HTTPS-001",
     category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
     weight: 1,
   },
   {
     ruleCode: "ACCESS-ROBOTS-001",
     category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "ACCESS-OAI-SEARCHBOT-001",
     category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
     weight: 0,
   },
   {
     ruleCode: "ACCESS-SITEMAP-001",
     category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "ACCESS-LLMS-TXT-001",
     category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "CONTENT-HTML-001",
     category: "콘텐츠 읽기 용이성",
+    summaryGroup: "TECHNICAL",
     weight: 3,
   },
   {
     ruleCode: "CONTENT-INITIAL-001",
     category: "콘텐츠 읽기 용이성",
+    summaryGroup: "TECHNICAL",
     weight: 3,
   },
   {
     ruleCode: "STRUCT-H1-001",
     category: "콘텐츠 읽기 용이성",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "STRUCT-IFRAME-001",
     category: "콘텐츠 읽기 용이성",
+    summaryGroup: "TECHNICAL",
     weight: 1,
   },
   {
     ruleCode: "META-TITLE-001",
     category: "정보 구조와 의미 전달",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "META-DESCRIPTION-001",
     category: "정보 구조와 의미 전달",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "META-CANONICAL-001",
     category: "정보 구조와 의미 전달",
+    summaryGroup: "TECHNICAL",
     weight: 1,
   },
   {
     ruleCode: "STRUCT-LANG-001",
     category: "정보 구조와 의미 전달",
+    summaryGroup: "TECHNICAL",
     weight: 1,
   },
   {
     ruleCode: "META-OG-001",
     category: "정보 구조와 의미 전달",
+    summaryGroup: "TECHNICAL",
     weight: 1,
   },
   {
     ruleCode: "STRUCT-JSONLD-001",
     category: "핵심정보 인식 정확도",
+    summaryGroup: "TRUST",
     weight: 3,
   },
   {
     ruleCode: "STRUCT-JSONLD-TYPES-001",
     category: "핵심정보 인식 정확도",
+    summaryGroup: "TRUST",
     weight: 2,
   },
   {
     ruleCode: "STRUCT-JSONLD-SAMEAS-001",
     category: "핵심정보 인식 정확도",
+    summaryGroup: "TRUST",
     weight: 2,
   },
   {
     ruleCode: "STRUCT-JSONLD-CONTACTPOINT-001",
     category: "핵심정보 인식 정확도",
+    summaryGroup: "TRUST",
     weight: 2,
   },
   {
     ruleCode: "STRUCT-JSONLD-SEARCHACTION-001",
     category: "핵심정보 인식 정확도",
+    summaryGroup: "TRUST",
     weight: 2,
   },
   {
     ruleCode: "STRUCT-JSONLD-ENTITY-TRUST-001",
     category: "핵심정보 인식 정확도",
+    summaryGroup: "TRUST",
     weight: 2,
   },
   {
     ruleCode: "CONTENT-ANSWERABILITY-001",
     category: "콘텐츠 이해 및 답변 가능성",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "CONTENT-HEADINGS-001",
     category: "콘텐츠 이해 및 답변 가능성",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "CONTENT-NAVIGATION-001",
     category: "콘텐츠 이해 및 답변 가능성",
+    summaryGroup: "TECHNICAL",
     weight: 1,
   },
   {
     ruleCode: "ACCESS-CHATGPT-USER-001",
     category: "AI 에이전트 사용 가능성",
+    summaryGroup: "TECHNICAL",
     weight: 0,
   },
   {
     ruleCode: "ACCESS-INDEXABILITY-001",
     category: "AI 에이전트 사용 가능성",
+    summaryGroup: "TECHNICAL",
     weight: 3,
   },
   {
     ruleCode: "STRUCT-LINKS-001",
     category: "AI 에이전트 사용 가능성",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "ENV-MEASUREMENT-001",
     category: "최신성 및 측정 환경",
+    summaryGroup: "TECHNICAL",
     weight: 2,
   },
   {
     ruleCode: "CONTENT-CORE-DEFINITION-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 8,
   },
   {
     ruleCode: "CONTENT-AUDIENCE-USECASE-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 6,
   },
   {
     ruleCode: "CONTENT-WORKFLOW-OUTCOME-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 6,
   },
   {
     ruleCode: "CONTENT-PRICING-TERMS-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 8,
   },
   {
     ruleCode: "CONTENT-SUPPORT-CONTACT-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 6,
   },
   {
     ruleCode: "CONTENT-DATA-POLICY-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 6,
   },
   {
     ruleCode: "CONTENT-DIFFERENTIATION-PROOF-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 5,
   },
   {
     ruleCode: "CONTENT-TRANSACTION-POLICY-001",
     category: "AI 답변 준비 콘텐츠",
+    summaryGroup: "CONTENT",
     weight: 5,
   },
 ] as const;
@@ -207,6 +247,16 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
 const rulesByCode = new Map(
   RULE_DEFINITIONS.map((definition) => [definition.ruleCode, definition]),
 );
+
+export function getRuleSummaryGroup(ruleCode: string): SummaryGroup {
+  const definition = rulesByCode.get(ruleCode);
+
+  if (!definition) {
+    throw new Error(`Summary group is not defined for rule: ${ruleCode}`);
+  }
+
+  return definition.summaryGroup;
+}
 
 export interface ScoreCategoryResult {
   category: ScoreCategory;
@@ -258,7 +308,7 @@ function findingEvidence(finding: ScorableFinding): Record<string, unknown> {
 }
 
 function isContentDefinition(definition: RuleDefinition): boolean {
-  return definition.category === "AI 답변 준비 콘텐츠";
+  return definition.summaryGroup === "CONTENT";
 }
 
 export function isPendingContentFinding(
@@ -267,7 +317,7 @@ export function isPendingContentFinding(
 ): boolean {
   return (
     finding.status === "BLOCKED" &&
-    definition?.category === "AI 답변 준비 콘텐츠" &&
+    definition?.summaryGroup === "CONTENT" &&
     findingEvidence(finding).contentEvidenceLevel === "UNAVAILABLE"
   );
 }

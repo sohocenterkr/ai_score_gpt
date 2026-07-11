@@ -72,6 +72,7 @@ const workOrder: PublicWorkOrder = {
       finding: {
         ruleCode: "STRUCT-JSONLD-001",
         category: "핵심정보 인식 정확도",
+        summaryGroup: "TRUST",
         severity: "MEDIUM",
         status: "FAIL",
         description:

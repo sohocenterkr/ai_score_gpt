@@ -6,11 +6,15 @@ import type {
   PublicScanResult,
   PublicScanResultFinding,
 } from "./scan-result-service";
-import { isPendingContentFinding } from "./scoring";
+import {
+  getRuleSummaryGroup,
+  isPendingContentFinding,
+  type SummaryGroup,
+} from "./scoring";
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-content-evidence-v6";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-summary-groups-v7";
 
 let cachedFontHash: string | undefined;
 
@@ -32,6 +36,30 @@ const COLORS = {
   neutral: "#475569",
   neutralSoft: "#F8FAFC",
 };
+
+const PDF_SUMMARY_GROUP_LABELS_KO: Record<SummaryGroup, string> = {
+  TECHNICAL: "사이트 설정·기술 구조",
+  CONTENT: "콘텐츠·AI 답변 준비",
+  TRUST: "구조화 데이터·신뢰 신호",
+};
+
+const PDF_SUMMARY_GROUP_LABELS_EN: Record<SummaryGroup, string> = {
+  TECHNICAL: "Site configuration and technical structure",
+  CONTENT: "Content and AI answer readiness",
+  TRUST: "Structured data and trust signals",
+};
+
+const PDF_SUMMARY_GROUP_ORDER: SummaryGroup[] = [
+  "TECHNICAL",
+  "CONTENT",
+  "TRUST",
+];
+
+function summaryGroupLabel(group: SummaryGroup, locale: "ko" | "en"): string {
+  return locale === "en"
+    ? PDF_SUMMARY_GROUP_LABELS_EN[group]
+    : PDF_SUMMARY_GROUP_LABELS_KO[group];
+}
 
 const STATUS_LABELS_KO: Record<PublicScanResultFinding["status"], string> = {
   PASS: "통과",
@@ -2373,20 +2401,29 @@ function writeAllFindings(
       : `통과·실패·확인 불가·감점 제외를 포함한 ${result.findings.length}개 항목이며, 각 항목에 검사 근거를 함께 표시합니다.`,
   );
 
-  const groups = new Map<string, PublicScanResultFinding[]>();
+  const groups = new Map<SummaryGroup, PublicScanResultFinding[]>();
 
   for (const finding of result.findings) {
-    const category = translatePdfCategory(finding.category, result.scan.locale);
-    const values = groups.get(category) ?? [];
+    const summaryGroup = getRuleSummaryGroup(finding.ruleCode);
+    const values = groups.get(summaryGroup) ?? [];
     values.push(finding);
-    groups.set(category, values);
+    groups.set(summaryGroup, values);
   }
 
-  for (const [category, findings] of groups) {
+  for (const summaryGroup of PDF_SUMMARY_GROUP_ORDER) {
+    const findings = groups.get(summaryGroup) ?? [];
+
+    if (findings.length === 0) {
+      continue;
+    }
+
     ensureSpace(document, 42);
-    setText(document, 11.5, COLORS.primaryDark).text(cleanText(category), {
-      width: contentWidth(document),
-    });
+    setText(document, 11.5, COLORS.primaryDark).text(
+      cleanText(summaryGroupLabel(summaryGroup, result.scan.locale)),
+      {
+        width: contentWidth(document),
+      },
+    );
     document.moveDown(0.5);
 
     for (const finding of findings) {

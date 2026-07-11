@@ -12,7 +12,12 @@ import {
   buildRenderedDomImprovementPlans,
   scanResultRenderedDomComparison,
 } from "../scans/scan-result-pdf";
-import { getRuleDefinition, isPendingContentFinding } from "../scans/scoring";
+import {
+  getRuleDefinition,
+  getRuleSummaryGroup,
+  isPendingContentFinding,
+  type SummaryGroup,
+} from "../scans/scoring";
 import {
   SiteUrlError,
   validatePublicSiteUrl,
@@ -113,6 +118,7 @@ export interface PublicWorkOrderItem {
   finding: {
     ruleCode: string;
     category: string;
+    summaryGroup: SummaryGroup;
     severity: FindingSeverity;
     status: FindingStatus;
     description: string;
@@ -405,6 +411,7 @@ function publicWorkOrder(
         ? {
             ruleCode: item.finding.ruleCode,
             category: item.finding.category,
+            summaryGroup: getRuleSummaryGroup(item.finding.ruleCode),
             severity: item.finding.severity,
             status: item.finding.status,
             description: item.finding.description,

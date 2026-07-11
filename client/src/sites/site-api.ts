@@ -233,6 +233,7 @@ export async function listSiteScansRequest(
   return data.scans;
 }
 
+export type ScanSummaryGroup = "TECHNICAL" | "CONTENT" | "TRUST";
 export type ScanFindingStatus = "PASS" | "FAIL" | "BLOCKED" | "NA";
 export type ScanFindingSeverity =
   "INFO" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -334,6 +335,7 @@ export interface ScanResultResponse {
   }>;
   missingInformation: Array<{
     ruleCode: string;
+    summaryGroup: ScanSummaryGroup;
     title: string;
   }>;
   primaryIssues: ScanResultFinding[];

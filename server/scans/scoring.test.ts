@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { RULE_DEFINITIONS, SCORE_CATEGORIES, calculateScore } from "./scoring";
+import {
+  RULE_DEFINITIONS,
+  SCORE_CATEGORIES,
+  SUMMARY_GROUPS,
+  calculateScore,
+  getRuleSummaryGroup,
+} from "./scoring";
 import type { CollectedFindingStatus } from "./scan-engine";
 
 function allFindings(status: CollectedFindingStatus = "PASS") {
@@ -21,6 +27,38 @@ describe("scan scoring", () => {
     expect(
       summary.categories.reduce((sum, category) => sum + category.maxScore, 0),
     ).toBe(100);
+  });
+
+  it("모든 규칙의 공식 요약 그룹과 대표 규칙 매핑을 고정한다", () => {
+    expect(
+      [
+        ...new Set(
+          RULE_DEFINITIONS.map((definition) => definition.summaryGroup),
+        ),
+      ].sort(),
+    ).toEqual([...SUMMARY_GROUPS].sort());
+
+    const weightByGroup = Object.fromEntries(
+      SUMMARY_GROUPS.map((group) => [
+        group,
+        RULE_DEFINITIONS.filter(
+          (definition) => definition.summaryGroup === group,
+        ).reduce((sum, definition) => sum + definition.weight, 0),
+      ]),
+    );
+
+    expect(weightByGroup).toEqual({
+      TECHNICAL: 37,
+      CONTENT: 50,
+      TRUST: 13,
+    });
+    expect(getRuleSummaryGroup("STRUCT-H1-001")).toBe("TECHNICAL");
+    expect(getRuleSummaryGroup("CONTENT-HEADINGS-001")).toBe("TECHNICAL");
+    expect(getRuleSummaryGroup("STRUCT-JSONLD-SAMEAS-001")).toBe("TRUST");
+    expect(getRuleSummaryGroup("CONTENT-PRICING-TERMS-001")).toBe("CONTENT");
+    expect(() => getRuleSummaryGroup("UNKNOWN-RULE")).toThrow(
+      "Summary group is not defined for rule: UNKNOWN-RULE",
+    );
   });
 
   it("모든 규칙 통과 시 자동진단 최고점 99점 A+를 반환한다", () => {

@@ -10,7 +10,9 @@ import {
   CURRENT_RULES_VERSION,
   calculateScore,
   getRuleDefinition,
+  getRuleSummaryGroup,
   type ScoreSummary,
+  type SummaryGroup,
   isPendingContentFinding,
 } from "./scoring";
 import {
@@ -79,6 +81,7 @@ export interface PublicScanResult {
   }>;
   missingInformation: Array<{
     ruleCode: string;
+    summaryGroup: SummaryGroup;
     title: string;
   }>;
   primaryIssues: PublicScanResultFinding[];
@@ -381,6 +384,7 @@ function buildPublicScanResult(result: {
       )
       .map((finding) => ({
         ruleCode: finding.ruleCode,
+        summaryGroup: getRuleSummaryGroup(finding.ruleCode),
         title: finding.title,
       })),
     primaryIssues,

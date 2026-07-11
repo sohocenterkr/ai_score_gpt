@@ -93,7 +93,7 @@ const categoryEnglishLabels: Record<string, string> = {
   "AI 답변 준비 콘텐츠": "AI answer-ready content",
 };
 
-type MissingInformationSummaryKey = "technical" | "content" | "structured";
+type MissingInformationSummaryKey = "TECHNICAL" | "CONTENT" | "TRUST";
 
 type MissingInformationSummaryItem = {
   key: MissingInformationSummaryKey;
@@ -102,65 +102,42 @@ type MissingInformationSummaryItem = {
   count: number;
 };
 
-function classifyMissingInformationSummaryItem(item: {
-  ruleCode: string;
-  title: string;
-}): MissingInformationSummaryKey {
-  const ruleCode = item.ruleCode.toUpperCase();
-  const title = item.title;
-
-  if (
-    ruleCode.startsWith("CONTENT-") ||
-    /서비스 정의|이용 대상|활용 사례|이용 절차|결과물|요금|무료|유료|고객지원|개인정보|입력자료|차별점|신뢰 근거|운영 주체와 문의 정책|초기 콘텐츠|관련 콘텐츠/.test(
-      title,
-    )
-  ) {
-    return "content";
-  }
-
-  if (
-    ruleCode.startsWith("STRUCT-") ||
-    /JSON-LD|sameAs|contactPoint|SearchAction|구조화|문의 구조화/.test(title)
-  ) {
-    return "structured";
-  }
-
-  return "technical";
-}
+const missingInformationSummaryLabels: Record<
+  MissingInformationSummaryKey,
+  { koLabel: string; enLabel: string }
+> = {
+  TECHNICAL: {
+    koLabel: "사이트 설정·기술 구조",
+    enLabel: "Site configuration and technical structure",
+  },
+  CONTENT: {
+    koLabel: "콘텐츠·AI 답변 준비",
+    enLabel: "Content and AI answer readiness",
+  },
+  TRUST: {
+    koLabel: "구조화 데이터·신뢰 신호",
+    enLabel: "Structured data and trust signals",
+  },
+};
 
 function buildMissingInformationSummary(
-  items: Array<{ ruleCode: string; title: string }>,
+  items: Array<{ summaryGroup: MissingInformationSummaryKey }>,
 ): MissingInformationSummaryItem[] {
   const counts: Record<MissingInformationSummaryKey, number> = {
-    technical: 0,
-    content: 0,
-    structured: 0,
+    TECHNICAL: 0,
+    CONTENT: 0,
+    TRUST: 0,
   };
 
   for (const item of items) {
-    counts[classifyMissingInformationSummaryItem(item)] += 1;
+    counts[item.summaryGroup] += 1;
   }
 
-  return [
-    {
-      key: "technical",
-      koLabel: "사이트 설정·기술 구조",
-      enLabel: "Site settings and technical structure",
-      count: counts.technical,
-    },
-    {
-      key: "content",
-      koLabel: "콘텐츠·AI 답변 준비",
-      enLabel: "Content and AI answer readiness",
-      count: counts.content,
-    },
-    {
-      key: "structured",
-      koLabel: "구조화 데이터·신뢰 신호",
-      enLabel: "Structured data and trust signals",
-      count: counts.structured,
-    },
-  ];
+  return (["TECHNICAL", "CONTENT", "TRUST"] as const).map((key) => ({
+    key,
+    ...missingInformationSummaryLabels[key],
+    count: counts[key],
+  }));
 }
 
 function translateCategoryLabel(value: string, isEnglish: boolean): string {
