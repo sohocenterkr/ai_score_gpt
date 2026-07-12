@@ -14,7 +14,7 @@ import {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-summary-groups-v7";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-summary-groups-v8";
 
 let cachedFontHash: string | undefined;
 

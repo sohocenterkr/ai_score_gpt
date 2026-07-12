@@ -2188,7 +2188,7 @@ export function ScanResultPage() {
                     </p>
                     {targetWorkOrderId ? (
                       <button
-                        className="scan-report-link secondary"
+                        className="scan-report-link"
                         type="button"
                         onClick={handleCreateWorkOrder}
                         disabled={creatingWorkOrder}
@@ -2199,7 +2199,7 @@ export function ScanResultPage() {
                       </button>
                     ) : (
                       <button
-                        className="scan-report-link secondary"
+                        className="scan-report-link"
                         type="button"
                         onClick={handleCreateWorkOrder}
                         disabled={

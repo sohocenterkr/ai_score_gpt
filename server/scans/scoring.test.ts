@@ -54,6 +54,8 @@ describe("scan scoring", () => {
     });
     expect(getRuleSummaryGroup("STRUCT-H1-001")).toBe("TECHNICAL");
     expect(getRuleSummaryGroup("CONTENT-HEADINGS-001")).toBe("TECHNICAL");
+    expect(getRuleSummaryGroup("ACCESS-ROBOTS-EVIDENCE")).toBe("TECHNICAL");
+    expect(getRuleSummaryGroup("ACCESS-GPTBOT-001")).toBe("TECHNICAL");
     expect(getRuleSummaryGroup("STRUCT-JSONLD-SAMEAS-001")).toBe("TRUST");
     expect(getRuleSummaryGroup("CONTENT-PRICING-TERMS-001")).toBe("CONTENT");
     expect(() => getRuleSummaryGroup("UNKNOWN-RULE")).toThrow(

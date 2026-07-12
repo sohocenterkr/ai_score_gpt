@@ -45,6 +45,18 @@ export const RULE_DEFINITIONS: readonly RuleDefinition[] = [
     weight: 2,
   },
   {
+    ruleCode: "ACCESS-ROBOTS-EVIDENCE",
+    category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
+    weight: 0,
+  },
+  {
+    ruleCode: "ACCESS-GPTBOT-001",
+    category: "접근 및 수집 정책",
+    summaryGroup: "TECHNICAL",
+    weight: 0,
+  },
+  {
     ruleCode: "ACCESS-OAI-SEARCHBOT-001",
     category: "접근 및 수집 정책",
     summaryGroup: "TECHNICAL",

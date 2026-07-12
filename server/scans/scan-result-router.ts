@@ -111,6 +111,11 @@ export function createScanResultRouter(options: CreateScanResultRouterOptions) {
         return;
       }
 
+      console.error(
+        `[scan-result-pdf] PDF generation failed for scan ${scanId}`,
+        error,
+      );
+
       response.status(500).json({
         code: "INTERNAL_ERROR",
         message: "진단 보고서 PDF를 생성하는 중 오류가 발생했습니다.",

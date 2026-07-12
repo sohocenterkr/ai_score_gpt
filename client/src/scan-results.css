@@ -1689,11 +1689,38 @@
 
 .scan-first-diagnostic-action-card .scan-report-link {
   width: 100%;
+  min-height: 48px;
   margin-top: auto;
+  padding: 0 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  appearance: none;
+  border: 1px solid var(--brand);
+  border-radius: 10px;
+  background: var(--brand);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 850;
+  line-height: 1.2;
   text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.scan-first-diagnostic-action-card .scan-report-link:hover:not(:disabled) {
+  filter: brightness(0.96);
+}
+
+.scan-first-diagnostic-action-card .scan-report-link:focus-visible {
+  outline: 3px solid rgba(49, 87, 229, 0.24);
+  outline-offset: 2px;
+}
+
+.scan-first-diagnostic-action-card .scan-report-link:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 @media (min-width: 769px) {
