@@ -1,4 +1,56 @@
+import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
+
+const RADAR_AXIS_COUNT = 5;
+const RADAR_CENTER = 100;
+const RADAR_RADIUS = 74;
+const RADAR_BEFORE = [52, 68, 45, 58, 72];
+const RADAR_AFTER = [92, 96, 88, 90, 95];
+
+function radarPoint(index: number, percent: number) {
+  const angle = (Math.PI * 2 * index) / RADAR_AXIS_COUNT - Math.PI / 2;
+  const radius = (percent / 100) * RADAR_RADIUS;
+  return {
+    x: RADAR_CENTER + radius * Math.cos(angle),
+    y: RADAR_CENTER + radius * Math.sin(angle),
+  };
+}
+
+function radarPolygon(values: number[]): string {
+  return values
+    .map((value, index) => {
+      const point = radarPoint(index, value);
+      return `${point.x.toFixed(1)},${point.y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
+const diagnosticIcons = [
+  <Fragment key="access">
+    <circle cx="8.3" cy="8.3" r="5.3" />
+    <line x1="12.4" y1="12.4" x2="17" y2="17" />
+  </Fragment>,
+  <Fragment key="html">
+    <path d="M7.5 5.5L3 10l4.5 4.5" />
+    <path d="M12.5 5.5L17 10l-4.5 4.5" />
+  </Fragment>,
+  <Fragment key="structured">
+    <rect x="3" y="3" width="8.5" height="8.5" rx="1.4" />
+    <rect x="8.5" y="8.5" width="8.5" height="8.5" rx="1.4" />
+  </Fragment>,
+  <Fragment key="answers">
+    <rect x="4.5" y="2.5" width="11" height="15" rx="1.4" />
+    <line x1="7.2" y1="7" x2="12.8" y2="7" />
+    <line x1="7.2" y1="10.5" x2="12.8" y2="10.5" />
+    <line x1="7.2" y1="14" x2="11" y2="14" />
+  </Fragment>,
+  <path
+    key="recommend"
+    fill="currentColor"
+    stroke="none"
+    d="M10 2.2l2.24 4.9 5.26.58-3.92 3.7 1.1 5.24L10 13.98l-4.68 2.64 1.1-5.24-3.92-3.7 5.26-.58L10 2.2z"
+  />,
+];
 
 const diagnosticAreas = [
   "검색·AI 봇 접근 가능 여부",
@@ -294,13 +346,53 @@ export function HomePage() {
               <strong>91</strong>
               <em>+30</em>
             </div>
-            <div className="hero-radar">
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
+            <svg className="hero-radar" viewBox="0 0 200 200">
+              <polygon
+                points={radarPolygon([100, 100, 100, 100, 100])}
+                className="hero-radar-ring"
+              />
+              <polygon
+                points={radarPolygon([66, 66, 66, 66, 66])}
+                className="hero-radar-ring"
+              />
+              <polygon
+                points={radarPolygon([33, 33, 33, 33, 33])}
+                className="hero-radar-ring"
+              />
+              {Array.from({ length: RADAR_AXIS_COUNT }).map((_, index) => {
+                const point = radarPoint(index, 100);
+                return (
+                  <line
+                    key={index}
+                    x1={RADAR_CENTER}
+                    y1={RADAR_CENTER}
+                    x2={point.x}
+                    y2={point.y}
+                    className="hero-radar-axis"
+                  />
+                );
+              })}
+              <polygon
+                points={radarPolygon(RADAR_BEFORE)}
+                className="hero-radar-before"
+              />
+              <polygon
+                points={radarPolygon(RADAR_AFTER)}
+                className="hero-radar-after"
+              />
+              {RADAR_AFTER.map((value, index) => {
+                const point = radarPoint(index, value);
+                return (
+                  <circle
+                    key={index}
+                    cx={point.x}
+                    cy={point.y}
+                    r={3.4}
+                    className="hero-radar-dot"
+                  />
+                );
+              })}
+            </svg>
             <div className="hero-score-legend">
               <span>{isEnglish ? "Before 61" : "수정 전 61"}</span>
               <span>{isEnglish ? "After 91" : "수정 후 91"}</span>
@@ -319,13 +411,18 @@ export function HomePage() {
                 : "사이트 진단부터 수정 작업지시서와 재진단까지"}
             </h2>
           </div>
-          <div className="step-grid">
-            {activeSteps.map(([number, title, description]) => (
-              <article className="surface step-item" key={number}>
-                <span className="step-number">{number}</span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </article>
+          <div className="process-grid">
+            {activeSteps.map(([number, title, description], index) => (
+              <Fragment key={number}>
+                <article className="surface step-item process-step">
+                  <span className="step-number">{number}</span>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
+                </article>
+                {index < activeSteps.length - 1 ? (
+                  <span className="process-connector" aria-hidden="true" />
+                ) : null}
+              </Fragment>
             ))}
           </div>
         </div>
@@ -342,9 +439,20 @@ export function HomePage() {
             </h2>
           </div>
           <ul className="diagnostic-list">
-            {activeDiagnosticAreas.map((area) => (
+            {activeDiagnosticAreas.map((area, index) => (
               <li key={area}>
-                <span aria-hidden="true">✓</span>
+                <span aria-hidden="true">
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    {diagnosticIcons[index]}
+                  </svg>
+                </span>
                 {area}
               </li>
             ))}
