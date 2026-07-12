@@ -860,6 +860,16 @@ function SiteDashboardCard({
     { kind: "WORK_ORDER" as const, number: 3 },
     { kind: "DIAGNOSTIC" as const, number: 4 },
   ];
+  const currentWorkflowStepIndex = workflowSteps.findIndex((step) =>
+    isCurrentStep(progress, step.kind, step.number),
+  );
+  const visibleWorkflowSteps =
+    currentWorkflowStepIndex >= 0
+      ? workflowSteps.slice(
+          0,
+          Math.min(workflowSteps.length, currentWorkflowStepIndex + 2),
+        )
+      : workflowSteps.slice(0, Math.min(workflowSteps.length, 2));
   const currentWorkOrder =
     progress?.workOrders.find(
       (item) => item.version === progress.currentStage.number,
@@ -1126,7 +1136,7 @@ function SiteDashboardCard({
         </div>
 
         <div className="site-progress-flow">
-          {workflowSteps.map((step, index) => {
+          {visibleWorkflowSteps.map((step, index) => {
             const current = isCurrentStep(progress, step.kind, step.number);
 
             if (step.kind === "DIAGNOSTIC") {

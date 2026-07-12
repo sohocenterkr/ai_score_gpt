@@ -2335,25 +2335,6 @@ export function ScanResultPage() {
                       </button>
                     )}
                   </article>
-
-                  {isSuperAdmin ? (
-                    <article className="scan-first-diagnostic-action-card">
-                      <strong>
-                        {isEnglish ? "Site dashboard" : "사이트 관리"}
-                      </strong>
-                      <p>
-                        {isEnglish
-                          ? "Return to the site dashboard to review scans, work orders, and follow-up status."
-                          : "사이트 관리 화면으로 돌아가 진단, 작업지시서, 후속 진행 상태를 확인합니다."}
-                      </p>
-                      <Link
-                        className="scan-report-link"
-                        to={`/${locale}/sites`}
-                      >
-                        {isEnglish ? "Site dashboard" : "사이트 관리"}
-                      </Link>
-                    </article>
-                  ) : null}
                 </div>
               )}
             </div>
