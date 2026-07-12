@@ -532,18 +532,24 @@ export function HomePage() {
             </div>
             <div className="hero-actions">
               <Link
-                className="secondary-action"
+                className="secondary-action action-privacy"
                 to={`/${activeLocale}/privacy`}
               >
+                <span aria-hidden="true">🔒</span>
                 {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
               </Link>
-              <Link className="secondary-action" to={`/${activeLocale}/terms`}>
+              <Link
+                className="secondary-action action-terms"
+                to={`/${activeLocale}/terms`}
+              >
+                <span aria-hidden="true">📄</span>
                 {isEnglish ? "Terms" : "이용약관"}
               </Link>
               <Link
-                className="secondary-action"
+                className="secondary-action action-pricing"
                 to={`/${activeLocale}/checkout`}
               >
+                <span aria-hidden="true">💳</span>
                 {isEnglish ? "Pricing / Payment" : "요금/결제 안내"}
               </Link>
             </div>
@@ -569,21 +575,27 @@ export function HomePage() {
               ))}
             </div>
             <div className="hero-actions">
-              <Link className="secondary-action" to={`/${activeLocale}/faq`}>
+              <Link
+                className="secondary-action action-faq"
+                to={`/${activeLocale}/faq`}
+              >
+                <span aria-hidden="true">❓</span>
                 {isEnglish ? "View full FAQ" : "FAQ 전체 보기"}
               </Link>
               <a
-                className="secondary-action"
+                className="secondary-action action-kakao"
                 href="https://open.kakao.com/me/sohocenter"
                 target="_blank"
                 rel="noreferrer"
               >
+                <span aria-hidden="true">💬</span>
                 {isEnglish ? "KakaoTalk contact" : "카카오톡 문의"}
               </a>
               <a
-                className="secondary-action"
+                className="secondary-action action-email"
                 href="mailto:sohocenter.kr@gmail.com"
               >
+                <span aria-hidden="true">✉️</span>
                 {isEnglish ? "Email contact" : "이메일 문의"}
               </a>
             </div>

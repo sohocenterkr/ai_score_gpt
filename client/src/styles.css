@@ -461,6 +461,7 @@ h3 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 52px;
   padding: 0 22px;
   border: 1px solid rgba(36, 87, 224, 0.16);
@@ -1101,6 +1102,7 @@ article.surface:hover,
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   min-height: 50px;
   padding: 0 22px;
   border: 1px solid transparent;
@@ -1158,6 +1160,80 @@ article.surface:hover,
   opacity: 0.6;
   transform: none;
   box-shadow: none;
+}
+
+/* Contact / info link colors — each destination gets its own accent
+   instead of a uniform blue, so the row reads as distinct choices. */
+.primary.action-kakao,
+.secondary-action.action-kakao {
+  color: #3a1e1e;
+  background: #fee500;
+  border-color: transparent;
+}
+
+.primary.action-kakao:hover,
+.secondary-action.action-kakao:hover {
+  color: #3a1e1e;
+  background: #ffe94d;
+}
+
+.secondary.action-email,
+.secondary-action.action-email {
+  color: #ffffff;
+  background: #0f766e;
+  border-color: transparent;
+}
+
+.secondary.action-email:hover,
+.secondary-action.action-email:hover {
+  color: #ffffff;
+  background: #14958b;
+}
+
+.secondary.action-faq,
+.secondary-action.action-faq {
+  color: #ffffff;
+  background: #4338ca;
+  border-color: transparent;
+}
+
+.secondary.action-faq:hover,
+.secondary-action.action-faq:hover {
+  color: #ffffff;
+  background: #5648e0;
+}
+
+.secondary-action.action-privacy {
+  color: #ffffff;
+  background: #475569;
+  border-color: transparent;
+}
+
+.secondary-action.action-privacy:hover {
+  color: #ffffff;
+  background: #56687e;
+}
+
+.secondary-action.action-terms {
+  color: #ffffff;
+  background: #9d174d;
+  border-color: transparent;
+}
+
+.secondary-action.action-terms:hover {
+  color: #ffffff;
+  background: #b91d5c;
+}
+
+.secondary-action.action-pricing {
+  color: #ffffff;
+  background: #b45309;
+  border-color: transparent;
+}
+
+.secondary-action.action-pricing:hover {
+  color: #ffffff;
+  background: #cc6410;
 }
 
 /* ==========================================================================
