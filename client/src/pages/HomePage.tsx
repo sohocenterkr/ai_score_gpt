@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Reveal } from "../components/Reveal";
 
 const RADAR_AXIS_COUNT = 5;
 const RADAR_CENTER = 100;
@@ -401,165 +402,181 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="full-bleed-section section-muted">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">HOW IT WORKS</p>
-            <h2>
-              {isEnglish
-                ? "From diagnosis to site improvement and re-diagnosis"
-                : "사이트 진단부터 수정 작업지시서와 재진단까지"}
-            </h2>
+      <Reveal>
+        <section className="full-bleed-section section-muted">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">HOW IT WORKS</p>
+              <h2>
+                {isEnglish
+                  ? "From diagnosis to site improvement and re-diagnosis"
+                  : "사이트 진단부터 수정 작업지시서와 재진단까지"}
+              </h2>
+            </div>
+            <div className="process-grid">
+              {activeSteps.map(([number, title, description], index) => (
+                <Fragment key={number}>
+                  <article className="surface step-item process-step">
+                    <span className="step-number">{number}</span>
+                    <h3>{title}</h3>
+                    <p>{description}</p>
+                  </article>
+                  {index < activeSteps.length - 1 ? (
+                    <span className="process-connector" aria-hidden="true" />
+                  ) : null}
+                </Fragment>
+              ))}
+            </div>
           </div>
-          <div className="process-grid">
-            {activeSteps.map(([number, title, description], index) => (
-              <Fragment key={number}>
-                <article className="surface step-item process-step">
-                  <span className="step-number">{number}</span>
-                  <h3>{title}</h3>
-                  <p>{description}</p>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">DIAGNOSIS</p>
+              <h2>
+                {isEnglish
+                  ? "Core areas AI needs to read and understand your site"
+                  : "AI가 읽고, 답하고, 추천하기 위해 필요한 핵심 영역"}
+              </h2>
+            </div>
+            <ul className="diagnostic-list">
+              {activeDiagnosticAreas.map((area, index) => (
+                <li key={area}>
+                  <span aria-hidden="true">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {diagnosticIcons[index]}
+                    </svg>
+                  </span>
+                  {area}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section section-muted">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">OFFICIAL INFORMATION</p>
+              <h2>
+                {isEnglish
+                  ? "Information AI can cite from the official page"
+                  : "AI가 공식 페이지에서 인용할 수 있는 핵심 정보"}
+              </h2>
+            </div>
+            <div className="step-grid">
+              {activeDetailSections.map((section) => (
+                <article className="surface step-item" key={section.title}>
+                  <h3>{section.title}</h3>
+                  <p>{section.body}</p>
                 </article>
-                {index < activeSteps.length - 1 ? (
-                  <span className="process-connector" aria-hidden="true" />
-                ) : null}
-              </Fragment>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="full-bleed-section">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">DIAGNOSIS</p>
-            <h2>
-              {isEnglish
-                ? "Core areas AI needs to read and understand your site"
-                : "AI가 읽고, 답하고, 추천하기 위해 필요한 핵심 영역"}
-            </h2>
-          </div>
-          <ul className="diagnostic-list">
-            {activeDiagnosticAreas.map((area, index) => (
-              <li key={area}>
-                <span aria-hidden="true">
-                  <svg
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    {diagnosticIcons[index]}
-                  </svg>
-                </span>
-                {area}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="full-bleed-section section-muted">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">OFFICIAL INFORMATION</p>
-            <h2>
-              {isEnglish
-                ? "Information AI can cite from the official page"
-                : "AI가 공식 페이지에서 인용할 수 있는 핵심 정보"}
-            </h2>
-          </div>
-          <div className="step-grid">
-            {activeDetailSections.map((section) => (
-              <article className="surface step-item" key={section.title}>
-                <h3>{section.title}</h3>
-                <p>{section.body}</p>
-              </article>
-            ))}
-          </div>
-          <div className="hero-actions">
-            <Link className="secondary-action" to={`/${activeLocale}/privacy`}>
-              {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
-            </Link>
-            <Link className="secondary-action" to={`/${activeLocale}/terms`}>
-              {isEnglish ? "Terms" : "이용약관"}
-            </Link>
-            <Link className="secondary-action" to={`/${activeLocale}/checkout`}>
-              {isEnglish ? "Pricing / Payment" : "요금/결제 안내"}
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="full-bleed-section">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">FAQ</p>
-            <h2>
-              {isEnglish ? "Frequently asked questions" : "자주 묻는 질문"}
-            </h2>
-          </div>
-          <div className="step-grid">
-            {activeFaqItems.map(([question, answer]) => (
-              <article className="surface step-item" key={question}>
-                <h3>{question}</h3>
-                <p>{answer}</p>
-              </article>
-            ))}
-          </div>
-          <div className="hero-actions">
-            <Link className="secondary-action" to={`/${activeLocale}/faq`}>
-              {isEnglish ? "View full FAQ" : "FAQ 전체 보기"}
-            </Link>
-            <a
-              className="secondary-action"
-              href="https://open.kakao.com/me/sohocenter"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {isEnglish ? "KakaoTalk contact" : "카카오톡 문의"}
-            </a>
-            <a
-              className="secondary-action"
-              href="mailto:sohocenter.kr@gmail.com"
-            >
-              {isEnglish ? "Email contact" : "이메일 문의"}
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section className="full-bleed-section section-dark">
-        <div className="content-container section-content compare-section">
-          <div>
-            <p className="eyebrow eyebrow-light">BEFORE &amp; AFTER</p>
-            <h2>
-              {isEnglish
-                ? "We show not only the score, but why it changed."
-                : "점수만 보여주지 않고, 왜 AI 답변·추천 가능성이 달라지는지 설명합니다."}
-            </h2>
-          </div>
-          <div
-            className="score-comparison"
-            aria-label={
-              isEnglish ? "Before and after example" : "수정 전후 예시"
-            }
-          >
-            <div>
-              <span>{isEnglish ? "Before" : "수정 전"}</span>
-              <strong>61</strong>
+              ))}
             </div>
-            <span className="comparison-arrow" aria-hidden="true">
-              →
-            </span>
-            <div>
-              <span>{isEnglish ? "After" : "수정 후"}</span>
-              <strong>91</strong>
+            <div className="hero-actions">
+              <Link
+                className="secondary-action"
+                to={`/${activeLocale}/privacy`}
+              >
+                {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
+              </Link>
+              <Link className="secondary-action" to={`/${activeLocale}/terms`}>
+                {isEnglish ? "Terms" : "이용약관"}
+              </Link>
+              <Link
+                className="secondary-action"
+                to={`/${activeLocale}/checkout`}
+              >
+                {isEnglish ? "Pricing / Payment" : "요금/결제 안내"}
+              </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">FAQ</p>
+              <h2>
+                {isEnglish ? "Frequently asked questions" : "자주 묻는 질문"}
+              </h2>
+            </div>
+            <div className="step-grid">
+              {activeFaqItems.map(([question, answer]) => (
+                <article className="surface step-item" key={question}>
+                  <h3>{question}</h3>
+                  <p>{answer}</p>
+                </article>
+              ))}
+            </div>
+            <div className="hero-actions">
+              <Link className="secondary-action" to={`/${activeLocale}/faq`}>
+                {isEnglish ? "View full FAQ" : "FAQ 전체 보기"}
+              </Link>
+              <a
+                className="secondary-action"
+                href="https://open.kakao.com/me/sohocenter"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {isEnglish ? "KakaoTalk contact" : "카카오톡 문의"}
+              </a>
+              <a
+                className="secondary-action"
+                href="mailto:sohocenter.kr@gmail.com"
+              >
+                {isEnglish ? "Email contact" : "이메일 문의"}
+              </a>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section section-dark">
+          <div className="content-container section-content compare-section">
+            <div>
+              <p className="eyebrow eyebrow-light">BEFORE &amp; AFTER</p>
+              <h2>
+                {isEnglish
+                  ? "We show not only the score, but why it changed."
+                  : "점수만 보여주지 않고, 왜 AI 답변·추천 가능성이 달라지는지 설명합니다."}
+              </h2>
+            </div>
+            <div
+              className="score-comparison"
+              aria-label={
+                isEnglish ? "Before and after example" : "수정 전후 예시"
+              }
+            >
+              <div>
+                <span>{isEnglish ? "Before" : "수정 전"}</span>
+                <strong>61</strong>
+              </div>
+              <span className="comparison-arrow" aria-hidden="true">
+                →
+              </span>
+              <div>
+                <span>{isEnglish ? "After" : "수정 후"}</span>
+                <strong>91</strong>
+              </div>
+            </div>
+          </div>
+        </section>
+      </Reveal>
     </>
   );
 }
