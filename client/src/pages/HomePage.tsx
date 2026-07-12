@@ -287,6 +287,26 @@ export function HomePage() {
             </Link>
           </div>
         </div>
+        <div className="hero-visual" aria-hidden="true">
+          <div className="hero-score-card">
+            <div className="hero-score-card-header">
+              <span>{isEnglish ? "AI Readiness Score" : "AI 진단 결과"}</span>
+              <strong>91</strong>
+              <em>+30</em>
+            </div>
+            <div className="hero-radar">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="hero-score-legend">
+              <span>{isEnglish ? "Before 61" : "수정 전 61"}</span>
+              <span>{isEnglish ? "After 91" : "수정 후 91"}</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="full-bleed-section section-muted">
@@ -427,7 +447,7 @@ export function HomePage() {
             </span>
             <div>
               <span>{isEnglish ? "After" : "수정 후"}</span>
-              <strong>82</strong>
+              <strong>91</strong>
             </div>
           </div>
         </div>
