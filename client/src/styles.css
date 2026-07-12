@@ -406,8 +406,15 @@ h3 {
   z-index: 1;
 }
 
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 40px;
+}
+
 .hero-content {
-  min-height: 560px;
+  min-height: 400px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -456,24 +463,25 @@ h3 {
   justify-content: center;
   min-height: 52px;
   padding: 0 22px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(36, 87, 224, 0.16);
   border-radius: var(--radius-sm);
-  color: var(--ink);
-  background: #ffffff;
+  color: var(--brand);
+  background: #eef2ff;
   font-weight: 800;
   text-decoration: none;
   transition:
     transform var(--duration) var(--ease-out),
     border-color var(--duration) var(--ease-out),
     color var(--duration) var(--ease-out),
+    background var(--duration) var(--ease-out),
     box-shadow var(--duration) var(--ease-out);
 }
 
 .hero-actions .secondary-action:hover {
   transform: translateY(-3px);
   border-color: var(--brand);
-  color: var(--brand);
-  background: #ffffff;
+  color: var(--brand-dark);
+  background: #dde5ff;
   box-shadow: var(--shadow-md);
 }
 
@@ -483,12 +491,9 @@ h3 {
 }
 
 .hero-visual {
-  position: absolute;
-  right: max(24px, calc((100vw - var(--content-max)) / 2 + 24px));
-  top: 50%;
-  z-index: 1;
-  width: min(390px, 38vw);
-  transform: translateY(-50%);
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
 }
 
 .hero-score-card {
@@ -618,6 +623,7 @@ h3 {
 
 .surface {
   border: 1px solid var(--line);
+  border-top: 3px solid var(--brand);
   border-radius: var(--radius-md);
   background: #ffffff;
   box-shadow: var(--shadow-sm);
@@ -625,6 +631,14 @@ h3 {
     transform var(--duration) var(--ease-out),
     border-color var(--duration) var(--ease-out),
     box-shadow var(--duration) var(--ease-out);
+}
+
+.step-grid .surface:nth-child(3n+2) {
+  border-top-color: #6f93ff;
+}
+
+.step-grid .surface:nth-child(3n) {
+  border-top-color: #5b3fd6;
 }
 
 .step-item {
@@ -1190,21 +1204,19 @@ article.surface:hover,
    Responsive
    ========================================================================== */
 @media (max-width: 900px) {
-  .hero-visual {
-    position: relative;
-    right: auto;
-    top: auto;
-    width: min(420px, calc(100% - 32px));
-    margin: -54px auto 52px;
-    transform: none;
+  .diagnostic-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 901px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    gap: 56px;
   }
 
   .hero-content {
-    min-height: 500px;
-  }
-
-  .diagnostic-list {
-    grid-template-columns: minmax(0, 1fr);
+    min-height: 520px;
   }
 }
 
@@ -1317,15 +1329,16 @@ article.surface:hover,
 
   .process-grid {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 0;
   }
 
   .process-connector {
     flex: 0 0 28px;
+    align-self: center;
     width: auto;
     height: 2px;
-    margin: 41px 0 0;
+    margin: 0;
   }
 
   .diagnostic-list {

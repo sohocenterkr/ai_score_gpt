@@ -322,81 +322,85 @@ export function HomePage() {
         dangerouslySetInnerHTML={{ __html: homeJsonLd }}
       />
       <section className="hero-section full-bleed-section">
-        <div className="content-container hero-content">
-          <p className="eyebrow">AEO WEBSITE DIAGNOSTICS</p>
-          <h1>
-            {isEnglish
-              ? "See how well AI can understand your website."
-              : "내 사이트를 AI가 얼마나 잘 이해하는지 확인하세요."}
-          </h1>
-          <p className="hero-description">
-            {isEnglish
-              ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and start the next diagnostic after the updated site is deployed. If issues remain, create the next work order from that diagnostic report."
-              : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다음 차수 진단을 진행합니다. 남은 항목이 있으면 다음 작업지시서를 발행할 수 있습니다."}
-          </p>
-          <div className="hero-actions">
-            <Link className="primary-action" to={`/${activeLocale}/sites`}>
-              {isEnglish ? "Start diagnosis" : "사이트 진단"}
-            </Link>
-          </div>
-        </div>
-        <div className="hero-visual" aria-hidden="true">
-          <div className="hero-score-card">
-            <div className="hero-score-card-header">
-              <span>{isEnglish ? "AI Readiness Score" : "AI 진단 결과"}</span>
-              <strong>91</strong>
-              <em>+30</em>
+        <div className="content-container hero-grid">
+          <div className="hero-content">
+            <p className="eyebrow">AEO WEBSITE DIAGNOSTICS</p>
+            <h1>
+              {isEnglish
+                ? "See how well AI can understand your website."
+                : "내 사이트를 AI가 얼마나 잘 이해하는지 확인하세요."}
+            </h1>
+            <p className="hero-description">
+              {isEnglish
+                ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and start the next diagnostic after the updated site is deployed. If issues remain, create the next work order from that diagnostic report."
+                : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다음 차수 진단을 진행합니다. 남은 항목이 있으면 다음 작업지시서를 발행할 수 있습니다."}
+            </p>
+            <div className="hero-actions">
+              <Link className="primary-action" to={`/${activeLocale}/sites`}>
+                {isEnglish ? "Start diagnosis" : "사이트 진단"}
+              </Link>
             </div>
-            <svg className="hero-radar" viewBox="0 0 200 200">
-              <polygon
-                points={radarPolygon([100, 100, 100, 100, 100])}
-                className="hero-radar-ring"
-              />
-              <polygon
-                points={radarPolygon([66, 66, 66, 66, 66])}
-                className="hero-radar-ring"
-              />
-              <polygon
-                points={radarPolygon([33, 33, 33, 33, 33])}
-                className="hero-radar-ring"
-              />
-              {Array.from({ length: RADAR_AXIS_COUNT }).map((_, index) => {
-                const point = radarPoint(index, 100);
-                return (
-                  <line
-                    key={index}
-                    x1={RADAR_CENTER}
-                    y1={RADAR_CENTER}
-                    x2={point.x}
-                    y2={point.y}
-                    className="hero-radar-axis"
-                  />
-                );
-              })}
-              <polygon
-                points={radarPolygon(RADAR_BEFORE)}
-                className="hero-radar-before"
-              />
-              <polygon
-                points={radarPolygon(RADAR_AFTER)}
-                className="hero-radar-after"
-              />
-              {RADAR_AFTER.map((value, index) => {
-                const point = radarPoint(index, value);
-                return (
-                  <circle
-                    key={index}
-                    cx={point.x}
-                    cy={point.y}
-                    r={3.4}
-                    className="hero-radar-dot"
-                  />
-                );
-              })}
-            </svg>
-            <div className="hero-score-legend">
-              <span>{isEnglish ? "Before 61" : "수정 전 61"}</span>
-              <span>{isEnglish ? "After 91" : "수정 후 91"}</span>
+          </div>
+          <div className="hero-visual" aria-hidden="true">
+            <div className="hero-score-card">
+              <div className="hero-score-card-header">
+                <span>
+                  {isEnglish ? "AI Readiness Score" : "AI 진단 결과"}
+                </span>
+                <strong>91</strong>
+                <em>+30</em>
+              </div>
+              <svg className="hero-radar" viewBox="0 0 200 200">
+                <polygon
+                  points={radarPolygon([100, 100, 100, 100, 100])}
+                  className="hero-radar-ring"
+                />
+                <polygon
+                  points={radarPolygon([66, 66, 66, 66, 66])}
+                  className="hero-radar-ring"
+                />
+                <polygon
+                  points={radarPolygon([33, 33, 33, 33, 33])}
+                  className="hero-radar-ring"
+                />
+                {Array.from({ length: RADAR_AXIS_COUNT }).map((_, index) => {
+                  const point = radarPoint(index, 100);
+                  return (
+                    <line
+                      key={index}
+                      x1={RADAR_CENTER}
+                      y1={RADAR_CENTER}
+                      x2={point.x}
+                      y2={point.y}
+                      className="hero-radar-axis"
+                    />
+                  );
+                })}
+                <polygon
+                  points={radarPolygon(RADAR_BEFORE)}
+                  className="hero-radar-before"
+                />
+                <polygon
+                  points={radarPolygon(RADAR_AFTER)}
+                  className="hero-radar-after"
+                />
+                {RADAR_AFTER.map((value, index) => {
+                  const point = radarPoint(index, value);
+                  return (
+                    <circle
+                      key={index}
+                      cx={point.x}
+                      cy={point.y}
+                      r={3.4}
+                      className="hero-radar-dot"
+                    />
+                  );
+                })}
+              </svg>
+              <div className="hero-score-legend">
+                <span>{isEnglish ? "Before 61" : "수정 전 61"}</span>
+                <span>{isEnglish ? "After 91" : "수정 후 91"}</span>
+              </div>
             </div>
           </div>
         </div>
