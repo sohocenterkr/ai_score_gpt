@@ -26,6 +26,31 @@ function radarPolygon(values: number[]): string {
     .join(" ");
 }
 
+const RADAR_LABEL_PERCENT = 122;
+const RADAR_LABEL_LAYOUT: { anchor: "start" | "middle" | "end"; dy: number }[] = [
+  { anchor: "middle", dy: -8 },
+  { anchor: "start", dy: 2 },
+  { anchor: "start", dy: 16 },
+  { anchor: "end", dy: 16 },
+  { anchor: "end", dy: 2 },
+];
+
+const radarAxisLabels = [
+  "검색·봇",
+  "초기 HTML",
+  "구조화 데이터",
+  "답변 근거",
+  "추천 근거",
+];
+
+const radarAxisLabelsEn = [
+  "Bot access",
+  "Initial HTML",
+  "Structured data",
+  "Answer basis",
+  "Recommend basis",
+];
+
 const diagnosticIcons = [
   <Fragment key="access">
     <circle cx="8.3" cy="8.3" r="5.3" />
@@ -229,6 +254,7 @@ export function HomePage() {
   const activeLocale = isEnglish ? "en" : "ko";
   const activeSteps = isEnglish ? serviceStepsEn : serviceSteps;
   const activeDiagnosticAreas = isEnglish ? diagnosticAreasEn : diagnosticAreas;
+  const activeRadarLabels = isEnglish ? radarAxisLabelsEn : radarAxisLabels;
   const activeDetailSections = isEnglish
     ? serviceDetailSectionsEn
     : serviceDetailSections;
@@ -350,7 +376,7 @@ export function HomePage() {
                 <strong>91</strong>
                 <em>+30</em>
               </div>
-              <svg className="hero-radar" viewBox="0 0 200 200">
+              <svg className="hero-radar" viewBox="-50 -20 300 260">
                 <polygon
                   points={radarPolygon([100, 100, 100, 100, 100])}
                   className="hero-radar-ring"
@@ -394,6 +420,22 @@ export function HomePage() {
                       r={3.4}
                       className="hero-radar-dot"
                     />
+                  );
+                })}
+                {activeRadarLabels.map((label, index) => {
+                  const point = radarPoint(index, RADAR_LABEL_PERCENT);
+                  const layout = RADAR_LABEL_LAYOUT[index];
+                  return (
+                    <text
+                      key={label}
+                      x={point.x}
+                      y={point.y}
+                      dy={layout.dy}
+                      textAnchor={layout.anchor}
+                      className="hero-radar-label"
+                    >
+                      {label}
+                    </text>
                   );
                 })}
               </svg>
