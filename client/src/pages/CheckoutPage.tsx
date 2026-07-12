@@ -829,17 +829,23 @@ export function CheckoutPage() {
           <p>{copy.noticeBody}</p>
           <div className="checkout-contact-actions">
             <a
-              className="primary"
+              className="primary action-kakao"
               href="https://open.kakao.com/me/sohocenter"
               target="_blank"
               rel="noreferrer"
             >
+              <span aria-hidden="true">💬</span>
               {copy.kakao}
             </a>
-            <a className="secondary" href="mailto:sohocenter.kr@gmail.com">
+            <a
+              className="secondary action-email"
+              href="mailto:sohocenter.kr@gmail.com"
+            >
+              <span aria-hidden="true">✉️</span>
               {copy.email}
             </a>
-            <Link className="secondary" to={`/${locale}/faq`}>
+            <Link className="secondary action-faq" to={`/${locale}/faq`}>
+              <span aria-hidden="true">❓</span>
               {copy.faq}
             </Link>
           </div>

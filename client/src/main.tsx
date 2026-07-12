@@ -4,6 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { AuthProvider } from "./auth/AuthContext";
 import { installDevUserPreviewFetch } from "./auth/dev-user-preview";
+import "@fontsource/noto-sans-kr/400.css";
+import "@fontsource/noto-sans-kr/700.css";
+import "@fontsource/noto-sans-kr/800.css";
+import "@fontsource/noto-sans-kr/900.css";
 import "./styles.css";
 import "./auth.css";
 

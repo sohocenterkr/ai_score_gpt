@@ -1,4 +1,82 @@
+import { Fragment } from "react";
 import { Link, useParams } from "react-router-dom";
+import { Reveal } from "../components/Reveal";
+
+const RADAR_AXIS_COUNT = 5;
+const RADAR_CENTER = 100;
+const RADAR_RADIUS = 74;
+const RADAR_BEFORE = [52, 68, 45, 58, 72];
+const RADAR_AFTER = [92, 96, 88, 90, 95];
+
+function radarPoint(index: number, percent: number) {
+  const angle = (Math.PI * 2 * index) / RADAR_AXIS_COUNT - Math.PI / 2;
+  const radius = (percent / 100) * RADAR_RADIUS;
+  return {
+    x: RADAR_CENTER + radius * Math.cos(angle),
+    y: RADAR_CENTER + radius * Math.sin(angle),
+  };
+}
+
+function radarPolygon(values: number[]): string {
+  return values
+    .map((value, index) => {
+      const point = radarPoint(index, value);
+      return `${point.x.toFixed(1)},${point.y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
+const RADAR_LABEL_PERCENT = 122;
+const RADAR_LABEL_LAYOUT: { anchor: "start" | "middle" | "end"; dy: number }[] = [
+  { anchor: "middle", dy: -8 },
+  { anchor: "start", dy: 2 },
+  { anchor: "start", dy: 16 },
+  { anchor: "end", dy: 16 },
+  { anchor: "end", dy: 2 },
+];
+
+const radarAxisLabels = [
+  "검색·봇",
+  "초기 HTML",
+  "구조화 데이터",
+  "답변 근거",
+  "추천 근거",
+];
+
+const radarAxisLabelsEn = [
+  "Bot access",
+  "Initial HTML",
+  "Structured data",
+  "Answer basis",
+  "Recommend basis",
+];
+
+const diagnosticIcons = [
+  <Fragment key="access">
+    <circle cx="8.3" cy="8.3" r="5.3" />
+    <line x1="12.4" y1="12.4" x2="17" y2="17" />
+  </Fragment>,
+  <Fragment key="html">
+    <path d="M7.5 5.5L3 10l4.5 4.5" />
+    <path d="M12.5 5.5L17 10l-4.5 4.5" />
+  </Fragment>,
+  <Fragment key="structured">
+    <rect x="3" y="3" width="8.5" height="8.5" rx="1.4" />
+    <rect x="8.5" y="8.5" width="8.5" height="8.5" rx="1.4" />
+  </Fragment>,
+  <Fragment key="answers">
+    <rect x="4.5" y="2.5" width="11" height="15" rx="1.4" />
+    <line x1="7.2" y1="7" x2="12.8" y2="7" />
+    <line x1="7.2" y1="10.5" x2="12.8" y2="10.5" />
+    <line x1="7.2" y1="14" x2="11" y2="14" />
+  </Fragment>,
+  <path
+    key="recommend"
+    fill="currentColor"
+    stroke="none"
+    d="M10 2.2l2.24 4.9 5.26.58-3.92 3.7 1.1 5.24L10 13.98l-4.68 2.64 1.1-5.24-3.92-3.7 5.26-.58L10 2.2z"
+  />,
+];
 
 const diagnosticAreas = [
   "검색·AI 봇 접근 가능 여부",
@@ -176,6 +254,7 @@ export function HomePage() {
   const activeLocale = isEnglish ? "en" : "ko";
   const activeSteps = isEnglish ? serviceStepsEn : serviceSteps;
   const activeDiagnosticAreas = isEnglish ? diagnosticAreasEn : diagnosticAreas;
+  const activeRadarLabels = isEnglish ? radarAxisLabelsEn : radarAxisLabels;
   const activeDetailSections = isEnglish
     ? serviceDetailSectionsEn
     : serviceDetailSections;
@@ -269,189 +348,293 @@ export function HomePage() {
         dangerouslySetInnerHTML={{ __html: homeJsonLd }}
       />
       <section className="hero-section full-bleed-section">
-        <div className="content-container hero-content">
-          <p className="eyebrow">AEO WEBSITE DIAGNOSTICS</p>
-          <h1>
-            {isEnglish
-              ? "See how well AI can understand your website."
-              : "내 사이트를 AI가 얼마나 잘 이해하는지 확인하세요."}
-          </h1>
-          <p className="hero-description">
-            {isEnglish
-              ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and start the next diagnostic after the updated site is deployed. If issues remain, create the next work order from that diagnostic report."
-              : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다음 차수 진단을 진행합니다. 남은 항목이 있으면 다음 작업지시서를 발행할 수 있습니다."}
-          </p>
-          <div className="hero-actions">
-            <Link className="primary-action" to={`/${activeLocale}/sites`}>
-              {isEnglish ? "Start diagnosis" : "사이트 진단"}
-            </Link>
-          </div>
-        </div>
-        <div className="hero-visual" aria-hidden="true">
-          <div className="hero-score-card">
-            <div className="hero-score-card-header">
-              <span>{isEnglish ? "AI Readiness Score" : "AI 진단 결과"}</span>
-              <strong>91</strong>
-              <em>+30</em>
-            </div>
-            <div className="hero-radar">
-              <span />
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="hero-score-legend">
-              <span>{isEnglish ? "Before 61" : "수정 전 61"}</span>
-              <span>{isEnglish ? "After 91" : "수정 후 91"}</span>
+        <div className="content-container hero-grid">
+          <div className="hero-content">
+            <p className="eyebrow">AEO WEBSITE DIAGNOSTICS</p>
+            <h1>
+              {isEnglish
+                ? "See how well AI can understand your website."
+                : "내 사이트를 AI가 얼마나 잘 이해하는지 확인하세요."}
+            </h1>
+            <p className="hero-description">
+              {isEnglish
+                ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and start the next diagnostic after the updated site is deployed. If issues remain, create the next work order from that diagnostic report."
+                : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다음 차수 진단을 진행합니다. 남은 항목이 있으면 다음 작업지시서를 발행할 수 있습니다."}
+            </p>
+            <div className="hero-actions">
+              <Link className="primary-action" to={`/${activeLocale}/sites`}>
+                {isEnglish ? "Start diagnosis" : "사이트 진단"}
+              </Link>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section className="full-bleed-section section-muted">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">HOW IT WORKS</p>
-            <h2>
-              {isEnglish
-                ? "From diagnosis to site improvement and re-diagnosis"
-                : "사이트 진단부터 수정 작업지시서와 재진단까지"}
-            </h2>
-          </div>
-          <div className="step-grid">
-            {activeSteps.map(([number, title, description]) => (
-              <article className="surface step-item" key={number}>
-                <span className="step-number">{number}</span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="full-bleed-section">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">DIAGNOSIS</p>
-            <h2>
-              {isEnglish
-                ? "Core areas AI needs to read and understand your site"
-                : "AI가 읽고, 답하고, 추천하기 위해 필요한 핵심 영역"}
-            </h2>
-          </div>
-          <ul className="diagnostic-list">
-            {activeDiagnosticAreas.map((area) => (
-              <li key={area}>
-                <span aria-hidden="true">✓</span>
-                {area}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="full-bleed-section section-muted">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">OFFICIAL INFORMATION</p>
-            <h2>
-              {isEnglish
-                ? "Information AI can cite from the official page"
-                : "AI가 공식 페이지에서 인용할 수 있는 핵심 정보"}
-            </h2>
-          </div>
-          <div className="step-grid">
-            {activeDetailSections.map((section) => (
-              <article className="surface step-item" key={section.title}>
-                <h3>{section.title}</h3>
-                <p>{section.body}</p>
-              </article>
-            ))}
-          </div>
-          <div className="hero-actions">
-            <Link className="secondary-action" to={`/${activeLocale}/privacy`}>
-              {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
-            </Link>
-            <Link className="secondary-action" to={`/${activeLocale}/terms`}>
-              {isEnglish ? "Terms" : "이용약관"}
-            </Link>
-            <Link className="secondary-action" to={`/${activeLocale}/checkout`}>
-              {isEnglish ? "Pricing / Payment" : "요금/결제 안내"}
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="full-bleed-section">
-        <div className="content-container section-content">
-          <div className="section-heading">
-            <p className="eyebrow">FAQ</p>
-            <h2>
-              {isEnglish ? "Frequently asked questions" : "자주 묻는 질문"}
-            </h2>
-          </div>
-          <div className="step-grid">
-            {activeFaqItems.map(([question, answer]) => (
-              <article className="surface step-item" key={question}>
-                <h3>{question}</h3>
-                <p>{answer}</p>
-              </article>
-            ))}
-          </div>
-          <div className="hero-actions">
-            <Link className="secondary-action" to={`/${activeLocale}/faq`}>
-              {isEnglish ? "View full FAQ" : "FAQ 전체 보기"}
-            </Link>
-            <a
-              className="secondary-action"
-              href="https://open.kakao.com/me/sohocenter"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {isEnglish ? "KakaoTalk contact" : "카카오톡 문의"}
-            </a>
-            <a
-              className="secondary-action"
-              href="mailto:sohocenter.kr@gmail.com"
-            >
-              {isEnglish ? "Email contact" : "이메일 문의"}
-            </a>
+          <div className="hero-visual" aria-hidden="true">
+            <div className="hero-score-card">
+              <div className="hero-score-card-header">
+                <span>
+                  {isEnglish ? "AI Readiness Score" : "AI 진단 결과"}
+                </span>
+                <strong>91</strong>
+                <em>+30</em>
+              </div>
+              <svg className="hero-radar" viewBox="-60 -25 320 280">
+                <polygon
+                  points={radarPolygon([100, 100, 100, 100, 100])}
+                  className="hero-radar-ring"
+                />
+                <polygon
+                  points={radarPolygon([66, 66, 66, 66, 66])}
+                  className="hero-radar-ring"
+                />
+                <polygon
+                  points={radarPolygon([33, 33, 33, 33, 33])}
+                  className="hero-radar-ring"
+                />
+                {Array.from({ length: RADAR_AXIS_COUNT }).map((_, index) => {
+                  const point = radarPoint(index, 100);
+                  return (
+                    <line
+                      key={index}
+                      x1={RADAR_CENTER}
+                      y1={RADAR_CENTER}
+                      x2={point.x}
+                      y2={point.y}
+                      className="hero-radar-axis"
+                    />
+                  );
+                })}
+                <polygon
+                  points={radarPolygon(RADAR_BEFORE)}
+                  className="hero-radar-before"
+                />
+                <polygon
+                  points={radarPolygon(RADAR_AFTER)}
+                  className="hero-radar-after"
+                />
+                {RADAR_AFTER.map((value, index) => {
+                  const point = radarPoint(index, value);
+                  return (
+                    <circle
+                      key={index}
+                      cx={point.x}
+                      cy={point.y}
+                      r={3.4}
+                      className="hero-radar-dot"
+                    />
+                  );
+                })}
+                {activeRadarLabels.map((label, index) => {
+                  const point = radarPoint(index, RADAR_LABEL_PERCENT);
+                  const layout = RADAR_LABEL_LAYOUT[index];
+                  return (
+                    <text
+                      key={label}
+                      x={point.x}
+                      y={point.y}
+                      dy={layout.dy}
+                      textAnchor={layout.anchor}
+                      className="hero-radar-label"
+                    >
+                      {label}
+                    </text>
+                  );
+                })}
+              </svg>
+              <div className="hero-score-legend">
+                <span>{isEnglish ? "Before 61" : "수정 전 61"}</span>
+                <span>{isEnglish ? "After 91" : "수정 후 91"}</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="full-bleed-section section-dark">
-        <div className="content-container section-content compare-section">
-          <div>
-            <p className="eyebrow eyebrow-light">BEFORE &amp; AFTER</p>
-            <h2>
-              {isEnglish
-                ? "We show not only the score, but why it changed."
-                : "점수만 보여주지 않고, 왜 AI 답변·추천 가능성이 달라지는지 설명합니다."}
-            </h2>
+      <Reveal>
+        <section className="full-bleed-section section-muted">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">HOW IT WORKS</p>
+              <h2>
+                {isEnglish
+                  ? "From diagnosis to site improvement and re-diagnosis"
+                  : "사이트 진단부터 수정 작업지시서와 재진단까지"}
+              </h2>
+            </div>
+            <div className="process-grid">
+              {activeSteps.map(([number, title, description], index) => (
+                <Fragment key={number}>
+                  <article className="surface step-item process-step">
+                    <span className="step-number">{number}</span>
+                    <h3>{title}</h3>
+                    <p>{description}</p>
+                  </article>
+                  {index < activeSteps.length - 1 ? (
+                    <span className="process-connector" aria-hidden="true" />
+                  ) : null}
+                </Fragment>
+              ))}
+            </div>
           </div>
-          <div
-            className="score-comparison"
-            aria-label={
-              isEnglish ? "Before and after example" : "수정 전후 예시"
-            }
-          >
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">DIAGNOSIS</p>
+              <h2>
+                {isEnglish
+                  ? "Core areas AI needs to read and understand your site"
+                  : "AI가 읽고, 답하고, 추천하기 위해 필요한 핵심 영역"}
+              </h2>
+            </div>
+            <ul className="diagnostic-list">
+              {activeDiagnosticAreas.map((area, index) => (
+                <li key={area}>
+                  <span aria-hidden="true">
+                    <svg
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      {diagnosticIcons[index]}
+                    </svg>
+                  </span>
+                  {area}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section section-muted">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">OFFICIAL INFORMATION</p>
+              <h2>
+                {isEnglish
+                  ? "Information AI can cite from the official page"
+                  : "AI가 공식 페이지에서 인용할 수 있는 핵심 정보"}
+              </h2>
+            </div>
+            <div className="step-grid">
+              {activeDetailSections.map((section) => (
+                <article className="surface step-item" key={section.title}>
+                  <h3>{section.title}</h3>
+                  <p>{section.body}</p>
+                </article>
+              ))}
+            </div>
+            <div className="hero-actions">
+              <Link
+                className="secondary-action action-privacy"
+                to={`/${activeLocale}/privacy`}
+              >
+                <span aria-hidden="true">🔒</span>
+                {isEnglish ? "Privacy Policy" : "개인정보처리방침"}
+              </Link>
+              <Link
+                className="secondary-action action-terms"
+                to={`/${activeLocale}/terms`}
+              >
+                <span aria-hidden="true">📄</span>
+                {isEnglish ? "Terms" : "이용약관"}
+              </Link>
+              <Link
+                className="secondary-action action-pricing"
+                to={`/${activeLocale}/checkout`}
+              >
+                <span aria-hidden="true">💳</span>
+                {isEnglish ? "Pricing / Payment" : "요금/결제 안내"}
+              </Link>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">FAQ</p>
+              <h2>
+                {isEnglish ? "Frequently asked questions" : "자주 묻는 질문"}
+              </h2>
+            </div>
+            <div className="step-grid">
+              {activeFaqItems.map(([question, answer]) => (
+                <article className="surface step-item" key={question}>
+                  <h3>{question}</h3>
+                  <p>{answer}</p>
+                </article>
+              ))}
+            </div>
+            <div className="hero-actions">
+              <Link
+                className="secondary-action action-faq"
+                to={`/${activeLocale}/faq`}
+              >
+                <span aria-hidden="true">❓</span>
+                {isEnglish ? "View full FAQ" : "FAQ 전체 보기"}
+              </Link>
+              <a
+                className="secondary-action action-kakao"
+                href="https://open.kakao.com/me/sohocenter"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span aria-hidden="true">💬</span>
+                {isEnglish ? "KakaoTalk contact" : "카카오톡 문의"}
+              </a>
+              <a
+                className="secondary-action action-email"
+                href="mailto:sohocenter.kr@gmail.com"
+              >
+                <span aria-hidden="true">✉️</span>
+                {isEnglish ? "Email contact" : "이메일 문의"}
+              </a>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section section-dark">
+          <div className="content-container section-content compare-section">
             <div>
-              <span>{isEnglish ? "Before" : "수정 전"}</span>
-              <strong>61</strong>
+              <p className="eyebrow eyebrow-light">BEFORE &amp; AFTER</p>
+              <h2>
+                {isEnglish
+                  ? "We show not only the score, but why it changed."
+                  : "점수만 보여주지 않고, 왜 AI 답변·추천 가능성이 달라지는지 설명합니다."}
+              </h2>
             </div>
-            <span className="comparison-arrow" aria-hidden="true">
-              →
-            </span>
-            <div>
-              <span>{isEnglish ? "After" : "수정 후"}</span>
-              <strong>91</strong>
+            <div
+              className="score-comparison"
+              aria-label={
+                isEnglish ? "Before and after example" : "수정 전후 예시"
+              }
+            >
+              <div>
+                <span>{isEnglish ? "Before" : "수정 전"}</span>
+                <strong>61</strong>
+              </div>
+              <span className="comparison-arrow" aria-hidden="true">
+                →
+              </span>
+              <div>
+                <span>{isEnglish ? "After" : "수정 후"}</span>
+                <strong>91</strong>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </Reveal>
     </>
   );
 }
