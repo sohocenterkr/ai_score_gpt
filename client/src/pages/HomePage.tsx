@@ -376,7 +376,7 @@ export function HomePage() {
                 <strong>91</strong>
                 <em>+30</em>
               </div>
-              <svg className="hero-radar" viewBox="-50 -20 300 260">
+              <svg className="hero-radar" viewBox="-60 -25 320 280">
                 <polygon
                   points={radarPolygon([100, 100, 100, 100, 100])}
                   className="hero-radar-ring"

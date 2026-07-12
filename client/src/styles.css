@@ -499,7 +499,7 @@ h3 {
 
 .hero-score-card {
   position: relative;
-  min-height: 300px;
+  min-height: 320px;
   padding: 26px 24px 24px;
   border: 1px solid var(--line);
   border-top: 3px solid var(--brand);
@@ -548,17 +548,17 @@ h3 {
 .hero-radar {
   display: block;
   width: 100%;
-  max-width: 240px;
+  max-width: 270px;
   height: auto;
-  aspect-ratio: 300 / 260;
+  aspect-ratio: 320 / 280;
   margin: 18px auto 14px;
   overflow: visible;
 }
 
 .hero-radar-label {
-  fill: var(--muted);
-  font-size: 9.5px;
-  font-weight: 700;
+  fill: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .hero-radar-ring {
