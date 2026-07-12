@@ -1,5 +1,6 @@
 import type { Response } from "express";
 import type { PublicUser } from "../auth/auth-service";
+import { isDevUserPreviewPublicUser } from "../auth/dev-user-preview";
 import { getDatabase } from "../db";
 
 export const PAID_FEATURE_REQUIRED_CODE = "PAID_FEATURE_REQUIRED";
@@ -23,7 +24,10 @@ export async function hasPaidFeatureAccessForScan(
   user: PublicUser,
   scanId: string,
 ): Promise<boolean> {
-  if (hasAdministrativePaidFeatureAccess(user)) {
+  if (
+    isDevUserPreviewPublicUser(user) ||
+    hasAdministrativePaidFeatureAccess(user)
+  ) {
     return true;
   }
 
@@ -70,7 +74,10 @@ export async function hasPaidFeatureAccessForWorkOrder(
   user: PublicUser,
   workOrderId: string,
 ): Promise<boolean> {
-  if (hasAdministrativePaidFeatureAccess(user)) {
+  if (
+    isDevUserPreviewPublicUser(user) ||
+    hasAdministrativePaidFeatureAccess(user)
+  ) {
     return true;
   }
 

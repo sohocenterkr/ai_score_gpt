@@ -1,3 +1,5 @@
+import { withDevUserPreviewQuery } from "../auth/dev-user-preview";
+
 interface ErrorResponse {
   code?: string;
   message?: string;
@@ -338,5 +340,7 @@ export function workOrderExportUrl(
   workOrderId: string,
   format: "json" | "csv" | "pdf",
 ): string {
-  return `/api/work-orders/${encodeURIComponent(workOrderId)}/export.${format}`;
+  return withDevUserPreviewQuery(
+    `/api/work-orders/${encodeURIComponent(workOrderId)}/export.${format}`,
+  );
 }

@@ -849,3 +849,60 @@ h3 {
     padding-inline: clamp(16px, 3vw, 24px);
   }
 }
+
+.dev-user-preview-toggle {
+  border: 1px solid #a16207;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #854d0e;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.42rem 0.72rem;
+}
+
+.dev-user-preview-toggle:hover {
+  background: #fde68a;
+}
+
+.dev-user-preview-banner {
+  align-items: center;
+  background: #fef3c7;
+  border-bottom: 1px solid #f59e0b;
+  color: #78350f;
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  padding: 0.72rem 1rem;
+  text-align: center;
+}
+
+.dev-user-preview-banner span {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.dev-user-preview-banner button {
+  border: 1px solid #92400e;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #78350f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.38rem 0.68rem;
+}
+
+@media (max-width: 768px) {
+  .dev-user-preview-banner {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .dev-user-preview-banner button {
+    align-self: center;
+  }
+}

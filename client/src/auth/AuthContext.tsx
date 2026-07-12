@@ -13,10 +13,18 @@ import {
   logoutRequest,
   signupRequest,
 } from "./auth-api";
-import type { AuthState } from "./types";
+import {
+  canUseDevUserPreviewClient,
+  readDevUserPreview,
+  writeDevUserPreview,
+} from "./dev-user-preview";
+import type { AuthState, AuthUser } from "./types";
 
 interface AuthContextValue {
   state: AuthState;
+  canUseUserPreview: boolean;
+  isUserPreview: boolean;
+  setUserPreview(enabled: boolean): void;
   login(input: { email: string; password: string }): Promise<void>;
   signup(input: {
     email: string;
@@ -37,19 +45,31 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+function isActualSuperAdmin(user: AuthUser): boolean {
+  return (
+    user.role === "SUPER_ADMIN" &&
+    user.email.trim().toLowerCase() === "sohocenter.kr@gmail.com"
+  );
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ status: "loading" });
+  const [actualState, setActualState] = useState<AuthState>({
+    status: "loading",
+  });
+  const [isUserPreview, setIsUserPreviewState] = useState(() =>
+    readDevUserPreview(),
+  );
 
   async function refresh() {
     try {
       const session = await fetchSession();
-      setState(
+      setActualState(
         session.authenticated && session.user
           ? { status: "authenticated", user: session.user }
           : { status: "anonymous" },
       );
     } catch {
-      setState({ status: "anonymous" });
+      setActualState({ status: "anonymous" });
     }
   }
 
@@ -57,27 +77,74 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh();
   }, []);
 
+  const canUseUserPreview =
+    canUseDevUserPreviewClient() &&
+    actualState.status === "authenticated" &&
+    isActualSuperAdmin(actualState.user);
+
+  useEffect(() => {
+    if (
+      actualState.status !== "loading" &&
+      !canUseUserPreview &&
+      isUserPreview
+    ) {
+      writeDevUserPreview(false);
+      setIsUserPreviewState(false);
+    }
+  }, [actualState.status, canUseUserPreview, isUserPreview]);
+
+  const state = useMemo<AuthState>(() => {
+    if (
+      isUserPreview &&
+      canUseUserPreview &&
+      actualState.status === "authenticated"
+    ) {
+      return {
+        status: "authenticated",
+        user: {
+          ...actualState.user,
+          role: "USER",
+        },
+      };
+    }
+
+    return actualState;
+  }, [actualState, canUseUserPreview, isUserPreview]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       state,
+      canUseUserPreview,
+      isUserPreview,
+      setUserPreview(enabled) {
+        const nextEnabled = Boolean(enabled && canUseUserPreview);
+        writeDevUserPreview(nextEnabled);
+        setIsUserPreviewState(nextEnabled);
+      },
       async login(input) {
         const response = await loginRequest(input);
-        setState({ status: "authenticated", user: response.user });
+        writeDevUserPreview(false);
+        setIsUserPreviewState(false);
+        setActualState({ status: "authenticated", user: response.user });
       },
       async signup(input) {
         await signupRequest(input);
       },
       async deleteAccount(input) {
         await deleteAccountRequest(input);
-        setState({ status: "anonymous" });
+        writeDevUserPreview(false);
+        setIsUserPreviewState(false);
+        setActualState({ status: "anonymous" });
       },
       async logout() {
         await logoutRequest();
-        setState({ status: "anonymous" });
+        writeDevUserPreview(false);
+        setIsUserPreviewState(false);
+        setActualState({ status: "anonymous" });
       },
       refresh,
     }),
-    [state],
+    [canUseUserPreview, isUserPreview, state],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

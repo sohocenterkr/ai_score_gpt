@@ -1,3 +1,5 @@
+import { withDevUserPreviewQuery } from "../auth/dev-user-preview";
+
 export interface SiteScan {
   id: string;
   siteId: string;
@@ -368,5 +370,6 @@ export async function getScanResultRequest(
 export function scanResultPdfUrl(scanId: string, locale?: "ko" | "en"): string {
   const baseUrl = `/api/scan-results/${encodeURIComponent(scanId)}/export.pdf`;
 
-  return locale === "en" ? `${baseUrl}?locale=en` : baseUrl;
+  const localizedUrl = locale === "en" ? `${baseUrl}?locale=en` : baseUrl;
+  return withDevUserPreviewQuery(localizedUrl);
 }

@@ -13,6 +13,7 @@ import {
   validatePublicSiteUrl,
   type DnsResolver,
 } from "./url-safety";
+import { isDevUserPreviewPublicUser } from "../auth/dev-user-preview";
 
 export interface CreateSiteInput {
   name: string;
@@ -233,6 +234,8 @@ export interface SiteProgressSource {
   workOrders: readonly SiteProgressWorkOrderRecord[];
   paidPlans: readonly PaidPlan[];
   hasAdminAccess?: boolean;
+  initialPaidOverride?: boolean;
+  extraPaidOverride?: boolean;
 }
 
 function progressDiagnostic(
@@ -268,14 +271,16 @@ function progressDiagnostic(
 export function buildSiteProgress(
   input: SiteProgressSource,
 ): PublicSiteProgress {
-  const initialPaid =
-    Boolean(input.hasAdminAccess) ||
-    input.paidPlans.some(
-      (plan) => plan === "BASIC" || plan === "CASE_STUDY_DISCOUNT",
-    );
-  const extraPaid =
-    Boolean(input.hasAdminAccess) ||
-    input.paidPlans.includes("EXTRA_VERIFICATION");
+    const initialPaid =
+      input.initialPaidOverride ??
+      (Boolean(input.hasAdminAccess) ||
+        input.paidPlans.some(
+          (plan) => plan === "BASIC" || plan === "CASE_STUDY_DISCOUNT",
+        ));
+    const extraPaid =
+      input.extraPaidOverride ??
+      (Boolean(input.hasAdminAccess) ||
+        input.paidPlans.includes("EXTRA_VERIFICATION"));
   const orderedWorkOrders = [...input.workOrders].sort(
     (left, right) =>
       left.version - right.version ||
@@ -745,6 +750,12 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
               (entitlement) => entitlement.plan,
             ),
             hasAdminAccess: user.role === "SUPER_ADMIN",
+              initialPaidOverride: isDevUserPreviewPublicUser(user)
+                ? true
+                : undefined,
+              extraPaidOverride: isDevUserPreviewPublicUser(user)
+                ? false
+                : undefined,
           }),
         );
       });

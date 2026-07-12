@@ -26,6 +26,10 @@ const layoutCopy = {
     guide: "이용가이드",
     faq: "FAQ",
     checkout: "요금/결제 안내",
+  userPreviewStart: "일반 사용자 미리보기",
+  userPreviewEnd: "수퍼관리자 화면으로 돌아가기",
+  userPreviewBanner:
+    "개발모드 일반 사용자 미리보기 중입니다. 실제 계정 권한과 결제 기록은 변경되지 않으며, 데이터 변경 요청은 차단됩니다.",
   },
   en: {
     homeAria: "Site AI Score home",
@@ -48,18 +52,32 @@ const layoutCopy = {
     guide: "Guide",
     faq: "FAQ",
     checkout: "Pricing / Payment",
+  userPreviewStart: "Preview as regular user",
+  userPreviewEnd: "Return to super admin",
+  userPreviewBanner:
+    "Development-only regular-user preview is active. Your real role and payment records are unchanged, and data-changing requests are blocked.",
   },
 };
 
 export function LocaleLayout() {
   const { locale } = useParams();
-  const { state } = useAuth();
+  const {
+    state,
+    canUseUserPreview,
+    isUserPreview,
+    setUserPreview,
+  } = useAuth();
   const location = useLocation();
   const [pageTitle, setPageTitle] = useState("");
   const isSuperAdmin =
     state.status === "authenticated" &&
     state.user.role === "SUPER_ADMIN" &&
     state.user.email.trim().toLowerCase() === "sohocenter.kr@gmail.com";
+
+  function toggleUserPreview() {
+    setUserPreview(!isUserPreview);
+    window.location.reload();
+  }
 
   useEffect(() => {
     const main = document.querySelector("main");
@@ -123,6 +141,18 @@ export function LocaleLayout() {
                   <Link to={`/${locale}/admin`}>{copy.admin}</Link>
                 ) : null}
                 <Link to={`/${locale}/settings`}>{copy.settings}</Link>
+                  {canUseUserPreview ? (
+                    <button
+                      className="dev-user-preview-toggle"
+                      type="button"
+                      aria-pressed={isUserPreview}
+                      onClick={toggleUserPreview}
+                    >
+                      {isUserPreview
+                        ? copy.userPreviewEnd
+                        : copy.userPreviewStart}
+                    </button>
+                  ) : null}
               </>
             ) : (
               <Link to={`/${locale}/login`}>{copy.login}</Link>
@@ -130,6 +160,14 @@ export function LocaleLayout() {
           </nav>
         </div>
       </header>
+        {isUserPreview ? (
+          <div className="dev-user-preview-banner" role="status">
+            <span>{copy.userPreviewBanner}</span>
+            <button type="button" onClick={toggleUserPreview}>
+              {copy.userPreviewEnd}
+            </button>
+          </div>
+        ) : null}
       <NoticePopup />
       <main>
         <Outlet context={{ locale }} />
