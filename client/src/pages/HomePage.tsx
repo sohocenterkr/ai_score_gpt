@@ -103,6 +103,11 @@ const serviceSteps = [
     "필요시 다음 작업지시서 발행",
     "재진단 후 남은 개선 항목이 있으면 다음 차수 작업지시서를 발행합니다.",
   ],
+  [
+    "05",
+    "한 번 더 수정 후 재진단",
+    "다음 작업지시서까지 반영한 뒤 한 번 더 같은 기준으로 사이트를 재진단합니다.",
+  ],
 ];
 
 const serviceStepsEn = [
@@ -121,6 +126,11 @@ const serviceStepsEn = [
     "04",
     "Create the next work order if needed",
     "If the next diagnostic finds remaining issues, create the next work order for those items.",
+  ],
+  [
+    "05",
+    "Re-diagnose after the next fix",
+    "After applying the next work order, run one more diagnosis under the same criteria.",
   ],
 ];
 
