@@ -37,6 +37,7 @@ const nullableOptionalText = (maxLength: number) =>
 const createSiteSchema = z.object({
   name: z.string().trim().min(2).max(80),
   baseUrl: z.string().trim().min(1).max(2_048),
+  description: optionalText(1_000),
   siteType: optionalText(80),
   country: z.string().trim().regex(/^[A-Za-z]{2}$/).default("KR"),
   region: optionalText(100),
@@ -51,6 +52,7 @@ const updateSiteSchema = z
   .object({
     name: z.string().trim().min(2).max(80).optional(),
     baseUrl: z.string().trim().min(1).max(2_048).optional(),
+    description: nullableOptionalText(1_000),
     siteType: nullableOptionalText(80),
     country: z
       .string()

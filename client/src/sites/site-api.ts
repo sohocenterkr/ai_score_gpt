@@ -94,6 +94,7 @@ export interface RegisteredSite {
   baseUrl: string;
   finalUrl: string | null;
   siteType: string | null;
+  description: string | null;
   country: string;
   region: string | null;
   primaryLocale: string;
@@ -107,15 +108,17 @@ export interface RegisteredSite {
 export interface CreateSiteRequest {
   name: string;
   baseUrl: string;
+  description?: string;
   siteType?: string;
-  country: string;
+  country?: string;
   region?: string;
-  primaryLocale: string;
+  primaryLocale?: string;
 }
 
 export interface UpdateSiteRequest {
   name?: string;
   baseUrl?: string;
+  description?: string | null;
   siteType?: string | null;
   country?: string;
   region?: string | null;

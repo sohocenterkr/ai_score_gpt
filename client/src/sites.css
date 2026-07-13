@@ -102,7 +102,8 @@
 }
 
 .site-fields input,
-.site-fields select {
+.site-fields select,
+.site-fields textarea {
   width: 100%;
   min-height: 48px;
   border: 1px solid #cbd3df;
@@ -115,8 +116,15 @@
   font-weight: 500;
 }
 
+.site-fields textarea {
+  min-height: 88px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
 .site-fields input:focus,
-.site-fields select:focus {
+.site-fields select:focus,
+.site-fields textarea:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 4px rgba(49, 87, 229, 0.12);
 }
@@ -423,8 +431,28 @@
 }
 
 .site-progress-heading {
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 16px;
+}
+
+.site-progress-toggle {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border: 1px solid #cbd3df;
+  border-radius: 999px;
+  padding: 0 16px;
+  color: var(--brand);
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.site-progress-toggle:hover {
+  border-color: var(--brand);
 }
 
 .site-progress-heading h4 {

@@ -18,19 +18,13 @@ import "../sites.css";
 interface SiteFormState {
   name: string;
   baseUrl: string;
-  siteType: string;
-  country: string;
-  region: string;
-  primaryLocale: string;
+  description: string;
 }
 
 const emptyForm: SiteFormState = {
   name: "",
   baseUrl: "",
-  siteType: "",
-  country: "KR",
-  region: "",
-  primaryLocale: "ko",
+  description: "",
 };
 
 const scanStatusLabels = {
@@ -62,8 +56,8 @@ const sitesCopy = {
       "공개 URL의 실제 HTTP 응답과 초기 HTML 증거를 수집하고 규칙 기반 점수와 검사 결과를 제공합니다. 작업지시서 생성은 다음 단계에서 실패 항목에 연결됩니다.",
     createTitle: "새 사이트 등록",
     createHelp: "`example.com`처럼 입력하면 HTTPS 주소로 보완하여 확인합니다.",
-    checking: "확인 중...",
-    createButton: "사이트 등록",
+    checking: "진단 시작 중...",
+    createButton: "사이트 진단",
     listTitle: "등록 사이트",
     listHelp: "사이트 정보 수정·삭제와 검사 작업 등록을 관리합니다.",
     siteCount: (count: number) => `${count}개`,
@@ -74,8 +68,6 @@ const sitesCopy = {
     saveEdit: "수정 저장",
     cancel: "취소",
     registered: "등록 완료",
-    industry: "업종",
-    region: "지역/상권",
     finalUrl: "최종 확인 URL",
     createdAt: "등록일(KST)",
     notEntered: "미입력",
@@ -93,7 +85,9 @@ const sitesCopy = {
     viewResult: "결과 보기",
     edit: "수정",
     delete: "삭제",
-    createdMessage: "사이트가 등록되었습니다.",
+    createdMessage: "사이트가 등록되었고 간편검사가 시작되었습니다.",
+    registeredOnlyMessage:
+      "사이트는 등록되었지만 간편검사 시작에 실패했습니다. 목록에서 다시 시도해 주세요.",
     updatedMessage: "사이트 정보가 수정되었습니다.",
     deletedMessage: "사이트가 삭제되었습니다. 기존 검사 이력은 보존됩니다.",
     queuedMessage:
@@ -106,14 +100,9 @@ const sitesCopy = {
       namePlaceholder: "예: Site AI Score",
       baseUrl: "대표 URL",
       baseUrlPlaceholder: "example.com",
-      siteType: "업종·사이트 유형",
-      siteTypePlaceholder: "예: 음식점, 병원, 기업 홈페이지",
-      country: "대상 국가/시장",
-      countryPlaceholder: "KR",
-      primaryLocale: "검사 기본 언어",
-      primaryLocalePlaceholder: "ko",
-      region: "지역/상권(선택)",
-      regionPlaceholder: "예: 서울, 강남구, 역삼동 (다중 입력가능)",
+      description: "사이트 설명",
+      descriptionPlaceholder:
+        "예: 강남구에서 소아과를 운영하고 있습니다. 어떤 업종·서비스인지 간단히 알려주세요.",
     },
   },
   en: {
@@ -126,8 +115,8 @@ const sitesCopy = {
     createTitle: "Register New Website",
     createHelp:
       "If you enter a domain such as `example.com`, the service will complete it as an HTTPS URL for verification.",
-    checking: "Checking...",
-    createButton: "Register Website",
+    checking: "Starting diagnosis...",
+    createButton: "Start diagnosis",
     listTitle: "Registered Websites",
     listHelp: "Manage website details, deletion, and diagnostic scan jobs.",
     siteCount: (count: number) => `${count} ${count === 1 ? "site" : "sites"}`,
@@ -138,8 +127,6 @@ const sitesCopy = {
     saveEdit: "Save Changes",
     cancel: "Cancel",
     registered: "Registered",
-    industry: "Industry",
-    region: "Region / market area",
     finalUrl: "Final checked URL",
     createdAt: "Registered date (KST)",
     notEntered: "Not entered",
@@ -157,7 +144,10 @@ const sitesCopy = {
     viewResult: "View Result",
     edit: "Edit",
     delete: "Delete",
-    createdMessage: "The website has been registered.",
+    createdMessage:
+      "The website has been registered and the simple diagnostic has started.",
+    registeredOnlyMessage:
+      "The website was registered, but starting the simple diagnostic failed. Please try again from the list.",
     updatedMessage: "The website information has been updated.",
     deletedMessage:
       "The website has been removed from the list. Existing scan history is preserved.",
@@ -171,14 +161,9 @@ const sitesCopy = {
       namePlaceholder: "e.g. Site AI Score",
       baseUrl: "Main URL",
       baseUrlPlaceholder: "example.com",
-      siteType: "Industry / website type",
-      siteTypePlaceholder: "e.g. restaurant, clinic, company website",
-      country: "Target country / market",
-      countryPlaceholder: "US",
-      primaryLocale: "Primary diagnostic language",
-      primaryLocalePlaceholder: "en",
-      region: "Region / market area (optional)",
-      regionPlaceholder: "e.g. Seoul, Gangnam, New York, local market",
+      description: "Website description",
+      descriptionPlaceholder:
+        "e.g. We run a pediatric clinic in Seoul. Briefly describe the business or service.",
     },
   },
 } as const;
@@ -188,6 +173,8 @@ const progressCopy = {
     progressTitle: "진행 현황",
     progressHelp:
       "간편진단부터 4차 정밀진단까지 현재 위치와 다음 작업을 차수별로 확인할 수 있습니다.",
+    expandDetails: "진행 현황 펼치기",
+    collapseDetails: "진행 현황 접기",
     currentStage: "현재 단계",
     quickDiagnostic: "무료 간편진단",
     quickNotStarted: "아직 간편진단을 실행하지 않았습니다.",
@@ -242,6 +229,8 @@ const progressCopy = {
     progressTitle: "Progress",
     progressHelp:
       "Track the current position and next action from the simple diagnostic through Diagnostic 4.",
+    expandDetails: "Show progress details",
+    collapseDetails: "Hide progress details",
     currentStage: "Current stage",
     quickDiagnostic: "Free Simple Diagnostic",
     quickNotStarted: "The simple diagnostic has not been run yet.",
@@ -453,42 +442,11 @@ function messageFromError(error: unknown, fallback: string): string {
   return error instanceof SiteApiError ? error.message : fallback;
 }
 
-const siteTypeEnglishLabels: Record<string, string> = {
-  "AI 점수 확인": "AI score check",
-  음식점: "Restaurant",
-  병원: "Clinic",
-  "기업 홈페이지": "Company website",
-  학원: "Academy",
-  카페: "Cafe",
-  미용실: "Hair salon",
-  쇼핑몰: "Online store",
-};
-
-function formatSiteType(
-  siteType: string | null | undefined,
-  locale: "ko" | "en",
-): string | null {
-  const normalized = siteType?.trim();
-
-  if (!normalized) {
-    return null;
-  }
-
-  if (locale === "ko") {
-    return normalized;
-  }
-
-  return siteTypeEnglishLabels[normalized] ?? normalized;
-}
-
 function formFromSite(site: RegisteredSite): SiteFormState {
   return {
     name: site.name,
     baseUrl: site.baseUrl,
-    siteType: site.siteType ?? "",
-    country: site.country,
-    region: site.region ?? "",
-    primaryLocale: site.primaryLocale,
+    description: site.description ?? "",
   };
 }
 
@@ -496,10 +454,7 @@ function toRequest(form: SiteFormState) {
   return {
     name: form.name,
     baseUrl: form.baseUrl,
-    siteType: form.siteType.trim() || undefined,
-    country: form.country,
-    region: form.region.trim() || undefined,
-    primaryLocale: form.primaryLocale,
+    description: form.description.trim() || undefined,
   };
 }
 
@@ -615,12 +570,27 @@ export function SitesPage() {
 
     try {
       const site = await createSiteRequest(toRequest(form));
+      let registeredSite = site;
+      let scanQueued = true;
+
+      try {
+        const scan = await queueSiteScanRequest(
+          site.id,
+          "QUICK",
+          normalizedLocale === "en" ? "en" : "ko",
+        );
+        registeredSite = { ...site, latestScan: scan };
+      } catch (scanError) {
+        scanQueued = false;
+        setErrorMessage(messageFromError(scanError, copy.unknownError));
+      }
+
       setSites((current) => [
-        site,
-        ...current.filter((item) => item.id !== site.id),
+        registeredSite,
+        ...current.filter((item) => item.id !== registeredSite.id),
       ]);
       setForm(emptyForm);
-      setMessage(copy.createdMessage);
+      setMessage(scanQueued ? copy.createdMessage : copy.registeredOnlyMessage);
     } catch (error) {
       setErrorMessage(messageFromError(error, copy.unknownError));
     } finally {
@@ -647,8 +617,7 @@ export function SitesPage() {
     try {
       const updated = await updateSiteRequest(siteId, {
         ...toRequest(editForm),
-        siteType: editForm.siteType.trim() || null,
-        region: editForm.region.trim() || null,
+        description: editForm.description.trim() || null,
       });
       setSites((current) =>
         current.map((site) => (site.id === siteId ? updated : site)),
@@ -838,6 +807,7 @@ function SiteDashboardCard({
   onQueueScan,
   onArchive,
 }: SiteDashboardCardProps) {
+  const [expanded, setExpanded] = useState(false);
   const progress = site.progress;
   const progressText = progressCopy[locale];
   const latestSimpleScan =
@@ -1031,12 +1001,8 @@ function SiteDashboardCard({
 
       <dl className="site-meta">
         <div>
-          <dt>{copy.industry}</dt>
-          <dd>{formatSiteType(site.siteType, locale) ?? copy.notEntered}</dd>
-        </div>
-        <div>
-          <dt>{copy.region}</dt>
-          <dd>{site.region ?? copy.notEntered}</dd>
+          <dt>{copy.fields.description}</dt>
+          <dd>{site.description ?? copy.notEntered}</dd>
         </div>
         <div>
           <dt>{copy.finalUrl}</dt>
@@ -1054,23 +1020,14 @@ function SiteDashboardCard({
             <h4>{progressText.progressTitle}</h4>
             <p>{progressText.progressHelp}</p>
           </div>
-          <div
-            className="site-payment-summary"
-            aria-label={progressText.progressTitle}
+          <button
+            type="button"
+            className="site-progress-toggle"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={expanded}
           >
-            <span className={progress?.payment.initialPaid ? "paid" : "unpaid"}>
-              {progressText.initialPayment}:{" "}
-              {progress?.payment.initialPaid
-                ? progressText.paid
-                : progressText.unpaid}
-            </span>
-            <span className={progress?.payment.extraPaid ? "paid" : "pending"}>
-              {progressText.extraPayment}:{" "}
-              {progress?.payment.extraPaid
-                ? progressText.paid
-                : progressText.extraPaymentGuide}
-            </span>
-          </div>
+            {expanded ? progressText.collapseDetails : progressText.expandDetails}
+          </button>
         </div>
 
         <div className="site-current-stage">
@@ -1088,171 +1045,197 @@ function SiteDashboardCard({
           <div className="site-current-action">{renderNextAction()}</div>
         </div>
 
-        <div className="site-quick-diagnostic">
-          <div>
-            <span>{progressText.quickDiagnostic}</span>
-            <strong>
-              {simpleDiagnostic
-                ? statusLabel(simpleDiagnostic.status, locale, progressText)
-                : progressText.quickNotStarted}
-            </strong>
-            {simpleDiagnostic?.score !== null &&
-            simpleDiagnostic?.score !== undefined ? (
-              <small>
-                {progressText.score(
-                  Math.round(simpleDiagnostic.score),
-                  simpleDiagnostic.grade ?? "-",
-                )}
-              </small>
-            ) : null}
-          </div>
-          <div className="site-quick-actions">
-            {simpleDiagnostic &&
-            ["COMPLETED", "PARTIAL", "FAILED"].includes(
-              simpleDiagnostic.status,
-            ) ? (
-              <Link
-                className="site-primary-button site-result-primary-button"
-                to={`/${locale}/sites/${site.id}/scans/${simpleDiagnostic.scanId}`}
+        {expanded ? (
+          <>
+            <div
+              className="site-payment-summary"
+              aria-label={progressText.progressTitle}
+            >
+              <span
+                className={progress?.payment.initialPaid ? "paid" : "unpaid"}
               >
-                {copy.viewResult}
-              </Link>
-            ) : null}
-            {scanOutdated ? (
-              <button
-                className="site-secondary-button"
-                type="button"
-                onClick={onQueueScan}
-                disabled={working || scanPending}
+                {progressText.initialPayment}:{" "}
+                {progress?.payment.initialPaid
+                  ? progressText.paid
+                  : progressText.unpaid}
+              </span>
+              <span
+                className={progress?.payment.extraPaid ? "paid" : "pending"}
               >
-                {working ? copy.processing : copy.rescanCurrent}
-              </button>
-            ) : null}
-          </div>
-        </div>
+                {progressText.extraPayment}:{" "}
+                {progress?.payment.extraPaid
+                  ? progressText.paid
+                  : progressText.extraPaymentGuide}
+              </span>
+            </div>
 
-        <div className="site-workflow-heading">
-          <strong>{progressText.workflow}</strong>
-        </div>
+            <div className="site-quick-diagnostic">
+              <div>
+                <span>{progressText.quickDiagnostic}</span>
+                <strong>
+                  {simpleDiagnostic
+                    ? statusLabel(simpleDiagnostic.status, locale, progressText)
+                    : progressText.quickNotStarted}
+                </strong>
+                {simpleDiagnostic?.score !== null &&
+                simpleDiagnostic?.score !== undefined ? (
+                  <small>
+                    {progressText.score(
+                      Math.round(simpleDiagnostic.score),
+                      simpleDiagnostic.grade ?? "-",
+                    )}
+                  </small>
+                ) : null}
+              </div>
+              <div className="site-quick-actions">
+                {simpleDiagnostic &&
+                ["COMPLETED", "PARTIAL", "FAILED"].includes(
+                  simpleDiagnostic.status,
+                ) ? (
+                  <Link
+                    className="site-primary-button site-result-primary-button"
+                    to={`/${locale}/sites/${site.id}/scans/${simpleDiagnostic.scanId}`}
+                  >
+                    {copy.viewResult}
+                  </Link>
+                ) : null}
+                {scanOutdated ? (
+                  <button
+                    className="site-secondary-button"
+                    type="button"
+                    onClick={onQueueScan}
+                    disabled={working || scanPending}
+                  >
+                    {working ? copy.processing : copy.rescanCurrent}
+                  </button>
+                ) : null}
+              </div>
+            </div>
 
-        <div className="site-progress-flow">
-          {visibleWorkflowSteps.map((step, index) => {
-            const current = isCurrentStep(progress, step.kind, step.number);
+            <div className="site-workflow-heading">
+              <strong>{progressText.workflow}</strong>
+            </div>
 
-            if (step.kind === "DIAGNOSTIC") {
-              const diagnostic = diagnosticStep(site, step.number);
-              const status = diagnostic?.status ?? "PENDING";
+            <div className="site-progress-flow">
+              {visibleWorkflowSteps.map((step, index) => {
+                const current = isCurrentStep(progress, step.kind, step.number);
 
-              return (
-                <div
-                  className={`site-progress-step ${current ? "current" : ""}`}
-                  key={`diagnostic-${step.number}`}
-                >
-                  <span className="site-step-index">{index + 1}</span>
-                  <div className="site-step-title">
-                    <strong>{progressText.diagnosticTitle(step.number)}</strong>
-                    <span className={`site-step-status ${statusTone(status)}`}>
-                      {diagnostic
-                        ? statusLabel(status, locale, progressText)
-                        : progressText.status.PENDING}
-                    </span>
-                  </div>
-                  <div className="site-step-detail">
-                    {diagnostic ? (
-                      <>
-                        {diagnostic.score !== null ? (
+                if (step.kind === "DIAGNOSTIC") {
+                  const diagnostic = diagnosticStep(site, step.number);
+                  const status = diagnostic?.status ?? "PENDING";
+
+                  return (
+                    <div
+                      className={`site-progress-step ${current ? "current" : ""}`}
+                      key={`diagnostic-${step.number}`}
+                    >
+                      <span className="site-step-index">{index + 1}</span>
+                      <div className="site-step-title">
+                        <strong>{progressText.diagnosticTitle(step.number)}</strong>
+                        <span className={`site-step-status ${statusTone(status)}`}>
+                          {diagnostic
+                            ? statusLabel(status, locale, progressText)
+                            : progressText.status.PENDING}
+                        </span>
+                      </div>
+                      <div className="site-step-detail">
+                        {diagnostic ? (
+                          <>
+                            {diagnostic.score !== null ? (
+                              <span>
+                                {progressText.score(
+                                  Math.round(diagnostic.score),
+                                  diagnostic.grade ?? "-",
+                                )}
+                              </span>
+                            ) : null}
+                            {diagnostic.completedAt ? (
+                              <small>
+                                {formatKST(diagnostic.completedAt, locale)}
+                              </small>
+                            ) : null}
+                          </>
+                        ) : (
+                          <span>{progressText.waitingPrevious}</span>
+                        )}
+                      </div>
+                      <div className="site-step-action">
+                        {diagnostic ? (
+                          <Link
+                            className="site-secondary-button"
+                            to={`/${locale}/sites/${site.id}/scans/${diagnostic.scanId}`}
+                          >
+                            {progressText.viewDiagnostic}
+                          </Link>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                }
+
+                const workOrder = progress?.workOrders.find(
+                  (item) => item.version === step.number,
+                );
+                const status = workOrder?.status ?? "PENDING";
+                const needsExtraPayment =
+                  step.number === 3 &&
+                  Boolean(diagnosticStep(site, 3)) &&
+                  !progress?.payment.extraPaid;
+
+                return (
+                  <div
+                    className={`site-progress-step ${current ? "current" : ""}`}
+                    key={`work-order-${step.number}`}
+                  >
+                    <span className="site-step-index">{index + 1}</span>
+                    <div className="site-step-title">
+                      <strong>{progressText.workOrderTitle(step.number)}</strong>
+                      <span className={`site-step-status ${statusTone(status)}`}>
+                        {workOrder
+                          ? statusLabel(status, locale, progressText)
+                          : progressText.status.PENDING}
+                      </span>
+                    </div>
+                    <div className="site-step-detail">
+                      {workOrder ? (
+                        <>
                           <span>
-                            {progressText.score(
-                              Math.round(diagnostic.score),
-                              diagnostic.grade ?? "-",
+                            {progressText.itemCount(
+                              workOrder.itemCount,
+                              workOrder.requiredItemCount,
                             )}
                           </span>
-                        ) : null}
-                        {diagnostic.completedAt ? (
                           <small>
-                            {formatKST(diagnostic.completedAt, locale)}
+                            {formatKST(
+                              workOrder.issuedAt ?? workOrder.createdAt,
+                              locale,
+                            )}
                           </small>
-                        ) : null}
-                      </>
-                    ) : (
-                      <span>{progressText.waitingPrevious}</span>
-                    )}
+                        </>
+                      ) : (
+                        <span>
+                          {needsExtraPayment
+                            ? progressText.extraPaymentRequired
+                            : progressText.waitingPrevious}
+                        </span>
+                      )}
+                    </div>
+                    <div className="site-step-action">
+                      {workOrder ? (
+                        <Link
+                          className="site-secondary-button"
+                          to={`/${locale}/work-orders/${workOrder.id}`}
+                        >
+                          {progressText.viewWorkOrder}
+                        </Link>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="site-step-action">
-                    {diagnostic ? (
-                      <Link
-                        className="site-secondary-button"
-                        to={`/${locale}/sites/${site.id}/scans/${diagnostic.scanId}`}
-                      >
-                        {progressText.viewDiagnostic}
-                      </Link>
-                    ) : null}
-                  </div>
-                </div>
-              );
-            }
-
-            const workOrder = progress?.workOrders.find(
-              (item) => item.version === step.number,
-            );
-            const status = workOrder?.status ?? "PENDING";
-            const needsExtraPayment =
-              step.number === 3 &&
-              Boolean(diagnosticStep(site, 3)) &&
-              !progress?.payment.extraPaid;
-
-            return (
-              <div
-                className={`site-progress-step ${current ? "current" : ""}`}
-                key={`work-order-${step.number}`}
-              >
-                <span className="site-step-index">{index + 1}</span>
-                <div className="site-step-title">
-                  <strong>{progressText.workOrderTitle(step.number)}</strong>
-                  <span className={`site-step-status ${statusTone(status)}`}>
-                    {workOrder
-                      ? statusLabel(status, locale, progressText)
-                      : progressText.status.PENDING}
-                  </span>
-                </div>
-                <div className="site-step-detail">
-                  {workOrder ? (
-                    <>
-                      <span>
-                        {progressText.itemCount(
-                          workOrder.itemCount,
-                          workOrder.requiredItemCount,
-                        )}
-                      </span>
-                      <small>
-                        {formatKST(
-                          workOrder.issuedAt ?? workOrder.createdAt,
-                          locale,
-                        )}
-                      </small>
-                    </>
-                  ) : (
-                    <span>
-                      {needsExtraPayment
-                        ? progressText.extraPaymentRequired
-                        : progressText.waitingPrevious}
-                    </span>
-                  )}
-                </div>
-                <div className="site-step-action">
-                  {workOrder ? (
-                    <Link
-                      className="site-secondary-button"
-                      to={`/${locale}/work-orders/${workOrder.id}`}
-                    >
-                      {progressText.viewWorkOrder}
-                    </Link>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
       </section>
 
       <div className="site-card-management">
@@ -1316,54 +1299,15 @@ function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
         />
       </label>
 
-      <label htmlFor={`${prefix}-type`}>
-        {labels.siteType}
-        <input
-          id={`${prefix}-type`}
-          name="siteType"
-          value={form.siteType}
-          onChange={(event) => onChange("siteType", event.target.value)}
-          placeholder={labels.siteTypePlaceholder}
-        />
-      </label>
-
-      <div className="site-field-row">
-        <label htmlFor={`${prefix}-country`}>
-          {labels.country}
-          <input
-            id={`${prefix}-country`}
-            name="country"
-            maxLength={2}
-            value={form.country}
-            onChange={(event) =>
-              onChange("country", event.target.value.toUpperCase())
-            }
-            placeholder={labels.countryPlaceholder}
-            required
-          />
-        </label>
-
-        <label htmlFor={`${prefix}-locale`}>
-          {labels.primaryLocale}
-          <input
-            id={`${prefix}-locale`}
-            name="primaryLocale"
-            value={form.primaryLocale}
-            onChange={(event) => onChange("primaryLocale", event.target.value)}
-            placeholder={labels.primaryLocalePlaceholder}
-            required
-          />
-        </label>
-      </div>
-
-      <label htmlFor={`${prefix}-region`}>
-        {labels.region}
-        <input
-          id={`${prefix}-region`}
-          name="region"
-          value={form.region}
-          onChange={(event) => onChange("region", event.target.value)}
-          placeholder={labels.regionPlaceholder}
+      <label htmlFor={`${prefix}-description`}>
+        {labels.description}
+        <textarea
+          id={`${prefix}-description`}
+          name="description"
+          rows={3}
+          value={form.description}
+          onChange={(event) => onChange("description", event.target.value)}
+          placeholder={labels.descriptionPlaceholder}
         />
       </label>
     </div>
