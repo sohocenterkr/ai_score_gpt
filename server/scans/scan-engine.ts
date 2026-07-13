@@ -111,6 +111,131 @@ const botDefinitions: readonly BotDefinition[] = [
   },
 ];
 
+// Recommendation copy must never tell site owners to disable bot defenses
+// wholesale. Blocking unverified bots is normal, correct security behavior.
+// Any suggested change has to stay scoped to: specific verified bots, public
+// GET pages only, with admin/account/payment/API paths and rate limits kept
+// intact.
+const BOT_ACCESS_SAFETY_NOTE =
+  "전체 봇 차단을 해제하지 말고, 공식 IP 대역으로 검증되는 특정 봇만 공개 페이지 GET 요청에 한해 허용하세요. 관리자·회원·결제·API 경로 차단과 기존 속도 제한은 그대로 유지해야 합니다.";
+
+const DEFAULT_MAIN_FETCH_IDENTITY = "SiteAIScoreBot";
+
+interface MainFetchIdentity {
+  token: string;
+  userAgent: string;
+}
+
+// CDN/WAF bot-defense often blocks our own scanner UA while still allowing
+// real AI crawlers and mainstream search bots through. If the default
+// identity fails, retry as those identities before concluding the page is
+// genuinely unreachable, so the score reflects what AI can actually see.
+const MAIN_FETCH_FALLBACK_IDENTITIES: readonly MainFetchIdentity[] = [
+  ...botDefinitions.map((definition) => ({
+    token: definition.token,
+    userAgent: definition.userAgent,
+  })),
+  {
+    token: "Googlebot",
+    userAgent:
+      "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  },
+  {
+    token: "Bingbot",
+    userAgent:
+      "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+  },
+];
+
+interface MainFetchAttempt {
+  identityToken: string;
+  response: SafeHttpResponse | null;
+  error: unknown;
+}
+
+interface MainFetchResult {
+  response: SafeHttpResponse;
+  identityUsed: string;
+  defaultBlocked: boolean;
+  blockedIdentities: string[];
+}
+
+async function attemptMainFetch(
+  fetcher: SafeHttpFetcher,
+  baseUrl: string,
+  identityToken: string,
+  userAgent?: string,
+): Promise<MainFetchAttempt> {
+  try {
+    const response = await fetcher.fetch(
+      baseUrl,
+      userAgent ? { userAgent } : undefined,
+    );
+
+    return { identityToken, response, error: null };
+  } catch (error) {
+    return { identityToken, response: null, error };
+  }
+}
+
+async function fetchMainPage(
+  fetcher: SafeHttpFetcher,
+  baseUrl: string,
+): Promise<MainFetchResult> {
+  const attempts: MainFetchAttempt[] = [];
+  const primary = await attemptMainFetch(
+    fetcher,
+    baseUrl,
+    DEFAULT_MAIN_FETCH_IDENTITY,
+  );
+  attempts.push(primary);
+
+  if (primary.response && isSuccessful(primary.response.statusCode)) {
+    return {
+      response: primary.response,
+      identityUsed: primary.identityToken,
+      defaultBlocked: false,
+      blockedIdentities: [],
+    };
+  }
+
+  for (const identity of MAIN_FETCH_FALLBACK_IDENTITIES) {
+    const attempt = await attemptMainFetch(
+      fetcher,
+      baseUrl,
+      identity.token,
+      identity.userAgent,
+    );
+    attempts.push(attempt);
+
+    if (attempt.response && isSuccessful(attempt.response.statusCode)) {
+      return {
+        response: attempt.response,
+        identityUsed: attempt.identityToken,
+        defaultBlocked: true,
+        blockedIdentities: attempts
+          .filter((candidate) => candidate !== attempt)
+          .map((candidate) => candidate.identityToken),
+      };
+    }
+  }
+
+  const withResponse = attempts.find((attempt) => attempt.response);
+
+  if (withResponse?.response) {
+    return {
+      response: withResponse.response,
+      identityUsed: withResponse.identityToken,
+      defaultBlocked: withResponse.identityToken !== DEFAULT_MAIN_FETCH_IDENTITY,
+      blockedIdentities: attempts
+        .filter((candidate) => candidate !== withResponse)
+        .map((candidate) => candidate.identityToken),
+    };
+  }
+
+  throw primary.error;
+}
+
 function finding(
   input: Omit<CollectedFinding, "scoreDelta">,
 ): CollectedFinding {
@@ -1173,7 +1298,7 @@ async function botFinding(
       },
       recommendation: actualAccessible
         ? null
-        : "반복적으로 실패하면 사용자 요청형 AI 접근이 필요한 서비스인지 확인하고, 필요 시 WAF·CDN·봇 방어 설정을 점검하세요.",
+        : `반복적으로 실패하면 사용자 요청형 AI 접근이 필요한 서비스인지 확인하세요. ${BOT_ACCESS_SAFETY_NOTE}`,
     });
   }
 
@@ -1212,8 +1337,8 @@ async function botFinding(
     recommendation: passed
       ? null
       : blockedByPolicy
-        ? "AI 검색 노출이 필요하면 robots.txt에서 OAI-SearchBot 접근을 허용하세요."
-        : "반복적으로 실패하면 AI 검색 봇 접근이 필요한 서비스인지 확인하고, 필요 시 WAF·CDN·봇 방어 설정을 점검하세요.",
+        ? `AI 검색 노출이 필요하면 robots.txt에서 OAI-SearchBot의 공개 페이지 접근만 허용하세요. 관리자·회원·결제 등 비공개 경로는 계속 차단 상태를 유지하세요.`
+        : `반복적으로 실패하면 AI 검색 봇 접근이 필요한 서비스인지 확인하세요. ${BOT_ACCESS_SAFETY_NOTE}`,
   });
 }
 
@@ -1222,7 +1347,8 @@ export async function collectSiteScan(
   fetcher: SafeHttpFetcher,
   options: ScanCollectionOptions = {},
 ): Promise<ScanCollectionResult> {
-  const main = await fetcher.fetch(baseUrl);
+  const mainFetch = await fetchMainPage(fetcher, baseUrl);
+  const main = mainFetch.response;
   const htmlContent = isHtmlContentType(main.contentType);
   const analysis = htmlContent ? analyzeHtml(main.body, main.finalUrl) : null;
   const httpPassed = isSuccessful(main.statusCode);
@@ -1291,7 +1417,9 @@ export async function collectSiteScan(
       status: httpPassed ? "PASS" : "FAIL",
       title: "대표 페이지 HTTP 응답",
       description: httpPassed
-        ? "대표 페이지가 정상 HTTP 상태로 응답했습니다."
+        ? mainFetch.defaultBlocked
+          ? `기본 검사봇(${DEFAULT_MAIN_FETCH_IDENTITY})은 차단됐지만 실제 AI/검색 봇 식별자(${mainFetch.identityUsed})로는 정상 응답을 확인했습니다. CDN·WAF가 알려지지 않은 봇을 차단하고 있을 수 있습니다.`
+          : "대표 페이지가 정상 HTTP 상태로 응답했습니다."
         : "대표 페이지 HTTP 응답 상태를 확인해야 합니다.",
       evidence: {
         requestedUrl: main.requestedUrl,
@@ -1301,10 +1429,15 @@ export async function collectSiteScan(
         redirects: main.redirects,
         headers: selectEvidenceHeaders(main.headers),
         bodyBytes: main.body.length,
+        identityUsed: mainFetch.identityUsed,
+        defaultIdentityBlocked: mainFetch.defaultBlocked,
+        blockedIdentities: mainFetch.blockedIdentities,
       },
       recommendation: httpPassed
-        ? null
-        : "대표 페이지가 안정적으로 2xx 상태를 반환하도록 서버·리디렉션·WAF 설정을 확인하세요.",
+        ? mainFetch.defaultBlocked
+          ? `정체가 불분명한 봇을 차단하는 것은 정상적인 보안 조치입니다. ${BOT_ACCESS_SAFETY_NOTE}`
+          : null
+        : "대표 페이지가 안정적으로 2xx 상태를 반환하도록 서버·리디렉션 설정을 확인하세요. WAF가 원인으로 보인다면 전체 차단 해제가 아니라 공식 IP로 검증되는 특정 봇만 공개 페이지에 한해 허용하는 방식을 검토하세요.",
     }),
   );
 
