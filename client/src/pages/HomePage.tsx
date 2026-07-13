@@ -186,6 +186,28 @@ const serviceDetailSectionsEn = [
   },
 ];
 
+const usageScenarios = [
+  {
+    title: "바이브코딩으로 사이트를 만드는 경우",
+    body: "작업지시서 PDF 파일을 AI에게 주시고, 작업지시서에 따라 사이트를 수정해 달라고 요청하세요.",
+  },
+  {
+    title: "사이트 제작회사에 외주로 제작하는 경우",
+    body: "작업지시서 PDF 파일을 외주회사에 전달하고 견적을 받으세요. 이 작업지시서 없이 그냥 제작을 의뢰하는 경우와 제작 비용에 큰 차이가 있을 수 있습니다.",
+  },
+];
+
+const usageScenariosEn = [
+  {
+    title: "Building your site with AI (“vibe coding”)",
+    body: "Give the work order PDF to your AI coding assistant and ask it to update the site according to the work order.",
+  },
+  {
+    title: "Outsourcing to a web development agency",
+    body: "Share the work order PDF with the agency and request a quote. Costs can differ significantly compared to requesting work without this work order.",
+  },
+];
+
 const faqItems = [
   [
     "Site AI Score는 무엇을 진단하나요?",
@@ -258,6 +280,7 @@ export function HomePage() {
   const activeDetailSections = isEnglish
     ? serviceDetailSectionsEn
     : serviceDetailSections;
+  const activeUsageScenarios = isEnglish ? usageScenariosEn : usageScenarios;
   const activeFaqItems = isEnglish ? faqItemsEn : faqItems;
 
   const organizationName = isEnglish ? "SOHO Center" : "소호센터";
@@ -552,6 +575,29 @@ export function HomePage() {
                 <span aria-hidden="true">💳</span>
                 {isEnglish ? "Pricing / Payment" : "요금/결제 안내"}
               </Link>
+            </div>
+          </div>
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section className="full-bleed-section">
+          <div className="content-container section-content">
+            <div className="section-heading">
+              <p className="eyebrow">HOW TO USE</p>
+              <h2>
+                {isEnglish
+                  ? "Here's how to use it"
+                  : "이렇게 활용하세요"}
+              </h2>
+            </div>
+            <div className="step-grid usage-grid">
+              {activeUsageScenarios.map((scenario) => (
+                <article className="surface step-item" key={scenario.title}>
+                  <h3>{scenario.title}</h3>
+                  <p>{scenario.body}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
