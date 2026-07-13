@@ -330,6 +330,7 @@ h3 {
 
 .full-bleed-section {
   width: 100%;
+  background: #ffffff;
 }
 
 .hero-content,
@@ -343,7 +344,7 @@ h3 {
 }
 
 .section-muted {
-  background: linear-gradient(180deg, #f7f8fc 0%, #eef2fb 100%);
+  background: linear-gradient(180deg, #eef1f8 0%, #e3e9f5 100%);
 }
 
 /* ==========================================================================
