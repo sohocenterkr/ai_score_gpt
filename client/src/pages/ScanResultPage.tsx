@@ -1556,9 +1556,13 @@ export function ScanResultPage() {
           </section>
         ) : (
           <section className="surface scan-legacy-notice">
-            {isEnglish
-              ? "This result was created with an older rule version and has no score. Run a new simple diagnostic to calculate a score with the current rules."
-              : "이 결과는 이전 규칙 버전으로 생성되어 점수가 없습니다. 새 간편검사를 실행하면 현재 규칙으로 점수를 계산합니다."}
+            {result.scan.status === "FAILED"
+              ? isEnglish
+                ? "This diagnostic failed because the diagnostic server could not connect to the target site, so a score could not be calculated. The site may be reachable in your browser but blocked or unreachable from the diagnostic server."
+                : "진단 서버에서 대상 사이트에 연결하지 못해 점수를 계산하지 못했습니다. 사용자 브라우저에서는 정상 접속되더라도, 진단 서버 위치나 IP에서는 접속이 차단되었거나 연결되지 않을 수 있습니다."
+              : isEnglish
+                ? "This result was created with an older rule version and has no score. Run a new simple diagnostic to calculate a score with the current rules."
+                : "이 결과는 이전 규칙 버전으로 생성되어 점수가 없습니다. 새 간편검사를 실행하면 현재 규칙으로 점수를 계산합니다."}
           </section>
         )}
         <section className="surface scan-understanding-section">
