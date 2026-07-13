@@ -614,7 +614,7 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="full-bleed-section">
+        <section className="full-bleed-section section-muted">
           <div className="content-container section-content">
             <div className="section-heading">
               <p className="eyebrow">FAQ</p>
