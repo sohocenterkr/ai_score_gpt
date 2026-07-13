@@ -199,6 +199,23 @@ function translateFindingTitle(value: string, isEnglish: boolean): string {
   return isEnglish ? (findingTitleEnglishLabels[value] ?? value) : value;
 }
 
+const FETCH_FAILURE_REASON_TRANSLATIONS: Record<string, string> = {
+  "사이트 응답이 제한 시간을 초과해 콘텐츠를 확인하지 못했습니다. 사이트가 느리거나 일시적으로 응답하지 않았을 수 있습니다.":
+    "The site did not respond within the time limit, so its content could not be checked. The site may be slow or temporarily unresponsive.",
+  "진단 서버에서 사이트에 연결하지 못했습니다. 사용자 브라우저에서는 정상 접속되더라도, 진단 서버의 위치나 IP에서는 접속이 차단되었거나 연결되지 않을 수 있습니다.":
+    "The diagnostic server could not connect to the site. Even if it loads normally in your browser, it may be blocked or unreachable from the diagnostic server's location or IP.",
+  "리디렉션이 허용 횟수를 초과해 최종 페이지에 도달하지 못했습니다.":
+    "The page redirected more times than allowed, so the final page could not be reached.",
+  "리디렉션 대상 주소가 올바르지 않아 최종 페이지에 도달하지 못했습니다.":
+    "A redirect pointed to an invalid address, so the final page could not be reached.",
+  "응답 본문 크기가 허용 범위를 초과해 콘텐츠 확인을 중단했습니다.":
+    "The response body exceeded the allowed size, so the content check was stopped.",
+  "지원하지 않는 응답 압축 형식이라 본문을 해석하지 못했습니다.":
+    "The response used an unsupported compression format, so its content could not be parsed.",
+  "진단 서버에서 원인을 특정하지 못한 오류로 콘텐츠를 확인하지 못했습니다.":
+    "The diagnostic server could not check the content due to an unspecified error.",
+};
+
 function translateStoredEvidenceText(
   value: string,
   isEnglish: boolean,
@@ -222,6 +239,11 @@ function translateStoredEvidenceText(
     .replace(
       /Site AI Score는 웹사이트가 AI 검색과 검색엔진에 잘 이해되는지 진단하고, 개선 방향과 작업지시서를 제공하는 서비스입니다\./g,
       "Site AI Score diagnoses whether a website is well understood by AI search and search engines, and provides improvement direction and work orders.",
+    )
+    .replace(
+      /"([^"]+)" 사이트는 진단 서버가 초기 HTML을 읽기 전에 실패했습니다\. (.+)$/g,
+      (_match, siteName: string, reason: string) =>
+        `The diagnostic server for "${translateStoredEvidenceText(siteName, true)}" failed before it could read the initial HTML. ${FETCH_FAILURE_REASON_TRANSLATIONS[reason] ?? reason}`,
     )
     .replace(
       /"([^"]+)" 페이지는 ([a-z-]+) 문서로 확인되었고 초기 HTML에서 약 ([0-9,]+)자의 본문을 읽었습니다\./g,
@@ -1603,9 +1625,13 @@ export function ScanResultPage() {
                 </dl>
               ) : (
                 <p>
-                  {isEnglish
-                    ? "No key information to display."
-                    : "표시할 핵심정보가 없습니다."}
+                  {result.scan.status === "FAILED"
+                    ? isEnglish
+                      ? "Not available — the diagnostic could not connect to the site."
+                      : "확인 불가 — 진단 서버가 사이트에 연결하지 못했습니다."
+                    : isEnglish
+                      ? "No key information to display."
+                      : "표시할 핵심정보가 없습니다."}
                 </p>
               )}
             </div>
@@ -1639,9 +1665,13 @@ export function ScanResultPage() {
                 </>
               ) : (
                 <p>
-                  {isEnglish
-                    ? "No improvement items were found under the current weighted rules."
-                    : "현재 가중 규칙에서 개선 필요 항목이 없습니다."}
+                  {result.scan.status === "FAILED"
+                    ? isEnglish
+                      ? "Not available — the diagnostic could not connect to the site."
+                      : "확인 불가 — 진단 서버가 사이트에 연결하지 못했습니다."
+                    : isEnglish
+                      ? "No improvement items were found under the current weighted rules."
+                      : "현재 가중 규칙에서 개선 필요 항목이 없습니다."}
                 </p>
               )}
             </div>

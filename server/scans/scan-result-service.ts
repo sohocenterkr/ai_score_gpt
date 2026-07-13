@@ -246,10 +246,38 @@ function buildFoundInformation(
   return values;
 }
 
+const FETCH_FAILURE_REASONS: Record<string, string> = {
+  HTTP_TIMEOUT:
+    "사이트 응답이 제한 시간을 초과해 콘텐츠를 확인하지 못했습니다. 사이트가 느리거나 일시적으로 응답하지 않았을 수 있습니다.",
+  HTTP_REQUEST_FAILED:
+    "진단 서버에서 사이트에 연결하지 못했습니다. 사용자 브라우저에서는 정상 접속되더라도, 진단 서버의 위치나 IP에서는 접속이 차단되었거나 연결되지 않을 수 있습니다.",
+  HTTP_REDIRECT_LIMIT:
+    "리디렉션이 허용 횟수를 초과해 최종 페이지에 도달하지 못했습니다.",
+  HTTP_REDIRECT_INVALID:
+    "리디렉션 대상 주소가 올바르지 않아 최종 페이지에 도달하지 못했습니다.",
+  HTTP_BODY_TOO_LARGE:
+    "응답 본문 크기가 허용 범위를 초과해 콘텐츠 확인을 중단했습니다.",
+  HTTP_CONTENT_ENCODING_UNSUPPORTED:
+    "지원하지 않는 응답 압축 형식이라 본문을 해석하지 못했습니다.",
+};
+
+const DEFAULT_FETCH_FAILURE_REASON =
+  "진단 서버에서 원인을 특정하지 못한 오류로 콘텐츠를 확인하지 못했습니다.";
+
 function buildUnderstandingSummary(
   siteName: string,
   findings: Finding[],
+  scanStatus: string,
+  errorCode: string | null,
 ): string {
+  if (scanStatus === "FAILED") {
+    const reason =
+      (errorCode && FETCH_FAILURE_REASONS[errorCode]) ??
+      DEFAULT_FETCH_FAILURE_REASON;
+
+    return `"${siteName}" 사이트는 진단 서버가 초기 HTML을 읽기 전에 실패했습니다. ${reason}`;
+  }
+
   const title = evidenceString(findings, "META-TITLE-001", "title") ?? siteName;
   const description = evidenceString(
     findings,
@@ -370,6 +398,8 @@ function buildPublicScanResult(result: {
     understandingSummary: buildUnderstandingSummary(
       result.site.name,
       result.findings,
+      result.status,
+      result.errorCode,
     ),
     foundInformation: buildFoundInformation(
       result.findings,
