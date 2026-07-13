@@ -1,4 +1,8 @@
-import type { CollectedFinding, CollectedFindingStatus } from "./scan-engine";
+import {
+  ANALYSIS_DEPENDENT_RULE_CODES,
+  type CollectedFinding,
+  type CollectedFindingStatus,
+} from "./scan-engine";
 
 export const CURRENT_RULES_VERSION = "2026.07-summary-groups-v7";
 
@@ -334,10 +338,32 @@ export function isPendingContentFinding(
   );
 }
 
+// ACCESS-HTTP-001 and CONTENT-HTML-001 report BLOCKED (not FAIL) when every
+// bot identity we tried got the same deliberate access-control refusal
+// (401/403/429/451) — see scan-engine.ts's fetchMainPage. That means our
+// scanner couldn't verify the site one way or the other, so it must not be
+// scored as a confirmed failure or trigger the critical-cap penalty.
+const UNVERIFIABLE_ACCESS_RULE_CODES = new Set([
+  "ACCESS-HTTP-001",
+  ...ANALYSIS_DEPENDENT_RULE_CODES,
+]);
+
+export function isUnverifiableAccessFinding(finding: ScorableFinding): boolean {
+  return (
+    finding.status === "BLOCKED" &&
+    UNVERIFIABLE_ACCESS_RULE_CODES.has(finding.ruleCode) &&
+    findingEvidence(finding).accessOutcome === "BLOCKED"
+  );
+}
+
 function earnedWeightForFinding(
   finding: ScorableFinding,
   definition: RuleDefinition,
 ): number | null {
+  if (isUnverifiableAccessFinding(finding)) {
+    return null;
+  }
+
   if (isContentDefinition(definition)) {
     if (isPendingContentFinding(finding, definition)) {
       return null;
@@ -373,7 +399,7 @@ function statusFor(
 function scoreCap(findingsByCode: Map<string, ScorableFinding>): number | null {
   const caps: number[] = [];
 
-  if (statusFor(findingsByCode, "ACCESS-HTTP-001") !== "PASS") {
+  if (statusFor(findingsByCode, "ACCESS-HTTP-001") === "FAIL") {
     caps.push(10);
   }
 
@@ -381,7 +407,7 @@ function scoreCap(findingsByCode: Map<string, ScorableFinding>): number | null {
     caps.push(30);
   }
 
-  if (statusFor(findingsByCode, "CONTENT-HTML-001") !== "PASS") {
+  if (statusFor(findingsByCode, "CONTENT-HTML-001") === "FAIL") {
     caps.push(50);
   }
 
@@ -449,6 +475,10 @@ export function calculateScore(
     }
 
     if (isPendingContentFinding(finding, definition)) {
+      return false;
+    }
+
+    if (isUnverifiableAccessFinding(finding)) {
       return false;
     }
 

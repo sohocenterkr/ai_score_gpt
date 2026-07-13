@@ -9,12 +9,19 @@ import type {
 import {
   getRuleSummaryGroup,
   isPendingContentFinding,
+  isUnverifiableAccessFinding,
   type SummaryGroup,
 } from "./scoring";
 
+function isPendingFinding(finding: PublicScanResultFinding): boolean {
+  return (
+    isPendingContentFinding(finding) || isUnverifiableAccessFinding(finding)
+  );
+}
+
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-summary-groups-v8";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-unverifiable-access-v9";
 
 let cachedFontHash: string | undefined;
 
@@ -736,7 +743,7 @@ function findingStatusLabel(
   finding: PublicScanResultFinding,
   locale: "ko" | "en",
 ): string {
-  if (isPendingContentFinding(finding)) {
+  if (isPendingFinding(finding)) {
     return locale === "en"
       ? "Related information unavailable"
       : "관련 정보 확인 불가";
@@ -755,7 +762,7 @@ function pointImpact(
     return isEnglish ? "No score impact" : "점수 영향 없음";
   }
 
-  if (isPendingContentFinding(finding)) {
+  if (isPendingFinding(finding)) {
     return isEnglish
       ? `${formatPointValue(finding.weight)} pts pending`
       : `판정 보류 ${formatPointValue(finding.weight)}점`;
@@ -1650,14 +1657,46 @@ function writeCategoryScores(
   }
 
   if ((result.scoreSummary.pendingScore ?? 0) > 0) {
+    const pendingContentCount = result.findings.filter((finding) =>
+      isPendingContentFinding(finding),
+    ).length;
+    const pendingAccessCount = result.findings.filter((finding) =>
+      isUnverifiableAccessFinding(finding),
+    ).length;
+    const scoreRangeMin = formatPointValue(
+      result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score,
+    );
+    const scoreRangeMax = formatPointValue(
+      result.scoreSummary.scoreRangeMax ?? result.scoreSummary.score,
+    );
+    const isEnglish = result.scan.locale === "en";
+    const reasonSentences = isEnglish
+      ? [
+          pendingContentCount > 0
+            ? "Rendering did not complete for some content checks."
+            : null,
+          pendingAccessCount > 0
+            ? "Our scan server was blocked from accessing some checks, so they could not be verified."
+            : null,
+        ]
+      : [
+          pendingContentCount > 0
+            ? "일부 콘텐츠 항목은 렌더링 검사를 완료하지 못했습니다."
+            : null,
+          pendingAccessCount > 0
+            ? "일부 항목은 저희 검사 서버의 접근이 막혀 확인하지 못했습니다."
+            : null,
+        ];
+
     writeTextBox(
       document,
-      result.scan.locale === "en"
-        ? "Content score pending"
-        : "콘텐츠 점수 판정 보류",
-      result.scan.locale === "en"
-        ? `${formatPointValue(result.scoreSummary.pendingScore ?? 0)} points are pending because rendering did not complete for some content checks. The confirmed score is ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}, and the possible range is ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}–${formatPointValue(result.scoreSummary.scoreRangeMax ?? result.scoreSummary.score)}.`
-        : `일부 콘텐츠 항목은 렌더링 검사를 완료하지 못해 ${formatPointValue(result.scoreSummary.pendingScore ?? 0)}점의 판정을 보류했습니다. 확정 점수는 ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}점이며 가능 범위는 ${formatPointValue(result.scoreSummary.scoreRangeMin ?? result.scoreSummary.score)}~${formatPointValue(result.scoreSummary.scoreRangeMax ?? result.scoreSummary.score)}점입니다.`,
+      isEnglish ? "Score pending" : "점수 판정 보류",
+      [
+        ...reasonSentences.filter(Boolean),
+        isEnglish
+          ? `${formatPointValue(result.scoreSummary.pendingScore ?? 0)} points are pending rather than deducted. The confirmed score is ${scoreRangeMin}, and the possible range is ${scoreRangeMin}–${scoreRangeMax}.`
+          : `${formatPointValue(result.scoreSummary.pendingScore ?? 0)}점은 감점하지 않고 판정을 보류했습니다. 확정 점수는 ${scoreRangeMin}점이며 가능 범위는 ${scoreRangeMin}~${scoreRangeMax}점입니다.`,
+      ].join(" "),
       {
         background: "#FFFBEB",
         border: "#FDE68A",
