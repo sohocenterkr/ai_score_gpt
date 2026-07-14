@@ -39,6 +39,7 @@ const createSiteSchema = z.object({
   baseUrl: z.string().trim().min(1).max(2_048),
   description: optionalText(1_000),
   siteType: optionalText(80),
+  hasReservationFeature: z.boolean().optional(),
   country: z.string().trim().regex(/^[A-Za-z]{2}$/).default("KR"),
   region: optionalText(100),
   primaryLocale: z
@@ -54,6 +55,7 @@ const updateSiteSchema = z
     baseUrl: z.string().trim().min(1).max(2_048).optional(),
     description: nullableOptionalText(1_000),
     siteType: nullableOptionalText(80),
+    hasReservationFeature: z.union([z.boolean(), z.null()]).optional(),
     country: z
       .string()
       .trim()

@@ -95,6 +95,7 @@ export interface RegisteredSite {
   finalUrl: string | null;
   siteType: string | null;
   description: string | null;
+  hasReservationFeature: boolean | null;
   country: string;
   region: string | null;
   primaryLocale: string;
@@ -110,6 +111,7 @@ export interface CreateSiteRequest {
   baseUrl: string;
   description?: string;
   siteType?: string;
+  hasReservationFeature?: boolean;
   country?: string;
   region?: string;
   primaryLocale?: string;
@@ -120,6 +122,7 @@ export interface UpdateSiteRequest {
   baseUrl?: string;
   description?: string | null;
   siteType?: string | null;
+  hasReservationFeature?: boolean | null;
   country?: string;
   region?: string | null;
   primaryLocale?: string;

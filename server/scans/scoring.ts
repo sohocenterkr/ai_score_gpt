@@ -4,7 +4,7 @@ import {
   type CollectedFindingStatus,
 } from "./scan-engine";
 
-export const CURRENT_RULES_VERSION = "2026.07-summary-groups-v7.6";
+export const CURRENT_RULES_VERSION = "2026.07-summary-groups-v7.7";
 
 export const SCORE_CATEGORIES = [
   "접근 및 수집 정책",

@@ -19,12 +19,14 @@ interface SiteFormState {
   name: string;
   baseUrl: string;
   description: string;
+  hasReservationFeature: boolean;
 }
 
 const emptyForm: SiteFormState = {
   name: "",
   baseUrl: "",
   description: "",
+  hasReservationFeature: false,
 };
 
 const scanStatusLabels = {
@@ -102,6 +104,7 @@ const sitesCopy = {
       baseUrlPlaceholder: "example.com",
       description: "사이트 설명",
       descriptionPlaceholder: "예: 강남 소아과 홈페이지",
+      hasReservationFeature: "이 사이트에 예약·상담 신청 기능이 있나요?",
     },
   },
   en: {
@@ -162,6 +165,8 @@ const sitesCopy = {
       baseUrlPlaceholder: "example.com",
       description: "Website description",
       descriptionPlaceholder: "e.g. Gangnam pediatric clinic website",
+      hasReservationFeature:
+        "Does this site have a reservation/consultation request feature?",
     },
   },
 } as const;
@@ -445,6 +450,7 @@ function formFromSite(site: RegisteredSite): SiteFormState {
     name: site.name,
     baseUrl: site.baseUrl,
     description: site.description ?? "",
+    hasReservationFeature: site.hasReservationFeature ?? false,
   };
 }
 
@@ -453,6 +459,7 @@ function toRequest(form: SiteFormState) {
     name: form.name,
     baseUrl: form.baseUrl,
     description: form.description.trim() || undefined,
+    hasReservationFeature: form.hasReservationFeature,
   };
 }
 
@@ -547,9 +554,9 @@ export function SitesPage() {
     };
   }, [hasPendingScan]);
 
-  function updateForm(
-    key: keyof SiteFormState,
-    value: string,
+  function updateForm<K extends keyof SiteFormState>(
+    key: K,
+    value: SiteFormState[K],
     editing = false,
   ) {
     if (editing) {
@@ -784,7 +791,10 @@ interface SiteDashboardCardProps {
   working: boolean;
   onBeginEdit: () => void;
   onCancelEdit: () => void;
-  onEditChange: (key: keyof SiteFormState, value: string) => void;
+  onEditChange: <K extends keyof SiteFormState>(
+    key: K,
+    value: SiteFormState[K],
+  ) => void;
   onUpdate: (event: FormEvent<HTMLFormElement>) => void;
   onQueueScan: () => void;
   onArchive: () => void;
@@ -1272,7 +1282,10 @@ interface SiteFieldsProps {
   prefix: string;
   form: SiteFormState;
   labels: typeof sitesCopy.ko.fields | typeof sitesCopy.en.fields;
-  onChange: (key: keyof SiteFormState, value: string) => void;
+  onChange: <K extends keyof SiteFormState>(
+    key: K,
+    value: SiteFormState[K],
+  ) => void;
 }
 
 function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
@@ -1320,6 +1333,22 @@ function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
           onChange={(event) => onChange("description", event.target.value)}
           placeholder={labels.descriptionPlaceholder}
         />
+      </label>
+
+      <label
+        className="site-field-reservation"
+        htmlFor={`${prefix}-reservation`}
+      >
+        <input
+          id={`${prefix}-reservation`}
+          name="hasReservationFeature"
+          type="checkbox"
+          checked={form.hasReservationFeature}
+          onChange={(event) =>
+            onChange("hasReservationFeature", event.target.checked)
+          }
+        />
+        {labels.hasReservationFeature}
       </label>
     </div>
   );

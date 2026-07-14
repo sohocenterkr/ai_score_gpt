@@ -20,6 +20,7 @@ export interface CreateSiteInput {
   baseUrl: string;
   description?: string;
   siteType?: string;
+  hasReservationFeature?: boolean;
   country: string;
   region?: string;
   primaryLocale: string;
@@ -30,6 +31,7 @@ export interface UpdateSiteInput {
   baseUrl?: string;
   description?: string | null;
   siteType?: string | null;
+  hasReservationFeature?: boolean | null;
   country?: string;
   region?: string | null;
   primaryLocale?: string;
@@ -130,6 +132,7 @@ export interface PublicSite {
   finalUrl: string | null;
   siteType: string | null;
   description: string | null;
+  hasReservationFeature: boolean | null;
   country: string;
   region: string | null;
   primaryLocale: string;
@@ -538,6 +541,7 @@ function toPublicSite(
     finalUrl: site.finalUrl,
     siteType: site.siteType,
     description: site.description,
+    hasReservationFeature: site.hasReservationFeature,
     country: site.country,
     region: site.region,
     primaryLocale: site.primaryLocale,
@@ -792,6 +796,7 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
                 finalUrl: null,
                 siteType: normalizeOptionalText(input.siteType),
                 description: normalizeOptionalText(input.description),
+                hasReservationFeature: input.hasReservationFeature ?? null,
                 country: input.country.trim().toUpperCase(),
                 region: normalizeOptionalText(input.region),
                 primaryLocale: input.primaryLocale.trim(),
@@ -815,6 +820,7 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
                 finalUrl: null,
                 siteType: normalizeOptionalText(input.siteType),
                 description: normalizeOptionalText(input.description),
+                hasReservationFeature: input.hasReservationFeature ?? null,
                 country: input.country.trim().toUpperCase(),
                 region: normalizeOptionalText(input.region),
                 primaryLocale: input.primaryLocale.trim(),
@@ -865,6 +871,10 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
 
       if (input.description !== undefined) {
         data.description = normalizeOptionalText(input.description);
+      }
+
+      if (input.hasReservationFeature !== undefined) {
+        data.hasReservationFeature = input.hasReservationFeature;
       }
 
       if (input.country !== undefined) {

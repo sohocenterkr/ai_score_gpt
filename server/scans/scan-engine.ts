@@ -37,6 +37,7 @@ export interface CollectedFinding {
 
 export interface ScanCollectionOptions {
   renderedDomCollector?: RenderedDomCollector;
+  hasReservationFeature?: boolean | null;
 }
 
 export interface ScanCollectionResult {
@@ -297,6 +298,13 @@ function contentSignalEvidence(
   );
 }
 
+const EVIDENCE_LEVEL_RANK: Record<ContentEvidenceLevel, number> = {
+  NONE: 0,
+  HINT: 1,
+  BODY: 2,
+  FULL: 3,
+};
+
 function resolveContentEvidence(
   initial: HtmlAnalysis | null,
   renderedDom: RenderedDomResult,
@@ -307,18 +315,32 @@ function resolveContentEvidence(
   renderedEvidence: ContentSignalEvidence | null;
 } {
   const initialEvidence = initial ? contentSignalEvidence(initial, key) : null;
+  const initialLevel = initialEvidence?.level ?? "NONE";
 
-  if (initialEvidence && initialEvidence.level !== "NONE") {
+  if (renderedDom.status !== "SUCCESS") {
+    if (initialLevel !== "NONE") {
+      return {
+        level: initialLevel,
+        initialEvidence,
+        renderedEvidence: null,
+      };
+    }
+
     return {
-      level: initialEvidence.level,
+      level: "UNAVAILABLE",
       initialEvidence,
       renderedEvidence: null,
     };
   }
 
-  if (renderedDom.status === "SUCCESS") {
-    const renderedEvidence = contentSignalEvidence(renderedDom.analysis, key);
+  const renderedEvidence = contentSignalEvidence(renderedDom.analysis, key);
 
+  // A weak initial-HTML match (e.g. HINT from the <title> alone) used to win
+  // outright and block the rendered DOM from ever being checked — so a site
+  // whose title merely mentioned "가격" stayed capped at HINT (0.3) even
+  // when the rendered page had the full pricing table (BODY/FULL). Take
+  // whichever evidence is actually stronger instead.
+  if (EVIDENCE_LEVEL_RANK[renderedEvidence.level] > EVIDENCE_LEVEL_RANK[initialLevel]) {
     return {
       level: renderedEvidence.level === "NONE" ? "NONE" : "RENDERED",
       initialEvidence,
@@ -326,10 +348,18 @@ function resolveContentEvidence(
     };
   }
 
+  if (initialLevel !== "NONE") {
+    return {
+      level: initialLevel,
+      initialEvidence,
+      renderedEvidence,
+    };
+  }
+
   return {
-    level: "UNAVAILABLE",
+    level: renderedEvidence.level === "NONE" ? "NONE" : "RENDERED",
     initialEvidence,
-    renderedEvidence: null,
+    renderedEvidence,
   };
 }
 
@@ -1465,13 +1495,17 @@ export async function collectSiteScan(
     mainFetch.accessOutcome === "BLOCKED"
       ? null
       : htmlContent
-        ? analyzeHtml(main.body, main.finalUrl)
+        ? analyzeHtml(main.body, main.finalUrl, {
+            hasReservationFeature: options.hasReservationFeature,
+          })
         : null;
   const httpPassed = mainFetch.accessOutcome === "VERIFIED";
   const renderedDomPromise =
     httpPassed && analysis && options.renderedDomCollector
       ? options.renderedDomCollector
-          .collect(main.finalUrl)
+          .collect(main.finalUrl, {
+            hasReservationFeature: options.hasReservationFeature,
+          })
           .catch((error): RenderedDomResult => ({
             status: "FAILED",
             errorCode: "RENDERED_DOM_FAILED",

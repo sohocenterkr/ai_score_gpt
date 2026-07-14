@@ -490,6 +490,7 @@ export async function runClaimedScan(
       fetcher,
       {
         renderedDomCollector,
+        hasReservationFeature: scan.site.hasReservationFeature,
       },
     );
     const technical = await persistSuccessfulScan(

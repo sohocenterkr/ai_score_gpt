@@ -77,6 +77,18 @@ export interface HtmlAnalysis {
   };
   contentSignals: ContentSignals;
   iframeCount: number;
+  hasPaymentModule: boolean;
+}
+
+// Known payment gateway / checkout SDK hosts. Detecting an actual integrated
+// module is an objective technical signal — unlike prose keyword matching,
+// a site can't "phrase this differently" to dodge or fake it, so this takes
+// priority over any conversionIntent keyword guess.
+const PAYMENT_MODULE_PATTERN =
+  /tosspayments\.com|iamport\.kr|cdn\.iamport|portone\.io|inicis\.com|nicepay\.co\.kr|kcp\.co\.kr|payple\.co\.kr|kakaopay|payco\.com|smartro\.co\.kr|bootpay\.co\.kr|danal\.co\.kr|js\.stripe\.com|checkout\.stripe\.com|paypal\.com\/sdk|paypalobjects\.com/i;
+
+export function detectPaymentModule(html: string): boolean {
+  return PAYMENT_MODULE_PATTERN.test(html);
 }
 
 function normalizeText(value: string): string {
@@ -386,6 +398,8 @@ function detectContentSignals(input: {
   links: HtmlAnalysis["links"];
   text: string;
   bodyText: string;
+  hasPaymentModule: boolean;
+  hasReservationFeature: boolean | null;
 }): ContentSignals {
   const sources = {
     title: normalizeText(input.title ?? "").toLowerCase(),
@@ -406,20 +420,31 @@ function detectContentSignals(input: {
     ].join(" "),
   ).toLowerCase();
 
-  const directPayment = textMatches(
+  // A real, integrated payment module (technical, unambiguous) always wins.
+  // Next, the site owner's own declaration of whether they take
+  // reservations/inquiries — they know their business model better than any
+  // keyword list. Only fall back to guessing from prose when neither is
+  // available (e.g. a legacy site that hasn't set the field yet).
+  const directPaymentKeyword = textMatches(
     haystack,
     /결제|구매|주문|장바구니|구독|요금제|유료 플랜|checkout|payment|cart|order|subscribe|pricing|plan/i,
   );
-  const inquiryOrReservation = textMatches(
+  const inquiryOrReservationKeyword = textMatches(
     haystack,
     /예약|상담|견적|문의|전화|카카오|방문|예약하기|상담신청|contact|booking|reservation|quote|inquiry/i,
   );
 
-  const conversionIntent: ConversionIntent = directPayment
+  const conversionIntent: ConversionIntent = input.hasPaymentModule
     ? "DIRECT_PAYMENT"
-    : inquiryOrReservation
+    : input.hasReservationFeature === true
       ? "INQUIRY_OR_RESERVATION"
-      : "INFORMATIONAL";
+      : input.hasReservationFeature === false
+        ? "INFORMATIONAL"
+        : directPaymentKeyword
+          ? "DIRECT_PAYMENT"
+          : inquiryOrReservationKeyword
+            ? "INQUIRY_OR_RESERVATION"
+            : "INFORMATIONAL";
 
   // Keyword lists below were tuned against a SaaS-shaped vocabulary
   // ("이용 대상", "이용 절차", "차별점") and missed ordinary small-business
@@ -523,8 +548,14 @@ function detectContentSignals(input: {
   };
 }
 
-export function analyzeHtml(body: Buffer, finalUrl: string): HtmlAnalysis {
-  const html = load(body.toString("utf8"));
+export function analyzeHtml(
+  body: Buffer,
+  finalUrl: string,
+  options: { hasReservationFeature?: boolean | null } = {},
+): HtmlAnalysis {
+  const rawHtml = body.toString("utf8");
+  const hasPaymentModule = detectPaymentModule(rawHtml);
+  const html = load(rawHtml);
   const title = normalizeText(html("title").first().text()) || null;
   const metaDescription = firstMetaContent(html, "name", "description");
   const robotsMeta = firstMetaContent(html, "name", "robots");
@@ -550,6 +581,8 @@ export function analyzeHtml(body: Buffer, finalUrl: string): HtmlAnalysis {
     links,
     text,
     bodyText,
+    hasPaymentModule,
+    hasReservationFeature: options.hasReservationFeature ?? null,
   });
 
   return {
@@ -571,5 +604,6 @@ export function analyzeHtml(body: Buffer, finalUrl: string): HtmlAnalysis {
     jsonLd,
     contentSignals,
     iframeCount,
+    hasPaymentModule,
   };
 }

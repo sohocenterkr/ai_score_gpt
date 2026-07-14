@@ -39,8 +39,15 @@ export type RenderedDomResult =
       reason: string;
     };
 
+export interface RenderedDomCollectOptions {
+  hasReservationFeature?: boolean | null;
+}
+
 export interface RenderedDomCollector {
-  collect(url: string): Promise<RenderedDomResult>;
+  collect(
+    url: string,
+    options?: RenderedDomCollectOptions,
+  ): Promise<RenderedDomResult>;
 }
 
 type UrlValidator = (
@@ -229,7 +236,7 @@ export function createPlaywrightRenderedDomCollector(
     options.validateUrl ?? validateRedirectTarget;
 
   return {
-    async collect(url): Promise<RenderedDomResult> {
+    async collect(url, collectOptions = {}): Promise<RenderedDomResult> {
       try {
         await validateUrl(url);
       } catch (error) {
@@ -396,7 +403,9 @@ export function createPlaywrightRenderedDomCollector(
           );
         }
 
-        const analysis = analyzeHtml(body, finalUrl);
+        const analysis = analyzeHtml(body, finalUrl, {
+          hasReservationFeature: collectOptions.hasReservationFeature,
+        });
         const browserVersion = await browser.version();
 
         await context.close();
