@@ -101,8 +101,7 @@ const sitesCopy = {
       baseUrl: "대표 URL",
       baseUrlPlaceholder: "example.com",
       description: "사이트 설명",
-      descriptionPlaceholder:
-        "예: 강남구에서 소아과를 운영하고 있습니다. 어떤 업종·서비스인지 간단히 알려주세요.",
+      descriptionPlaceholder: "예: 강남 소아과 홈페이지",
     },
   },
   en: {
@@ -162,8 +161,7 @@ const sitesCopy = {
       baseUrl: "Main URL",
       baseUrlPlaceholder: "example.com",
       description: "Website description",
-      descriptionPlaceholder:
-        "e.g. We run a pediatric clinic in Seoul. Briefly describe the business or service.",
+      descriptionPlaceholder: "e.g. Gangnam pediatric clinic website",
     },
   },
 } as const;
@@ -1026,7 +1024,9 @@ function SiteDashboardCard({
             onClick={() => setExpanded((value) => !value)}
             aria-expanded={expanded}
           >
-            {expanded ? progressText.collapseDetails : progressText.expandDetails}
+            {expanded
+              ? progressText.collapseDetails
+              : progressText.expandDetails}
           </button>
         </div>
 
@@ -1131,8 +1131,12 @@ function SiteDashboardCard({
                     >
                       <span className="site-step-index">{index + 1}</span>
                       <div className="site-step-title">
-                        <strong>{progressText.diagnosticTitle(step.number)}</strong>
-                        <span className={`site-step-status ${statusTone(status)}`}>
+                        <strong>
+                          {progressText.diagnosticTitle(step.number)}
+                        </strong>
+                        <span
+                          className={`site-step-status ${statusTone(status)}`}
+                        >
                           {diagnostic
                             ? statusLabel(status, locale, progressText)
                             : progressText.status.PENDING}
@@ -1189,8 +1193,12 @@ function SiteDashboardCard({
                   >
                     <span className="site-step-index">{index + 1}</span>
                     <div className="site-step-title">
-                      <strong>{progressText.workOrderTitle(step.number)}</strong>
-                      <span className={`site-step-status ${statusTone(status)}`}>
+                      <strong>
+                        {progressText.workOrderTitle(step.number)}
+                      </strong>
+                      <span
+                        className={`site-step-status ${statusTone(status)}`}
+                      >
                         {workOrder
                           ? statusLabel(status, locale, progressText)
                           : progressText.status.PENDING}
@@ -1270,7 +1278,7 @@ interface SiteFieldsProps {
 function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
   return (
     <div className="site-fields">
-      <label htmlFor={`${prefix}-name`}>
+      <label className="site-field-name" htmlFor={`${prefix}-name`}>
         {labels.name}
         <input
           id={`${prefix}-name`}
@@ -1282,7 +1290,7 @@ function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
         />
       </label>
 
-      <label htmlFor={`${prefix}-url`}>
+      <label className="site-field-url" htmlFor={`${prefix}-url`}>
         {labels.baseUrl}
         <input
           id={`${prefix}-url`}
@@ -1299,12 +1307,15 @@ function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
         />
       </label>
 
-      <label htmlFor={`${prefix}-description`}>
+      <label
+        className="site-field-description"
+        htmlFor={`${prefix}-description`}
+      >
         {labels.description}
         <textarea
           id={`${prefix}-description`}
           name="description"
-          rows={3}
+          rows={prefix === "create" ? 1 : 3}
           value={form.description}
           onChange={(event) => onChange("description", event.target.value)}
           placeholder={labels.descriptionPlaceholder}
