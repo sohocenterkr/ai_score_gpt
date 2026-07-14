@@ -130,7 +130,13 @@ const CONTENT_SCORE_RATIOS: Record<
   FULL: 1,
   BODY: 0.7,
   HINT: 0.3,
-  RENDERED: 0.2,
+  // Confirmed by re-checking the rendered DOM (not a guess), but still
+  // capped well below FULL/BODY: most AI crawlers only read initial HTML,
+  // so JS-only content is real but less reliably reachable. This ratio is
+  // tuned so a site that is otherwise fully optimized but JS-rendered lands
+  // in the 70s (a passing-but-not-great grade), not 90+ — full credit still
+  // requires the content to actually be in the initial HTML.
+  RENDERED: 0.5,
   NONE: 0,
 };
 
@@ -258,7 +264,9 @@ function contentReadinessFinding(
       ? null
       : unavailable
         ? "렌더링 측정 문제를 해결한 뒤 다시 진단하여 관련 정보의 존재 여부를 확인하세요."
-        : input.recommendation,
+        : resolved.level === "RENDERED"
+          ? `${input.recommendation} 현재는 JavaScript 렌더링 후에만 이 정보가 확인되어 부분 점수만 반영되었습니다. GPTBot 등 다수의 AI 크롤러는 초기 HTML만 읽고 JavaScript를 실행하지 않으므로, 같은 내용을 서버 렌더링(SSR)하거나 정적 HTML로 초기 응답에 포함하면 이 항목이 만점(FULL)으로 인정되어 점수가 크게 오릅니다.`
+          : input.recommendation,
   });
 }
 
