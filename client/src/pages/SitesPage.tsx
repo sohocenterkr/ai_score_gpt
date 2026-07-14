@@ -104,7 +104,7 @@ const sitesCopy = {
       baseUrlPlaceholder: "example.com",
       description: "사이트 설명",
       descriptionPlaceholder: "예: 강남 소아과 홈페이지",
-      hasReservationFeature: "이 사이트에 예약·상담 신청 기능이 있나요?",
+      hasReservationFeature: "예약·상담",
     },
   },
   en: {
@@ -165,8 +165,7 @@ const sitesCopy = {
       baseUrlPlaceholder: "example.com",
       description: "Website description",
       descriptionPlaceholder: "e.g. Gangnam pediatric clinic website",
-      hasReservationFeature:
-        "Does this site have a reservation/consultation request feature?",
+      hasReservationFeature: "Booking / inquiry",
     },
   },
 } as const;
@@ -1339,16 +1338,18 @@ function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
         className="site-field-reservation"
         htmlFor={`${prefix}-reservation`}
       >
-        <input
-          id={`${prefix}-reservation`}
-          name="hasReservationFeature"
-          type="checkbox"
-          checked={form.hasReservationFeature}
-          onChange={(event) =>
-            onChange("hasReservationFeature", event.target.checked)
-          }
-        />
-        {labels.hasReservationFeature}
+        <span>{labels.hasReservationFeature}</span>
+        <span className="site-reservation-checkbox">
+          <input
+            id={`${prefix}-reservation`}
+            name="hasReservationFeature"
+            type="checkbox"
+            checked={form.hasReservationFeature}
+            onChange={(event) =>
+              onChange("hasReservationFeature", event.target.checked)
+            }
+          />
+        </span>
       </label>
     </div>
   );
