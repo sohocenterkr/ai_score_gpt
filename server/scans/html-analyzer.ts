@@ -421,20 +421,27 @@ function detectContentSignals(input: {
       ? "INQUIRY_OR_RESERVATION"
       : "INFORMATIONAL";
 
+  // Keyword lists below were tuned against a SaaS-shaped vocabulary
+  // ("이용 대상", "이용 절차", "차별점") and missed ordinary small-business
+  // phrasing — a booking/lesson site that shows real prices as "500,000원"
+  // and calls itself "레슨"/"스튜디오" instead of "서비스"/"센터" matched
+  // almost nothing despite having substantive content. Each pattern below
+  // adds the industry-agnostic vocabulary (and, for pricing, a numeric
+  // "숫자+원" / "%" match) that real small-business sites actually use.
   const serviceDefinitionPattern =
-    /서비스|플랫폼|솔루션|도구|앱|웹사이트|센터|학원|병원|의원|식당|음식점|카페|매장|쇼핑몰|회사|기관|제공|지원|판매|운영|service|platform|solution|tool|app|website|center|academy|clinic|restaurant|cafe|store|company|organization|provide|offer/i;
+    /서비스|플랫폼|솔루션|도구|앱|웹사이트|센터|학원|병원|의원|식당|음식점|카페|매장|쇼핑몰|회사|기관|제공|지원|판매|운영|레슨|강좌|수업|진료|시술|시공|제작|디자인|컨설팅|이용권|멤버십|프로그램|상품|브랜드|스튜디오|아카데미|클리닉|클래스|전문점|공방|service|platform|solution|tool|app|website|center|academy|clinic|restaurant|cafe|store|company|organization|provide|offer|lesson|studio|program|membership/i;
   const audiencePattern =
-    /이용 대상|대상 고객|이런 분|추천합니다|누구에게|프리랜서|개인사업자|소상공인|고객|사용 사례|활용 사례|대표 사례|use case|for whom|target user/i;
+    /이용 대상|대상 고객|이런 분|추천합니다|누구에게|프리랜서|개인사업자|소상공인|고객|회원|수강생|환자|사용 사례|활용 사례|대표 사례|use case|for whom|target user/i;
   const workflowPattern =
-    /이용 절차|사용 방법|이용 방법|단계|시작하기|회원가입|업로드|등록|분석|결과물|결과 확인|how it works|step|workflow|getting started/i;
+    /이용 절차|사용 방법|이용 방법|단계|시작하기|시작해|회원가입|업로드|등록|분석|결과물|결과 확인|예약하기|신청하기|신청 방법|참여하기|자세히\s?보기|더\s?보기|바로가기|how it works|step|workflow|getting started/i;
   const pricingPattern =
-    /요금|가격|무료|유료|플랜|구독|비용|수수료|이용 범위|pricing|price|plan|free|paid|subscription/i;
+    /요금|가격|무료|유료|플랜|구독|비용|수수료|이용 범위|수강료|진료비|이용요금|정가|할인가|이벤트가|[0-9][0-9,]{2,}\s?원|\d{1,3}\s?%\s?(할인|off)|pricing|price|plan|free|paid|subscription/i;
   const supportPattern =
-    /고객지원|고객 지원|문의|상담|전화|이메일|카카오|운영시간|응답|지원 채널|contact|support|help|email|phone/i;
+    /고객지원|고객 지원|문의|상담|전화|이메일|카카오|운영시간|응답|지원 채널|오시는\s?길|영업시간|찾아오시는\s?길|contact|support|help|email|phone/i;
   const dataPolicyPattern =
     /개인정보|자료 처리|데이터 처리|입력자료|보안|보관|삭제|암호화|이용약관|privacy|security|data|retention|delete|terms/i;
   const differentiationPattern =
-    /차별|다른 서비스|비교|대안|장점|후기|사례|실적|고객사|리뷰|포트폴리오|왜.*선택|compare|alternative|review|case study|testimonial/i;
+    /차별|다른 서비스|비교|대안|장점|후기|사례|실적|고객사|리뷰|포트폴리오|왜.*선택|검증된|인증|1위|베스트|공식|전문가|경력|자격증|수상|compare|alternative|review|case study|testimonial/i;
   const cancelPattern =
     /환불|취소|해지|변경|예약 취소|예약 변경|반품|교환|refund|cancel|cancellation|termination|return|change/i;
 
@@ -443,7 +450,7 @@ function detectContentSignals(input: {
       ? cancelPattern
       : conversionIntent === "INQUIRY_OR_RESERVATION"
         ? /예약 취소|예약 변경|상담 취소|상담 변경|취소|변경|문의|상담|운영시간|cancel|change|contact|support/i
-        : /운영 주체|사업자|회사|기관|문의|고객지원|개인정보|이용약관|organization|company|contact|support|privacy|terms/i;
+        : /운영 주체|사업자|회사|기관|문의|고객지원|개인정보|이용약관|지점|매장|오시는\s?길|organization|company|contact|support|privacy|terms/i;
 
   const evidenceByKey: Record<ContentSignalKey, ContentSignalEvidence> = {
     hasServiceDefinition: classifyContentEvidence(
