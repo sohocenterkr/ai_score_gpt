@@ -1671,6 +1671,26 @@ export async function collectSiteScan(
 
   const renderedDom = await renderedDomPromise;
 
+  if (renderedDom.status === "FAILED") {
+    console.error("[rendered-dom] collection failed", {
+      url: main.finalUrl,
+      errorCode: renderedDom.errorCode,
+      message: renderedDom.message,
+    });
+  } else if (renderedDom.status === "SUCCESS") {
+    console.log("[rendered-dom] collection succeeded", {
+      url: main.finalUrl,
+      durationMs: renderedDom.durationMs,
+      browserVersion: renderedDom.browserVersion,
+      textLength: renderedDom.analysis.textLength,
+    });
+  } else {
+    console.log("[rendered-dom] not run", {
+      url: main.finalUrl,
+      reason: renderedDom.reason,
+    });
+  }
+
   findings.push(...buildContentReadinessFindings(analysis, renderedDom));
 
   findings.push(
