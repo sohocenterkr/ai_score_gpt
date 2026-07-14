@@ -18,6 +18,7 @@ import { isDevUserPreviewPublicUser } from "../auth/dev-user-preview";
 export interface CreateSiteInput {
   name: string;
   baseUrl: string;
+  description?: string;
   siteType?: string;
   country: string;
   region?: string;
@@ -27,6 +28,7 @@ export interface CreateSiteInput {
 export interface UpdateSiteInput {
   name?: string;
   baseUrl?: string;
+  description?: string | null;
   siteType?: string | null;
   country?: string;
   region?: string | null;
@@ -127,6 +129,7 @@ export interface PublicSite {
   baseUrl: string;
   finalUrl: string | null;
   siteType: string | null;
+  description: string | null;
   country: string;
   region: string | null;
   primaryLocale: string;
@@ -534,6 +537,7 @@ function toPublicSite(
     baseUrl: site.baseUrl,
     finalUrl: site.finalUrl,
     siteType: site.siteType,
+    description: site.description,
     country: site.country,
     region: site.region,
     primaryLocale: site.primaryLocale,
@@ -787,6 +791,7 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
                 name: normalizeName(input.name),
                 finalUrl: null,
                 siteType: normalizeOptionalText(input.siteType),
+                description: normalizeOptionalText(input.description),
                 country: input.country.trim().toUpperCase(),
                 region: normalizeOptionalText(input.region),
                 primaryLocale: input.primaryLocale.trim(),
@@ -809,6 +814,7 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
                 baseUrl: validated.normalizedUrl,
                 finalUrl: null,
                 siteType: normalizeOptionalText(input.siteType),
+                description: normalizeOptionalText(input.description),
                 country: input.country.trim().toUpperCase(),
                 region: normalizeOptionalText(input.region),
                 primaryLocale: input.primaryLocale.trim(),
@@ -855,6 +861,10 @@ export function createPrismaSiteService(resolver?: DnsResolver): SiteService {
 
       if (input.siteType !== undefined) {
         data.siteType = normalizeOptionalText(input.siteType);
+      }
+
+      if (input.description !== undefined) {
+        data.description = normalizeOptionalText(input.description);
       }
 
       if (input.country !== undefined) {

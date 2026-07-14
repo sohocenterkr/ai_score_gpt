@@ -58,6 +58,7 @@ const sampleSite: PublicSite = {
   baseUrl: "https://example.com/",
   finalUrl: null,
   siteType: "기업 홈페이지",
+  description: null,
   country: "KR",
   region: "서울",
   primaryLocale: "ko",

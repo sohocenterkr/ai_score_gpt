@@ -391,6 +391,22 @@ function isPendingContentFinding(finding: ScanResultFinding): boolean {
   );
 }
 
+// Our scan server couldn't reach or read the page (WAF/bot defense refused
+// every identity we tried) — not the same as the site actually failing the
+// check. See server/scans/scan-engine.ts's fetchMainPage / blockedAnalysisFindings.
+function isUnverifiableAccessFinding(finding: ScanResultFinding): boolean {
+  return (
+    finding.status === "BLOCKED" &&
+    contentEvidenceRecord(finding.evidence).accessOutcome === "BLOCKED"
+  );
+}
+
+function isPendingFinding(finding: ScanResultFinding): boolean {
+  return (
+    isPendingContentFinding(finding) || isUnverifiableAccessFinding(finding)
+  );
+}
+
 function formatPointValue(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   return Number.isInteger(rounded)
@@ -408,7 +424,7 @@ function pointImpactLabel(
     return isEnglish ? "No score impact" : "점수 영향 없음";
   }
 
-  if (isPendingContentFinding(finding)) {
+  if (isPendingFinding(finding)) {
     return isEnglish
       ? `${formatPointValue(finding.weight)} pts pending`
       : `판정 보류 ${formatPointValue(finding.weight)}점`;
@@ -446,6 +462,12 @@ function pointImpactDescription(
     return isEnglish
       ? `The related information could not be fully checked because rendering did not complete. ${formatPointValue(finding.weight)} points are pending rather than deducted.`
       : `렌더링 검사를 완료하지 못해 관련 정보의 존재 여부를 끝까지 확인하지 못했습니다. ${formatPointValue(finding.weight)}점은 감점하지 않고 판정을 보류합니다.`;
+  }
+
+  if (isUnverifiableAccessFinding(finding)) {
+    return isEnglish
+      ? `Our scan server was blocked from accessing this site, so this could not be verified either way. ${formatPointValue(finding.weight)} points are pending rather than deducted.`
+      : `저희 검사 서버가 이 사이트에 접근하지 못해 확인할 수 없었습니다. ${formatPointValue(finding.weight)}점은 감점하지 않고 판정을 보류합니다.`;
   }
 
   const earned = Math.max(
@@ -973,7 +995,7 @@ export function ScanResultPage() {
               (finding) =>
                 finding.weight > 0 &&
                 (finding.status === "FAIL" || finding.status === "BLOCKED") &&
-                !isPendingContentFinding(finding),
+                !isPendingFinding(finding),
             )
             .map((finding) => finding.id),
         );
@@ -1295,6 +1317,9 @@ export function ScanResultPage() {
   const pendingContentCount = result.findings.filter(
     isPendingContentFinding,
   ).length;
+  const pendingAccessCount = result.findings.filter(
+    isUnverifiableAccessFinding,
+  ).length;
   const isVerificationScan = result.scan.type === "VERIFICATION";
   const diagnosticNumber = result.scan.diagnosticNumber;
   const targetWorkOrderVersion = Math.max(1, Math.min(3, diagnosticNumber));
@@ -1562,8 +1587,28 @@ export function ScanResultPage() {
                 </strong>
                 <p>
                   {isEnglish
-                    ? `${pendingContentCount} content ${pendingContentCount === 1 ? "item could" : "items could"} not be fully checked because rendering did not complete. These points were not deducted. The confirmed score is ${formatPointValue(scoreRangeMin)}, and the possible range is ${formatPointValue(scoreRangeMin)}–${formatPointValue(scoreRangeMax)}.`
-                    : `렌더링 검사를 완료하지 못해 콘텐츠 ${pendingContentCount}개 항목의 존재 여부를 끝까지 확인하지 못했습니다. 해당 점수는 감점하지 않았으며, 확정 점수는 ${formatPointValue(scoreRangeMin)}점이고 가능 범위는 ${formatPointValue(scoreRangeMin)}~${formatPointValue(scoreRangeMax)}점입니다.`}
+                    ? [
+                        pendingContentCount > 0
+                          ? `${pendingContentCount} content ${pendingContentCount === 1 ? "item could" : "items could"} not be fully checked because rendering did not complete.`
+                          : null,
+                        pendingAccessCount > 0
+                          ? `${pendingAccessCount} ${pendingAccessCount === 1 ? "item was" : "items were"} blocked from our scan server, so we could not verify them.`
+                          : null,
+                        `These points were not deducted. The confirmed score is ${formatPointValue(scoreRangeMin)}, and the possible range is ${formatPointValue(scoreRangeMin)}–${formatPointValue(scoreRangeMax)}.`,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")
+                    : [
+                        pendingContentCount > 0
+                          ? `렌더링 검사를 완료하지 못해 콘텐츠 ${pendingContentCount}개 항목의 존재 여부를 끝까지 확인하지 못했습니다.`
+                          : null,
+                        pendingAccessCount > 0
+                          ? `저희 검사 서버의 접근이 막혀 ${pendingAccessCount}개 항목을 확인하지 못했습니다.`
+                          : null,
+                        `해당 점수는 감점하지 않았으며, 확정 점수는 ${formatPointValue(scoreRangeMin)}점이고 가능 범위는 ${formatPointValue(scoreRangeMin)}~${formatPointValue(scoreRangeMax)}점입니다.`,
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                 </p>
               </div>
             ) : null}
@@ -2395,7 +2440,7 @@ function FindingCard({
   onToggle?: (findingId: string, checked: boolean) => void;
 }) {
   const isEnglish = locale === "en";
-  const pendingContent = isPendingContentFinding(finding);
+  const pendingContent = isPendingFinding(finding);
   const statusLabel = pendingContent
     ? isEnglish
       ? "Related information unavailable"

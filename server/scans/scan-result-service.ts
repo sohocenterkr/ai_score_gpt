@@ -14,6 +14,7 @@ import {
   type ScoreSummary,
   type SummaryGroup,
   isPendingContentFinding,
+  isUnverifiableAccessFinding,
 } from "./scoring";
 import {
   buildContentReadinessAssessment,
@@ -32,6 +33,12 @@ export interface PublicScanResultFinding {
   recommendation: string | null;
   scoreDelta: number;
   weight: number;
+}
+
+function isPendingFinding(finding: PublicScanResultFinding): boolean {
+  return (
+    isPendingContentFinding(finding) || isUnverifiableAccessFinding(finding)
+  );
 }
 
 export interface PublicScanResultPage {
@@ -248,9 +255,9 @@ function buildFoundInformation(
 
 const FETCH_FAILURE_REASONS: Record<string, string> = {
   HTTP_TIMEOUT:
-    "사이트 응답이 제한 시간을 초과해 콘텐츠를 확인하지 못했습니다. 사이트가 느리거나 일시적으로 응답하지 않았을 수 있습니다.",
+    "사이트 응답이 제한 시간을 초과해 콘텐츠를 확인하지 못했습니다. 사이트가 느리거나 일시적으로 응답하지 않았을 수도 있지만, 사용자 브라우저에서는 정상 접속되더라도 진단 서버의 위치나 IP에서 오는 연결만 차단되어 응답 자체가 오지 않는 경우도 흔합니다. 실제 AI가 이 사이트를 읽고 추천하는지는 ChatGPT 등에 해당 URL을 직접 열어보게 하는 방식으로 별도 확인해보세요.",
   HTTP_REQUEST_FAILED:
-    "진단 서버에서 사이트에 연결하지 못했습니다. 사용자 브라우저에서는 정상 접속되더라도, 진단 서버의 위치나 IP에서는 접속이 차단되었거나 연결되지 않을 수 있습니다.",
+    "진단 서버에서 사이트에 연결하지 못했습니다. 사용자 브라우저에서는 정상 접속되더라도, 진단 서버의 위치나 IP에서는 접속이 차단되었거나 연결되지 않을 수 있습니다. 실제 AI가 이 사이트를 읽고 추천하는지는 ChatGPT 등에 해당 URL을 직접 열어보게 하는 방식으로 별도 확인해보세요.",
   HTTP_REDIRECT_LIMIT:
     "리디렉션이 허용 횟수를 초과해 최종 페이지에 도달하지 못했습니다.",
   HTTP_REDIRECT_INVALID:
@@ -264,6 +271,17 @@ const FETCH_FAILURE_REASONS: Record<string, string> = {
 const DEFAULT_FETCH_FAILURE_REASON =
   "진단 서버에서 원인을 특정하지 못한 오류로 콘텐츠를 확인하지 못했습니다.";
 
+function isAccessBlockedScan(findings: Finding[]): boolean {
+  const httpFinding = findings.find(
+    (item) => item.ruleCode === "ACCESS-HTTP-001",
+  );
+
+  return (
+    httpFinding?.status === "BLOCKED" &&
+    evidenceRecord(httpFinding.evidenceJson).accessOutcome === "BLOCKED"
+  );
+}
+
 function buildUnderstandingSummary(
   siteName: string,
   findings: Finding[],
@@ -276,6 +294,10 @@ function buildUnderstandingSummary(
       DEFAULT_FETCH_FAILURE_REASON;
 
     return `"${siteName}" 사이트는 진단 서버가 초기 HTML을 읽기 전에 실패했습니다. ${reason}`;
+  }
+
+  if (isAccessBlockedScan(findings)) {
+    return `"${siteName}" 사이트는 저희 검사 서버의 접근이 거부되어 초기 HTML을 읽지 못했습니다. 사이트의 보안 설정(WAF·CDN 봇 방어)이 원인으로 보이며, 콘텐츠 품질과는 무관합니다. 실제 AI의 접근 가능 여부는 다를 수 있습니다.`;
   }
 
   const title = evidenceString(findings, "META-TITLE-001", "title") ?? siteName;
@@ -351,7 +373,7 @@ function buildPublicScanResult(result: {
     .filter(
       (finding) =>
         (finding.status === "FAIL" || finding.status === "BLOCKED") &&
-        !isPendingContentFinding(finding),
+        !isPendingFinding(finding),
     )
     .sort(
       (left, right) =>
@@ -410,7 +432,7 @@ function buildPublicScanResult(result: {
         (finding) =>
           finding.weight > 0 &&
           (finding.status === "FAIL" || finding.status === "BLOCKED") &&
-          !isPendingContentFinding(finding),
+          !isPendingFinding(finding),
       )
       .map((finding) => ({
         ruleCode: finding.ruleCode,

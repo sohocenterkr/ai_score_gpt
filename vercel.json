@@ -1,8 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "buildCommand": "corepack enable && corepack prepare yarn@1.22.22 --activate && yarn run build:vercel",
+  "buildCommand": "npm run build:vercel",
   "outputDirectory": "dist/public",
+  "regions": ["icn1"],
   "functions": {
     "api/index.js": {
       "maxDuration": 60,
@@ -67,5 +68,5 @@
       "destination": "/index.html"
     }
   ],
-  "installCommand": "corepack enable && corepack prepare yarn@1.22.22 --activate && yarn install --non-interactive --ignore-engines --network-timeout 600000"
+  "installCommand": "npm ci --no-audit --no-fund"
 }
