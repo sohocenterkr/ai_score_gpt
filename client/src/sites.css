@@ -140,6 +140,13 @@
 
 .site-field-reservation {
   grid-template-rows: auto 48px;
+  justify-items: center;
+  text-align: center;
+}
+
+.site-field-reservation > span:first-child {
+  width: 100%;
+  text-align: center;
 }
 
 .site-reservation-checkbox {
