@@ -98,6 +98,7 @@ function renderedSuccess(
         hasEntityContact: false,
       },
       iframeCount: 0,
+      hasPaymentModule: false,
       contentSignals: {
         conversionIntent: "INFORMATIONAL",
         detectedSignals: [],
