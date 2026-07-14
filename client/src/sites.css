@@ -853,6 +853,32 @@
   }
 }
 
+.site-rescan-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.site-rescan-option input[type="checkbox"] {
+  appearance: auto;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
+.site-rescan-option input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+}
+
 .site-quick-actions a.site-result-primary-button {
   display: inline-flex;
   min-width: 112px;

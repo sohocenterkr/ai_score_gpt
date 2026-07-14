@@ -80,6 +80,7 @@ const sitesCopy = {
     scanWaiting: "검사 대기 중",
     scanComplete: "간편검사 완료",
     rescanCurrent: "현재 기준으로 다시 검사",
+    rescan: "다시 검사",
     scanOutdatedNotice:
       "평가 방법이 업그레이드되어 현재 기준으로 다시 검사가 필요합니다.",
     processing: "처리 중...",
@@ -139,6 +140,7 @@ const sitesCopy = {
     scanWaiting: "Scan queued",
     scanComplete: "Simple diagnostic completed",
     rescanCurrent: "Recheck with current rules",
+    rescan: "Run again",
     scanOutdatedNotice:
       "The evaluation method has been upgraded. Run a new scan with the current rules.",
     processing: "Processing...",
@@ -657,20 +659,42 @@ export function SitesPage() {
     }
   }
 
-  async function handleQueueScan(site: RegisteredSite) {
+  async function handleQueueScan(
+    site: RegisteredSite,
+    hasReservationFeature: boolean,
+  ) {
     setMessage("");
     setErrorMessage("");
     setWorkingSiteId(site.id);
 
     try {
+      let siteForScan = site;
+
+      if ((site.hasReservationFeature ?? false) !== hasReservationFeature) {
+        const nextForm = {
+          ...formFromSite(site),
+          hasReservationFeature,
+        };
+
+        siteForScan = await updateSiteRequest(site.id, {
+          ...toRequest(nextForm),
+          description: nextForm.description.trim() || null,
+        });
+
+        setSites((current) =>
+          current.map((item) => (item.id === site.id ? siteForScan : item)),
+        );
+      }
+
       const scan = await queueSiteScanRequest(
         site.id,
         "QUICK",
         normalizedLocale === "en" ? "en" : "ko",
       );
+
       setSites((current) =>
         current.map((item) =>
-          item.id === site.id ? { ...item, latestScan: scan } : item,
+          item.id === site.id ? { ...siteForScan, latestScan: scan } : item,
         ),
       );
       setMessage(copy.queuedMessage);
@@ -767,7 +791,9 @@ export function SitesPage() {
                     onCancelEdit={() => setEditingId(null)}
                     onEditChange={(key, value) => updateForm(key, value, true)}
                     onUpdate={(event) => void handleUpdate(event, site.id)}
-                    onQueueScan={() => void handleQueueScan(site)}
+                    onQueueScan={(hasReservationFeature) =>
+                      void handleQueueScan(site, hasReservationFeature)
+                    }
                     onArchive={() => void handleArchive(site)}
                   />
                 ))}
@@ -795,7 +821,7 @@ interface SiteDashboardCardProps {
     value: SiteFormState[K],
   ) => void;
   onUpdate: (event: FormEvent<HTMLFormElement>) => void;
-  onQueueScan: () => void;
+  onQueueScan: (hasReservationFeature: boolean) => void;
   onArchive: () => void;
 }
 
@@ -815,6 +841,14 @@ function SiteDashboardCard({
   onArchive,
 }: SiteDashboardCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [reservationForRescan, setReservationForRescan] = useState(
+    site.hasReservationFeature ?? false,
+  );
+
+  useEffect(() => {
+    setReservationForRescan(site.hasReservationFeature ?? false);
+  }, [site.hasReservationFeature]);
+
   const progress = site.progress;
   const progressText = progressCopy[locale];
   const latestSimpleScan =
@@ -878,7 +912,7 @@ function SiteDashboardCard({
         <button
           className="site-primary-button"
           type="button"
-          onClick={onQueueScan}
+          onClick={() => onQueueScan(reservationForRescan)}
           disabled={working || scanPending}
         >
           {working
@@ -1108,15 +1142,40 @@ function SiteDashboardCard({
                     {copy.viewResult}
                   </Link>
                 ) : null}
-                {scanOutdated ? (
-                  <button
-                    className="site-secondary-button"
-                    type="button"
-                    onClick={onQueueScan}
-                    disabled={working || scanPending}
-                  >
-                    {working ? copy.processing : copy.rescanCurrent}
-                  </button>
+                {simpleDiagnostic &&
+                ["COMPLETED", "PARTIAL", "FAILED"].includes(
+                  simpleDiagnostic.status,
+                ) ? (
+                  <>
+                    <label
+                      className="site-rescan-option"
+                      htmlFor={`rescan-reservation-${site.id}`}
+                    >
+                      <input
+                        id={`rescan-reservation-${site.id}`}
+                        type="checkbox"
+                        checked={reservationForRescan}
+                        onChange={(event) =>
+                          setReservationForRescan(event.target.checked)
+                        }
+                        disabled={working || scanPending}
+                      />
+                      <span>{copy.fields.hasReservationFeature}</span>
+                    </label>
+
+                    <button
+                      className="site-secondary-button"
+                      type="button"
+                      onClick={() => onQueueScan(reservationForRescan)}
+                      disabled={working || scanPending}
+                    >
+                      {working
+                        ? copy.processing
+                        : scanOutdated
+                          ? copy.rescanCurrent
+                          : copy.rescan}
+                    </button>
+                  </>
                 ) : null}
               </div>
             </div>
