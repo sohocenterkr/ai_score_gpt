@@ -389,11 +389,44 @@ export function HomePage() {
                 ? "See how well AI can understand your website."
                 : "내 사이트를 AI가 얼마나 잘 이해하는지 확인하세요."}
             </h1>
-            <p className="hero-description">
-              {isEnglish
-                ? "Run a public URL diagnostic, turn issues into a clear improvement work order, and start the next diagnostic after the updated site is deployed. If issues remain, create the next work order from that diagnostic report."
-                : "공개 URL의 기술 준비 상태와 AI가 고객 질문에 답하기 위한 핵심 콘텐츠 부족 항목을 함께 진단합니다. 수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 다음 차수 진단을 진행합니다. 남은 항목이 있으면 다음 작업지시서를 발행할 수 있습니다."}
-            </p>
+            <ul className="hero-description hero-description-list">
+              {isEnglish ? (
+                <>
+                  <li>
+                    Diagnose the technical readiness of a public URL and gaps in
+                    essential content.
+                  </li>
+                  <li>
+                    Organize required updates into a work order, then run one more
+                    diagnostic under the same criteria after deployment.
+                  </li>
+                  <li>
+                    Large websites and platform-based sites may not be analyzable.
+                  </li>
+                  <li>
+                    Small business owners can diagnose their own website&apos;s AI
+                    readiness for free.
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    공개 URL의 기술 준비 상태와 핵심 콘텐츠 부족 항목을 함께
+                    진단합니다.
+                  </li>
+                  <li>
+                    수정할 내용을 작업지시서로 정리하고, 배포 후 같은 기준으로 한 번
+                    더 진단할 수 있습니다.
+                  </li>
+                  <li>
+                    대형 사이트와 플랫폼 사이트는 분석하지 못할 수 있습니다.
+                  </li>
+                  <li>
+                    소상공인들은 본인 사이트의 AI 친화도를 무료로 진단해 보세요.
+                  </li>
+                </>
+              )}
+            </ul>
             <div className="hero-actions">
               <Link className="primary-action" to={`/${activeLocale}/sites`}>
                 {isEnglish ? "Start diagnosis" : "사이트 진단"}

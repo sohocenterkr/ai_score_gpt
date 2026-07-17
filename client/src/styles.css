@@ -1470,3 +1470,17 @@ article.surface:hover,
     min-height: 72px;
   }
 }
+
+/* Home hero description list */
+.hero-description-list {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-left: 1.35rem;
+  list-style: disc;
+}
+
+.hero-description-list li {
+  padding-left: 0.1rem;
+}
