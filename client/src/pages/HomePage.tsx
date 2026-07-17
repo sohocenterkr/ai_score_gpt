@@ -624,21 +624,57 @@ export function HomePage() {
       </Reveal>
 
       <Reveal>
-        <section className="full-bleed-section">
-          <div className="content-container section-content">
-            <div className="section-heading">
-              <p className="eyebrow">HOW TO USE</p>
+        <section className="full-bleed-section usage-highlight-section">
+          <div className="content-container section-content usage-highlight-content">
+            <div className="section-heading usage-highlight-heading">
+              <p className="eyebrow usage-highlight-eyebrow">HOW TO USE</p>
               <h2>
                 {isEnglish
-                  ? "Here's how to use it"
-                  : "이렇게 활용하세요"}
+                  ? "Turn the diagnosis into real improvements"
+                  : "진단 결과를 실제 사이트 개선으로 연결하세요"}
               </h2>
+              <p className="usage-highlight-lead">
+                {isEnglish
+                  ? "This is the key step where the diagnostic report and work order become actual website updates."
+                  : "진단 보고서와 작업지시서를 실제 사이트 수정으로 연결하는 핵심 단계입니다."}
+              </p>
             </div>
-            <div className="step-grid usage-grid">
-              {activeUsageScenarios.map((scenario) => (
-                <article className="surface step-item" key={scenario.title}>
+
+            <div className="step-grid usage-grid usage-highlight-grid">
+              {activeUsageScenarios.map((scenario, index) => (
+                <article
+                  className="surface step-item usage-highlight-card"
+                  key={scenario.title}
+                >
+                  <div className="usage-card-meta">
+                    <span className="usage-card-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="usage-card-label">
+                      {isEnglish
+                        ? index === 0
+                          ? "Update with AI"
+                          : "Send to an agency"
+                        : index === 0
+                          ? "AI로 직접 수정"
+                          : "제작회사에 전달"}
+                    </span>
+                  </div>
+
                   <h3>{scenario.title}</h3>
                   <p>{scenario.body}</p>
+
+                  <div className="usage-card-action">
+                    <span>
+                      {isEnglish
+                        ? index === 0
+                          ? "Work order PDF → Give it to AI → Update the site"
+                          : "Work order PDF → Send to agency → Request a quote"
+                        : index === 0
+                          ? "작업지시서 PDF → AI에게 전달 → 사이트 수정"
+                          : "작업지시서 PDF → 제작회사 전달 → 견적 요청"}
+                    </span>
+                  </div>
                 </article>
               ))}
             </div>
