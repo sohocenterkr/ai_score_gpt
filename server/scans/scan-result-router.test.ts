@@ -12,12 +12,18 @@ import {
 
 const dbMocks = vi.hoisted(() => ({
   paidEntitlementFindFirst: vi.fn(),
+  reportDownloadConsentFindUnique: vi.fn(),
+  reportDownloadConsentUpsert: vi.fn(),
 }));
 
 vi.mock("../db", () => ({
   getDatabase: () => ({
     paidEntitlement: {
       findFirst: dbMocks.paidEntitlementFindFirst,
+    },
+    reportDownloadConsent: {
+      findUnique: dbMocks.reportDownloadConsentFindUnique,
+      upsert: dbMocks.reportDownloadConsentUpsert,
     },
   }),
 }));
@@ -81,6 +87,7 @@ function createApp(
   currentUser = sampleUser,
 ) {
   const app = express();
+  app.use(express.json());
   app.use(
     "/api/scan-results",
     createScanResultRouter({
@@ -98,7 +105,16 @@ function createApp(
 describe("scan result router", () => {
   beforeEach(() => {
     dbMocks.paidEntitlementFindFirst.mockReset();
+    dbMocks.reportDownloadConsentFindUnique.mockReset();
+    dbMocks.reportDownloadConsentUpsert.mockReset();
+
     dbMocks.paidEntitlementFindFirst.mockResolvedValue(null);
+    dbMocks.reportDownloadConsentFindUnique.mockResolvedValue({
+      acceptedAt: new Date("2026-07-17T07:00:00.000Z"),
+    });
+    dbMocks.reportDownloadConsentUpsert.mockResolvedValue({
+      acceptedAt: new Date("2026-07-17T07:00:00.000Z"),
+    });
   });
 
   it("인증 회원의 검사 결과를 반환한다", async () => {
@@ -129,6 +145,55 @@ describe("scan result router", () => {
     expect(response.status).toBe(402);
     expect(response.body.code).toBe("PAID_FEATURE_REQUIRED");
     expect(getScanResult).not.toHaveBeenCalled();
+  });
+
+  it("1차 진단 보고서 동의가 없으면 PDF 다운로드를 차단한다", async () => {
+    const regularUser = {
+      ...sampleUser,
+      email: "user@example.com",
+      role: "USER" as const,
+    };
+    dbMocks.paidEntitlementFindFirst.mockResolvedValue({
+      id: "entitlement-1",
+    });
+    dbMocks.reportDownloadConsentFindUnique.mockResolvedValue(null);
+
+    const getScanResult = vi.fn().mockResolvedValue(sampleResult);
+
+    const response = await request(
+      createApp({ getScanResult }, undefined, regularUser),
+    ).get("/api/scan-results/scan-1/export.pdf");
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe(
+      "REPORT_DOWNLOAD_CONSENT_REQUIRED",
+    );
+  });
+
+  it("1차 진단 보고서 다운로드 동의를 기록한다", async () => {
+    const getScanResult = vi.fn().mockResolvedValue(sampleResult);
+
+    const response = await request(createApp({ getScanResult }))
+      .post("/api/scan-results/scan-1/report-download-consent")
+      .send({
+        accepted: true,
+        locale: "ko",
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.consent.required).toBe(true);
+    expect(response.body.consent.acceptedAt).toBe(
+      "2026-07-17T07:00:00.000Z",
+    );
+    expect(dbMocks.reportDownloadConsentUpsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          userId: "user-1",
+          scanId: "scan-1",
+          consentLocale: "ko",
+        }),
+      }),
+    );
   });
 
   it("유료 권한이 있는 일반 회원의 진단 보고서 PDF를 반환한다", async () => {

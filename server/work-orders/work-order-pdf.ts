@@ -1314,6 +1314,25 @@ export async function renderWorkOrderPdf(
       lineGap: 4,
     },
   );
+    document.moveDown(0.9);
+    setBold(document, 9.2, COLORS.primaryDark).text(
+      isEnglish
+        ? "Preview and correct the full site before deployment"
+        : "배포 전 전체 화면 미리보기 및 교정 필수",
+      {
+        width: contentWidth(document),
+      },
+    );
+    document.moveDown(0.35);
+    setRegular(document, 9.2, COLORS.text).text(
+      isEnglish
+        ? "Adding new cards or copy during implementation may change the overall layout and line wrapping. Before deployment, preview the mobile, tablet, and desktop views and correct spacing, alignment, overlap, and readability issues."
+        : "사이트 수정 과정에서 새로운 카드나 문구가 추가되면 전체 배열과 줄바꿈이 달라질 수 있습니다. 배포 전에 모바일·태블릿·PC 화면을 반드시 미리 확인하고, 간격·정렬·겹침·가독성을 교정한 뒤 배포하세요.",
+      {
+        width: contentWidth(document),
+        lineGap: 4,
+      },
+    );
   document.moveDown(1.2);
   setBold(document, 9, COLORS.primaryDark).text(
     isEnglish

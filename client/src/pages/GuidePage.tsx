@@ -37,20 +37,26 @@ const guideContent = {
           "기본 상품은 상세 산출물 제공을 목적으로 하며, 사례 할인 상품은 적용 전 점수와 개선 후 점수 등 제한된 전후 비교 결과 공개에 동의하는 경우 선택할 수 있습니다.",
         ],
       },
+        {
+          heading: "6. 배포 전 화면 확인",
+          paragraphs: [
+            "사이트 수정 과정에서 새로운 카드나 문구가 추가되면 화면의 전체 배열과 줄바꿈이 달라질 수 있습니다. 배포 전에 모바일·태블릿·PC 화면을 반드시 미리 확인하고, 간격·정렬·겹침·가독성을 교정한 뒤 배포하세요.",
+          ],
+        },
       {
-        heading: "6. 결제",
+        heading: "7. 결제",
         paragraphs: [
           "해외 결제는 Polar를 통해 USD 기준으로 제공될 수 있습니다. 국내 결제는 PortOne 등 국내 결제 서비스를 통해 제공될 수 있으며, 실제 결제 가능 수단은 결제 화면 안내를 기준으로 합니다.",
         ],
       },
       {
-        heading: "7. 개선 후 재진단",
+        heading: "8. 개선 후 재진단",
         paragraphs: [
           "사이트를 수정한 뒤 다시 진단하면 1차, 2차, 3차처럼 회차별 점수 변화를 확인할 수 있습니다.",
         ],
       },
       {
-        heading: "8. 문의",
+        heading: "9. 문의",
         paragraphs: [
           "오류가 발생하거나 이용 방법이 궁금한 경우 카카오톡 오픈채팅 또는 이메일로 문의할 수 있습니다.",
         ],
@@ -93,20 +99,26 @@ const guideContent = {
           "The standard product provides detailed deliverables. The case study discount product may be selected when you agree to limited public sharing of before-and-after comparison results, such as the initial score and improved score.",
         ],
       },
+        {
+          heading: "6. Preview Before Deployment",
+          paragraphs: [
+            "Adding new cards or copy during implementation can change the overall layout and line wrapping. Before deployment, preview the mobile, tablet, and desktop views and correct spacing, alignment, overlap, and readability issues.",
+          ],
+        },
       {
-        heading: "6. Payment",
+        heading: "7. Payment",
         paragraphs: [
           "International payments may be offered in USD through Polar. Domestic payments may be offered through domestic payment services such as PortOne. Available payment methods follow the checkout page.",
         ],
       },
       {
-        heading: "7. Re-diagnose After Improvements",
+        heading: "8. Re-diagnose After Improvements",
         paragraphs: [
           "After improving your website, you can run another diagnostic and compare score changes across the first, second, and third diagnostic rounds.",
         ],
       },
       {
-        heading: "8. Contact",
+        heading: "9. Contact",
         paragraphs: [
           "If an error occurs or you need help using the service, contact us through KakaoTalk open chat or email.",
         ],

@@ -206,6 +206,7 @@ model User {
   verificationAttemptsCreated VerificationAttempt[] @relation("VerificationAttemptCreator")
   paymentOrdersCreated        PaymentOrder[]        @relation("PaymentOrderUser")
   paidEntitlements            PaidEntitlement[]     @relation("PaidEntitlementUser")
+  reportDownloadConsents        ReportDownloadConsent[]
 
   @@index([status])
   @@index([lockedUntil])
@@ -389,6 +390,7 @@ model Scan {
   aiAnswerSummary     AiAnswerSummary?
   paymentOrders       PaymentOrder[]
   paidEntitlements    PaidEntitlement[]
+  reportDownloadConsents ReportDownloadConsent[]
 
   @@index([siteId, createdAt])
   @@index([status, createdAt])
@@ -600,6 +602,7 @@ model PaymentOrder {
   scan              Scan?              @relation(fields: [scanId], references: [id], onDelete: SetNull)
   workOrder         WorkOrder?         @relation("PaymentOrderWorkOrder", fields: [workOrderId], references: [id], onDelete: SetNull)
   paidEntitlement   PaidEntitlement?
+  reportDownloadConsents ReportDownloadConsent[]
 
   @@unique([provider, providerOrderId])
   @@unique([provider, providerPaymentId])
@@ -634,6 +637,26 @@ model PaidEntitlement {
   @@index([scanId, status])
   @@index([workOrderId, status])
   @@map("paid_entitlements")
+}
+
+model ReportDownloadConsent {
+  id             String        @id @default(cuid())
+  userId         String        @map("user_id")
+  scanId         String        @map("scan_id")
+  paymentOrderId String?       @map("payment_order_id")
+  consentVersion String        @map("consent_version")
+  consentLocale  String        @map("consent_locale")
+  consentText    String        @map("consent_text")
+  acceptedAt     DateTime      @default(now()) @map("accepted_at")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scan           Scan          @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  paymentOrder   PaymentOrder? @relation(fields: [paymentOrderId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, scanId, consentVersion])
+  @@index([scanId, acceptedAt])
+  @@index([paymentOrderId])
+  @@map("report_download_consents")
 }
 
 model AiQuestion {

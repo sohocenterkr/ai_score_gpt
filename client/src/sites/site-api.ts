@@ -307,6 +307,12 @@ export interface ContentReadinessAssessment {
   disclaimer: string;
 }
 
+export interface ReportDownloadConsentStatus {
+  required: boolean;
+  acceptedAt: string | null;
+  version: string;
+}
+
 export interface ScanResultResponse {
   site: {
     id: string;
@@ -332,6 +338,7 @@ export interface ScanResultResponse {
     createdAt: string;
   };
   paidFeatureAccess: boolean;
+  reportDownloadConsent: ReportDownloadConsentStatus;
   scoreSummary: ScanScoreSummary | null;
   currentRulesVersion: string;
   isOutdatedRulesVersion: boolean;
@@ -371,6 +378,34 @@ export async function getScanResultRequest(
   );
   const data = await readJson<{ result: ScanResultResponse }>(response);
   return data.result;
+}
+
+export async function acceptScanReportDownloadConsentRequest(
+  scanId: string,
+  locale: "ko" | "en",
+): Promise<ReportDownloadConsentStatus> {
+  const response = await fetch(
+    withDevUserPreviewQuery(
+      `/api/scan-results/${encodeURIComponent(
+        scanId,
+      )}/report-download-consent`,
+    ),
+    {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        accepted: true,
+        locale,
+      }),
+    },
+  );
+  const data = await readJson<{ consent: ReportDownloadConsentStatus }>(
+    response,
+  );
+  return data.consent;
 }
 
 export function scanResultPdfUrl(scanId: string, locale?: "ko" | "en"): string {

@@ -1768,3 +1768,63 @@
   background: #eff6ff;
   color: #1d4ed8;
 }
+
+/* diagnostic report download consent */
+.scan-report-consent-notice {
+  display: grid;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid #f0c56d;
+  border-radius: 12px;
+  background: #fff9e8;
+  color: #65450a;
+}
+
+.scan-report-consent-notice > strong {
+  color: #7a4f00;
+  font-size: 0.94rem;
+}
+
+.scan-first-diagnostic-action-card .scan-report-consent-notice > p {
+  margin: 0;
+  color: #6b4a10;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.scan-report-consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #3c2b0d;
+  font-size: 0.9rem;
+  font-weight: 750;
+  line-height: 1.55;
+  cursor: pointer;
+}
+
+.scan-report-consent-check input {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--brand);
+}
+
+.scan-report-consent-check:has(input:disabled) {
+  cursor: default;
+}
+
+.scan-report-consent-recorded {
+  color: #166534;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.scan-first-diagnostic-action-card .scan-report-consent-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.88rem;
+  font-weight: 750;
+}

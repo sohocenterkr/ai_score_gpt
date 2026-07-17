@@ -5,6 +5,7 @@ import {
   getScanResultRequest,
   listSitesRequest,
   queueSiteScanRequest,
+  acceptScanReportDownloadConsentRequest,
   scanResultPdfUrl,
   SiteApiError,
   type ScanResultFinding,
@@ -929,6 +930,17 @@ function metricDelta(value: number | null, suffix: string): string {
     : `변화 ${sign}${value.toLocaleString("ko-KR")}${suffix}`;
 }
 
+function formatReportConsentTime(
+  value: string,
+  isEnglish: boolean,
+): string {
+  return new Intl.DateTimeFormat(isEnglish ? "en-US" : "ko-KR", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(value));
+}
+
 export function ScanResultPage() {
   const { state: authState } = useAuth();
   const isSuperAdmin =
@@ -951,6 +963,9 @@ export function ScanResultPage() {
   >(null);
   const [linkedWorkOrderLoading, setLinkedWorkOrderLoading] = useState(false);
   const [creatingWorkOrder, setCreatingWorkOrder] = useState(false);
+  const [reportConsentChecked, setReportConsentChecked] = useState(false);
+  const [savingReportConsent, setSavingReportConsent] = useState(false);
+  const [reportConsentError, setReportConsentError] = useState("");
   const [selectedFindingIds, setSelectedFindingIds] = useState<string[]>([]);
   const [
     selectedRenderedImprovementCodes,
@@ -988,6 +1003,10 @@ export function ScanResultPage() {
         }
 
         setRulesRefreshError("");
+        setReportConsentError("");
+        setReportConsentChecked(
+          Boolean(response.reportDownloadConsent.acceptedAt),
+        );
         setResult(response);
         setSelectedFindingIds(
           response.findings
@@ -1236,6 +1255,53 @@ export function ScanResultPage() {
       );
     } finally {
       setCreatingWorkOrder(false);
+    }
+  }
+
+  async function handleFirstReportDownload() {
+    if (!result || result.scan.diagnosticNumber !== 1) {
+      return;
+    }
+
+    if (!reportConsentChecked) {
+      setReportConsentError(
+        isEnglish
+          ? "Confirm the refund restriction notice before saving the PDF."
+          : "환불 제한 안내를 확인하고 체크해 주세요.",
+      );
+      return;
+    }
+
+    setSavingReportConsent(true);
+    setReportConsentError("");
+
+    try {
+      let consent = result.reportDownloadConsent;
+
+      if (!consent.acceptedAt) {
+        consent = await acceptScanReportDownloadConsentRequest(
+          result.scan.id,
+          isEnglish ? "en" : "ko",
+        );
+        setResult((current) =>
+          current
+            ? {
+                ...current,
+                reportDownloadConsent: consent,
+              }
+            : current,
+        );
+      }
+
+      window.location.assign(
+        scanResultPdfUrl(result.scan.id, isEnglish ? "en" : "ko"),
+      );
+    } catch (error) {
+      setReportConsentError(
+        translateUiErrorMessage(messageFromError(error), isEnglish),
+      );
+    } finally {
+      setSavingReportConsent(false);
     }
   }
 
@@ -2241,19 +2307,80 @@ export function ScanResultPage() {
                         ? "Save the full site diagnostic results, measurement evidence, key issues, and improvement direction as a PDF report."
                         : "사이트 전체 진단 결과와 측정 근거, 주요 문제와 개선 방향을 PDF 보고서로 저장합니다."}
                     </p>
-                    <a
-                      className="scan-report-link"
-                      href={scanResultPdfUrl(
-                        result.scan.id,
-                        isEnglish ? "en" : "ko",
-                      )}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {isEnglish
-                        ? "Save Diagnostic 1 PDF"
-                        : "1차 진단 보고서 PDF 저장"}
-                    </a>
+                      <div
+                        className="scan-report-consent-notice"
+                        role="note"
+                      >
+                        <strong>
+                          {isEnglish
+                            ? "Refund restriction after digital delivery"
+                            : "디지털 자료 제공 후 결제 취소 제한 안내"}
+                        </strong>
+                        <p id="scan-report-consent-description">
+                          {isEnglish
+                            ? "Opening or saving the diagnostic report PDF starts delivery of the paid digital material, so cancellation or withdrawal based solely on a change of mind may be restricted. If the delivered material differs from the contract, description, or advertising, applicable law and the Terms of Service continue to apply."
+                            : "진단 보고서 PDF를 열람하거나 저장하면 유료 디지털 자료의 제공이 시작되어 단순 변심에 의한 청약철회 및 결제 취소가 제한될 수 있습니다. 다만 제공된 자료가 계약 내용 또는 표시·광고 내용과 다른 경우에는 관련 법령과 이용약관에 따릅니다."}
+                        </p>
+                        <label className="scan-report-consent-check">
+                          <input
+                            type="checkbox"
+                            checked={reportConsentChecked}
+                            disabled={
+                              savingReportConsent ||
+                              Boolean(
+                                result.reportDownloadConsent.acceptedAt,
+                              )
+                            }
+                            aria-describedby="scan-report-consent-description"
+                            onChange={(event) => {
+                              setReportConsentChecked(event.target.checked);
+                              setReportConsentError("");
+                            }}
+                          />
+                          <span>
+                            {isEnglish
+                              ? "I have reviewed the notice above and agree to open or save the diagnostic report PDF."
+                              : "위 안내를 확인했으며, 진단 보고서 PDF 열람·저장을 진행하는 데 동의합니다."}
+                          </span>
+                        </label>
+                        {result.reportDownloadConsent.acceptedAt ? (
+                          <small className="scan-report-consent-recorded">
+                            {isEnglish
+                              ? `Consent recorded: ${formatReportConsentTime(
+                                  result.reportDownloadConsent.acceptedAt,
+                                  true,
+                                )} KST`
+                              : `확인 기록 완료: ${formatReportConsentTime(
+                                  result.reportDownloadConsent.acceptedAt,
+                                  false,
+                                )} KST`}
+                          </small>
+                        ) : null}
+                        {reportConsentError ? (
+                          <p
+                            className="scan-report-consent-error"
+                            role="alert"
+                          >
+                            {reportConsentError}
+                          </p>
+                        ) : null}
+                      </div>
+                      <button
+                        className="scan-report-link"
+                        type="button"
+                        disabled={
+                          savingReportConsent || !reportConsentChecked
+                        }
+                        onClick={handleFirstReportDownload}
+                      >
+                        {savingReportConsent
+                          ? isEnglish
+                            ? "Recording confirmation..."
+                            : "확인 기록 중..."
+                          : isEnglish
+                            ? "Save Diagnostic 1 PDF"
+                            : "1차 진단 보고서 PDF 저장"}
+                      </button>
                   </article>
 
                   <article className="scan-first-diagnostic-action-card">

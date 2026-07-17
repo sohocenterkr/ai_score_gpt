@@ -330,6 +330,19 @@ export function WorkOrderPage() {
           </p>
         ) : null}
 
+          <div className="work-order-deployment-review-note" role="note">
+            <strong>
+              {isEnglish
+                ? "Preview and correct the full site before deployment"
+                : "배포 전 전체 화면을 반드시 미리 확인하세요"}
+            </strong>
+            <p>
+              {isEnglish
+                ? "New cards or copy added during implementation may change the overall layout and line wrapping. Preview mobile, tablet, and desktop views, then correct spacing, alignment, overlap, and readability issues before deployment."
+                : "사이트 수정 과정에서 새로운 카드나 문구가 추가되면 전체 배열과 줄바꿈이 달라질 수 있습니다. 모바일·태블릿·PC 화면을 미리 확인하고 간격, 정렬, 겹침, 가독성을 교정한 뒤 배포하세요."}
+            </p>
+          </div>
+
         <div className="work-order-toolbar">
           {workOrder.status === "DRAFT" ? (
             <>

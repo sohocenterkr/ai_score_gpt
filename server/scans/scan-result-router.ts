@@ -9,6 +9,10 @@ import {
   hasPaidFeatureAccessForScan,
   sendPaidFeatureRequired,
 } from "../billing/paid-feature-access";
+import {
+  getReportDownloadConsentStatus,
+  recordReportDownloadConsent,
+} from "./report-download-consent";
 import { scanResultPdfFilename } from "./scan-result-pdf";
 import {
   ScanReportCacheError,
@@ -51,6 +55,73 @@ export function createScanResultRouter(options: CreateScanResultRouterOptions) {
   const router = Router();
   const { scanResultService, scanReportCacheService, requireAuth } = options;
 
+  router.post(
+    "/:scanId/report-download-consent",
+    requireAuth,
+    async (request, response) => {
+      const scanId = readRouteParam(request.params.scanId);
+
+      if (
+        !(await hasPaidFeatureAccessForScan(response.locals.authUser, scanId))
+      ) {
+        sendPaidFeatureRequired(
+          response,
+          "상세 진단 PDF 보고서는 유료 결제 후 제공됩니다.",
+        );
+        return;
+      }
+
+      if (request.body?.accepted !== true) {
+        response.status(400).json({
+          code: "REPORT_DOWNLOAD_CONSENT_REQUIRED",
+          message: "환불 제한 안내를 확인하고 동의해 주세요.",
+        });
+        return;
+      }
+
+      try {
+        const result = await scanResultService.getScanResult(
+          response.locals.authUser,
+          scanId,
+        );
+
+        if (result.scan.diagnosticNumber !== 1) {
+          response.status(400).json({
+            code: "REPORT_DOWNLOAD_CONSENT_NOT_APPLICABLE",
+            message: "최초 진단 보고서에만 다운로드 동의가 필요합니다.",
+          });
+          return;
+        }
+
+        const locale = request.body?.locale === "en" ? "en" : "ko";
+        const consent = await recordReportDownloadConsent(
+          response.locals.authUser,
+          scanId,
+          locale,
+        );
+
+        response.status(200).json({ consent });
+      } catch (error) {
+        if (error instanceof ScanResultServiceError) {
+          response.status(error.status).json({
+            code: error.code,
+            message: error.message,
+          });
+          return;
+        }
+
+        console.error(
+          `[scan-result-consent] Could not record consent for scan ${scanId}`,
+          error,
+        );
+        response.status(500).json({
+          code: "INTERNAL_ERROR",
+          message: "진단 보고서 다운로드 동의를 기록하지 못했습니다.",
+        });
+      }
+    },
+  );
+
   router.get("/:scanId/export.pdf", requireAuth, async (request, response) => {
     const scanId = readRouteParam(request.params.scanId);
 
@@ -69,6 +140,24 @@ export function createScanResultRouter(options: CreateScanResultRouterOptions) {
         response.locals.authUser,
         scanId,
       );
+
+      if (result.scan.diagnosticNumber === 1) {
+        const consent = await getReportDownloadConsentStatus(
+          response.locals.authUser.id,
+          scanId,
+          true,
+        );
+
+        if (!consent.acceptedAt) {
+          response.status(409).json({
+            code: "REPORT_DOWNLOAD_CONSENT_REQUIRED",
+            message:
+              "환불 제한 안내를 확인하고 동의한 뒤 진단 보고서 PDF를 저장해 주세요.",
+          });
+          return;
+        }
+      }
+
       const requestedLocale = readLocaleQuery(request.query.locale);
       const pdfResult = requestedLocale
         ? {
@@ -134,11 +223,17 @@ export function createScanResultRouter(options: CreateScanResultRouterOptions) {
         response.locals.authUser,
         scanId,
       );
+      const reportDownloadConsent = await getReportDownloadConsentStatus(
+        response.locals.authUser.id,
+        scanId,
+        paidFeatureAccess && result.scan.diagnosticNumber === 1,
+      );
 
       response.json({
         result: {
           ...result,
           paidFeatureAccess,
+          reportDownloadConsent,
         },
       });
     } catch (error) {
