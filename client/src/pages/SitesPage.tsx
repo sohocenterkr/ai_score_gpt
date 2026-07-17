@@ -98,6 +98,8 @@ const sitesCopy = {
     deleteConfirm: (siteName: string) =>
       `${siteName} 사이트를 목록에서 삭제하시겠습니까? 검사 이력은 보존됩니다.`,
     unknownError: "요청을 처리하지 못했습니다. 다시 시도해 주세요.",
+    freeQuickScanLimit:
+      "무료 간편진단은 계정당 최대 10개 사이트까지 사용할 수 있습니다. 이미 진단한 사이트의 재진단은 계속 가능합니다.",
     fields: {
       name: "사이트명",
       namePlaceholder: "예: Site AI Score",
@@ -160,6 +162,8 @@ const sitesCopy = {
     deleteConfirm: (siteName: string) =>
       `Remove ${siteName} from the website list? Scan history will be preserved.`,
     unknownError: "The request could not be processed. Please try again.",
+    freeQuickScanLimit:
+      "The free simple diagnostic can be used for up to 10 websites per account. You can continue to rerun diagnostics for websites you have already checked.",
     fields: {
       name: "Website name",
       namePlaceholder: "e.g. Site AI Score",
@@ -588,7 +592,20 @@ export function SitesPage() {
         registeredSite = { ...site, latestScan: scan };
       } catch (scanError) {
         scanQueued = false;
-        setErrorMessage(messageFromError(scanError, copy.unknownError));
+
+        const limitMessage =
+          scanError instanceof SiteApiError &&
+          scanError.code === "FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED"
+            ? copy.freeQuickScanLimit
+            : null;
+        const scanErrorMessage =
+          limitMessage ?? messageFromError(scanError, copy.unknownError);
+
+        setErrorMessage(scanErrorMessage);
+
+        if (limitMessage) {
+          window.alert(limitMessage);
+        }
       }
 
       setSites((current) => [
@@ -699,7 +716,19 @@ export function SitesPage() {
       );
       setMessage(copy.queuedMessage);
     } catch (error) {
-      setErrorMessage(messageFromError(error, copy.unknownError));
+      const limitMessage =
+        error instanceof SiteApiError &&
+        error.code === "FREE_QUICK_SCAN_SITE_LIMIT_EXCEEDED"
+          ? copy.freeQuickScanLimit
+          : null;
+      const scanErrorMessage =
+        limitMessage ?? messageFromError(error, copy.unknownError);
+
+      setErrorMessage(scanErrorMessage);
+
+      if (limitMessage) {
+        window.alert(limitMessage);
+      }
     } finally {
       setWorkingSiteId(null);
     }
