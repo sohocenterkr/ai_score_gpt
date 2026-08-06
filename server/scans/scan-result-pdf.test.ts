@@ -186,9 +186,9 @@ const sampleResult: PublicScanResult = {
           durationMs: 12_340,
           pageErrorCount: 2,
           initialHtml: {
-            textLength: 1_200,
+            textLength: 8_528,
             links: {
-              internal: 12,
+              internal: 37,
             },
             headings: {
               h1: ["예제 사이트"],
@@ -199,9 +199,9 @@ const sampleResult: PublicScanResult = {
             },
           },
           renderedDom: {
-            textLength: 2_400,
+            textLength: 8_759,
             links: {
-              internal: 28,
+              internal: 58,
             },
             headings: {
               h1: ["예제 사이트"],
@@ -240,12 +240,12 @@ describe("scan result PDF", () => {
       durationMs: 12_340,
       metrics: {
         textLength: {
-          initial: 1_200,
-          rendered: 2_400,
+          initial: 8_528,
+          rendered: 8_759,
         },
         internalLinks: {
-          initial: 12,
-          rendered: 28,
+          initial: 37,
+          rendered: 58,
         },
         jsonLdValidCount: {
           initial: 0,
@@ -253,7 +253,7 @@ describe("scan result PDF", () => {
         },
       },
     });
-    const plans = buildRenderedDomImprovementPlans(comparison);
+    const plans = buildRenderedDomImprovementPlans(comparison, "ko", "ECOMMERCE");
 
     expect(plans[0]).toMatchObject({
       code: "RENDERED-ADDED-CONTENT",
@@ -265,8 +265,11 @@ describe("scan result PDF", () => {
       ),
     ).toBe(true);
     expect(plans[0]?.acceptanceCriteria.length).toBeGreaterThanOrEqual(4);
+    expect(plans[0]?.change).toContain("SSR/SSG 전면 도입은 필수가 아닙니다");
+    expect(plans[0]?.developerInstructions.join(" ")).toContain("상품 카테고리");
+    expect(plans[0]?.acceptanceCriteria.join(" ")).toContain("브랜드·대표 제품군");
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.08-archetype-content-v10",
+      "2026.08-ecommerce-templates-v11",
     );
   });
 

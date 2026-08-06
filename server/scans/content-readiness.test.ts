@@ -113,5 +113,9 @@ describe("ecommerce content readiness", () => {
     expect(text).not.toContain("가입, 생성, 배포");
     expect(text).not.toContain("지원 기능·입력·출력·플랫폼");
     expect(text).not.toContain("무료·유료 범위");
+    expect(text).not.toContain("추가 비용를");
+    expect(text).not.toContain("맞춤 제작 순서을");
+    expect(text).not.toContain("지원 범위과");
+    expect(text).not.toContain("고객은 어떤 제품군과 옵션");
   });
 });

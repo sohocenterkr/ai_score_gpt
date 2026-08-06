@@ -997,6 +997,7 @@ function genericCriteria(
 export function buildRenderedImprovementWorkOrderTemplate(
   plan: RenderedImprovementTemplateInput,
   locale: WorkOrderTemplateLocale = "ko",
+  context: { siteArchetype?: string | null } = {},
 ): WorkOrderTemplate {
   const prefixByCode: Record<string, string> = {
     "RENDERED-ADDED-CONTENT": "JS-CONTENT",
@@ -1006,31 +1007,52 @@ export function buildRenderedImprovementWorkOrderTemplate(
   const prefix =
     prefixByCode[plan.code] ??
     plan.code.replace(/[^A-Z0-9]+/g, "-").slice(0, 16);
+  const isCommerce = context.siteArchetype === "ECOMMERCE";
+  const commerceReplacements: Array<[string, string]> = [
+    ["서비스 정의", "브랜드·상품 정의"],
+    ["대상 고객", "구매 대상"],
+    ["대표 활용 사례", "상품 선택 상황"],
+    ["이용 절차", "주문·배송·A/S 절차"],
+    ["요금·보안 정보", "상품 가격·재고·구매 정책"],
+    ["요금제 또는 무료·유료 이용 범위", "상품 가격·재고·주문 가능 상태·배송비·추가 제작비"],
+    ["개인정보·입력자료 처리 방식", "개인정보·주문·결제·배송정보 처리 방식"],
+    ["서비스 설명", "브랜드·상품 설명"],
+    ["AI가 서비스를", "AI가 브랜드와 상품을"],
+  ];
+  const adapt = (value: string) =>
+    isCommerce
+      ? commerceReplacements.reduce(
+          (result, [before, after]) => result.split(before).join(after),
+          value,
+        )
+      : value;
 
   return {
     requirement: [
       locale === "en"
-        ? `Current state: ${plan.currentState}`
-        : `현재 상태: ${plan.currentState}`,
+        ? "Current state: " + plan.currentState
+        : "현재 상태: " + adapt(plan.currentState),
       locale === "en"
-        ? `What it means: ${plan.meaning}`
-        : `무슨 뜻인가요: ${plan.meaning}`,
+        ? "What it means: " + plan.meaning
+        : "무슨 뜻인가요: " + adapt(plan.meaning),
       locale === "en"
-        ? `What to change: ${plan.change}`
-        : `무엇을 바꾸나요: ${plan.change}`,
+        ? "What to change: " + plan.change
+        : "무엇을 바꾸나요: " + adapt(plan.change),
     ].join("\n\n"),
     developerMessage: [
       locale === "en"
         ? "- Do not add hidden text just to raise the score. Reflect content with the same meaning as the real user-facing page in the initial HTML and structured data."
         : "- 점수만 올리기 위한 숨김 텍스트가 아니라, 실제 사용자 화면과 같은 의미의 콘텐츠를 초기 HTML과 구조화 데이터에 반영해 주세요.",
       locale === "en"
-        ? "- Treat this as work that helps AI systems understand and cite the service more accurately, not as a guarantee of AI search visibility."
-        : "- AI 검색 노출 보장이 아니라 AI가 서비스를 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.",
-      ...plan.developerInstructions.map((instruction) => `- ${instruction}`),
+        ? "- Treat this as work that helps AI systems understand and cite the website more accurately, not as a guarantee of AI search visibility."
+        : isCommerce
+          ? "- AI 검색 노출 보장이 아니라 AI가 브랜드와 상품을 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요."
+          : "- AI 검색 노출 보장이 아니라 AI가 사이트를 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.",
+      ...plan.developerInstructions.map((instruction) => "- " + adapt(instruction)),
     ].join("\n"),
     acceptanceCriteria: plan.acceptanceCriteria.map((label, index) => ({
-      code: `${prefix}-${String(index + 1).padStart(2, "0")}`,
-      label,
+      code: prefix + "-" + String(index + 1).padStart(2, "0"),
+      label: adapt(label),
       required: true,
     })),
     isRequired: false,
@@ -1051,6 +1073,134 @@ function replaceTemplateText(value: string, replacements: Array<[string, string]
   );
 }
 
+
+function ecommerceCriterion(code: string, label: string) {
+  return { code, label, required: true };
+}
+
+function ecommerceWorkOrderTemplate(
+  ruleCode: string,
+  isRequired: boolean,
+): WorkOrderTemplate | null {
+  const make = (
+    requirement: string,
+    developerMessage: string,
+    criteria: Array<[string, string]>,
+  ): WorkOrderTemplate => ({
+    requirement,
+    developerMessage,
+    acceptanceCriteria: criteria.map(([code, label]) =>
+      ecommerceCriterion(code, label),
+    ),
+    isRequired,
+  });
+
+  switch (ruleCode) {
+    case "STRUCT-H1-001":
+      return make(
+        "초기 HTML과 사용자 화면에 브랜드와 대표 제품군을 설명하는 H1을 정확히 1개 제공합니다.",
+        "페이지 대표 H1에 브랜드명과 주요 상품 범주가 자연스럽게 드러나도록 작성해 주세요. 별도의 SSR/SSG 전면 도입은 요구하지 않으며, 서버가 처음 반환하는 HTML과 사용자 화면에서 같은 H1을 확인할 수 있어야 합니다.",
+        [
+          ["H1-01", "초기 HTML에 브랜드와 대표 제품군을 설명하는 H1이 정확히 1개 존재한다."],
+          ["H1-02", "사용자 화면과 초기 HTML의 H1 의미가 일치한다."],
+          ["H1-03", "제목을 숨김 텍스트로 추가하지 않고 실제 화면에 표시한다."],
+        ],
+      );
+    case "CONTENT-HEADINGS-001":
+      return make(
+        "브랜드·대표 제품군·소재와 제작 방식·구매 방법·배송·A/S·정책을 H2 제목으로 구분합니다.",
+        "H1 아래에 브랜드 소개, 대표 제품군, 소재·제작 특징, 구매·주문제작 방법, 배송·교환·환불, 품질보증·A/S, FAQ 등의 실제 섹션을 H2로 구성해 주세요. 초기 HTML 본문은 이미 충분하면 SSR/SSG를 새로 도입하지 않아도 됩니다.",
+        [
+          ["HEADINGS-01", "초기 HTML에서 H1과 H2의 논리적인 제목 계층을 확인할 수 있다."],
+          ["HEADINGS-02", "H2가 전자상거래 사이트의 실제 섹션 내용과 일치한다."],
+          ["HEADINGS-03", "빈 제목이나 디자인용 제목을 사용하지 않는다."],
+        ],
+      );
+    case "STRUCT-LINKS-001":
+      return make(
+        "상품 카테고리·브랜드 소개·매장·배송/교환/환불·A/S·FAQ 등 핵심 경로를 표준 링크로 초기 HTML에 제공합니다.",
+        "JavaScript 클릭 핸들러만 사용하지 말고 상품 카테고리, 브랜드 소개, 매장, 주문제작 안내, 배송·교환·환불, 개인정보처리방침, 이용약관, A/S, FAQ로 이동하는 href가 있는 표준 a 링크를 초기 HTML에 포함해 주세요.",
+        [
+          ["LINKS-01", "핵심 전자상거래 경로가 초기 HTML의 href 링크로 제공된다."],
+          ["LINKS-02", "템플릿 변수나 잘못된 URL이 링크로 노출되지 않는다."],
+          ["LINKS-03", "링크 텍스트가 이동 목적지를 구체적으로 설명한다."],
+        ],
+      );
+    case "CONTENT-CORE-DEFINITION-001":
+      return make(
+        "브랜드 정체성, 대표 제품군, 소재, 제작 방식, 선택 옵션, 품질보증·A/S를 사용자 화면과 초기 HTML에 설명합니다.",
+        "랜딩 페이지와 브랜드 소개 페이지에 이 브랜드가 어떤 브랜드인지, 어떤 제품을 제작·판매하는지, 대표 제품군·사용 소재·제작 방식·제품 선택 옵션·품질보증 및 A/S를 공식 문구로 작성해 주세요. 해당 내용은 사용자 화면과 초기 HTML에서 모두 확인할 수 있어야 합니다.",
+        [
+          ["CORE-DEFINITION-01", "브랜드와 판매 제품을 페이지 내용만으로 명확히 설명할 수 있다."],
+          ["CORE-DEFINITION-02", "대표 제품군·소재·제작 방식·선택 옵션이 실제 판매 내용과 일치한다."],
+          ["CORE-DEFINITION-03", "품질보증과 A/S 제공 범위를 확인할 수 있다."],
+        ],
+      );
+    case "CONTENT-AUDIENCE-USECASE-001":
+      return make(
+        "구매 대상, 구매 목적, 용도별 상품 선택 기준과 대표 제품군별 추천 대상을 안내합니다.",
+        "어떤 고객과 구매 목적에 적합한 상품인지 설명하고, 선물·행사·일상·스타일별 선택 상황과 용도별 상품 선택 기준, 대표 제품군별 추천 대상을 실제 판매 정보에 맞게 작성해 주세요.",
+        [
+          ["AUDIENCE-USECASE-01", "주요 구매 대상과 구매 목적이 구체적으로 설명되어 있다."],
+          ["AUDIENCE-USECASE-02", "선물·행사·일상·스타일별 상품 선택 상황을 확인할 수 있다."],
+          ["AUDIENCE-USECASE-03", "대표 제품군별 추천 대상과 선택 기준이 과장 없이 제시된다."],
+        ],
+      );
+    case "CONTENT-WORKFLOW-OUTCOME-001":
+      return make(
+        "상품 탐색부터 주문·결제·배송 또는 맞춤 제작, 수령 후 A/S까지의 절차를 3~5단계로 설명합니다.",
+        "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작, 수령 후 품질보증·A/S까지 실제 구매 흐름을 순서대로 안내해 주세요. 소재·색상·크기·옵션과 예상 배송 또는 제작 기간도 함께 확인할 수 있어야 합니다.",
+        [
+          ["WORKFLOW-OUTCOME-01", "상품 탐색부터 수령과 A/S까지 실제 절차가 3~5단계로 표시된다."],
+          ["WORKFLOW-OUTCOME-02", "고객이 선택해야 할 소재·색상·크기·옵션과 예상 배송 또는 제작 기간을 확인할 수 있다."],
+          ["WORKFLOW-OUTCOME-03", "안내된 절차가 실제 주문·결제·배송 또는 맞춤 제작 방식과 일치한다."],
+        ],
+      );
+    case "CONTENT-PRICING-TERMS-001":
+      return make(
+        "상품 가격, 재고·주문 가능 상태, 배송비, 추가 제작비, 결제와 취소·환불 조건을 안내합니다.",
+        "실제 상품 가격, 재고·주문 가능 상태, 배송비, 맞춤 제작 추가 비용, 결제 조건, 교환·환불 및 주문제작 취소 조건을 표나 FAQ 형태로 정리해 주세요.",
+        [
+          ["PRICING-TERMS-01", "상품별 가격과 재고·품절·주문제작 상태를 확인할 수 있다."],
+          ["PRICING-TERMS-02", "배송비·추가 제작비·결제 방법과 조건을 확인할 수 있다."],
+          ["PRICING-TERMS-03", "교환·환불과 주문제작 취소 조건이 실제 정책과 일치한다."],
+        ],
+      );
+    case "CONTENT-DATA-POLICY-001":
+      return make(
+        "회원·주문·결제·배송·맞춤 제작 요청정보의 처리와 보관·파기 기준을 안내합니다.",
+        "고객의 회원정보, 주문자 정보, 결제정보, 배송지 정보 및 상담 과정에서 제공된 맞춤 제작 요청정보가 어떻게 수집·이용·보관·삭제되는지 공식 문구로 설명해 주세요. 개인정보처리방침과 이용약관은 href가 있는 표준 링크로 제공해 주세요.",
+        [
+          ["DATA-POLICY-01", "개인정보와 주문·결제·배송정보 처리 방식이 명확히 설명되어 있다."],
+          ["DATA-POLICY-02", "개인정보와 주문정보의 보관·파기 기준을 확인할 수 있다."],
+          ["DATA-POLICY-03", "개인정보처리방침과 이용약관이 href가 있는 표준 링크로 제공된다."],
+        ],
+      );
+    case "CONTENT-DIFFERENTIATION-PROOF-001":
+      return make(
+        "제품·브랜드 차별점과 제작·품질·고객 신뢰 근거를 사실 기반으로 제공합니다.",
+        "다른 동종 브랜드·일반 제품과 구분되는 특징, 대표 제품과 제작 사례, 사용 소재·등급·제작 공정, 장인 경력·수상·매장·A/S, 실제 고객 후기와 구매 사례 중 검증 가능한 근거를 사용자 화면과 초기 HTML에 작성해 주세요.",
+        [
+          ["DIFFERENTIATION-PROOF-01", "제품·브랜드 차별점이 비교 가능한 사실로 설명되어 있다."],
+          ["DIFFERENTIATION-PROOF-02", "대표 제품·제작 사례·소재·공정 중 하나 이상의 구체적인 근거가 있다."],
+          ["DIFFERENTIATION-PROOF-03", "장인 경력·수상·매장·A/S·고객 후기 등 공개된 신뢰 근거의 출처를 확인할 수 있다."],
+        ],
+      );
+    case "CONTENT-TRANSACTION-POLICY-001":
+      return make(
+        "배송·교환·반품·환불·주문제작 변경/취소·A/S 정책을 사용자 화면과 초기 HTML에 안내합니다.",
+        "배송 방법과 기간, 배송비, 교환·반품·환불 기준, 취소 가능 시점, 주문제작 상품의 변경·취소 제한, 불량·오배송 처리, A/S 신청 방법과 비용을 사용자 화면과 정책 페이지에 명확히 안내해 주세요.",
+        [
+          ["TRANSACTION-POLICY-01", "배송 방법·기간과 배송비를 확인할 수 있다."],
+          ["TRANSACTION-POLICY-02", "교환·반품·환불·취소 및 주문제작 변경 제한을 확인할 수 있다."],
+          ["TRANSACTION-POLICY-03", "불량·오배송 처리와 A/S 신청 방법·비용을 확인할 수 있다."],
+        ],
+      );
+    default:
+      return null;
+  }
+}
+
 function contextualizeTemplate(
   template: WorkOrderTemplate,
   finding: FindingTemplateInput,
@@ -1061,6 +1211,14 @@ function contextualizeTemplate(
     ? evidence.siteArchetype
     : null;
   const isCommerce = archetype === "ECOMMERCE";
+  const exactCommerceTemplate =
+    locale === "ko" && isCommerce
+      ? ecommerceWorkOrderTemplate(finding.ruleCode, template.isRequired)
+      : null;
+
+  if (exactCommerceTemplate) {
+    return exactCommerceTemplate;
+  }
 
   const neutralKo: Array<[string, string]> = [
     ["Form Assign", "해당 사이트"],

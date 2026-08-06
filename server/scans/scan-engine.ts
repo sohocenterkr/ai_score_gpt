@@ -450,11 +450,17 @@ function contextualContentInput(
     ["차별점과 신뢰 근거", "상품 차별점과 브랜드 신뢰 근거"],
     ["사례, 후기, 실적", "제품 특징, 제작 근거, 후기, 인증·수상·매장 정보"],
   ];
-  const adapt = (value: string) =>
-    replacements.reduce(
+  const adapt = (value: string) => {
+    const adapted = replacements.reduce(
       (result, [before, after]) => result.split(before).join(after),
       value,
     );
+
+    return adapted
+      .replaceAll("추가 비용를", "추가 비용을")
+      .replaceAll("맞춤 제작 순서을", "맞춤 제작 순서를")
+      .replaceAll("지원 범위과", "지원 범위와");
+  };
 
   return {
     ...input,

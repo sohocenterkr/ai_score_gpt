@@ -1097,6 +1097,15 @@ function writeExecutionPlanPage(
         "상품별 판매가격, 재고·품절·주문제작 여부, 배송비, 추가 제작비, 결제 방법, 교환·환불 및 주문제작 취소 조건을 표시합니다.",
       ];
     }
+
+    const policyEpic = relevantEpics.find((epic) => epic.priority === "P4");
+    if (policyEpic && !isEnglish) {
+      policyEpic.body = [
+        "회원·주문·결제·배송·맞춤 제작 요청정보의 수집·이용·보관·파기 기준과 정책 링크를 확인합니다.",
+        "배송 방법·기간·배송비, 교환·반품·환불, 주문제작 변경·취소 제한, 불량·오배송 처리 기준을 안내합니다.",
+        "제품·브랜드 차별점, 제작 근거, 장인·수상·매장·A/S·고객 후기 중 검증 가능한 신뢰 근거를 제공합니다.",
+      ];
+    }
   }
 
   relevantEpics.forEach((epic) => {

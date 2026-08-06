@@ -979,10 +979,22 @@ export function createPrismaWorkOrderService(
         };
       });
 
+      const renderedSiteArchetype = scan.findings.some((finding) => {
+        const evidence = finding.evidenceJson;
+        return Boolean(
+          evidence &&
+          typeof evidence === "object" &&
+          !Array.isArray(evidence) &&
+          (evidence as Record<string, unknown>).siteArchetype === "ECOMMERCE",
+        );
+      })
+        ? "ECOMMERCE"
+        : null;
       const renderedItemInputs = selectedPlans.map((plan) => {
         const template = buildRenderedImprovementWorkOrderTemplate(
           plan,
           input.locale ?? "ko",
+          { siteArchetype: renderedSiteArchetype },
         );
 
         return {

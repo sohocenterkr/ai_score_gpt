@@ -88,27 +88,80 @@ describe("work order templates", () => {
 
 
 describe("commerce work order wording", () => {
-  it("쇼핑몰 증거가 있으면 SaaS 전용 이용 절차와 요금 문구를 사용하지 않는다", () => {
-    const workflow = buildWorkOrderTemplate({
-      ruleCode: "CONTENT-WORKFLOW-OUTCOME-001",
-      title: "구매 절차",
-      description: "구매 절차가 부족합니다.",
-      recommendation: null,
-      severity: "MEDIUM",
-      evidenceJson: { siteArchetype: "ECOMMERCE", conversionIntent: "DIRECT_PAYMENT" },
-    });
-    const pricing = buildWorkOrderTemplate({
-      ruleCode: "CONTENT-PRICING-TERMS-001",
-      title: "상품 가격",
-      description: "가격 정보가 부족합니다.",
-      recommendation: null,
-      severity: "MEDIUM",
-      evidenceJson: { siteArchetype: "ECOMMERCE", conversionIntent: "DIRECT_PAYMENT" },
-    });
+  const commerceEvidence = {
+    siteArchetype: "ECOMMERCE",
+    conversionIntent: "DIRECT_PAYMENT",
+  };
 
-    expect(workflow.developerMessage).toContain("상품 확인·구매");
-    expect(workflow.developerMessage).not.toContain("URL 입력");
-    expect(pricing.developerMessage).toContain("실제 상품 가격");
-    expect(pricing.developerMessage).not.toContain("무료 간편진단");
+  it("쇼핑몰 콘텐츠 항목 전체에서 SaaS 전용 문구를 사용하지 않는다", () => {
+    const ruleCodes = [
+      "STRUCT-H1-001",
+      "CONTENT-HEADINGS-001",
+      "STRUCT-LINKS-001",
+      "CONTENT-CORE-DEFINITION-001",
+      "CONTENT-AUDIENCE-USECASE-001",
+      "CONTENT-WORKFLOW-OUTCOME-001",
+      "CONTENT-PRICING-TERMS-001",
+      "CONTENT-DATA-POLICY-001",
+      "CONTENT-DIFFERENTIATION-PROOF-001",
+      "CONTENT-TRANSACTION-POLICY-001",
+    ];
+    const banned = [
+      "P0 초기 HTML SSR/SSG",
+      "이 서비스가 무엇을 제공",
+      "누구에게 적합한 서비스",
+      "사용 전후 변화",
+      "실제 활용 상황",
+      "맞춤 제작 순서을",
+      "최종 결과물",
+      "서비스 요금",
+      "입력한 URL",
+      "진단 결과",
+      "경쟁 서비스",
+      "대표 적용 사례",
+      "서비스 차별점",
+      "예약·문의 전환형",
+      "정보 제공형",
+    ];
+
+    const templates = ruleCodes.map((ruleCode) =>
+      buildWorkOrderTemplate({
+        ruleCode,
+        title: ruleCode,
+        description: "전자상거래 사이트 개선 항목입니다.",
+        recommendation: null,
+        severity: "MEDIUM",
+        evidenceJson: commerceEvidence,
+      }),
+    );
+    const text = JSON.stringify(templates);
+
+    for (const phrase of banned) expect(text).not.toContain(phrase);
+    expect(text).toContain("브랜드 정체성");
+    expect(text).toContain("주문·결제");
+    expect(text).toContain("배송지 정보");
+    expect(text).toContain("주문제작 취소 조건");
+    expect(text).toContain("A/S");
+  });
+
+  it("렌더링 개선안도 쇼핑몰 문맥으로 변환한다", () => {
+    const template = buildRenderedImprovementWorkOrderTemplate(
+      {
+        code: "RENDERED-ADDED-CONTENT",
+        currentState: "초기 HTML 본문은 기준을 충족합니다.",
+        meaning: "내부 링크 보완이 필요합니다.",
+        change: "서비스 정의와 주요 내부 링크를 보완합니다.",
+        developerInstructions: ["요금제 또는 무료·유료 이용 범위를 안내합니다."],
+        acceptanceCriteria: ["서비스 정의와 대상 고객을 확인할 수 있습니다."],
+      },
+      "ko",
+      { siteArchetype: "ECOMMERCE" },
+    );
+    const text = JSON.stringify(template);
+
+    expect(text).toContain("브랜드·상품 정의");
+    expect(text).toContain("상품 가격·재고·주문 가능 상태");
+    expect(text).not.toContain("서비스 정의");
+    expect(text).not.toContain("무료·유료 이용 범위");
   });
 });

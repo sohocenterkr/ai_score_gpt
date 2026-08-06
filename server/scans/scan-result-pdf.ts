@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-archetype-content-v10";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-ecommerce-templates-v11";
 
 let cachedFontHash: string | undefined;
 
@@ -1073,8 +1073,10 @@ function displayMetric(
 export function buildRenderedDomImprovementPlans(
   comparison: ScanResultRenderedDomComparison | null,
   locale: "ko" | "en" = "ko",
+  siteArchetype: string | null = null,
 ): RenderedDomImprovementPlan[] {
   const isEnglish = locale === "en";
+  const isCommerce = siteArchetype === "ECOMMERCE";
 
   if (!comparison || comparison.status !== "SUCCESS") {
     return [];
@@ -1154,6 +1156,12 @@ export function buildRenderedDomImprovementPlans(
         : null,
     ].filter((value): value is string => Boolean(value));
 
+    const linkOnly = !textGapNeedsWork && linkGapNeedsWork;
+    const bodyCoverageText = (textCoverage * 100).toFixed(1) + "%";
+    const linkCoverageText = (linkCoverage * 100).toFixed(1) + "%";
+    const ecommerceSummary =
+      "브랜드·대표 제품군·구매 대상·상품 가격·재고·주문·배송·A/S·정책 요약";
+
     plans.push({
       code: "RENDERED-ADDED-CONTENT",
       title: isEnglish
@@ -1166,32 +1174,57 @@ export function buildRenderedDomImprovementPlans(
           : "페이지가 열린 뒤 본문이나 이동 링크가 추가됩니다."),
       meaning: isEnglish
         ? "The page may look normal to users, but some AI search crawlers that do not fully process JavaScript can miss information and links added later."
-        : "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.",
+        : linkOnly
+          ? "초기 HTML 본문은 렌더링 후 본문의 " + bodyCoverageText + "를 포함해 기준을 충족하지만, 초기 HTML 내부 링크 포함 비율 " + linkCoverageText + "는 보완이 필요합니다."
+          : "사람의 화면에는 정상적으로 보이지만, JavaScript를 충분히 처리하지 않는 일부 AI 검색 봇은 나중에 추가된 정보와 링크를 놓칠 수 있습니다.",
       change: isEnglish
-        ? "You do not need to change every screen feature. Use SSR, SSG, or prerendering so the initial HTML also includes the service definition, target users, usage process, pricing and security information, FAQs, and important navigation links with the same meaning as the actual user screen."
-        : "모든 화면 기능을 바꿀 필요는 없습니다. SSR, SSG 또는 사전 렌더링을 통해 AI가 처음 받는 HTML에도 서비스 정의, 대상 고객, 이용 절차, 요금·보안 정보, FAQ와 중요한 이동 링크가 실제 사용자 화면과 같은 의미로 포함되도록 수정합니다.",
-      developerInstructions: [
-        "이 항목은 8개의 독립 작업으로 나누기보다 SSR/SSG/사전 렌더링 도입 또는 랜딩 페이지 정적화를 중심 작업으로 묶어 처리해 주세요.",
-        "초기 HTML에는 단순 글자 채우기가 아니라 서비스 정의와 핵심 가치, 이용 대상과 대표 활용 사례, 3~5단계 이용 절차를 자연스러운 본문 섹션으로 포함해 주세요.",
-        "요금제 또는 무료·유료 이용 범위, 개인정보·입력자료 처리 방식, 운영 주체와 문의 경로를 초기 HTML에 1~2문장 이상 요약하고 관련 정책 페이지로 표준 a 링크를 제공해 주세요.",
-        "실제 화면에 보이는 핵심 FAQ 3~4개를 만들고, 같은 질문·답변을 FAQPage JSON-LD로도 선언해 주세요.",
-        "주요 내부 링크는 JavaScript 클릭 핸들러만 쓰지 말고 href가 있는 표준 a 링크로 초기 HTML에 제공해 주세요.",
-        "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하도록 핵심 설명을 앞단에 제공해 주세요.",
-        "초기 HTML 본문은 최소 200자 이상이어야 하며, 별도 답변 기반 규칙은 800자를 내부 참고 기준으로 사용합니다.",
-        "주요 내부 링크는 렌더링 DOM 링크의 75% 이상을 포함하거나 차이가 2개 이하가 되도록 제공해 주세요.",
-        "og:image, favicon, lang, hreflang 등 공유·언어 메타데이터가 실제 응답하고 현재 페이지 언어와 충돌하지 않는지도 함께 점검해 주세요.",
-        "기존 디자인과 사용자 기능을 제거하거나 비활성화하지 마세요.",
-      ],
-      acceptanceCriteria: [
-        "초기 HTML 본문이 200자 이상이며 렌더링 DOM 본문의 75% 이상을 포함합니다.",
-        "초기 HTML만 확인해도 서비스 정의, 대상 고객, 대표 활용 사례, 이용 절차, 요금·데이터 처리 요약을 이해할 수 있습니다.",
-        "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
-        "실제 화면 FAQ와 FAQPage JSON-LD의 질문·답변이 일치합니다.",
-        "기존 화면 디자인과 주요 사용자 기능은 브라우저 스모크 테스트 또는 수동 확인으로 검증합니다.",
-        "배포 파이프라인 또는 수동 점검에 초기 HTML H1과 본문 200자 이상 확인 스모크 테스트를 추가합니다.",
-        "이번 차수 진단에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.",
-        "수정 후 ChatGPT, Perplexity, Claude 등 실제 AI 도구에 사이트 설명 질문을 해 보고 서비스 설명이 왜곡되지 않는지 확인합니다.",
-      ],
+        ? linkOnly
+          ? "The initial body already meets the coverage threshold. Keep it and add important navigation paths to the initial HTML as standard links. A full SSR/SSG migration is not required."
+          : "Include missing core content and important navigation paths in the initial HTML without changing the meaning of the user-facing page."
+        : linkOnly
+          ? "초기 HTML 본문은 이미 기준을 충족하므로 SSR/SSG 전면 도입은 필수가 아닙니다. 렌더링 후에만 추가되는 중요 내부 링크를 href가 있는 표준 링크로 초기 HTML에 포함해 주세요."
+          : isCommerce
+            ? "초기 HTML에 브랜드·대표 제품군·구매 대상·상품 가격·재고·주문·배송·A/S·정책 요약과 중요한 이동 링크가 실제 화면과 같은 의미로 포함되도록 보완해 주세요."
+            : "초기 HTML에 사이트의 핵심 설명과 중요한 이동 링크가 실제 화면과 같은 의미로 포함되도록 보완해 주세요.",
+      developerInstructions: linkOnly
+        ? isEnglish
+          ? [
+              "Keep the existing initial body coverage of " + bodyCoverageText + "; do not introduce a full SSR/SSG migration solely for this issue.",
+              "Add important navigation paths that currently appear only after rendering as standard anchor links with href attributes in the initial HTML.",
+              "Preserve the current design, content, and user interactions.",
+            ]
+          : [
+              "초기 HTML 본문 포함 비율 " + bodyCoverageText + "는 이미 기준을 충족하므로 현재 본문 구조를 유지하고 SSR/SSG 전면 도입을 중심 작업으로 지정하지 마세요.",
+              isCommerce
+                ? "렌더링 후에만 추가되는 중요 내부 링크 중 상품 카테고리, 브랜드 소개, 매장, 배송·교환·환불, A/S, 정책, FAQ 경로를 href가 있는 표준 a 링크로 초기 HTML에 포함해 주세요."
+                : "렌더링 후에만 추가되는 중요 내부 링크를 href가 있는 표준 a 링크로 초기 HTML에 포함해 주세요.",
+              "기존 디자인·본문·사용자 기능을 제거하거나 비활성화하지 마세요.",
+            ]
+        : [
+            isCommerce
+              ? "초기 HTML에서 " + ecommerceSummary + "을 이해할 수 있도록 실제 사용자 화면과 같은 내용을 보완해 주세요."
+              : "초기 HTML에서 사이트의 핵심 제공 내용·대상·이용 방법·정책을 이해할 수 있도록 실제 사용자 화면과 같은 내용을 보완해 주세요.",
+            "주요 내부 링크는 JavaScript 클릭 핸들러만 쓰지 말고 href가 있는 표준 a 링크로 제공해 주세요.",
+            "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하도록 하되 숨김 텍스트를 사용하지 마세요.",
+            "기존 디자인과 사용자 기능을 제거하거나 비활성화하지 마세요.",
+          ],
+      acceptanceCriteria: linkOnly
+        ? [
+            "초기 HTML 본문 포함 비율 " + bodyCoverageText + " 이상이 유지됩니다.",
+            isCommerce
+              ? "초기 HTML만 확인해도 " + ecommerceSummary + "을 이해할 수 있습니다."
+              : "초기 HTML만 확인해도 사이트의 핵심 내용과 정책 요약을 이해할 수 있습니다.",
+            "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
+            "기존 화면 디자인과 주요 사용자 기능이 정상 동작합니다.",
+          ]
+        : [
+            "초기 HTML 본문이 200자 이상이며 렌더링 DOM 본문의 75% 이상을 포함합니다.",
+            isCommerce
+              ? "초기 HTML만 확인해도 " + ecommerceSummary + "을 이해할 수 있습니다."
+              : "초기 HTML만 확인해도 사이트의 핵심 제공 내용·대상·이용 방법·정책을 이해할 수 있습니다.",
+            "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
+            "기존 화면 디자인과 주요 사용자 기능이 정상 동작합니다.",
+          ],
     });
   }
 
@@ -1998,6 +2031,17 @@ function writeRenderedDomComparison(
   const improvementPlans = buildRenderedDomImprovementPlans(
     comparison,
     result.scan.locale,
+    result.findings.some((finding) => {
+      const evidence = finding.evidence;
+      return Boolean(
+        evidence &&
+        typeof evidence === "object" &&
+        !Array.isArray(evidence) &&
+        (evidence as Record<string, unknown>).siteArchetype === "ECOMMERCE",
+      );
+    })
+      ? "ECOMMERCE"
+      : null,
   );
 
   if (!comparison) {
