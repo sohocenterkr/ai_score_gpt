@@ -13,6 +13,10 @@ import {
   type SiteScan,
   type SiteWorkOrderProgress,
 } from "../sites/site-api";
+import {
+  diagnosticStep,
+  latestQuickDiagnostic,
+} from "../sites/site-diagnostics";
 import "../sites.css";
 
 interface SiteFormState {
@@ -298,51 +302,6 @@ const progressCopy = {
 
 type DashboardLocale = "ko" | "en";
 type ProgressCopy = (typeof progressCopy)[DashboardLocale];
-
-interface DiagnosticStepView {
-  scanId: string;
-  status: string;
-  score: number | null;
-  grade: string | null;
-  completedAt: string | null;
-}
-
-function diagnosticStep(
-  site: RegisteredSite,
-  number: number,
-): DiagnosticStepView | null {
-  const diagnostic = site.progress?.diagnostics.find(
-    (item) => item.diagnosticNumber === number,
-  );
-
-  if (diagnostic) {
-    return {
-      scanId: diagnostic.scanId,
-      status: diagnostic.status,
-      score: diagnostic.score,
-      grade: diagnostic.grade,
-      completedAt: diagnostic.completedAt,
-    };
-  }
-
-  if (
-    number === 1 &&
-    site.progress?.payment.initialPaid &&
-    site.latestScan &&
-    site.latestScan.type !== "VERIFICATION" &&
-    ["COMPLETED", "PARTIAL"].includes(site.latestScan.status)
-  ) {
-    return {
-      scanId: site.latestScan.id,
-      status: site.latestScan.status,
-      score: site.latestScan.score,
-      grade: site.latestScan.grade,
-      completedAt: site.latestScan.completedAt,
-    };
-  }
-
-  return null;
-}
 
 function statusLabel(
   status: string,
@@ -942,17 +901,7 @@ function SiteDashboardCard({
       : progress?.diagnostics.find(
           (item) => item.diagnosticNumber === progress.currentStage.number,
         );
-  const simpleDiagnostic =
-    diagnosticStep(site, 1) ??
-    (latestSimpleScan
-      ? {
-          scanId: latestSimpleScan.id,
-          status: latestSimpleScan.status,
-          score: latestSimpleScan.score,
-          grade: latestSimpleScan.grade,
-          completedAt: latestSimpleScan.completedAt,
-        }
-      : null);
+  const simpleDiagnostic = latestQuickDiagnostic(site);
   const thirdDiagnostic = diagnosticStep(site, 3);
 
   function renderNextAction() {
@@ -1181,6 +1130,9 @@ function SiteDashboardCard({
                       simpleDiagnostic.grade ?? "-",
                     )}
                   </small>
+                ) : null}
+                {simpleDiagnostic?.completedAt ? (
+                  <small>{formatKST(simpleDiagnostic.completedAt, locale)}</small>
                 ) : null}
               </div>
               <div className="site-quick-actions">
