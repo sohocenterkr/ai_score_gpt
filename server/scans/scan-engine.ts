@@ -504,6 +504,8 @@ function contentReadinessFinding(
         sourceAnalysis?.contentSignals.classificationConfidence ?? "LOW",
       classificationSources:
         sourceAnalysis?.contentSignals.classificationSources ?? [],
+      ignoredClassificationSources:
+        sourceAnalysis?.contentSignals.ignoredClassificationSources ?? [],
       classificationConflict:
         sourceAnalysis?.contentSignals.classificationConflict ?? false,
       detectedSignals: sourceAnalysis?.contentSignals.detectedSignals ?? [],

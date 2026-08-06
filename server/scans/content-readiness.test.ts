@@ -87,3 +87,31 @@ describe("content readiness assessment", () => {
     expect(result.confirmedSignals.join(" ")).toContain("Organization");
   });
 });
+
+describe("ecommerce content readiness", () => {
+  it("쇼핑몰 후반부 안내에서 SaaS 전용 문구를 제거한다", () => {
+    const result = buildContentReadinessAssessment({
+      siteName: "호미가",
+      siteType: null,
+      findings: [
+        {
+          ruleCode: "CONTENT-CORE-DEFINITION-001",
+          evidence: {
+            siteArchetype: "ECOMMERCE",
+            classificationConfidence: "HIGH",
+          },
+        },
+        { ruleCode: "CONTENT-INITIAL-001", evidence: { textLength: 8528 } },
+      ],
+    });
+
+    const text = JSON.stringify(result);
+    expect(text).toContain("전자상거래·상품판매형");
+    expect(text).toContain("상품 탐색");
+    expect(text).toContain("상품 가격");
+    expect(text).toContain("A/S");
+    expect(text).not.toContain("가입, 생성, 배포");
+    expect(text).not.toContain("지원 기능·입력·출력·플랫폼");
+    expect(text).not.toContain("무료·유료 범위");
+  });
+});

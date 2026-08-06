@@ -295,9 +295,14 @@ export function buildSiteProgress(
       left.version - right.version ||
       left.createdAt.getTime() - right.createdAt.getTime(),
   );
+  const activeWorkOrders = [
+    ...new Map(
+      orderedWorkOrders.map((workOrder) => [workOrder.version, workOrder]),
+    ).values(),
+  ];
   const diagnosticsByNumber = new Map<number, PublicSiteDiagnosticProgress>();
 
-  for (const workOrder of orderedWorkOrders) {
+  for (const workOrder of activeWorkOrders) {
     diagnosticsByNumber.set(
       workOrder.version,
       progressDiagnostic(
@@ -328,7 +333,7 @@ export function buildSiteProgress(
   const diagnostics = [...diagnosticsByNumber.values()].sort(
     (left, right) => left.diagnosticNumber - right.diagnosticNumber,
   );
-  const workOrders: PublicSiteWorkOrderProgress[] = orderedWorkOrders.map(
+  const workOrders: PublicSiteWorkOrderProgress[] = activeWorkOrders.map(
     (workOrder) => {
       const latestAttempt =
         workOrder.verificationAttempts[

@@ -266,7 +266,7 @@ describe("scan result PDF", () => {
     ).toBe(true);
     expect(plans[0]?.acceptanceCriteria.length).toBeGreaterThanOrEqual(4);
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.07-unverifiable-access-v9",
+      "2026.08-archetype-content-v10",
     );
   });
 

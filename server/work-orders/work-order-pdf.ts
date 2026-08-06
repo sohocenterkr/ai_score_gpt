@@ -992,12 +992,9 @@ function writeExecutionPlanPage(
 
 
   const itemCodes = new Set(workOrder.items.map((item) => item.itemCode));
-  const requiresInitialRecovery = [
-    "CONTENT-INITIAL-001",
-    "CONTENT-ANSWERABILITY-001",
-    "RENDERED-ADDED-CONTENT",
-    "RENDERED-ADDED-LINKS",
-  ].some((code) => itemCodes.has(code));
+  const requiresInitialRecovery =
+    itemCodes.has("CONTENT-INITIAL-001") ||
+    itemCodes.has("INITIAL-HTML-MISSING-CORE");
   const isCommerce = workOrder.items.some((item) => {
     const evidence = item.finding?.evidence;
     return Boolean(
@@ -1080,6 +1077,26 @@ function writeExecutionPlanPage(
         ),
       );
     }
+
+    const structuredDataEpic = relevantEpics.find(
+      (epic) => epic.priority === "P1" || epic.priority === "P3",
+    );
+    if (structuredDataEpic && !isEnglish) {
+      structuredDataEpic.body = [
+        "Organization·Brand·WebSite를 기본 개체로 연결하고 상품 페이지에는 Product·Offer를 적용합니다.",
+        "오프라인 매장이 있으면 Store 또는 LocalBusiness를 사용하고 BreadcrumbList와 필요한 경우 FAQPage를 추가합니다.",
+        "전자상거래형 기본 권고에서는 WebApplication을 사용하지 않으며 가격·재고·판매 상태를 실제 화면과 일치시킵니다.",
+      ];
+    }
+
+    const contentEpic = relevantEpics.find((epic) => epic.priority === "P2");
+    if (contentEpic && !isEnglish) {
+      contentEpic.body = [
+        "브랜드 정체성, 대표 제품군, 사용 소재, 제작 방식, 고객이 선택할 수 있는 제품·옵션을 명확히 설명합니다.",
+        "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작, 수령 후 품질보증·A/S 흐름을 안내합니다.",
+        "상품별 판매가격, 재고·품절·주문제작 여부, 배송비, 추가 제작비, 결제 방법, 교환·환불 및 주문제작 취소 조건을 표시합니다.",
+      ];
+    }
   }
 
   relevantEpics.forEach((epic) => {
@@ -1115,7 +1132,9 @@ function writeExecutionPlanPage(
     isEnglish ? "Re-diagnostic principles" : "재진단 원칙",
     isEnglish
       ? "After deploying the selected work, start the next Site AI Score diagnostic against the same production URL before treating the listed items as complete. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
-      : "실제 선택된 작업을 운영 URL에 배포한 뒤 같은 URL로 다음 차수 Site AI Score 진단을 실행하여 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
+      : isCommerce
+        ? "실제 선택된 작업을 운영 URL에 배포한 뒤 같은 URL로 다음 차수 Site AI Score 진단을 실행하여 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 상품·브랜드 추천 질문을 던져 AI가 제품군·구매 조건·배송·A/S를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다."
+        : "실제 선택된 작업을 운영 URL에 배포한 뒤 같은 URL로 다음 차수 Site AI Score 진단을 실행하여 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",

@@ -279,3 +279,19 @@ describeContentSignals("site archetype regression", () => {
     expectContentSignals(result.links.sample).toEqual(["https://shop.example/products"]);
   });
 });
+
+describeContentSignals("ecommerce classification evidence presentation", () => {
+  itContentSignals("쇼핑몰 최종 판정에서는 SaaS 단서를 무시된 근거로 분리한다", () => {
+    const result = analyzeHtmlForContentSignals(
+      Buffer.from('<!doctype html><html><body><h1>프리미엄 가방 쇼핑몰</h1><p>SaaS 구독 서비스 회원도 상품 판매가 3,500,000원으로 장바구니에서 결제할 수 있습니다.</p><a href="/products/bag">상품 보기</a></body></html>'),
+      "https://shop.example/",
+      { hasCommerceFeature: true, hasReservationFeature: false },
+    );
+
+    expectContentSignals(result.contentSignals.siteArchetype).toBe("ECOMMERCE");
+    expectContentSignals(result.contentSignals.classificationSources).not.toContain("SAAS_TEXT");
+    expectContentSignals(result.contentSignals.ignoredClassificationSources).toContain("SAAS_TEXT");
+    expectContentSignals(result.contentSignals.detectedSignals).toContain("브랜드·상품 정의");
+    expectContentSignals(result.contentSignals.detectedSignals).not.toContain("서비스 정의");
+  });
+});

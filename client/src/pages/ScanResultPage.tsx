@@ -1135,12 +1135,16 @@ export function ScanResultPage() {
 
     const diagnosticNumber = result.scan.diagnosticNumber;
     const targetVersion = Math.max(1, Math.min(3, diagnosticNumber));
-    const progressTarget = siteProgress?.workOrders.find(
-      (workOrder) => workOrder.version === targetVersion,
-    );
+    const progressTarget =
+      diagnosticNumber === 1
+        ? null
+        : siteProgress?.workOrders.find(
+            (workOrder) => workOrder.version === targetVersion,
+          );
     const existingTargetId =
+      (linkedWorkOrderVersion === targetVersion ? linkedWorkOrderId : null) ??
       progressTarget?.id ??
-      (linkedWorkOrderVersion === targetVersion ? linkedWorkOrderId : null);
+      null;
 
     if (existingTargetId) {
       navigate(`/${locale}/work-orders/${existingTargetId}`);
@@ -1391,18 +1395,19 @@ export function ScanResultPage() {
   const targetWorkOrderVersion = Math.max(1, Math.min(3, diagnosticNumber));
   const previousWorkOrderVersion = Math.max(1, diagnosticNumber - 1);
   const targetWorkOrder =
-    siteProgress?.workOrders.find(
-      (workOrder) => workOrder.version === targetWorkOrderVersion,
-    ) ?? null;
+    diagnosticNumber === 1
+      ? null
+      : siteProgress?.workOrders.find(
+          (workOrder) => workOrder.version === targetWorkOrderVersion,
+        ) ?? null;
   const previousWorkOrder =
     siteProgress?.workOrders.find(
       (workOrder) => workOrder.version === previousWorkOrderVersion,
     ) ?? null;
   const targetWorkOrderId =
-    targetWorkOrder?.id ??
     (linkedWorkOrderVersion === targetWorkOrderVersion
       ? linkedWorkOrderId
-      : null);
+      : null) ?? targetWorkOrder?.id;
   const previousWorkOrderId =
     previousWorkOrder?.id ??
     (linkedWorkOrderVersion === previousWorkOrderVersion

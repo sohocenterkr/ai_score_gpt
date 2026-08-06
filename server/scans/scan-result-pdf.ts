@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.07-unverifiable-access-v9";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-archetype-content-v10";
 
 let cachedFontHash: string | undefined;
 
@@ -1534,8 +1534,42 @@ function writeCover(
     document,
     result.scan.locale === "en" ? "Site type" : "사이트 유형",
     result.site.siteType ??
-      (result.scan.locale === "en" ? "Not provided" : "미입력"),
+      (result.findings.some((finding) => {
+        const evidence = finding.evidence;
+        return Boolean(
+          evidence &&
+          typeof evidence === "object" &&
+          !Array.isArray(evidence) &&
+          (evidence as Record<string, unknown>).siteArchetype === "ECOMMERCE",
+        );
+      })
+        ? result.scan.locale === "en"
+          ? "E-commerce / product sales"
+          : "전자상거래·상품판매형"
+        : result.scan.locale === "en"
+          ? "Not provided"
+          : "미입력"),
   );
+  if (!result.site.siteType && result.findings.some((finding) => {
+    const evidence = finding.evidence;
+    return Boolean(
+      evidence &&
+      typeof evidence === "object" &&
+      !Array.isArray(evidence) &&
+      (evidence as Record<string, unknown>).siteArchetype === "ECOMMERCE",
+    );
+  })) {
+    writeLabelValue(
+      document,
+      result.scan.locale === "en" ? "Classification" : "분류 방식",
+      result.scan.locale === "en" ? "Automatic classification" : "자동분류",
+    );
+    writeLabelValue(
+      document,
+      result.scan.locale === "en" ? "Confidence" : "신뢰도",
+      result.scan.locale === "en" ? "High" : "높음",
+    );
+  }
   writeLabelValue(
     document,
     result.scan.locale === "en" ? "Region / language" : "지역·언어",

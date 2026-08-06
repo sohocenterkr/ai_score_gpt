@@ -38,6 +38,7 @@ export interface ContentSignals {
   siteArchetype: SiteArchetype;
   classificationConfidence: ClassificationConfidence;
   classificationSources: string[];
+  ignoredClassificationSources?: string[];
   classificationConflict: boolean;
   detectedSignals: string[];
   missingSignals: string[];
@@ -536,6 +537,16 @@ function detectContentSignals(input: {
     brandKeyword ? "BRAND_TEXT" : null,
   ].filter((value): value is string => Boolean(value));
 
+  const ignoredClassificationSources =
+    siteArchetype === "ECOMMERCE"
+      ? classificationSources.filter((source) =>
+          ["SAAS_TEXT", "SAAS_WORKFLOW_TEXT"].includes(source),
+        )
+      : [];
+  const matchedClassificationSources = classificationSources.filter(
+    (source) => !ignoredClassificationSources.includes(source),
+  );
+
   const classificationConflict =
     input.hasCommerceFeature === false && objectiveCommerceEvidence;
   const classificationConfidence: ClassificationConfidence =
@@ -615,29 +626,42 @@ function detectContentSignals(input: {
   const hasTransactionPolicy =
     evidenceByKey.hasTransactionPolicy.level !== "NONE";
 
-  const signalEntries: Array<[string, boolean]> = [
-    ["서비스 정의", hasServiceDefinition],
-    ["이용 대상·활용 사례", hasAudienceOrUseCase],
-    ["이용 절차·결과물", hasWorkflowOrOutcome],
-    ["요금·이용 범위", hasPricingOrTerms],
-    ["고객지원·문의", hasSupportOrContact],
-    ["개인정보·자료 처리", hasDataPolicy],
-    ["차별점·사례", hasDifferentiationOrProof],
-    [
-      conversionIntent === "DIRECT_PAYMENT"
-        ? "환불·취소·해지"
-        : conversionIntent === "INQUIRY_OR_RESERVATION"
-          ? "예약·상담 취소/변경"
-          : "운영 주체·문의 정책",
-      hasTransactionPolicy,
-    ],
-  ];
+  const signalEntries: Array<[string, boolean]> =
+    siteArchetype === "ECOMMERCE"
+      ? [
+          ["브랜드·상품 정의", hasServiceDefinition],
+          ["구매 대상·상품 선택 상황", hasAudienceOrUseCase],
+          ["상품 탐색·주문·배송·A/S 절차", hasWorkflowOrOutcome],
+          ["상품 가격·재고·구매 조건", hasPricingOrTerms],
+          ["고객지원·매장·문의", hasSupportOrContact],
+          ["개인정보·주문·결제·배송정보 처리", hasDataPolicy],
+          ["제품 차별점·브랜드 신뢰 근거", hasDifferentiationOrProof],
+          ["배송·교환·반품·환불 또는 주문제작 정책", hasTransactionPolicy],
+        ]
+      : [
+          ["서비스 정의", hasServiceDefinition],
+          ["이용 대상·활용 사례", hasAudienceOrUseCase],
+          ["이용 절차·결과물", hasWorkflowOrOutcome],
+          ["요금·이용 범위", hasPricingOrTerms],
+          ["고객지원·문의", hasSupportOrContact],
+          ["개인정보·자료 처리", hasDataPolicy],
+          ["차별점·사례", hasDifferentiationOrProof],
+          [
+            conversionIntent === "DIRECT_PAYMENT"
+              ? "환불·취소·해지"
+              : conversionIntent === "INQUIRY_OR_RESERVATION"
+                ? "예약·상담 취소/변경"
+                : "운영 주체·문의 정책",
+            hasTransactionPolicy,
+          ],
+        ];
 
   return {
     conversionIntent,
     siteArchetype,
     classificationConfidence,
-    classificationSources,
+    classificationSources: matchedClassificationSources,
+    ignoredClassificationSources,
     classificationConflict,
     detectedSignals: signalEntries
       .filter(([, detected]) => detected)

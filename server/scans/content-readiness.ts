@@ -81,7 +81,7 @@ function has(values: readonly string[], pattern: RegExp): boolean {
   return values.some((value) => pattern.test(value));
 }
 
-export function buildContentReadinessAssessment(
+function buildBaseContentReadinessAssessment(
   input: AssessmentInput,
 ): ContentReadinessAssessment {
   const title = text(
@@ -363,4 +363,97 @@ export function buildContentReadinessAssessment(
     disclaimer:
       "위 항목은 현재 QUICK 증거에서 확인하지 못했거나 추가 검토가 필요한 후보입니다. 실제로 없다고 단정하지 않으며, 운영자가 사실관계를 확인한 뒤 사용자에게도 보이는 내용으로 작성해야 합니다.",
   };
+}
+
+function findingEvidenceValue(finding: EvidenceFinding): Evidence {
+  return object(finding.evidenceJson ?? finding.evidence);
+}
+
+function isEcommerceAssessment(input: AssessmentInput): boolean {
+  return input.findings.some(
+    (finding) => findingEvidenceValue(finding).siteArchetype === "ECOMMERCE",
+  );
+}
+
+function ecommerceContentText(value: string): string {
+  const replacements: Array<[string, string]> = [
+    ["등록 사이트 유형은 구체적으로 확인되지 않았습니다.", "자동분류 사이트 유형은 전자상거래·상품판매형이며 분류 신뢰도는 높음입니다."],
+    ["서비스 정의와 핵심 가치", "브랜드·상품 정의와 핵심 가치"],
+    ["서비스 정의", "브랜드·상품 정의"],
+    ["서비스란?", "브랜드와 대표 상품"],
+    [" 서비스를 무엇을 제공하나요?", "는 어떤 상품을 제작·판매하나요?"],
+    ["서비스는 무엇을 제공하나요?", "어떤 상품을 제작·판매하나요?"],
+    ["사용자가 어떤 문제를 해결할 수 있나요?", "고객은 어떤 제품군과 옵션을 선택할 수 있나요?"],
+    ["어떤 결과물을 얻나요?", "어떤 제품군과 맞춤 제작 옵션을 선택할 수 있나요?"],
+    ["핵심 기능과 제공 가치", "대표 제품군과 제작·판매 가치"],
+    ["사용자가 얻는 결과", "고객이 선택할 수 있는 제품과 옵션"],
+    ["실제로 제공하는 기능과 결과", "실제로 판매하는 제품·소재·옵션과 제공 조건"],
+    ["서비스 정의, 해결하는 문제, 핵심 기능, 사용자가 얻는 결과", "브랜드 정체성, 대표 제품군, 사용 소재, 제작 방식, 선택 가능한 제품·옵션, 품질보증·A/S"],
+    ["이용 대상과 활용 사례", "구매 대상과 상품 선택 상황"],
+    ["누구에게 적합한 서비스인지", "어떤 고객과 구매 목적에 적합한지"],
+    ["어떤 사람이 사용하면 좋은가요?", "어떤 고객에게 적합한 제품인가요?"],
+    ["어떤 상황에서 도움이 되나요?", "선물·행사·일상 등 어떤 목적으로 선택할 수 있나요?"],
+    ["대표 이용 사례는 무엇인가요?", "대표적인 상품 선택 상황은 무엇인가요?"],
+    ["이런 분께 추천합니다", "이런 고객과 용도에 추천합니다"],
+    ["대표 활용 사례", "대표 상품 선택 상황"],
+    ["사용 전후 변화", "사용 목적·선물·행사·스타일별 상품 선택"],
+    ["이용 절차와 결과물", "상품 탐색·주문·배송·A/S 절차"],
+    ["서비스 시작부터 결과 획득까지", "상품 탐색부터 주문·배송·A/S까지"],
+    ["어떤 순서로 이용하나요?", "상품을 어떤 순서로 선택하고 주문하나요?"],
+    ["사용자가 준비할 것은 무엇인가요?", "재고·소재·색상·크기·맞춤 제작 옵션은 어떻게 확인하나요?"],
+    ["최종 결과물은 무엇인가요?", "배송 또는 맞춤 제작 기간과 수령 후 A/S는 어떻게 되나요?"],
+    ["이용 방법", "구매·주문제작·배송·교환·A/S 방법"],
+    ["단계별 사용 과정", "상품 탐색·옵션 선택·주문·배송 단계"],
+    ["완성되는 결과물", "수령 제품·품질보증·A/S"],
+    ["가입, 생성, 배포, 제출 확인, 내보내기", "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작, 수령 후 A/S"],
+    ["지원 범위와 제한 사항", "제품·옵션·배송 지원 범위와 제한 사항"],
+    ["지원 기능·입력·출력·플랫폼", "소재·색상·크기·맞춤 제작·배송 지원 범위"],
+    ["어떤 기능과 입력 자료를 지원하나요?", "어떤 소재·색상·크기·맞춤 제작 옵션을 지원하나요?"],
+    ["지원 플랫폼·언어·출력 형식은 무엇인가요?", "온라인 주문·매장 상담·배송 지원 범위는 무엇인가요?"],
+    ["지원 기능과 범위", "제품·옵션·배송 지원 범위"],
+    ["지원 플랫폼·형식", "주문·상담·배송 방식"],
+    ["요금·데이터 처리·운영 주체", "상품 가격·주문정보 처리·운영 주체"],
+    ["무료·유료 범위", "상품 가격·배송비·추가 제작비"],
+    ["요금", "상품 가격"],
+    ["입력 자료", "주문자·결제·배송정보"],
+    ["입력자료", "주문정보"],
+    ["추가 비용를", "추가 비용을"],
+    ["맞춤 제작 순서을", "맞춤 제작 순서를"],
+  ];
+
+  return replacements.reduce(
+    (result, [before, after]) => result.split(before).join(after),
+    value,
+  );
+}
+
+function ecommerceContentReadiness(
+  assessment: ContentReadinessAssessment,
+): ContentReadinessAssessment {
+  return {
+    ...assessment,
+    summary: ecommerceContentText(assessment.summary),
+    confirmedSignals: assessment.confirmedSignals.map(ecommerceContentText),
+    topics: assessment.topics.map((topic) => ({
+      ...topic,
+      title: ecommerceContentText(topic.title),
+      reason: ecommerceContentText(topic.reason),
+      questions: topic.questions.map(ecommerceContentText),
+      suggestedSections: topic.suggestedSections.map(ecommerceContentText),
+      contentWriterInstruction: ecommerceContentText(topic.contentWriterInstruction),
+      developerInstruction: ecommerceContentText(topic.developerInstruction),
+      acceptanceCriteria: topic.acceptanceCriteria.map(ecommerceContentText),
+    })),
+    benchmarkNote: ecommerceContentText(assessment.benchmarkNote),
+    disclaimer: ecommerceContentText(assessment.disclaimer),
+  };
+}
+
+export function buildContentReadinessAssessment(
+  input: AssessmentInput,
+): ContentReadinessAssessment {
+  const assessment = buildBaseContentReadinessAssessment(input);
+  return isEcommerceAssessment(input)
+    ? ecommerceContentReadiness(assessment)
+    : assessment;
 }
