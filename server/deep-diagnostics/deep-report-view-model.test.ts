@@ -36,14 +36,14 @@ describe("deep diagnostic report view model", () => {
       factResults: [
         {
           factKey: "service_definition",
-          label: "서비스 정의",
+          label: "브랜드·상품·서비스 정의",
           status: "SUPPORTED",
           reason: "서비스 정의가 일치합니다.",
           expectedValue: "블로그 초안 생성 서비스",
         },
         {
           factKey: "primary_features",
-          label: "주요 기능",
+          label: "주요 상품·서비스·기능",
           status: "NOT_MENTIONED",
           reason: "주요 기능이 답변에 없습니다.",
           expectedValue: "사진·음성 입력",

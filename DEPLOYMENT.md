@@ -25,7 +25,7 @@
 - 외부 공개 URL HTTP 수집과 DNS·리디렉션 SSRF 재검증 확인
 - HTTP 수집 제한: 요청 15초, 최대 리디렉션 5회, 응답 본문 2MB
 - 수동 검사 작업 실행 명령: `npm run scan:once`
-- 현재 QUICK 점수 규칙 버전: `2026.07-summary-groups-v7.7`
+- 현재 QUICK 점수 규칙 버전: `2026.08-site-archetype-v8`
 - 현재 정밀진단 AI 답변 성과 방법론 버전: `2026.06-ai-answer-v4`
 - 검사 결과 화면: `/ko/sites/:siteId/scans/:scanId`
 - 결과 API: `/api/scan-results/:scanId`

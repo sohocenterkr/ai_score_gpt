@@ -60,6 +60,7 @@ const sampleSite: PublicSite = {
   siteType: "기업 홈페이지",
   description: null,
   hasReservationFeature: null,
+  hasCommerceFeature: null,
   country: "KR",
   region: "서울",
   primaryLocale: "ko",

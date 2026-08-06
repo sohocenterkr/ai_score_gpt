@@ -41,6 +41,7 @@ export type RenderedDomResult =
 
 export interface RenderedDomCollectOptions {
   hasReservationFeature?: boolean | null;
+  hasCommerceFeature?: boolean | null;
 }
 
 export interface RenderedDomCollector {
@@ -405,6 +406,7 @@ export function createPlaywrightRenderedDomCollector(
 
         const analysis = analyzeHtml(body, finalUrl, {
           hasReservationFeature: collectOptions.hasReservationFeature,
+          hasCommerceFeature: collectOptions.hasCommerceFeature,
         });
         const browserVersion = await browser.version();
 

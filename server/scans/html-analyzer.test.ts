@@ -141,6 +141,9 @@ describeContentSignals("html content signals", () => {
       expectContentSignals(result.contentSignals.conversionIntent).toBe(
         "DIRECT_PAYMENT",
       );
+      expectContentSignals(result.contentSignals.siteArchetype).toBe(
+        "SAAS_OR_WEB_SERVICE",
+      );
       expectContentSignals(result.contentSignals.hasPricingOrTerms).toBe(true);
       expectContentSignals(result.contentSignals.hasTransactionPolicy).toBe(
         true,
@@ -189,4 +192,90 @@ describeContentSignals("html content signals", () => {
       });
     },
   );
+});
+
+
+describeContentSignals("site archetype regression", () => {
+  itContentSignals(
+    "예약 기능을 선택하지 않아도 상품·가격·장바구니 증거가 있으면 쇼핑몰이다",
+    () => {
+      const result = analyzeHtmlForContentSignals(
+        Buffer.from('<!doctype html><html><body><h1>프리미엄 가방 컬렉션</h1><p>상품 판매가 3,500,000원</p><button>장바구니</button><a href="/products/bag-1">상품 보기</a></body></html>'),
+        "https://shop.example/",
+        { hasReservationFeature: false, hasCommerceFeature: false },
+      );
+
+      expectContentSignals(result.contentSignals.conversionIntent).toBe("DIRECT_PAYMENT");
+      expectContentSignals(result.contentSignals.siteArchetype).toBe("ECOMMERCE");
+      expectContentSignals(result.contentSignals.classificationConflict).toBe(true);
+    },
+  );
+
+  itContentSignals("Product JSON-LD는 직접 결제형 쇼핑몰의 강한 증거다", () => {
+    const result = analyzeHtmlForContentSignals(
+      Buffer.from('<!doctype html><html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","name":"가방","offers":{"@type":"Offer","price":"3500000","priceCurrency":"KRW"}}</script></head><body><h1>가방</h1></body></html>'),
+      "https://shop.example/",
+      { hasReservationFeature: false },
+    );
+
+    expectContentSignals(result.contentSignals.conversionIntent).toBe("DIRECT_PAYMENT");
+    expectContentSignals(result.contentSignals.siteArchetype).toBe("ECOMMERCE");
+    expectContentSignals(result.contentSignals.classificationSources).toContain("PRODUCT_OFFER_JSONLD");
+  });
+
+  itContentSignals("사용자가 직접 결제 가능을 선택하면 숨겨진 결제 흐름도 반영한다", () => {
+    const result = analyzeHtmlForContentSignals(
+      Buffer.from("<!doctype html><html><body><h1>회원 전용 판매</h1></body></html>"),
+      "https://members.example/",
+      { hasCommerceFeature: true, hasReservationFeature: false },
+    );
+
+    expectContentSignals(result.contentSignals.conversionIntent).toBe("DIRECT_PAYMENT");
+    expectContentSignals(result.contentSignals.classificationConfidence).toBe("HIGH");
+  });
+
+  itContentSignals("유료 SaaS는 결제 문구가 있어도 쇼핑몰로 분류하지 않는다", () => {
+    const result = analyzeHtmlForContentSignals(
+      Buffer.from("<!doctype html><html><body><h1>온라인 업무 자동화 소프트웨어</h1><p>회원가입 후 파일을 업로드하면 대시보드에서 자동 분석 보고서를 확인합니다.</p><a href='/pricing'>유료 요금제 결제</a></body></html>"),
+      "https://saas.example/",
+      { hasCommerceFeature: false, hasReservationFeature: false },
+    );
+
+    expectContentSignals(result.contentSignals.conversionIntent).toBe("DIRECT_PAYMENT");
+    expectContentSignals(result.contentSignals.siteArchetype).toBe("SAAS_OR_WEB_SERVICE");
+    expectContentSignals(result.contentSignals.classificationSources).toContain("SAAS_TEXT");
+    expectContentSignals(result.contentSignals.siteArchetype).not.toBe("ECOMMERCE");
+  });
+
+  itContentSignals("쇼핑몰 사용자 선언은 SaaS 단어가 함께 있어도 쇼핑몰로 우선한다", () => {
+    const result = analyzeHtmlForContentSignals(
+      Buffer.from("<!doctype html><html><body><h1>디지털 상품 스토어</h1><p>회원가입과 로그인 후 상품을 구매합니다.</p></body></html>"),
+      "https://digital-shop.example/",
+      { hasCommerceFeature: true, hasReservationFeature: false },
+    );
+
+    expectContentSignals(result.contentSignals.siteArchetype).toBe("ECOMMERCE");
+    expectContentSignals(result.contentSignals.classificationSources).toContain("USER_COMMERCE_DECLARATION");
+  });
+
+  itContentSignals("예약 사이트는 결제 증거가 없을 때 예약·상담형이다", () => {
+    const result = analyzeHtmlForContentSignals(
+      Buffer.from("<!doctype html><html><body><h1>진료 예약</h1><p>전화 상담 후 방문하세요.</p></body></html>"),
+      "https://clinic.example/",
+      { hasCommerceFeature: false, hasReservationFeature: true },
+    );
+
+    expectContentSignals(result.contentSignals.conversionIntent).toBe("INQUIRY_OR_RESERVATION");
+    expectContentSignals(result.contentSignals.siteArchetype).toBe("LOCAL_OR_RESERVATION_SERVICE");
+  });
+
+  itContentSignals("템플릿 변수 링크는 정상 내부 링크로 집계하지 않는다", () => {
+    const result = analyzeHtmlForContentSignals(
+      Buffer.from('<!doctype html><html><body><a href="/{#text_1}">오류</a><a href="/%7Bpc_thumb_tag%7D">오류2</a><a href="/products">정상 상품</a></body></html>'),
+      "https://shop.example/",
+    );
+
+    expectContentSignals(result.links.internal).toBe(1);
+    expectContentSignals(result.links.sample).toEqual(["https://shop.example/products"]);
+  });
 });

@@ -43,50 +43,50 @@ export interface SiteFactDefinition {
 export const SITE_FACT_DEFINITIONS: readonly SiteFactDefinition[] = [
   {
     key: "service_definition",
-    label: "서비스 정의",
-    help: "사이트가 실제로 제공하는 서비스와 해결하는 문제를 작성합니다.",
+    label: "브랜드·상품·서비스 정의",
+    help: "사이트가 실제로 제공하는 브랜드·상품·서비스와 고객이 얻는 가치를 작성합니다.",
     placeholder: "예: 사진·음성·메모를 바탕으로 블로그 초안을 만드는 서비스입니다.",
     important: true,
   },
   {
     key: "primary_features",
-    label: "주요 기능",
-    help: "현재 실제로 제공하는 핵심 기능을 줄바꿈으로 구분해 작성합니다.",
+    label: "주요 상품·서비스·기능",
+    help: "현재 실제로 판매·제공하는 대표 상품, 서비스 또는 핵심 기능을 줄바꿈으로 구분해 작성합니다.",
     placeholder: "예: 사진 내용 정리\n음성 메모 반영\n블로그 초안 생성",
     important: true,
   },
   {
     key: "target_audience",
-    label: "이용 대상",
+    label: "주요 고객·이용 대상",
     help: "주요 이용자와 도움이 되는 사용 상황을 작성합니다.",
     placeholder: "예: 현장 사진으로 홍보 글을 작성해야 하는 소상공인",
     important: true,
   },
   {
     key: "usage_steps",
-    label: "이용 절차",
-    help: "가입부터 결과 확인까지 실제 이용 순서를 작성합니다.",
+    label: "구매·예약·이용 절차",
+    help: "상품 확인·주문·배송, 예약·상담 또는 서비스 시작부터 결과 확인까지 실제 순서를 작성합니다.",
     placeholder: "예: 회원가입 → 자료 등록 → 초안 생성 → 검토·수정",
     important: true,
   },
   {
     key: "supported_platforms",
-    label: "지원 환경·플랫폼",
-    help: "지원 기기, 브라우저, 언어, 파일 형식 등을 작성합니다.",
+    label: "판매·제공 채널과 지원 환경",
+    help: "공식몰·매장·배송·지원 지역 또는 기기·브라우저·언어 등 실제 판매·제공 환경을 작성합니다.",
     placeholder: "예: 모바일·PC 웹, 한국어, JPG·PNG·음성 메모",
     important: true,
   },
   {
     key: "pricing",
-    label: "요금·무료 범위",
-    help: "현재 공개 가능한 실제 요금과 무료 이용 범위를 작성합니다.",
+    label: "가격·요금·구매 조건",
+    help: "현재 공개 가능한 상품 가격 또는 서비스 요금, 재고·주문제작·추가 비용 조건을 작성합니다.",
     placeholder: "예: 베타 기간 무료 / 유료 요금제 준비 중",
     important: false,
   },
   {
     key: "data_handling",
-    label: "자료·개인정보 처리",
-    help: "업로드 자료의 저장·삭제·이용 방식을 사실대로 작성합니다.",
+    label: "개인정보·주문·자료 처리",
+    help: "주문·상담·회원·업로드 자료의 저장·삭제·이용 방식을 사실대로 작성합니다.",
     placeholder: "예: 업로드 자료는 초안 생성에만 사용하며 탈퇴 시 삭제합니다.",
     important: false,
   },
@@ -106,7 +106,7 @@ export const SITE_FACT_DEFINITIONS: readonly SiteFactDefinition[] = [
   },
   {
     key: "unsupported_capabilities",
-    label: "제공하지 않는 기능·주의사항",
+    label: "제공하지 않는 상품·서비스·주의사항",
     help: "AI가 과장하거나 잘못 답하면 안 되는 내용을 작성합니다.",
     placeholder: "예: 자동 게시 기능은 제공하지 않으며 생성 결과는 사용자가 검토해야 합니다.",
     important: false,
@@ -150,11 +150,11 @@ function legacyDefaultQuestion(
   site: AccessibleSite,
 ): string | null {
   if (code === "BRAND-01") {
-    return `${site.name}은 어떤 서비스이며 어떤 문제를 해결하나요?`;
+    return `${site.name}은 어떤 브랜드·사업자이며 무엇을 판매하거나 제공하나요?`;
   }
 
   if (code === "USE-CASE-01") {
-    return `${site.name}은 누구에게 어떤 상황에서 도움이 되나요?`;
+    return `${site.name}은 누구에게 어떤 상품·서비스 선택 상황에서 적합한가요?`;
   }
 
   return null;
@@ -166,7 +166,7 @@ const DEFAULT_QUESTIONS: readonly DefaultQuestionTemplate[] = [
     kind: "BRAND",
     expectedFactKeys: ["service_definition", "primary_features"],
     question: (site) =>
-      `${topicSubject(site.name)} 어떤 서비스이며 어떤 문제를 해결하나요?`,
+      `${topicSubject(site.name)} 어떤 브랜드·사업자이며 무엇을 판매하거나 제공하나요?`,
   },
   {
     code: "FEATURE-01",
@@ -177,14 +177,14 @@ const DEFAULT_QUESTIONS: readonly DefaultQuestionTemplate[] = [
       "unsupported_capabilities",
     ],
     question: (site) =>
-      `${site.name}의 주요 기능과 제공 범위는 무엇인가요?`,
+      `${site.name}의 주요 상품·서비스·기능과 제공 범위는 무엇인가요?`,
   },
   {
     code: "USE-CASE-01",
     kind: "USE_CASE",
     expectedFactKeys: ["target_audience", "service_definition"],
     question: (site) =>
-      `${topicSubject(site.name)} 누구에게 어떤 상황에서 도움이 되나요?`,
+      `${topicSubject(site.name)} 누구에게 어떤 상품·서비스 선택 상황에서 적합한가요?`,
   },
   {
     code: "TRUST-01",
@@ -196,7 +196,7 @@ const DEFAULT_QUESTIONS: readonly DefaultQuestionTemplate[] = [
       "contact",
     ],
     question: (site) =>
-      `${site.name}의 요금, 운영 주체, 자료 처리 방식과 문의 방법은 무엇인가요?`,
+      `${site.name}의 가격·구매 조건 또는 요금, 운영 주체, 개인정보·주문·자료 처리 방식과 문의 방법은 무엇인가요?`,
   },
   {
     code: "DISCOVERY-01",
@@ -207,7 +207,7 @@ const DEFAULT_QUESTIONS: readonly DefaultQuestionTemplate[] = [
       "target_audience",
     ],
     question: (site) =>
-      `${site.siteType?.trim() || "이와 같은 온라인 서비스"}를 찾는 사용자가 고려할 수 있는 서비스는 무엇인가요?`,
+      `${site.siteType?.trim() || "이와 같은 상품·브랜드·서비스"}를 찾는 사용자가 고려할 수 있는 서비스는 무엇인가요?`,
   },
   {
     code: "COMPARISON-01",
@@ -219,7 +219,7 @@ const DEFAULT_QUESTIONS: readonly DefaultQuestionTemplate[] = [
       "unsupported_capabilities",
     ],
     question: (site) =>
-      `${site.name}을 비슷한 서비스와 비교할 때 확인할 특징은 무엇인가요?`,
+      `${site.name}을 비슷한 브랜드·상품·서비스와 비교할 때 확인할 특징은 무엇인가요?`,
   },
 ];
 

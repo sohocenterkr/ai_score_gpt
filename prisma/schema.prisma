@@ -329,6 +329,7 @@ model Site {
   siteType         String?           @map("site_type")
   description      String?
   hasReservationFeature Boolean?     @map("has_reservation_feature")
+  hasCommerceFeature    Boolean?     @map("has_commerce_feature")
   country          String            @default("KR")
   region           String?
   primaryLocale    String            @default("ko") @map("primary_locale")

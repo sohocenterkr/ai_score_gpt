@@ -19,6 +19,7 @@ interface FindingTemplateInput {
   description: string;
   recommendation: string | null;
   severity: FindingSeverity;
+  evidenceJson?: unknown;
 }
 
 type WorkOrderTemplateLocale = "ko" | "en";
@@ -1036,6 +1037,89 @@ export function buildRenderedImprovementWorkOrderTemplate(
   };
 }
 
+
+function evidenceRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function replaceTemplateText(value: string, replacements: Array<[string, string]>): string {
+  return replacements.reduce(
+    (result, [before, after]) => result.split(before).join(after),
+    value,
+  );
+}
+
+function contextualizeTemplate(
+  template: WorkOrderTemplate,
+  finding: FindingTemplateInput,
+  locale: WorkOrderTemplateLocale,
+): WorkOrderTemplate {
+  const evidence = evidenceRecord(finding.evidenceJson);
+  const archetype = typeof evidence?.siteArchetype === "string"
+    ? evidence.siteArchetype
+    : null;
+  const isCommerce = archetype === "ECOMMERCE";
+
+  const neutralKo: Array<[string, string]> = [
+    ["Form Assign", "해당 사이트"],
+    [
+      "가입, URL 입력, 진단 실행, 보고서/작업지시서 확인, 수정 후 재진단 같은 실제 흐름",
+      "상품 확인·구매, 예약·상담, 신청 또는 서비스 이용 등 해당 사이트의 실제 흐름",
+    ],
+    [
+      "무료 간편진단 범위, 유료 상세 보고서와 수정 작업지시서 제공 범위, 할인 또는 사례 활용 조건, 외부 결제·API 비용 여부",
+      "실제 상품 가격 또는 서비스 요금, 결제 조건, 추가 비용, 취소·환불 조건",
+    ],
+    [
+      "SaaS·웹서비스는 WebApplication 또는 WebSite/Organization 조합을 우선 검토하고",
+      "사이트 유형에 따라 WebSite·Organization을 기본으로 검토하고, 쇼핑몰은 Product·Offer·Brand·Store를, 실제 웹 애플리케이션은 WebApplication을 검토하며",
+    ],
+  ];
+  const commerceKo: Array<[string, string]> = [
+    ["서비스 정의", "브랜드·상품 정의"],
+    ["서비스 소개", "브랜드·상품 소개"],
+    ["핵심 기능", "대표 상품과 제작·판매 특징"],
+    ["이용 대상", "구매 대상"],
+    ["활용 사례", "상품 선택 상황"],
+    ["이용 절차·결과물", "상품 확인·주문·배송 또는 맞춤 제작 절차"],
+    ["이용 절차", "구매·주문 또는 맞춤 제작 절차"],
+    ["요금·무료/유료 범위", "상품 가격·재고·구매 조건"],
+    ["요금·이용 범위", "상품 가격·재고·구매 조건"],
+    ["무료 제공 범위와 유료 제공 범위", "판매가격·재고·주문 가능 상태"],
+    ["요금제명", "상품명 또는 제품군"],
+    ["결제 주기와 추가 비용", "배송비·추가 제작비와 결제 조건"],
+    ["개인정보·입력자료", "개인정보·주문정보"],
+    ["서비스 기능", "상품·판매 방식"],
+    ["WebApplication", "Product·Offer·Brand·Store"],
+  ];
+  const neutralEn: Array<[string, string]> = [
+    ["Form Assign", "the website"],
+    ["SaaS or web services", "websites"],
+  ];
+  const commerceEn: Array<[string, string]> = [
+    ["service definition", "brand and product definition"],
+    ["target users", "target customers"],
+    ["usage flow", "product selection, ordering, delivery, or made-to-order flow"],
+    ["pricing/free-paid scope", "product price, availability, and purchase terms"],
+    ["WebApplication", "Product, Offer, Brand, or Store"],
+  ];
+  const replacements = locale === "en"
+    ? [...neutralEn, ...(isCommerce ? commerceEn : [])]
+    : [...neutralKo, ...(isCommerce ? commerceKo : [])];
+
+  return {
+    ...template,
+    requirement: replaceTemplateText(template.requirement, replacements),
+    developerMessage: replaceTemplateText(template.developerMessage, replacements),
+    acceptanceCriteria: template.acceptanceCriteria.map((criterion) => ({
+      ...criterion,
+      label: replaceTemplateText(criterion.label, replacements),
+    })),
+  };
+}
+
 export function buildWorkOrderTemplate(
   finding: FindingTemplateInput,
   locale: WorkOrderTemplateLocale = "ko",
@@ -1046,7 +1130,7 @@ export function buildWorkOrderTemplate(
       : templates[finding.ruleCode];
 
   if (defined) {
-    return defined;
+    return contextualizeTemplate(defined, finding, locale);
   }
 
   const requirement =

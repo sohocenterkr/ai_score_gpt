@@ -38,6 +38,7 @@ export interface CollectedFinding {
 export interface ScanCollectionOptions {
   renderedDomCollector?: RenderedDomCollector;
   hasReservationFeature?: boolean | null;
+  hasCommerceFeature?: boolean | null;
 }
 
 export interface ScanCollectionResult {
@@ -386,6 +387,84 @@ function contentLevelDescription(
   }
 }
 
+
+function classificationAnalysis(
+  initial: HtmlAnalysis | null,
+  renderedDom: RenderedDomResult,
+): HtmlAnalysis | null {
+  const rendered =
+    renderedDom.status === "SUCCESS" ? renderedDom.analysis : null;
+
+  if (!initial) return rendered;
+  if (!rendered) return initial;
+
+  const confidenceRank = { LOW: 1, MEDIUM: 2, HIGH: 3 } as const;
+  const archetypeRank = {
+    INFORMATIONAL: 1,
+    BRAND_OR_CORPORATE: 2,
+    LOCAL_OR_RESERVATION_SERVICE: 3,
+    SAAS_OR_WEB_SERVICE: 4,
+    ECOMMERCE: 5,
+  } as const;
+  const rank = (analysis: HtmlAnalysis) =>
+    confidenceRank[analysis.contentSignals.classificationConfidence] * 10 +
+    archetypeRank[analysis.contentSignals.siteArchetype];
+
+  return rank(rendered) > rank(initial) ? rendered : initial;
+}
+
+function contextualContentInput(
+  input: {
+    ruleCode: string;
+    key: ContentSignalKey;
+    title: string;
+    passDescription: string;
+    failDescription: string;
+    recommendation: string;
+  },
+  analysis: HtmlAnalysis | null,
+): typeof input {
+  if (analysis?.contentSignals.siteArchetype !== "ECOMMERCE") {
+    return input;
+  }
+
+  const replacements: Array<[string, string]> = [
+    ["서비스 정의와 핵심 가치", "브랜드·상품 정의와 핵심 가치"],
+    ["서비스 정의", "브랜드·상품 정의"],
+    ["기본 설명에 사용할 수 있는 서비스", "기본 설명에 사용할 수 있는 브랜드·상품"],
+    ["해결하는 문제, 핵심 기능, 사용자가 얻는 결과", "대표 상품, 제작·판매 특징, 고객이 얻는 가치"],
+    ["이용 대상과 활용 사례", "구매 대상과 상품 선택 상황"],
+    ["누구에게 적합한 서비스", "어떤 고객에게 적합한 상품"],
+    ["이런 분께 추천합니다, 대표 활용 사례, 사용 전후 변화", "추천 고객, 용도별 상품 선택 기준, 대표 제품군"],
+    ["이용 절차와 결과물", "상품 확인·주문·배송 또는 맞춤 제작 절차"],
+    ["사용 순서와 결과물", "구매·주문·배송 또는 맞춤 제작 순서"],
+    ["가입, 입력, 처리, 결과 확인", "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작"],
+    ["요금과 무료·유료 범위", "상품 가격·재고·구매 조건"],
+    ["비용과 이용 범위", "가격·재고·구매 조건"],
+    ["요금·무료·유료 정보", "상품 가격·재고·주문 가능 정보"],
+    ["무료 범위, 유료 범위, 요금제, 외부 비용 부담 여부", "상품별 판매가격, 재고·품절·주문제작 상태, 배송비와 추가 비용"],
+    ["개인정보와 입력자료 처리", "개인정보와 주문정보 처리"],
+    ["데이터 처리와 보안", "개인정보·주문정보 처리와 보안"],
+    ["개인정보·자료 처리", "개인정보·주문정보 처리"],
+    ["입력자료 보관·삭제", "주문·상담정보 보관·삭제"],
+    ["차별점과 신뢰 근거", "상품 차별점과 브랜드 신뢰 근거"],
+    ["사례, 후기, 실적", "제품 특징, 제작 근거, 후기, 인증·수상·매장 정보"],
+  ];
+  const adapt = (value: string) =>
+    replacements.reduce(
+      (result, [before, after]) => result.split(before).join(after),
+      value,
+    );
+
+  return {
+    ...input,
+    title: adapt(input.title),
+    passDescription: adapt(input.passDescription),
+    failDescription: adapt(input.failDescription),
+    recommendation: adapt(input.recommendation),
+  };
+}
+
 function contentReadinessFinding(
   initial: HtmlAnalysis | null,
   renderedDom: RenderedDomResult,
@@ -406,19 +485,27 @@ function contentReadinessFinding(
       ? null
       : CONTENT_SCORE_RATIOS[resolved.level];
 
-  const sourceAnalysis =
-    initial ?? (renderedDom.status === "SUCCESS" ? renderedDom.analysis : null);
+  const sourceAnalysis = classificationAnalysis(initial, renderedDom);
+  const contextualInput = contextualContentInput(input, sourceAnalysis);
 
   return finding({
     ruleCode: input.ruleCode,
     category: "AI 답변 준비 콘텐츠",
     severity: passed ? "INFO" : unavailable ? "LOW" : "MEDIUM",
     status: passed ? "PASS" : unavailable ? "BLOCKED" : "FAIL",
-    title: input.title,
-    description: contentLevelDescription(resolved.level, input),
+    title: contextualInput.title,
+    description: contentLevelDescription(resolved.level, contextualInput),
     evidence: {
       conversionIntent:
         sourceAnalysis?.contentSignals.conversionIntent ?? "INFORMATIONAL",
+      siteArchetype:
+        sourceAnalysis?.contentSignals.siteArchetype ?? "INFORMATIONAL",
+      classificationConfidence:
+        sourceAnalysis?.contentSignals.classificationConfidence ?? "LOW",
+      classificationSources:
+        sourceAnalysis?.contentSignals.classificationSources ?? [],
+      classificationConflict:
+        sourceAnalysis?.contentSignals.classificationConflict ?? false,
       detectedSignals: sourceAnalysis?.contentSignals.detectedSignals ?? [],
       missingSignals: sourceAnalysis?.contentSignals.missingSignals ?? [],
       contentEvidenceLevel: resolved.level,
@@ -440,8 +527,8 @@ function contentReadinessFinding(
       : unavailable
         ? "렌더링 측정 문제를 해결한 뒤 다시 진단하여 관련 정보의 존재 여부를 확인하세요."
         : resolved.level === "RENDERED"
-          ? `${input.recommendation} 현재는 JavaScript 렌더링 후에만 이 정보가 확인되어 부분 점수만 반영되었습니다. GPTBot 등 다수의 AI 크롤러는 초기 HTML만 읽고 JavaScript를 실행하지 않으므로, 같은 내용을 서버 렌더링(SSR)하거나 정적 HTML로 초기 응답에 포함하면 이 항목이 만점(FULL)으로 인정되어 점수가 크게 오릅니다.`
-          : input.recommendation,
+          ? `${contextualInput.recommendation} 현재는 JavaScript 렌더링 후에만 이 정보가 확인되어 부분 점수만 반영되었습니다. GPTBot 등 다수의 AI 크롤러는 초기 HTML만 읽고 JavaScript를 실행하지 않으므로, 같은 내용을 서버 렌더링(SSR)하거나 정적 HTML로 초기 응답에 포함하면 이 항목이 만점(FULL)으로 인정되어 점수가 크게 오릅니다.`
+          : contextualInput.recommendation,
   });
 }
 
@@ -449,13 +536,14 @@ function buildContentReadinessFindings(
   initial: HtmlAnalysis | null,
   renderedDom: RenderedDomResult,
 ): CollectedFinding[] {
-  const sourceAnalysis =
-    initial ?? (renderedDom.status === "SUCCESS" ? renderedDom.analysis : null);
+  const sourceAnalysis = classificationAnalysis(initial, renderedDom);
   const conversionIntent =
     sourceAnalysis?.contentSignals.conversionIntent ?? "INFORMATIONAL";
   const transactionTitle =
-    conversionIntent === "DIRECT_PAYMENT"
-      ? "환불·취소·해지 정책"
+    sourceAnalysis?.contentSignals.siteArchetype === "ECOMMERCE"
+      ? "배송·교환·반품·환불 또는 주문제작 정책"
+      : conversionIntent === "DIRECT_PAYMENT"
+        ? "환불·취소·해지 정책"
       : conversionIntent === "INQUIRY_OR_RESERVATION"
         ? "예약·상담 취소/변경 기준"
         : "운영 주체와 문의 정책";
@@ -1497,6 +1585,7 @@ export async function collectSiteScan(
       : htmlContent
         ? analyzeHtml(main.body, main.finalUrl, {
             hasReservationFeature: options.hasReservationFeature,
+            hasCommerceFeature: options.hasCommerceFeature,
           })
         : null;
   const httpPassed = mainFetch.accessOutcome === "VERIFIED";
@@ -1505,6 +1594,7 @@ export async function collectSiteScan(
       ? options.renderedDomCollector
           .collect(main.finalUrl, {
             hasReservationFeature: options.hasReservationFeature,
+            hasCommerceFeature: options.hasCommerceFeature,
           })
           .catch((error): RenderedDomResult => ({
             status: "FAILED",

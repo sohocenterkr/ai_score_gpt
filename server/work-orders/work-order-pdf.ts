@@ -990,7 +990,99 @@ function writeExecutionPlanPage(
     },
   ];
 
-  epics.forEach((epic) => {
+
+  const itemCodes = new Set(workOrder.items.map((item) => item.itemCode));
+  const requiresInitialRecovery = [
+    "CONTENT-INITIAL-001",
+    "CONTENT-ANSWERABILITY-001",
+    "RENDERED-ADDED-CONTENT",
+    "RENDERED-ADDED-LINKS",
+  ].some((code) => itemCodes.has(code));
+  const isCommerce = workOrder.items.some((item) => {
+    const evidence = item.finding?.evidence;
+    return Boolean(
+      evidence &&
+      typeof evidence === "object" &&
+      !Array.isArray(evidence) &&
+      (evidence as Record<string, unknown>).siteArchetype === "ECOMMERCE"
+    );
+  });
+  const hasAny = (...codes: string[]) => codes.some((code) => itemCodes.has(code));
+  const relevantEpics = epics.filter((epic) => {
+    if (epic.priority === "P0") {
+      return hasAny(
+        "STRUCT-H1-001",
+        "CONTENT-HEADINGS-001",
+        "CONTENT-INITIAL-001",
+        "CONTENT-ANSWERABILITY-001",
+        "STRUCT-LINKS-001",
+        "CONTENT-NAVIGATION-001",
+        "META-CANONICAL-001",
+        "RENDERED-ADDED-CONTENT",
+        "RENDERED-ADDED-LINKS",
+      );
+    }
+    if (epic.priority === "P1") {
+      return hasAny("STRUCT-JSONLD-001", "STRUCT-JSONLD-TYPES-001");
+    }
+    if (epic.priority === "P2") {
+      return [...itemCodes].some((code) => code.startsWith("CONTENT-"));
+    }
+    if (epic.priority === "P3") {
+      return [...itemCodes].some((code) => code.startsWith("STRUCT-JSONLD-"));
+    }
+    return hasAny(
+      "CONTENT-DATA-POLICY-001",
+      "CONTENT-DIFFERENTIATION-PROOF-001",
+      "CONTENT-TRANSACTION-POLICY-001",
+    );
+  });
+
+  if (!requiresInitialRecovery) {
+    const p0 = relevantEpics.find((epic) => epic.priority === "P0");
+    if (p0) {
+      p0.title = isEnglish
+        ? "Initial HTML structure improvements"
+        : "초기 HTML 구조 보강";
+      p0.body = isEnglish
+        ? [
+            "Apply only the failed heading, link, navigation, or canonical items listed in this work order.",
+            "Do not introduce SSR/SSG solely because of an unrelated structural issue when meaningful initial HTML already exists.",
+          ]
+        : [
+            "이 작업지시서에서 실제 실패한 제목·링크·탐색·canonical 항목만 보강합니다.",
+            "초기 HTML 본문이 이미 충분하다면 다른 구조 문제만을 이유로 SSR/SSG를 새로 도입하지 않습니다.",
+          ];
+    }
+  }
+
+  if (isCommerce) {
+    const replacements: Array<[string, string]> = isEnglish
+      ? [
+          ["service definition", "brand and product definition"],
+          ["target users/use cases", "target customers and product-selection situations"],
+          ["usage flow/outcome", "ordering, delivery, or made-to-order flow"],
+          ["pricing/free-paid scope", "product price, stock, and purchase terms"],
+          ["WebApplication", "Product, Offer, Brand, or Store"],
+        ]
+      : [
+          ["서비스 정의", "브랜드·상품 정의"],
+          ["이용 대상·활용 사례", "구매 대상·상품 선택 상황"],
+          ["이용 절차·결과물", "주문·배송 또는 맞춤 제작 절차"],
+          ["요금·무료/유료 범위", "상품 가격·재고·구매 조건"],
+          ["WebApplication", "Product·Offer·Brand·Store"],
+        ];
+    for (const epic of relevantEpics) {
+      epic.body = epic.body.map((line) =>
+        replacements.reduce(
+          (value, [before, after]) => value.split(before).join(after),
+          line,
+        ),
+      );
+    }
+  }
+
+  relevantEpics.forEach((epic) => {
     setBold(document, 9.3, COLORS.primaryDark).text(
       `${epic.priority} · ${epic.title}`,
       {
@@ -1022,8 +1114,8 @@ function writeExecutionPlanPage(
     document,
     isEnglish ? "Re-diagnostic principles" : "재진단 원칙",
     isEnglish
-      ? "P0 is the technical gate. After deploying P0, start the next Site AI Score diagnostic against the same production URL before treating P1 to P4 as complete. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
-      : "P0는 기술 게이트입니다. P0 배포 후 같은 운영 URL로 다음 차수 Site AI Score 진단을 실행한 뒤 P1~P4 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
+      ? "After deploying the selected work, start the next Site AI Score diagnostic against the same production URL before treating the listed items as complete. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
+      : "실제 선택된 작업을 운영 URL에 배포한 뒤 같은 URL로 다음 차수 Site AI Score 진단을 실행하여 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",

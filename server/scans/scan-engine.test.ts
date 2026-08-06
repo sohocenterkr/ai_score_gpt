@@ -101,6 +101,10 @@ function renderedSuccess(
       hasPaymentModule: false,
       contentSignals: {
         conversionIntent: "INFORMATIONAL",
+        siteArchetype: "INFORMATIONAL",
+        classificationConfidence: "LOW",
+        classificationSources: [],
+        classificationConflict: false,
         detectedSignals: [],
         missingSignals: [],
         hasServiceDefinition: true,
@@ -316,6 +320,56 @@ describe("HTTP scan engine", () => {
         status: "FAILED",
         errorCode: "RENDERED_DOM_TIMEOUT",
       },
+    });
+  });
+
+  it("렌더링에서 확인한 쇼핑몰 유형을 finding 증거와 문구에 반영한다", async () => {
+    const fetcher: SafeHttpFetcher = {
+      fetch: vi.fn(async (url) => {
+        if (url.endsWith("/robots.txt") || url.endsWith("/sitemap.xml")) {
+          return response(url, 404, "text/plain", "");
+        }
+
+        return response(
+          url,
+          200,
+          "text/html",
+          `<html><body><h1>브랜드 홈페이지</h1>${"소개 ".repeat(100)}</body></html>`,
+        );
+      }),
+    };
+    const commerceRendered = renderedSuccess();
+    if (commerceRendered.status !== "SUCCESS") {
+      throw new Error("expected rendered success");
+    }
+    commerceRendered.analysis.contentSignals = {
+      ...commerceRendered.analysis.contentSignals,
+      conversionIntent: "DIRECT_PAYMENT",
+      siteArchetype: "ECOMMERCE",
+      classificationConfidence: "HIGH",
+      classificationSources: ["PRODUCT_OFFER_JSONLD"],
+      hasWorkflowOrOutcome: false,
+    };
+    const renderedDomCollector: RenderedDomCollector = {
+      collect: vi.fn().mockResolvedValue(commerceRendered),
+    };
+
+    const result = await collectSiteScan("https://example.com/", fetcher, {
+      renderedDomCollector,
+      hasCommerceFeature: false,
+      hasReservationFeature: false,
+    });
+    const workflow = findingByCode(
+      result.findings,
+      "CONTENT-WORKFLOW-OUTCOME-001",
+    );
+
+    expect(workflow.title).toBe("상품 확인·주문·배송 또는 맞춤 제작 절차");
+    expect(workflow.evidence).toMatchObject({
+      conversionIntent: "DIRECT_PAYMENT",
+      siteArchetype: "ECOMMERCE",
+      classificationConfidence: "HIGH",
+      classificationSources: ["PRODUCT_OFFER_JSONLD"],
     });
   });
 

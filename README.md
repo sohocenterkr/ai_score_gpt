@@ -33,7 +33,7 @@
 - 실제 HTTP 응답·리디렉션·robots.txt·sitemap.xml 기초 수집
 - title·meta description·canonical·HTML 언어·heading·링크·iframe·JSON-LD 분석
 - 원본 HTML 대신 SHA-256 해시와 구조화된 증거 저장
-- QUICK 규칙 버전 `2026.07-summary-groups-v7.7`
+- QUICK 규칙 버전 `2026.08-site-archetype-v8`
 - 총 100점: 기술 준비 37점, 신뢰 신호 13점, AI 답변 준비 콘텐츠 50점
 - 콘텐츠 8개 항목은 초기 HTML·본문·단서·렌더링 확인 수준에 따라 부분 점수 계산
 - 확인할 수 없는 콘텐츠 또는 의도적 접근 차단 항목은 감점 대신 보류 점수와 가능한 점수 범위 표시

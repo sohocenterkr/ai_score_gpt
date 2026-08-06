@@ -20,6 +20,7 @@ interface SiteFormState {
   baseUrl: string;
   description: string;
   hasReservationFeature: boolean;
+  hasCommerceFeature: boolean;
 }
 
 const emptyForm: SiteFormState = {
@@ -27,6 +28,7 @@ const emptyForm: SiteFormState = {
   baseUrl: "",
   description: "",
   hasReservationFeature: false,
+  hasCommerceFeature: false,
 };
 
 const scanStatusLabels = {
@@ -107,7 +109,8 @@ const sitesCopy = {
       baseUrlPlaceholder: "example.com",
       description: "사이트 설명",
       descriptionPlaceholder: "예: 강남 소아과 홈페이지",
-      hasReservationFeature: "예약·상담",
+      hasReservationFeature: "예약·상담 기능이 있습니다",
+      hasCommerceFeature: "상품을 판매하는 쇼핑몰입니다",
     },
   },
   en: {
@@ -171,7 +174,8 @@ const sitesCopy = {
       baseUrlPlaceholder: "example.com",
       description: "Website description",
       descriptionPlaceholder: "e.g. Gangnam pediatric clinic website",
-      hasReservationFeature: "Booking / inquiry",
+      hasReservationFeature: "Booking or inquiry is available",
+      hasCommerceFeature: "This website is an online store that sells products",
     },
   },
 } as const;
@@ -456,6 +460,7 @@ function formFromSite(site: RegisteredSite): SiteFormState {
     baseUrl: site.baseUrl,
     description: site.description ?? "",
     hasReservationFeature: site.hasReservationFeature ?? false,
+    hasCommerceFeature: site.hasCommerceFeature ?? false,
   };
 }
 
@@ -465,6 +470,7 @@ function toRequest(form: SiteFormState) {
     baseUrl: form.baseUrl,
     description: form.description.trim() || undefined,
     hasReservationFeature: form.hasReservationFeature,
+    hasCommerceFeature: form.hasCommerceFeature,
   };
 }
 
@@ -679,6 +685,7 @@ export function SitesPage() {
   async function handleQueueScan(
     site: RegisteredSite,
     hasReservationFeature: boolean,
+    hasCommerceFeature: boolean,
   ) {
     setMessage("");
     setErrorMessage("");
@@ -687,10 +694,14 @@ export function SitesPage() {
     try {
       let siteForScan = site;
 
-      if ((site.hasReservationFeature ?? false) !== hasReservationFeature) {
+      if (
+        (site.hasReservationFeature ?? false) !== hasReservationFeature ||
+        (site.hasCommerceFeature ?? false) !== hasCommerceFeature
+      ) {
         const nextForm = {
           ...formFromSite(site),
           hasReservationFeature,
+          hasCommerceFeature,
         };
 
         siteForScan = await updateSiteRequest(site.id, {
@@ -820,8 +831,12 @@ export function SitesPage() {
                     onCancelEdit={() => setEditingId(null)}
                     onEditChange={(key, value) => updateForm(key, value, true)}
                     onUpdate={(event) => void handleUpdate(event, site.id)}
-                    onQueueScan={(hasReservationFeature) =>
-                      void handleQueueScan(site, hasReservationFeature)
+                    onQueueScan={(hasReservationFeature, hasCommerceFeature) =>
+                      void handleQueueScan(
+                        site,
+                        hasReservationFeature,
+                        hasCommerceFeature,
+                      )
                     }
                     onArchive={() => void handleArchive(site)}
                   />
@@ -850,7 +865,10 @@ interface SiteDashboardCardProps {
     value: SiteFormState[K],
   ) => void;
   onUpdate: (event: FormEvent<HTMLFormElement>) => void;
-  onQueueScan: (hasReservationFeature: boolean) => void;
+  onQueueScan: (
+    hasReservationFeature: boolean,
+    hasCommerceFeature: boolean,
+  ) => void;
   onArchive: () => void;
 }
 
@@ -873,10 +891,14 @@ function SiteDashboardCard({
   const [reservationForRescan, setReservationForRescan] = useState(
     site.hasReservationFeature ?? false,
   );
+  const [commerceForRescan, setCommerceForRescan] = useState(
+    site.hasCommerceFeature ?? false,
+  );
 
   useEffect(() => {
     setReservationForRescan(site.hasReservationFeature ?? false);
-  }, [site.hasReservationFeature]);
+    setCommerceForRescan(site.hasCommerceFeature ?? false);
+  }, [site.hasReservationFeature, site.hasCommerceFeature]);
 
   const progress = site.progress;
   const progressText = progressCopy[locale];
@@ -941,7 +963,9 @@ function SiteDashboardCard({
         <button
           className="site-primary-button"
           type="button"
-          onClick={() => onQueueScan(reservationForRescan)}
+          onClick={() =>
+            onQueueScan(reservationForRescan, commerceForRescan)
+          }
           disabled={working || scanPending}
         >
           {working
@@ -1192,10 +1216,28 @@ function SiteDashboardCard({
                       <span>{copy.fields.hasReservationFeature}</span>
                     </label>
 
+                    <label
+                      className="site-rescan-option"
+                      htmlFor={`rescan-commerce-${site.id}`}
+                    >
+                      <input
+                        id={`rescan-commerce-${site.id}`}
+                        type="checkbox"
+                        checked={commerceForRescan}
+                        onChange={(event) =>
+                          setCommerceForRescan(event.target.checked)
+                        }
+                        disabled={working || scanPending}
+                      />
+                      <span>{copy.fields.hasCommerceFeature}</span>
+                    </label>
+
                     <button
                       className="site-secondary-button"
                       type="button"
-                      onClick={() => onQueueScan(reservationForRescan)}
+                      onClick={() =>
+                        onQueueScan(reservationForRescan, commerceForRescan)
+                      }
                       disabled={working || scanPending}
                     >
                       {working
@@ -1435,6 +1477,24 @@ function SiteFields({ prefix, form, labels, onChange }: SiteFieldsProps) {
             checked={form.hasReservationFeature}
             onChange={(event) =>
               onChange("hasReservationFeature", event.target.checked)
+            }
+          />
+        </span>
+      </label>
+
+      <label
+        className="site-field-reservation"
+        htmlFor={`${prefix}-commerce`}
+      >
+        <span>{labels.hasCommerceFeature}</span>
+        <span className="site-reservation-checkbox">
+          <input
+            id={`${prefix}-commerce`}
+            name="hasCommerceFeature"
+            type="checkbox"
+            checked={form.hasCommerceFeature}
+            onChange={(event) =>
+              onChange("hasCommerceFeature", event.target.checked)
             }
           />
         </span>

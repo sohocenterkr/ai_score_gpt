@@ -4,6 +4,15 @@ import { load } from "cheerio";
 export type ConversionIntent =
   "DIRECT_PAYMENT" | "INQUIRY_OR_RESERVATION" | "INFORMATIONAL";
 
+export type SiteArchetype =
+  | "ECOMMERCE"
+  | "SAAS_OR_WEB_SERVICE"
+  | "LOCAL_OR_RESERVATION_SERVICE"
+  | "BRAND_OR_CORPORATE"
+  | "INFORMATIONAL";
+
+export type ClassificationConfidence = "HIGH" | "MEDIUM" | "LOW";
+
 export type ContentSignalKey =
   | "hasServiceDefinition"
   | "hasAudienceOrUseCase"
@@ -26,6 +35,10 @@ export interface ContentSignalEvidence {
 
 export interface ContentSignals {
   conversionIntent: ConversionIntent;
+  siteArchetype: SiteArchetype;
+  classificationConfidence: ClassificationConfidence;
+  classificationSources: string[];
+  classificationConflict: boolean;
   detectedSignals: string[];
   missingSignals: string[];
   evidenceByKey?: Record<ContentSignalKey, ContentSignalEvidence>;
@@ -280,6 +293,21 @@ function analyzeJsonLd(html: ReturnType<typeof load>) {
   };
 }
 
+function isTemplateLikeLink(raw: string): boolean {
+  let decoded = raw;
+  try {
+    decoded = decodeURIComponent(raw);
+  } catch {
+    // Keep the raw value; malformed percent encoding is handled by URL parsing.
+  }
+
+  return (
+    /[{}]|\$\{|<%|%>|\{\{|\}\}/.test(decoded) ||
+    /%7b|%7d/i.test(raw) ||
+    /(?:^|[\/_-])(?:pc_thumb_tag|text_[0-9]+)(?:$|[/?#&=_-])/i.test(decoded)
+  );
+}
+
 function analyzeLinks(html: ReturnType<typeof load>, finalUrl: string) {
   const base = new URL(finalUrl);
   const links = new Set<string>();
@@ -290,7 +318,8 @@ function analyzeLinks(html: ReturnType<typeof load>, finalUrl: string) {
     if (
       !raw ||
       raw.startsWith("#") ||
-      /^(?:mailto|tel|javascript|data):/i.test(raw)
+      /^(?:mailto|tel|javascript|data):/i.test(raw) ||
+      isTemplateLikeLink(raw)
     ) {
       return;
     }
@@ -400,6 +429,8 @@ function detectContentSignals(input: {
   bodyText: string;
   hasPaymentModule: boolean;
   hasReservationFeature: boolean | null;
+  hasCommerceFeature: boolean | null;
+  jsonLdTypes: string[];
 }): ContentSignals {
   const sources = {
     title: normalizeText(input.title ?? "").toLowerCase(),
@@ -420,31 +451,105 @@ function detectContentSignals(input: {
     ].join(" "),
   ).toLowerCase();
 
-  // A real, integrated payment module (technical, unambiguous) always wins.
-  // Next, the site owner's own declaration of whether they take
-  // reservations/inquiries — they know their business model better than any
-  // keyword list. Only fall back to guessing from prose when neither is
-  // available (e.g. a legacy site that hasn't set the field yet).
+  // User declarations are valuable safeguards, but objective commerce evidence
+  // must never be erased by a negative reservation/inquiry checkbox.
   const directPaymentKeyword = textMatches(
     haystack,
-    /결제|구매|주문|장바구니|구독|요금제|유료 플랜|checkout|payment|cart|order|subscribe|pricing|plan/i,
+    /결제|구매|주문|구독|요금제|유료 플랜|checkout|payment|order now|subscribe|pricing plan/i,
+  );
+  const strongCommerceKeyword = textMatches(
+    haystack,
+    /장바구니|바로구매|구매하기|주문하기|판매가|소비자가|상품코드|재고|품절|배송비|add to cart|buy now|sold out|in stock|sku|shopping bag/i,
+  );
+  const catalogKeyword = textMatches(
+    haystack,
+    /상품|제품|컬렉션|신상품|베스트셀러|쇼핑몰|온라인몰|악어백|핸드백|product|collection|catalog|shop|store/i,
+  );
+  const catalogPriceKeyword = textMatches(
+    haystack,
+    /(?:판매가|가격|정가|할인가|price)\s*[:：]?\s*(?:₩|￦|\$|[0-9])|[0-9][0-9,]{2,}\s?원/i,
   );
   const inquiryOrReservationKeyword = textMatches(
     haystack,
     /예약|상담|견적|문의|전화|카카오|방문|예약하기|상담신청|contact|booking|reservation|quote|inquiry/i,
   );
+  const saasKeyword = textMatches(
+    haystack,
+    /saas|소프트웨어|웹앱|플랫폼|대시보드|api|회원가입|로그인|무료 체험|free trial|dashboard|web application/i,
+  );
+  const saasWorkflowKeyword = textMatches(
+    haystack,
+    /(?:자료|파일|문서|이미지|음성).{0,20}업로드|url\s*(?:입력|등록)|자동.{0,12}(?:진단|분석|생성)|(?:진단|분석).{0,12}(?:보고서|결과물)|(?:보고서|결과물).{0,12}(?:생성|확인|다운로드)|upload.{0,20}(?:file|document|data)|generate.{0,20}(?:report|result)/i,
+  );
+  const saasEvidence = saasKeyword || saasWorkflowKeyword;
+  const brandKeyword = textMatches(
+    haystack,
+    /브랜드|회사소개|기업소개|장인|명장|설립|연혁|제작|공방|본사|brand|company|corporate|manufacturer|craftsman/i,
+  );
+  const jsonLdCommerce = input.jsonLdTypes.some((type) =>
+    /^(Product|Offer|AggregateOffer|ItemList)$/i.test(type),
+  );
+  const objectiveCommerceEvidence =
+    input.hasPaymentModule ||
+    jsonLdCommerce ||
+    strongCommerceKeyword ||
+    (catalogKeyword && catalogPriceKeyword);
+  const directPaymentEvidence =
+    input.hasCommerceFeature === true ||
+    objectiveCommerceEvidence ||
+    directPaymentKeyword;
 
-  const conversionIntent: ConversionIntent = input.hasPaymentModule
+  const conversionIntent: ConversionIntent = directPaymentEvidence
     ? "DIRECT_PAYMENT"
     : input.hasReservationFeature === true
       ? "INQUIRY_OR_RESERVATION"
       : input.hasReservationFeature === false
         ? "INFORMATIONAL"
-        : directPaymentKeyword
-          ? "DIRECT_PAYMENT"
-          : inquiryOrReservationKeyword
-            ? "INQUIRY_OR_RESERVATION"
-            : "INFORMATIONAL";
+        : inquiryOrReservationKeyword
+          ? "INQUIRY_OR_RESERVATION"
+          : "INFORMATIONAL";
+
+  const siteArchetype: SiteArchetype =
+    objectiveCommerceEvidence || input.hasCommerceFeature === true
+      ? "ECOMMERCE"
+      : saasEvidence
+      ? "SAAS_OR_WEB_SERVICE"
+      : conversionIntent === "INQUIRY_OR_RESERVATION"
+        ? "LOCAL_OR_RESERVATION_SERVICE"
+        : brandKeyword
+          ? "BRAND_OR_CORPORATE"
+          : "INFORMATIONAL";
+
+  const classificationSources = [
+    input.hasCommerceFeature === true ? "USER_COMMERCE_DECLARATION" : null,
+    input.hasCommerceFeature === false ? "USER_NON_COMMERCE_DECLARATION" : null,
+    input.hasReservationFeature === true ? "USER_RESERVATION_DECLARATION" : null,
+    input.hasReservationFeature === false ? "USER_NON_RESERVATION_DECLARATION" : null,
+    input.hasPaymentModule ? "PAYMENT_MODULE" : null,
+    jsonLdCommerce ? "PRODUCT_OFFER_JSONLD" : null,
+    strongCommerceKeyword ? "STRONG_COMMERCE_TEXT" : null,
+    catalogKeyword && catalogPriceKeyword ? "CATALOG_AND_PRICE_TEXT" : null,
+    directPaymentKeyword ? "DIRECT_PAYMENT_TEXT" : null,
+    inquiryOrReservationKeyword ? "INQUIRY_TEXT" : null,
+    saasKeyword ? "SAAS_TEXT" : null,
+    saasWorkflowKeyword ? "SAAS_WORKFLOW_TEXT" : null,
+    brandKeyword ? "BRAND_TEXT" : null,
+  ].filter((value): value is string => Boolean(value));
+
+  const classificationConflict =
+    input.hasCommerceFeature === false && objectiveCommerceEvidence;
+  const classificationConfidence: ClassificationConfidence =
+    input.hasCommerceFeature === true ||
+    input.hasPaymentModule ||
+    jsonLdCommerce ||
+    strongCommerceKeyword
+      ? "HIGH"
+      : directPaymentKeyword ||
+          saasWorkflowKeyword ||
+          (catalogKeyword && catalogPriceKeyword) ||
+          input.hasReservationFeature !== null
+        ? "MEDIUM"
+        : "LOW";
 
   // Keyword lists below were tuned against a SaaS-shaped vocabulary
   // ("이용 대상", "이용 절차", "차별점") and missed ordinary small-business
@@ -530,6 +635,10 @@ function detectContentSignals(input: {
 
   return {
     conversionIntent,
+    siteArchetype,
+    classificationConfidence,
+    classificationSources,
+    classificationConflict,
     detectedSignals: signalEntries
       .filter(([, detected]) => detected)
       .map(([label]) => label),
@@ -551,7 +660,10 @@ function detectContentSignals(input: {
 export function analyzeHtml(
   body: Buffer,
   finalUrl: string,
-  options: { hasReservationFeature?: boolean | null } = {},
+  options: {
+    hasReservationFeature?: boolean | null;
+    hasCommerceFeature?: boolean | null;
+  } = {},
 ): HtmlAnalysis {
   const rawHtml = body.toString("utf8");
   const hasPaymentModule = detectPaymentModule(rawHtml);
@@ -583,6 +695,8 @@ export function analyzeHtml(
     bodyText,
     hasPaymentModule,
     hasReservationFeature: options.hasReservationFeature ?? null,
+    hasCommerceFeature: options.hasCommerceFeature ?? null,
+    jsonLdTypes: jsonLd.types,
   });
 
   return {

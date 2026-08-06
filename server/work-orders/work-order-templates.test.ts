@@ -85,3 +85,30 @@ describe("work order templates", () => {
     expect(template.requirement).toBe("문제를 수정하세요.");
   });
 });
+
+
+describe("commerce work order wording", () => {
+  it("쇼핑몰 증거가 있으면 SaaS 전용 이용 절차와 요금 문구를 사용하지 않는다", () => {
+    const workflow = buildWorkOrderTemplate({
+      ruleCode: "CONTENT-WORKFLOW-OUTCOME-001",
+      title: "구매 절차",
+      description: "구매 절차가 부족합니다.",
+      recommendation: null,
+      severity: "MEDIUM",
+      evidenceJson: { siteArchetype: "ECOMMERCE", conversionIntent: "DIRECT_PAYMENT" },
+    });
+    const pricing = buildWorkOrderTemplate({
+      ruleCode: "CONTENT-PRICING-TERMS-001",
+      title: "상품 가격",
+      description: "가격 정보가 부족합니다.",
+      recommendation: null,
+      severity: "MEDIUM",
+      evidenceJson: { siteArchetype: "ECOMMERCE", conversionIntent: "DIRECT_PAYMENT" },
+    });
+
+    expect(workflow.developerMessage).toContain("상품 확인·구매");
+    expect(workflow.developerMessage).not.toContain("URL 입력");
+    expect(pricing.developerMessage).toContain("실제 상품 가격");
+    expect(pricing.developerMessage).not.toContain("무료 간편진단");
+  });
+});
