@@ -155,6 +155,30 @@ function workOrderFindingDescription(
 
   return value
     .replace(
+      "본문 문장에서 관련 정보를 확인했지만 제목 구조와 충분한 설명을 함께 확인하지 못했습니다.",
+      "Relevant information was found in body text, but the heading structure and supporting explanation were insufficient.",
+    )
+    .replace(
+      "llms.txt가 비어 있거나 정상 응답하지 않습니다.",
+      "llms.txt is empty or did not return a valid response.",
+    )
+    .replace(
+      "JSON-LD에서 공식 외부 채널 sameAs 신호를 확인하지 못했습니다.",
+      "No official external-channel sameAs signals were found in JSON-LD.",
+    )
+    .replace(
+      "AI가 구매·주문·배송 또는 맞춤 제작 순서를 답하기 위한 단계별 설명이 부족합니다.",
+      "The site lacks a step-by-step explanation of purchasing, ordering, shipping, or made-to-order production.",
+    )
+    .replace(
+      "회원·주문·결제·배송·맞춤 제작 요청정보의 처리와 보관·파기 설명이 부족합니다.",
+      "The site lacks an explanation of how account, order, payment, shipping, and custom-order request data is processed, retained, and deleted.",
+    )
+    .replace(
+      "AI가 왜 이 사이트를 추천해야 하는지 판단할 차별점·사례·후기 정보가 부족합니다.",
+      "The site lacks differentiation, examples, and review evidence that AI can use when deciding whether to recommend the brand.",
+    )
+    .replace(
       /AI가 기본 설명에 사용할 수 있는 브랜드·상품 정의[^.]*부족합니다.?/g,
       "The site lacks a clear brand and product definition that AI can use for a basic description.",
     )
@@ -345,7 +369,51 @@ function workOrderRenderedText(value: string, isEnglish: boolean): string {
       .replace(/관련 정책 페이지/g, "relevant policy pages")
       .replace(/표준 a 링크/g, "standard anchor links")
       .replace(/사용자 화면/g, "user-facing page")
-      .replace(/작업으로 묶어 처리해 주세요\./g, "work item.");
+      .replace(/작업으로 묶어 처리해 주세요\./g, "work item.")
+      .replace(
+        /initial HTML 본문 포함 비율은 ([0-9.]+)%입니다\./g,
+        "Initial HTML body coverage is $1%.",
+      )
+      .replace(
+        /initial HTML 내부 링크 포함 비율은 ([0-9.]+)%입니다\./g,
+        "Initial HTML internal link coverage is $1%.",
+      )
+      .replace(
+        /initial HTML 본문은 렌더링 후 본문의 ([0-9.]+)%를 포함해 기준을 충족하지만, initial HTML 내부 링크 포함 비율 ([0-9.]+)%는 보완이 필요합니다\./g,
+        "The initial HTML contains $1% of the rendered body and meets the body-content criterion, but its internal-link coverage of $2% needs improvement.",
+      )
+      .replace(
+        "initial HTML 본문은 이미 기준을 충족하므로 SSR/SSG 전면 도입은 필수가 아닙니다. 렌더링 후에만 추가되는 중요 내부 링크를 href가 있는 표준 링크로 initial HTML에 포함해 주세요.",
+        "The initial HTML body already meets the criterion, so a full SSR/SSG migration is not required. Add important internal links that currently appear only after rendering to the initial HTML as standard links with href attributes.",
+      )
+      .replace(
+        "AI 검색 노출 보장이 아니라 AI가 브랜드와 상품을 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.",
+        "Treat this as work that helps AI systems accurately understand and cite the brand and products, not as a guarantee of AI search visibility.",
+      )
+      .replace(
+        /initial HTML 본문 포함 비율 ([0-9.]+)%는 이미 기준을 충족하므로 현재 본문 구조를 유지하고 SSR\/SSG 전면 도입을 중심 작업으로 지정하지 마세요\./g,
+        "Initial HTML body coverage of $1% already meets the criterion. Preserve the current body structure and do not make a full SSR/SSG migration the primary task.",
+      )
+      .replace(
+        "렌더링 후에만 추가되는 중요 내부 링크를 href가 있는 standard anchor links로 initial HTML에 포함해 주세요.",
+        "Add important internal links that currently appear only after rendering to the initial HTML as standard anchor links with href attributes.",
+      )
+      .replace(
+        "기존 디자인·본문·사용자 기능을 제거하거나 비활성화하지 마세요.",
+        "Do not remove or disable the existing design, body content, or user-facing features.",
+      )
+      .replace(
+        /initial HTML 본문 포함 비율 ([0-9.]+)% 이상이 유지됩니다\./g,
+        "Initial HTML body coverage remains at or above $1%.",
+      )
+      .replace(
+        "initial HTML만 확인해도 사이트의 핵심 내용과 정책 요약을 이해할 수 있습니다.",
+        "The site's core content and policy summary can be understood from the initial HTML alone.",
+      )
+      .replace(
+        "기존 화면 디자인과 주요 사용자 기능이 정상 동작합니다.",
+        "The existing visual design and major user-facing features continue to work correctly.",
+      );
   };
 
   return value.split("\n").map(translateLine).join("\n");

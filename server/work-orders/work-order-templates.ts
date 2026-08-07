@@ -33,7 +33,7 @@ interface RenderedImprovementTemplateInput {
   acceptanceCriteria: string[];
 }
 
-export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v6-en-actual-output";
+export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v7-en-complete";
 
 const templates: Record<string, WorkOrderTemplate> = {
   "STRUCT-H1-001": {
@@ -1477,9 +1477,13 @@ export function buildWorkOrderTemplate(
   return {
     requirement,
     developerMessage:
-      `${finding.ruleCode} 진단의 현재 증거와 설명을 확인한 뒤 운영 URL에 수정사항을 반영해 주세요. ` +
-      "소스코드 제출은 필요하지 않으며 배포된 공개 URL에서 다음 차수 진단으로 완료 여부를 확인할 수 있어야 합니다.",
-    acceptanceCriteria: genericCriteria(finding.ruleCode),
+      locale === "en"
+        ? "Review the current evidence and explanation for " +
+          finding.ruleCode +
+          ", then deploy the required change to the production URL. Source-code submission is not required; completion must be verifiable through the next diagnostic of the deployed public URL."
+        : finding.ruleCode +
+          " 진단의 현재 증거와 설명을 확인한 뒤 운영 URL에 수정사항을 반영해 주세요. 소스코드 제출은 필요하지 않으며 배포된 공개 URL에서 다음 차수 진단으로 완료 여부를 확인할 수 있어야 합니다.",
+    acceptanceCriteria: genericCriteria(finding.ruleCode, locale),
     isRequired:
       finding.severity === "CRITICAL" ||
       finding.severity === "HIGH" ||

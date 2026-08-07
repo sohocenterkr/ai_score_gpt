@@ -123,6 +123,44 @@ describe("work order PDF", () => {
     expect(renderedText).not.toContain("현재 문제");
   });
 
+  it("fully translates a stored rendered-improvement item", () => {
+    const item = workOrder.items[0];
+    const localized = localizedWorkOrderForPdf(
+      {
+        ...workOrder,
+        items: [
+          {
+            ...item,
+            findingId: null,
+            finding: null,
+            itemCode: "RENDERED-ADDED-CONTENT",
+            title: "화면에는 보이지만 일부 AI가 놓칠 수 있는 정보가 있습니다",
+            requirement:
+              "현재 상태: 초기 HTML 본문 포함 비율은 97.4%입니다. 초기 HTML 내부 링크 포함 비율은 63.8%입니다.\n\n무슨 뜻인가요: 초기 HTML 본문은 렌더링 후 본문의 97.4%를 포함해 기준을 충족하지만, 초기 HTML 내부 링크 포함 비율 63.8%는 보완이 필요합니다.",
+            developerMessage:
+              "- AI 검색 노출 보장이 아니라 AI가 브랜드와 상품을 정확히 인식·인용할 가능성을 높이는 작업으로 이해해 주세요.\n- 기존 디자인·본문·사용자 기능을 제거하거나 비활성화하지 마세요.",
+            acceptanceCriteria: [
+              {
+                code: "JS-CONTENT-01",
+                label: "초기 HTML 본문 포함 비율 97.4% 이상이 유지됩니다.",
+                required: true,
+              },
+            ],
+          },
+        ],
+      },
+      "en",
+    );
+    const renderedFields = JSON.stringify({
+      title: localized.items[0]?.title,
+      requirement: localized.items[0]?.requirement,
+      developerMessage: localized.items[0]?.developerMessage,
+      acceptanceCriteria: localized.items[0]?.acceptanceCriteria,
+    });
+    expect(renderedFields).not.toMatch(/[가-힣]/);
+    expect(renderedFields).toContain("97.4%");
+  });
+
   it("renders an English work-order PDF", async () => {
     const result = await renderWorkOrderPdf(workOrder, { locale: "en" });
     const source = result.toString("latin1");

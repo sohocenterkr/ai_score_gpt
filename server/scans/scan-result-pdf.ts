@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-en-actual-output-v16";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-en-complete-system-text-v17";
 
 let cachedFontHash: string | undefined;
 
@@ -205,6 +205,9 @@ const PDF_FINDING_TITLES_EN: Record<string, string> = {
   "개인정보와 주문정보 처리": "Personal and order-data handling",
   "상품 차별점과 브랜드 신뢰 근거": "Product differentiation and brand-trust evidence",
   "배송·교환·반품·환불 또는 주문제작 정책": "Shipping, exchanges, returns, refunds, and made-to-order policies",
+  "구조화된 문의 정보 contactPoint": "Structured contact information (contactPoint)",
+  "운영 주체·문의 구조화 신호": "Structured operator and contact signals",
+  "사이트 검색 SearchAction": "Site-search SearchAction",
 };
 
 const PDF_TEXT_EN: Record<string, string> = {
@@ -329,6 +332,28 @@ const PDF_TEXT_EN: Record<string, string> = {
     "DNS, redirects, HTTP response, and initial HTML were freshly collected from the public URL at scan time.",
   "초기 HTML과 JavaScript 실행 후 DOM을 함께 비교했습니다.":
     "The initial HTML and JavaScript-rendered DOM were compared.",
+  "robots.txt에 정상적으로 접근했습니다.": "robots.txt was accessed successfully.",
+  "robots.txt 정책과 실제 User-Agent 요청에서 접근 가능함을 확인했습니다.": "Access was confirmed through both robots.txt policy and live User-Agent requests.",
+  "사용자 요청형 ChatGPT-User User-Agent가 실제 페이지에 접근했습니다.": "The request-based ChatGPT-User User-Agent successfully accessed the live page.",
+  "llms.txt가 비어 있거나 정상 응답하지 않습니다.": "llms.txt is empty or did not return a valid response.",
+  "사이트 루트에 핵심 페이지, 서비스 설명, 정책 페이지를 안내하는 llms.txt를 추가하세요.": "Add an llms.txt file at the site root that links to key pages, brand and product information, and policy pages.",
+  "학습용 GPTBot User-Agent의 실제 응답을 확인하지 못했습니다. CDN·WAF·봇 방어 설정에 따라 일시적으로 달라질 수 있으며 점수에는 직접 반영하지 않습니다.": "A live response for the training-oriented GPTBot User-Agent could not be confirmed. This may vary temporarily because of CDN, WAF, or bot-protection settings and does not directly affect the score.",
+  "브랜드·상품 정의, 대표 상품, 제작·판매 특징, 고객이 얻는 가치를 사용자 화면과 초기 HTML에 명확히 추가하세요.": "Clearly add the brand and product definition, representative products, production and sales characteristics, and customer value to the user-facing page and initial HTML.",
+  "추천 고객, 용도별 상품 선택 기준, 대표 제품군 같은 섹션을 보강하세요.": "Add sections for recommended customers, product-selection criteria by use, and representative product categories.",
+  "AI가 구매·주문·배송 또는 맞춤 제작 순서를 답하기 위한 단계별 설명이 부족합니다.": "The site lacks a step-by-step explanation of purchasing, ordering, shipping, or made-to-order production.",
+  "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작처럼 실제 이용 흐름을 3~5단계로 설명하세요.": "Explain the actual flow in 3-5 steps, including product review, stock and option selection, ordering and payment, shipping, or made-to-order production.",
+  "상품별 판매가격, 재고·품절·주문제작 상태, 배송비와 추가 비용을 표나 FAQ로 명확히 안내하세요.": "Clearly present product prices, stock, sold-out or made-to-order status, shipping fees, and surcharges in a table or FAQ.",
+  "문의 채널, 상담 가능 시간, 응답 예상 시간, 지원 범위를 명확히 표시하세요.": "Clearly display contact channels, consultation hours, expected response times, and support scope.",
+  "개인정보 처리, 주문·상담정보 보관·삭제, 보안, 이용약관·개인정보처리방침 링크를 보강하세요.": "Explain personal-data handling, retention and deletion of order and consultation information, security, and links to the terms and privacy policy.",
+  "AI가 왜 이 사이트를 추천해야 하는지 판단할 차별점·사례·후기 정보가 부족합니다.": "The site lacks differentiation, examples, and review evidence that AI can use when deciding whether to recommend the brand.",
+  "다른 동종 브랜드·일반 제품과 구분되는 특징, 대표 제품·제작 사례, 소재·등급·공정, 장인·수상·매장·A/S·고객 후기를 검증 가능한 근거와 함께 보강하세요.": "Add verifiable evidence covering differences from comparable brands and ordinary products, representative products and production examples, materials and grades, production processes, artisan credentials, awards, stores, after-sales service, and customer reviews.",
+  "배송 방법·기간·배송비, 교환·반품·환불, 주문제작 변경·취소 제한, 불량·오배송 처리와 A/S 기준을 명확히 안내하세요.": "Clearly explain shipping methods, timeframes and fees; exchanges, returns and refunds; made-to-order change and cancellation limits; defective or incorrect shipment handling; and after-sales service rules.",
+  "JSON-LD에서 contactPoint 문의 정보를 확인했습니다.": "Contact information was found in JSON-LD contactPoint data.",
+  "JSON-LD에서 운영 주체와 문의·주소·URL 중 일부 신호를 함께 확인했습니다.": "JSON-LD includes signals for the operator and at least some contact, address, or URL information.",
+  "JSON-LD에서 공식 외부 채널 sameAs 신호를 확인하지 못했습니다.": "No official external-channel sameAs signals were found in JSON-LD.",
+  "Organization 또는 LocalBusiness JSON-LD에 공식 홈페이지, SNS, 지도, 지식패널 등 검증 가능한 sameAs 링크를 추가하세요.": "Add verifiable sameAs links for the official website, social profiles, maps, or knowledge panels to Organization or LocalBusiness JSON-LD.",
+  "검사 대상 사이트에서 내부 검색 기능을 확정하지 못해 SearchAction은 해당 없음으로 처리했습니다.": "SearchAction was marked not applicable because an internal search feature could not be confirmed on the inspected site.",
+  "상품·문서·게시글처럼 검색할 내부 콘텐츠가 많고 실제 내부 검색 페이지가 있는 사이트라면 WebSite JSON-LD의 potentialAction에 실제 검색 URL과 일치하는 SearchAction을 추가하세요. 내부 검색 기능이 없는 랜딩페이지나 허브 사이트에는 허위 SearchAction을 추가하지 마세요.": "If the site has substantial searchable product, document, or post content and a real internal search page, add a SearchAction under WebSite JSON-LD potentialAction that matches the actual search URL. Do not add a false SearchAction to a landing page or hub without internal search.",
 };
 
 function translatePdfCategory(value: string, locale: "ko" | "en"): string {
@@ -527,6 +552,12 @@ const PDF_CONTENT_READINESS_TEXT_EN: Record<string, string> = {
   "자주 묻는 질문": "Frequently asked questions",
   "도움말과 이용 가이드": "Help and usage guide",
   "문의 및 지원": "Contact and support",
+  "800자와 75% 포함 비율은 Site AI Score가 기본 설명량과 렌더링 의존도를 비교하기 위해 사용하는 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공통 공식 기준은 아닙니다. 핵심 목표는 글자 수 자체가 아니라 AI가 브랜드·상품 정의·구매 대상·주문 절차·상품 가격·환불·고객지원·개인정보·주문·결제·배송정보 처리·FAQ를 정확히 인식하고 실제 고객 질문에 답할 수 있게 하는 것입니다.": "The 800-character and 75% coverage values are internal Site AI Score reference criteria used to compare explanation volume and rendering dependency. They are not official universal standards for all search engines or AI services. The main goal is to help AI accurately understand the brand and products, target customers, ordering process, product prices, refunds, customer support, personal and order-data handling, and FAQs so it can answer real customer questions.",
+  "어떤 고객과 구매 목적에 적합한지와 실제 상품 선택 상황은 현재 QUICK 증거로 확인하지 못했습니다.": "The current QUICK evidence did not confirm which customers and purchase purposes the products suit or the relevant product-selection situations.",
+  "상품 탐색부터 주문·배송·A/S까지의 과정을 설명하는 단서를 충분히 확인하지 못했습니다.": "The current evidence did not sufficiently confirm a process from product discovery through ordering, shipping, and after-sales service.",
+  "소재·색상·크기·맞춤 제작·배송 지원 범위와 제한을 현재 증거에서 확인하지 못했습니다.": "The current evidence did not confirm supported materials, colors, sizes, made-to-order options, shipping scope, or limitations.",
+  "상품 가격, 개인정보·주문·결제·배송정보 처리, 운영 주체와 문의 방법을 현재 증거에서 충분히 확인하지 못했습니다.": "The current evidence did not sufficiently confirm product prices, personal and order/payment/shipping data handling, operator information, or contact methods.",
+  "상품 가격·재고·구매 조건": "Product prices, stock, and purchase terms",
 };
 
 export function translatePdfContentReadinessText(
@@ -980,6 +1011,10 @@ const PDF_EVIDENCE_SIGNAL_EN: Record<string, string> = {
   "개인정보·주문·결제·배송정보 처리": "Personal, order, payment, and shipping data handling",
   "상품 차별점·브랜드 신뢰 근거": "Product differentiation and brand-trust evidence",
   "배송·교환·반품·환불·주문제작·A/S 정책": "Shipping, exchanges, returns, refunds, made-to-order, and after-sales policies",
+  "상품 탐색·주문·배송·A/S 절차": "Product discovery, ordering, shipping, and after-sales service process",
+  "고객지원·매장·문의": "Customer support, stores, and contact channels",
+  "제품 차별점·브랜드 신뢰 근거": "Product differentiation and brand-trust evidence",
+  "배송·교환·반품·환불 또는 주문제작 정책": "Shipping, exchanges, returns, refunds, or made-to-order policies",
 };
 
 function localizedEvidenceValue(value: unknown, locale: "ko" | "en"): unknown {

@@ -166,6 +166,22 @@ describe("commerce work order wording", () => {
     expect(text).not.toContain("무료·유료 이용 범위");
   });
 
+  it("uses English fallback text for unmapped rules", () => {
+    const template = buildWorkOrderTemplate(
+      {
+        ruleCode: "CUSTOM-ENGLISH-RULE-001",
+        title: "Stored Korean title",
+        description: "저장된 한국어 설명",
+        recommendation: "저장된 한국어 권고",
+        severity: "MEDIUM",
+      },
+      "en",
+    );
+    const text = JSON.stringify(template);
+    expect(text).toContain("Review the current evidence");
+    expect(text).not.toMatch(/[가-힣]/);
+  });
+
   it("uses complete English e-commerce templates without SaaS wording", () => {
     const ruleCodes = [
       "ACCESS-LLMS-TXT-001",
