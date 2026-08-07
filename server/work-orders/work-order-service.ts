@@ -372,7 +372,34 @@ function currentFindingDescription(
   if (finding.ruleCode === "CONTENT-TRANSACTION-POLICY-001") {
     return "배송·교환·반품·환불·주문제작 변경 및 취소·A/S 정책 정보가 부족합니다.";
   }
+  if (finding.ruleCode === "CONTENT-AUDIENCE-USECASE-001") {
+    return "AI가 어떤 고객과 구매 목적에 적합한 상품인지 답하기 위한 구매 대상·상품 선택 기준이 부족합니다.";
+  }
+  if (finding.ruleCode === "CONTENT-DATA-POLICY-001") {
+    return "회원·주문·결제·배송·맞춤 제작 요청정보의 처리와 보관·파기 설명이 부족합니다.";
+  }
   return finding.description;
+}
+
+function resolvedWorkOrderArchetype(record: WorkOrderRecord): string | null {
+  for (const item of record.items) {
+    const evidence = item.finding?.evidenceJson;
+    if (!evidence || typeof evidence !== "object" || Array.isArray(evidence)) continue;
+    const archetype = (evidence as Record<string, unknown>).siteArchetype;
+    if (typeof archetype === "string") return archetype;
+  }
+  return null;
+}
+
+function contextualWorkOrderEvidence(
+  value: Prisma.JsonValue | null,
+  archetype: string | null,
+): Prisma.JsonValue | null {
+  if (!archetype) return value;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return { siteArchetype: archetype };
+  }
+  return { ...(value as Prisma.JsonObject), siteArchetype: archetype };
 }
 
 function publicWorkOrder(
@@ -380,6 +407,8 @@ function publicWorkOrder(
   versionHistory: PublicWorkOrderVersionHistoryEntry[] = [],
   diagnosticHistory: PublicDiagnosticHistoryEntry[] = [],
 ): PublicWorkOrder {
+  const workOrderArchetype = resolvedWorkOrderArchetype(record);
+
   return {
     id: record.id,
     orderNumber: record.orderNumber,
@@ -424,10 +453,13 @@ function publicWorkOrder(
             {
               ruleCode: item.finding.ruleCode,
               title: item.title,
-              description: item.finding.description,
+              description: currentFindingDescription(item.finding),
               recommendation: item.finding.recommendation,
               severity: item.finding.severity,
-              evidenceJson: item.finding.evidenceJson,
+              evidenceJson: contextualWorkOrderEvidence(
+                item.finding.evidenceJson,
+                workOrderArchetype,
+              ),
             },
             "ko",
           )

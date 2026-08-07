@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-evidence-groups-v12";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-archetype-consistency-v13";
 
 let cachedFontHash: string | undefined;
 
@@ -1915,11 +1915,24 @@ function writeUnderstanding(
   }
 }
 
+function scanResultIsEcommerce(result: PublicScanResult): boolean {
+  return result.findings.some((finding) => {
+    const evidence = finding.evidence;
+    return Boolean(
+      evidence &&
+        typeof evidence === "object" &&
+        !Array.isArray(evidence) &&
+        (evidence as Record<string, unknown>).siteArchetype === "ECOMMERCE",
+    );
+  });
+}
+
 function writeContentReadiness(
   document: PDFKit.PDFDocument,
   result: PublicScanResult,
 ): void {
   const assessment = result.contentReadiness;
+  const isEcommerce = scanResultIsEcommerce(result);
 
   if (!assessment) {
     return;
@@ -1932,8 +1945,12 @@ function writeContentReadiness(
       ? "Additional content suggestions for AI answers"
       : "AI 답변·추천 가능성을 낮추는 핵심 콘텐츠 부족 항목",
     result.scan.locale === "en"
-      ? "Separate from the current QUICK score, this section suggests content that can help AI answer more specific questions. These suggestions are not score deductions or failure judgments."
-      : "기술 점수가 높더라도 요금·환불·고객지원·차별점·사례·데이터 처리 같은 핵심 정보가 부족하면 AI가 실제 고객 질문에 답하거나 사이트를 추천할 가능성이 낮아질 수 있습니다.",
+      ? isEcommerce
+        ? "Even with strong technical readiness, missing product, pricing, inventory, delivery, returns, support, and trust information can reduce AI answer and recommendation quality."
+        : "Separate from the current QUICK score, this section suggests content that can help AI answer more specific questions. These suggestions are not score deductions or failure judgments."
+      : isEcommerce
+        ? "기술 점수가 높더라도 상품·가격·재고·배송·교환·환불·A/S·차별점·신뢰 근거가 부족하면 AI가 실제 구매 질문에 답하거나 브랜드를 추천할 가능성이 낮아질 수 있습니다."
+        : "기술 점수가 높더라도 요금·환불·고객지원·차별점·사례·데이터 처리 같은 핵심 정보가 부족하면 AI가 실제 고객 질문에 답하거나 사이트를 추천할 가능성이 낮아질 수 있습니다.",
   );
 
   writeTextBox(
@@ -1942,8 +1959,12 @@ function writeContentReadiness(
       ? "Additional content note · score-independent"
       : `AI 답변 준비도 핵심 점검`,
     result.scan.locale === "en"
-      ? "This score-independent guide suggests optional content that may help AI answer more specific questions about the site, such as target users, use cases, process, support scope, pricing, data handling, operator information, and FAQs."
-      : "이 영역은 단순 선택 사항이 아니라 AI가 고객 질문에 답하고 추천 근거로 활용할 수 있는 핵심 콘텐츠를 점검합니다. 자동검사만으로 사실 여부를 확정하기 어려운 이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·환불·취소·자료 처리·운영 주체, 자주 묻는 질문 등을 보완해야 합니다. 이 정보가 부족하면 기술 점수가 높아도 AI 답변이 불완전해지고 추천 가능성이 낮아질 수 있습니다.",
+      ? isEcommerce
+        ? "This section checks product categories, target buyers and purchase purposes, ordering and delivery, pricing and inventory, returns, custom-order limits, support, data handling, operator information, and FAQs."
+        : "This score-independent guide suggests optional content that may help AI answer more specific questions about the site, such as target users, use cases, process, support scope, pricing, data handling, operator information, and FAQs."
+      : isEcommerce
+        ? "이 영역은 AI가 구매 질문에 답하고 추천 근거로 활용할 수 있는 핵심 콘텐츠를 점검합니다. 대표 제품군, 구매 대상과 목적, 상품 선택 기준, 주문·결제·배송·맞춤 제작·A/S 절차, 가격·재고·배송비, 교환·환불·취소 조건, 개인정보·주문정보 처리, 운영 주체와 FAQ를 보완해야 합니다."
+        : "이 영역은 단순 선택 사항이 아니라 AI가 고객 질문에 답하고 추천 근거로 활용할 수 있는 핵심 콘텐츠를 점검합니다. 자동검사만으로 사실 여부를 확정하기 어려운 이용 대상, 활용 사례, 이용 절차, 지원 범위, 요금·환불·취소·자료 처리·운영 주체, 자주 묻는 질문 등을 보완해야 합니다. 이 정보가 부족하면 기술 점수가 높아도 AI 답변이 불완전해지고 추천 가능성이 낮아질 수 있습니다.",
     {
       background: COLORS.primarySoft,
       border: "#C7D2FE",
@@ -2651,6 +2672,7 @@ function writeMethodology(
       : "검사 범위·이용 안내·면책",
   );
 
+  const isEcommerce = scanResultIsEcommerce(result);
   const notes = isEnglish
     ? [
         "1. This report is based on the specified public URL and the actual HTTP response and initial HTML evidence observed at scan time. JavaScript-rendered DOM comparison evidence is included when available.",
@@ -2658,7 +2680,9 @@ function writeMethodology(
         "3. OAI-SearchBot is marked as search access, ChatGPT-User as user-requested access, and GPTBot as training-related access.",
         "4. Raw HTML is not stored. SHA-256 hashes and structured diagnostic evidence are retained.",
         "5. The current QUICK score combines 50 points for technical readiness and 50 points for AI answer-ready content. Content receives partial credit based on sufficient explanation, body evidence, short clues, or rendered-only evidence. Items that cannot be checked because rendering fails are shown as pending rather than deducted. Mobile/desktop comparison, industry benchmarks, and AI answer accuracy are not included.",
-        "6. Values such as 800 characters and 75% coverage are Site AI Score internal reference criteria. They are not official standards of every search engine or AI service. Accuracy of service definition, target users, process, pricing, data handling, and FAQs matters more than character count alone.",
+        isEcommerce
+          ? "6. Values such as 800 characters and 75% coverage are internal reference criteria, not official standards. Product and brand definition, target buyers, purchase flow, pricing, inventory, delivery, returns, support, data handling, and FAQs matter more than character count alone."
+          : "6. Values such as 800 characters and 75% coverage are Site AI Score internal reference criteria. They are not official standards of every search engine or AI service. Accuracy of service definition, target users, process, pricing, data handling, and FAQs matters more than character count alone.",
         "7. This report does not guarantee AI search exposure, recommendation results, overall site security, or the integrity of every site function.",
         "8. Before-and-after comparison should be performed under the same rule version and scan conditions. When possible, manual AI question-and-answer checks should also be performed.",
       ]
@@ -2668,7 +2692,9 @@ function writeMethodology(
         "3. OAI-SearchBot은 검색용, ChatGPT-User는 사용자 요청용, GPTBot은 학습용 접근으로 구분하여 표시합니다.",
         "4. 원본 HTML은 저장하지 않고 SHA-256 해시와 구조화된 검사 증거를 보관합니다.",
         "5. 현재 QUICK 점수는 기술 준비 50점과 AI 답변 준비 콘텐츠 50점을 합산합니다. 콘텐츠는 충분한 설명, 본문 확인, 짧은 단서, 렌더링 후 확인 수준에 따라 부분 점수를 반영하며, 렌더링 실패로 확인하지 못한 항목은 감점하지 않고 판정을 보류합니다.",
-        "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·환불·고객지원·데이터 처리·FAQ의 정확성과 충분성이 중요합니다.",
+        isEcommerce
+          ? "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준이며 모든 검색엔진이나 AI 서비스의 공식 기준이 아닙니다. 글자 수보다 브랜드·상품 정의, 구매 대상, 상품 선택·주문·배송 절차, 가격·재고, 교환·환불, A/S, 개인정보·주문정보 처리와 FAQ의 정확성과 충분성이 중요합니다."
+          : "6. 800자, 75% 포함 비율 등은 Site AI Score 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공식 기준이 아니며, 글자 수보다 서비스 정의·대상·절차·요금·환불·고객지원·데이터 처리·FAQ의 정확성과 충분성이 중요합니다.",
         "7. 이 보고서는 AI 검색 노출, 추천 결과, 사이트 전체 보안성, 모든 기능의 무결성을 보증하지 않습니다.",
         "8. 수정 전후 비교는 동일 규칙 버전과 같은 조건으로 다음 차수 진단을 진행해야 하며, 가능하면 실제 AI 질의응답 수동 확인도 함께 진행해야 합니다.",
       ];

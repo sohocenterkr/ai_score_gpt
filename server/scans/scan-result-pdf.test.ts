@@ -270,7 +270,7 @@ describe("scan result PDF", () => {
     expect(plans[0]?.developerInstructions.join(" ")).toContain("상품 카테고리");
     expect(plans[0]?.acceptanceCriteria.join(" ")).toContain("브랜드·대표 제품군");
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.08-evidence-groups-v12",
+      "2026.08-archetype-consistency-v13",
     );
   });
 

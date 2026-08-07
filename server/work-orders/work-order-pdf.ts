@@ -573,13 +573,9 @@ const WORK_ORDER_EVIDENCE_KEYS = [
   "siteArchetype",
   "conversionIntent",
   "classificationConfidence",
-  "classificationSources",
-  "ignoredClassificationSources",
   "classificationConflict",
   "contentEvidenceLevel",
   "scoreRatio",
-  "detectedSignals",
-  "missingSignals",
   "initialEvidence",
   "renderedEvidence",
   "renderedStatus",
@@ -616,11 +612,42 @@ function compactWorkOrderEvidence(value: unknown, isEnglish: boolean): unknown {
   return compact;
 }
 
+function evidenceLevelSummary(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const level = typeof record.level === "string" ? record.level : null;
+  const sources = Array.isArray(record.matchedSources)
+    ? record.matchedSources.filter((item): item is string => typeof item === "string")
+    : [];
+  if (!level) return null;
+  return sources.length > 0 ? `${level} (${sources.join(", ")})` : level;
+}
+
 function evidenceText(value: unknown, isEnglish = false): string {
   if (value === null || value === undefined) {
     return isEnglish
       ? "No saved initial diagnostic evidence."
       : "저장된 최초 검사 증거가 없습니다.";
+  }
+
+  if (typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    if (typeof record.siteArchetype === "string") {
+      const rows: Array<[string, unknown]> = [
+        [isEnglish ? "Site type" : "사이트 유형", record.siteArchetype],
+        [isEnglish ? "Conversion intent" : "전환 유형", record.conversionIntent],
+        [isEnglish ? "Classification confidence" : "분류 신뢰도", record.classificationConfidence],
+        [isEnglish ? "Content evidence level" : "콘텐츠 증거 수준", record.contentEvidenceLevel],
+        [isEnglish ? "Score ratio" : "점수 반영 비율", record.scoreRatio],
+        [isEnglish ? "Initial HTML evidence" : "초기 HTML 증거", evidenceLevelSummary(record.initialEvidence)],
+        [isEnglish ? "Rendered evidence" : "렌더링 후 증거", evidenceLevelSummary(record.renderedEvidence)],
+        [isEnglish ? "Rendered status" : "렌더링 상태", record.renderedStatus],
+      ];
+      return rows
+        .filter(([, item]) => item !== null && item !== undefined)
+        .map(([label, item]) => `${label}: ${cleanText(item)}`)
+        .join("\n");
+    }
   }
 
   try {

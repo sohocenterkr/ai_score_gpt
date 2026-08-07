@@ -33,7 +33,7 @@ interface RenderedImprovementTemplateInput {
   acceptanceCriteria: string[];
 }
 
-export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v3";
+export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v4";
 
 const templates: Record<string, WorkOrderTemplate> = {
   "STRUCT-H1-001": {
@@ -1098,6 +1098,17 @@ function ecommerceWorkOrderTemplate(
   });
 
   switch (ruleCode) {
+    case "ACCESS-LLMS-TXT-001":
+      return make(
+        "사이트 루트에 전자상거래 핵심 페이지를 안내하는 /llms.txt를 제공합니다.",
+        "/llms.txt가 인증 없이 2xx 응답으로 열리도록 배포하고, 브랜드·대표 제품군 요약, 상품 카테고리, 브랜드 소개, 매장, 배송·교환·환불, 주문제작, A/S, 개인정보처리방침, 이용약관, FAQ·문의 경로를 간결한 Markdown 링크로 제공해 주세요. 실제 공개 정보만 포함하고 확인되지 않은 문구나 키워드 나열은 넣지 마세요.",
+        [
+          ["LLMS-01", "사이트 루트 /llms.txt가 인증 없이 2xx 응답을 반환한다."],
+          ["LLMS-02", "브랜드·대표 제품군 요약과 핵심 상품·정책 페이지 링크가 포함되어 있다."],
+          ["LLMS-03", "배송·교환·환불·주문제작·A/S·FAQ·문의 경로가 실제 URL과 일치한다."],
+          ["LLMS-04", "공개하면 안 되는 내부 정보나 확인되지 않은 문구가 포함되지 않는다."],
+        ],
+      );
     case "STRUCT-H1-001":
       return make(
         "초기 HTML과 사용자 화면에 브랜드와 대표 제품군을 설명하는 H1을 정확히 1개 제공합니다.",
