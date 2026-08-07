@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-archetype-consistency-v13";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-user-facing-evidence-v14";
 
 let cachedFontHash: string | undefined;
 
@@ -860,6 +860,17 @@ export function sanitizeScanResultForPdf(
   };
 }
 
+function userFacingEvidenceValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(userFacingEvidenceValue);
+  if (!value || typeof value !== "object") return value;
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => key !== "ignoredClassificationSources")
+      .map(([key, item]) => [key, userFacingEvidenceValue(item)]),
+  );
+}
+
 function evidenceText(value: unknown, locale: "ko" | "en" = "ko"): string {
   if (value === null || value === undefined) {
     return locale === "en"
@@ -868,7 +879,13 @@ function evidenceText(value: unknown, locale: "ko" | "en" = "ko"): string {
   }
 
   try {
-    return cleanText(JSON.stringify(sanitizeEvidenceValue(value), null, 2));
+    return cleanText(
+      JSON.stringify(
+        userFacingEvidenceValue(sanitizeEvidenceValue(value)),
+        null,
+        2,
+      ),
+    );
   } catch {
     return cleanText(value);
   }
