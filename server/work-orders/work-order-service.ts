@@ -408,6 +408,7 @@ function publicWorkOrder(
   diagnosticHistory: PublicDiagnosticHistoryEntry[] = [],
 ): PublicWorkOrder {
   const workOrderArchetype = resolvedWorkOrderArchetype(record);
+  const workOrderLocale = record.initialScan.locale === "en" ? "en" : "ko";
 
   return {
     id: record.id,
@@ -461,7 +462,7 @@ function publicWorkOrder(
                 workOrderArchetype,
               ),
             },
-            "ko",
+            workOrderLocale,
           )
         : null;
 
@@ -470,7 +471,11 @@ function publicWorkOrder(
         findingId: item.findingId,
         itemCode: item.itemCode,
         targetUrl: item.targetUrl,
-        title: item.title,
+        title: workOrderItemTitle(
+          item.itemCode,
+          item.title,
+          workOrderLocale,
+        ),
         requirement: currentTemplate?.requirement ?? item.requirement,
         developerMessage: currentTemplate?.developerMessage ?? item.developerMessage,
         acceptanceCriteria:

@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-en-commerce-consistency-v15";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-en-actual-output-v16";
 
 let cachedFontHash: string | undefined;
 
@@ -135,6 +135,7 @@ const PDF_CATEGORY_LABELS_EN: Record<string, string> = {
   "신뢰성 및 추적 환경": "Trust and tracking environment",
   "최신성 및 추적 환경": "Freshness and tracking environment",
   "최신성 및 측정 환경": "Freshness and measurement environment",
+  "AI 답변 준비 콘텐츠": "AI answer-ready content",
 };
 
 const PDF_FOUND_LABELS_EN: Record<string, string> = {
@@ -194,6 +195,16 @@ const PDF_FINDING_TITLES_EN: Record<string, string> = {
   "메타 로봇 정책": "Meta robots policy",
   "HTTPS 리디렉션": "HTTPS redirect",
   "실제 공개 URL 측정 환경": "Live public URL measurement environment",
+  "llms.txt": "llms.txt",
+  "공식 채널 sameAs": "Official-channel sameAs links",
+  "브랜드·상품 정의와 핵심 가치": "Brand and product definition and core value",
+  "구매 대상과 상품 선택 상황": "Target customers and product-selection situations",
+  "상품 확인·주문·배송 또는 맞춤 제작 절차": "Product discovery, ordering, shipping, or made-to-order process",
+  "상품 가격·재고·구매 조건": "Product prices, stock, and purchase terms",
+  "고객지원과 문의 채널": "Customer support and contact channels",
+  "개인정보와 주문정보 처리": "Personal and order-data handling",
+  "상품 차별점과 브랜드 신뢰 근거": "Product differentiation and brand-trust evidence",
+  "배송·교환·반품·환불 또는 주문제작 정책": "Shipping, exchanges, returns, refunds, and made-to-order policies",
 };
 
 const PDF_TEXT_EN: Record<string, string> = {
@@ -332,7 +343,7 @@ function translatePdfFindingTitle(value: string, locale: "ko" | "en"): string {
   return locale === "en" ? (PDF_FINDING_TITLES_EN[value] ?? value) : value;
 }
 
-function translatePdfDiagnosticText(
+export function translatePdfDiagnosticText(
   value: string | null | undefined,
   locale: "ko" | "en",
 ): string {
@@ -344,7 +355,39 @@ function translatePdfDiagnosticText(
     return value;
   }
 
-  return PDF_TEXT_EN[value] ?? value;
+  const exact = PDF_TEXT_EN[value];
+  if (exact) return exact;
+
+  return value
+    .replace(
+      "본문 문장에서 관련 정보를 확인했지만 제목 구조와 충분한 설명을 함께 확인하지 못했습니다.",
+      "Relevant information was found in body text, but the heading structure and supporting explanation were insufficient.",
+    )
+    .replace(
+      "제목·메타데이터·링크에서 관련 정보의 짧은 단서만 확인했습니다.",
+      "Only brief signals were found in headings, metadata, or links.",
+    )
+    .replace(
+      "초기 HTML에서는 확인하지 못했으며 JavaScript 렌더링 후 관련 정보를 확인했습니다.",
+      "The information was not found in the initial HTML and appeared only after JavaScript rendering.",
+    )
+    .replace(/브랜드·상품 정의와 핵심 가치/g, "brand and product definition and core value")
+    .replace(/구매 대상과 상품 선택 상황/g, "target customers and product-selection situations")
+    .replace(/상품 확인·주문·배송 또는 맞춤 제작 절차/g, "product discovery, ordering, shipping, or made-to-order process")
+    .replace(/상품 가격·재고·구매 조건/g, "product prices, stock, and purchase terms")
+    .replace(/고객지원과 문의 채널/g, "customer support and contact channels")
+    .replace(/개인정보와 주문정보 처리/g, "personal and order-data handling")
+    .replace(/상품 차별점과 브랜드 신뢰 근거/g, "product differentiation and brand-trust evidence")
+    .replace(/배송·교환·반품·환불 또는 주문제작 정책/g, "shipping, exchanges, returns, refunds, or made-to-order policies")
+    .replace(/AI가 기본 설명에 사용할 수 있는 브랜드·상품 정의[^.]*부족합니다\.?/g, "The site lacks a clear brand and product definition that AI can use for a basic description.")
+    .replace(/AI가 어떤 고객과 구매 목적에 적합한 상품인지[^.]*부족합니다\.?/g, "The site lacks target-customer and product-selection guidance for different purchase purposes.")
+    .replace(/AI가 상품 확인[^.]*절차[^.]*부족합니다\.?/g, "The site lacks a clear product discovery, ordering, shipping, or made-to-order process.")
+    .replace(/AI가 가격과 구매 조건[^.]*부족합니다\.?/g, "The site lacks product prices, stock status, shipping fees, payment terms, and purchase-policy information.")
+    .replace(/AI가 고객지원[^.]*부족합니다\.?/g, "The site lacks clear customer-support and contact-channel information.")
+    .replace(/AI가 개인정보[^.]*부족합니다\.?/g, "The site lacks information about personal, order, payment, and shipping data handling.")
+    .replace(/AI가 상품을 비교·추천할 때[^.]*부족합니다\.?/g, "The site lacks product differentiation and verifiable brand-trust evidence for AI comparison and recommendation.")
+    .replace(/배송·교환·반품·환불·주문제작[^.]*부족합니다\.?/g, "The site lacks shipping, exchange, return, refund, made-to-order change and cancellation, and after-sales service policies.")
+    .replace(/보강하세요\.?/g, "Add clear, user-visible information in the initial HTML and link to the relevant detail or policy pages.");
 }
 
 function translatePdfUnderstandingText(
@@ -522,7 +565,21 @@ export function translatePdfContentReadinessText(
     .replace(/상품 선택 상황/g, "product-selection situations")
     .replace(/상품 가격/g, "product prices")
     .replace(/재고/g, "stock")
-    .replace(/주문·결제·배송정보 처리/g, "order, payment, and shipping data handling");
+    .replace(/주문·결제·배송정보 처리/g, "order, payment, and shipping data handling")
+    .replace(/현재 QUICK 증거/g, "the current QUICK evidence")
+    .replace(/현재 증거/g, "the current evidence")
+    .replace(/충분히 확인하지 못했습니다/g, "did not sufficiently confirm this information")
+    .replace(/확인이 필요합니다/g, "needs additional review")
+    .replace(/초기 HTML에서도 읽히게 해 주세요/g, "make it readable in the initial HTML")
+    .replace(/사용자 화면과 초기 HTML/g, "the user-facing page and initial HTML")
+    .replace(/실제 제공 사실만 작성되어 있다/g, "Only verified facts are stated")
+    .replace(/운영자가 사실관계를 확인/g, "the operator should verify the facts")
+    .replace(/사용자에게도 보이는 내용/g, "content visible to users")
+    .replace(/서비스의 정의·대상·이용 절차·요금·데이터 처리·FAQ/g, "brand and product definition, target customers, purchase process, product prices, data handling, and FAQs")
+    .replace(/서비스 정의/g, "brand and product definition")
+    .replace(/이용 절차/g, "purchase process")
+    .replace(/요금/g, "product prices")
+    .replace(/자료 처리/g, "data handling");
 }
 
 function translatePdfContentReadinessList(
@@ -913,6 +970,31 @@ function userFacingEvidenceValue(value: unknown): unknown {
   );
 }
 
+const PDF_EVIDENCE_SIGNAL_EN: Record<string, string> = {
+  "브랜드·상품 정의": "Brand and product definition",
+  "구매 대상·상품 선택 상황": "Target customers and product-selection situations",
+  "상품 확인·주문·배송 또는 맞춤 제작 절차": "Product discovery, ordering, shipping, or made-to-order process",
+  "상품 가격·구매 범위": "Product prices and purchase scope",
+  "상품 가격·재고·구매 조건": "Product prices, stock, and purchase terms",
+  "고객지원·문의 채널": "Customer support and contact channels",
+  "개인정보·주문·결제·배송정보 처리": "Personal, order, payment, and shipping data handling",
+  "상품 차별점·브랜드 신뢰 근거": "Product differentiation and brand-trust evidence",
+  "배송·교환·반품·환불·주문제작·A/S 정책": "Shipping, exchanges, returns, refunds, made-to-order, and after-sales policies",
+};
+
+function localizedEvidenceValue(value: unknown, locale: "ko" | "en"): unknown {
+  if (locale !== "en") return value;
+  if (Array.isArray(value)) return value.map((item) => localizedEvidenceValue(item, locale));
+  if (typeof value === "string") return PDF_EVIDENCE_SIGNAL_EN[value] ?? value;
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).map(([key, item]) => [
+      key,
+      localizedEvidenceValue(item, locale),
+    ]),
+  );
+}
+
 function evidenceText(value: unknown, locale: "ko" | "en" = "ko"): string {
   if (value === null || value === undefined) {
     return locale === "en"
@@ -923,7 +1005,10 @@ function evidenceText(value: unknown, locale: "ko" | "en" = "ko"): string {
   try {
     return cleanText(
       JSON.stringify(
-        userFacingEvidenceValue(sanitizeEvidenceValue(value)),
+        localizedEvidenceValue(
+          userFacingEvidenceValue(sanitizeEvidenceValue(value)),
+          locale,
+        ),
         null,
         2,
       ),

@@ -5,6 +5,7 @@ import type {
   PublicWorkOrder,
   PublicWorkOrderItem,
 } from "./work-order-service";
+import { buildWorkOrderTemplate } from "./work-order-templates";
 
 function workOrderScoreGoal(scoreBefore: number | null | undefined) {
   const current = Math.max(0, Math.min(100, Math.round(scoreBefore ?? 0)));
@@ -147,9 +148,44 @@ function workOrderFindingDescription(
   value: string,
   isEnglish: boolean,
 ): string {
-  return isEnglish
-    ? (WORK_ORDER_FINDING_DESCRIPTION_EN[value] ?? value)
-    : value;
+  if (!isEnglish) return value;
+
+  const exact = WORK_ORDER_FINDING_DESCRIPTION_EN[value];
+  if (exact) return exact;
+
+  return value
+    .replace(
+      /AI가 기본 설명에 사용할 수 있는 브랜드·상품 정의[^.]*부족합니다.?/g,
+      "The site lacks a clear brand and product definition that AI can use for a basic description.",
+    )
+    .replace(
+      /AI가 어떤 고객과 구매 목적에 적합한 상품인지[^.]*부족합니다.?/g,
+      "The site lacks target-customer and product-selection guidance for different purchase purposes.",
+    )
+    .replace(
+      /AI가 상품 확인[^.]*절차[^.]*부족합니다.?/g,
+      "The site lacks a clear process for product review, option selection, ordering, payment, shipping or made-to-order production, and after-sales service.",
+    )
+    .replace(
+      /AI가 가격과 구매 조건[^.]*부족합니다.?/g,
+      "The site lacks product prices, stock status, shipping fees, payment terms, and purchase-policy information.",
+    )
+    .replace(
+      /AI가 고객지원[^.]*부족합니다.?/g,
+      "The site lacks clear customer-support and contact-channel information.",
+    )
+    .replace(
+      /AI가 개인정보[^.]*부족합니다.?/g,
+      "The site lacks information about personal, order, payment, and shipping data handling.",
+    )
+    .replace(
+      /AI가 상품을 비교·추천할 때[^.]*부족합니다.?/g,
+      "The site lacks product differentiation and verifiable brand-trust evidence for AI comparison and recommendation.",
+    )
+    .replace(
+      /배송·교환·반품·환불·주문제작[^.]*부족합니다.?/g,
+      "The site lacks shipping, exchange, return, refund, made-to-order change and cancellation, and after-sales service policies.",
+    );
 }
 
 const WORK_ORDER_RENDERED_TEXT_EN: Record<string, string> = {
@@ -294,10 +330,97 @@ function workOrderRenderedText(value: string, isEnglish: boolean): string {
       .replace(
         /초기 HTML 내부 링크 포함 비율은 ([0-9.]+)%입니다\./g,
         "Initial HTML internal link coverage is $1%.",
-      );
+      )
+      .replace(/서비스 정의/g, "brand and product definition")
+      .replace(/이용 대상/g, "target customers")
+      .replace(/대표 활용 사례/g, "representative product-selection situations")
+      .replace(/이용 절차/g, "purchase and fulfillment process")
+      .replace(/요금·데이터 처리/g, "product pricing and order-data handling")
+      .replace(/요금제/g, "product prices")
+      .replace(/무료·유료 이용 범위/g, "purchase scope and conditions")
+      .replace(/개인정보·입력자료 처리 방식/g, "personal and order-data handling")
+      .replace(/입력자료 처리/g, "order and custom-request data handling")
+      .replace(/결과물/g, "delivered product")
+      .replace(/사용자가 준비할 정보/g, "options the customer must select")
+      .replace(/관련 정책 페이지/g, "relevant policy pages")
+      .replace(/표준 a 링크/g, "standard anchor links")
+      .replace(/사용자 화면/g, "user-facing page")
+      .replace(/작업으로 묶어 처리해 주세요\./g, "work item.");
   };
 
   return value.split("\n").map(translateLine).join("\n");
+}
+
+const WORK_ORDER_ITEM_TITLES_EN_BY_CODE: Record<string, string> = {
+  "ACCESS-LLMS-TXT-001": "Publish an accessible llms.txt",
+  "STRUCT-H1-001": "Add one representative H1 to the initial HTML",
+  "CONTENT-HEADINGS-001": "Build a clear H1/H2 heading hierarchy",
+  "CONTENT-INITIAL-001": "Provide meaningful body content in the initial HTML",
+  "CONTENT-ANSWERABILITY-001": "Add answerable product and purchase information to the initial HTML",
+  "STRUCT-LINKS-001": "Expose key internal pages as standard links",
+  "ACCESS-SITEMAP-001": "Declare and serve a public XML sitemap",
+  "META-CANONICAL-001": "Add a canonical link to the initial HTML head",
+  "META-OG-001": "Add Open Graph title and description",
+  "STRUCT-JSONLD-001": "Add valid Schema.org JSON-LD",
+  "STRUCT-JSONLD-TYPES-001": "Specify appropriate Schema.org @type values",
+  "STRUCT-JSONLD-SAMEAS-001": "Connect official brand channels with sameAs",
+  "CONTENT-CORE-DEFINITION-001": "Define the brand, products, and core value",
+  "CONTENT-AUDIENCE-USECASE-001": "Explain target customers and product-selection situations",
+  "CONTENT-WORKFLOW-OUTCOME-001": "Explain product discovery, ordering, shipping, and made-to-order steps",
+  "CONTENT-PRICING-TERMS-001": "Publish product prices, stock, and purchase terms",
+  "CONTENT-SUPPORT-CONTACT-001": "Publish customer-support and contact channels",
+  "CONTENT-DATA-POLICY-001": "Explain personal and order-data handling",
+  "CONTENT-DIFFERENTIATION-PROOF-001": "Provide product differentiation and brand-trust evidence",
+  "CONTENT-TRANSACTION-POLICY-001": "Publish shipping, returns, refunds, custom-order, and after-sales policies",
+  "RENDERED-ADDED-CONTENT": "Expose important rendered-only content and links in the initial HTML",
+  "RENDERED-INCONSISTENT-INFORMATION": "Align initial and rendered information",
+  "INITIAL-HTML-MISSING-CORE": "Add missing core information to the initial HTML",
+};
+
+export function localizedWorkOrderForPdf(
+  workOrder: PublicWorkOrder,
+  locale: "ko" | "en",
+): PublicWorkOrder {
+  if (locale !== "en") return workOrder;
+
+  return {
+    ...workOrder,
+    items: workOrder.items.map((item) => {
+      const currentTemplate = item.finding
+        ? buildWorkOrderTemplate(
+            {
+              ruleCode: item.finding.ruleCode,
+              title: item.title,
+              description: item.finding.description,
+              recommendation: item.finding.recommendation,
+              severity: item.finding.severity,
+              evidenceJson: item.finding.evidence,
+            },
+            "en",
+          )
+        : null;
+
+      return {
+        ...item,
+        title:
+          WORK_ORDER_ITEM_TITLES_EN_BY_CODE[item.itemCode] ??
+          workOrderRenderedText(item.title, true),
+        requirement:
+          currentTemplate?.requirement ??
+          workOrderRenderedText(item.requirement, true),
+        developerMessage:
+          currentTemplate?.developerMessage ??
+          workOrderRenderedText(item.developerMessage, true),
+        acceptanceCriteria:
+          currentTemplate?.acceptanceCriteria ??
+          item.acceptanceCriteria.map((criterion) => ({
+            ...criterion,
+            label: workOrderRenderedText(criterion.label, true),
+          })),
+        isRequired: currentTemplate?.isRequired ?? item.isRequired,
+      };
+    }),
+  };
 }
 
 function fontPaths(filename: string): string[] {
@@ -920,6 +1043,8 @@ function writeCover(
     isEnglish
       ? "This work order is written to target the displayed score range and improve the remaining items. Actual scores may vary depending on deployment status, server responses, robots.txt, llms.txt, structured data, and AI bot accessibility."
       : "이 작업지시서는 표시된 목표 점수 범위와 남은 항목 개선을 기준으로 작성되었습니다. 실제 점수는 배포 상태, 서버 응답, robots.txt, llms.txt, 구조화 데이터 반영 여부, AI 봇 접근성에 따라 달라질 수 있습니다.",
+    x,
+    document.y,
     {
       width,
       lineGap: 2,
@@ -1484,6 +1609,10 @@ export async function renderWorkOrderPdf(
   options: { locale?: "ko" | "en" } = {},
 ): Promise<Buffer> {
   const isEnglish = options.locale === "en";
+  workOrder = localizedWorkOrderForPdf(
+    workOrder,
+    isEnglish ? "en" : "ko",
+  );
   const regularFontPath = requireFontPath("Pretendard-Regular.ttf");
   const boldFontPath = requireFontPath("Pretendard-SemiBold.ttf");
 

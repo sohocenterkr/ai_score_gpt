@@ -8,6 +8,7 @@ import {
   scanResultRenderedDomComparison,
   SCAN_RESULT_PDF_RENDERER_VERSION,
   translatePdfContentReadinessText,
+  translatePdfDiagnosticText,
 } from "./scan-result-pdf";
 import type { PublicScanResult } from "./scan-result-service";
 
@@ -271,7 +272,7 @@ describe("scan result PDF", () => {
     expect(plans[0]?.developerInstructions.join(" ")).toContain("상품 카테고리");
     expect(plans[0]?.acceptanceCriteria.join(" ")).toContain("브랜드·대표 제품군");
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.08-en-commerce-consistency-v15",
+      "2026.08-en-actual-output-v16",
     );
   });
 
@@ -343,6 +344,18 @@ describe("scan result PDF", () => {
     expect(
       translatePdfContentReadinessText("상품 가격·배송비·추가 제작비는 어떻게 되나요?", "en"),
     ).toContain("product prices");
+    expect(
+      translatePdfDiagnosticText(
+        "AI가 어떤 고객과 구매 목적에 적합한 상품인지 답하기 위한 구매 대상·상품 선택 기준이 부족합니다.",
+        "en",
+      ),
+    ).toContain("target-customer");
+    expect(
+      translatePdfContentReadinessText(
+        "자동분류 사이트 유형은 전자상거래·상품판매형이며 분류 신뢰도는 높음입니다.",
+        "en",
+      ),
+    ).not.toMatch(/[가-힣]/);
   });
 
 });
