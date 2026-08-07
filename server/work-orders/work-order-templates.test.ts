@@ -234,6 +234,19 @@ describe("commerce work order wording", () => {
     expect(text).toContain("product-selection criteria");
     expect(text).toContain("Do not introduce SSR/SSG solely for this item");
 
+    const lowSeverityCommerceHeading = buildWorkOrderTemplate(
+      {
+        ruleCode: "CONTENT-HEADINGS-001",
+        title: "제목 계층 구조",
+        description: "H1과 H2 제목 계층이 부족합니다.",
+        recommendation: null,
+        severity: "LOW",
+        evidenceJson: commerceEvidence,
+      },
+      "ko",
+    );
+    expect(lowSeverityCommerceHeading.isRequired).toBe(true);
+
     const genericHeading = buildWorkOrderTemplate(
       {
         ruleCode: "CONTENT-HEADINGS-001",

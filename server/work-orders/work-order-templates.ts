@@ -33,7 +33,7 @@ interface RenderedImprovementTemplateInput {
   acceptanceCriteria: string[];
 }
 
-export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v8-en-final-layout";
+export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v9-final-layout";
 
 const templates: Record<string, WorkOrderTemplate> = {
   "STRUCT-H1-001": {
@@ -1449,6 +1449,7 @@ export function buildWorkOrderTemplate(
   const isCommerce = evidence?.siteArchetype === "ECOMMERCE";
   if (isCommerce) {
     const isRequired =
+      finding.ruleCode === "CONTENT-HEADINGS-001" ||
       finding.severity === "CRITICAL" ||
       finding.severity === "HIGH" ||
       finding.severity === "MEDIUM";
