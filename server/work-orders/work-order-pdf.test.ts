@@ -102,4 +102,14 @@ describe("work order PDF", () => {
   it("안전한 PDF 파일명을 만든다", () => {
     expect(workOrderPdfFilename(workOrder)).toBe("WO-20260615-34838-v1.pdf");
   });
+
+  it("renders an English work-order PDF", async () => {
+    const result = await renderWorkOrderPdf(workOrder, { locale: "en" });
+    const source = result.toString("latin1");
+    const pageCount = source.match(/\/Type\s*\/Page\b/g)?.length ?? 0;
+    expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+    expect(result.length).toBeGreaterThan(10_000);
+    expect(pageCount).toBe(4);
+  }, 45_000);
+
 });

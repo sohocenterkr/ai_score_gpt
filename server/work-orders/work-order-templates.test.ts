@@ -165,4 +165,51 @@ describe("commerce work order wording", () => {
     expect(text).not.toContain("서비스 정의");
     expect(text).not.toContain("무료·유료 이용 범위");
   });
+
+  it("uses complete English e-commerce templates without SaaS wording", () => {
+    const ruleCodes = [
+      "ACCESS-LLMS-TXT-001",
+      "STRUCT-H1-001",
+      "CONTENT-HEADINGS-001",
+      "STRUCT-LINKS-001",
+      "CONTENT-CORE-DEFINITION-001",
+      "CONTENT-AUDIENCE-USECASE-001",
+      "CONTENT-WORKFLOW-OUTCOME-001",
+      "CONTENT-PRICING-TERMS-001",
+      "CONTENT-DATA-POLICY-001",
+      "CONTENT-DIFFERENTIATION-PROOF-001",
+      "CONTENT-TRANSACTION-POLICY-001",
+    ];
+    const templates = ruleCodes.map((ruleCode) =>
+      buildWorkOrderTemplate(
+        {
+          ruleCode,
+          title: ruleCode,
+          description: "E-commerce improvement item.",
+          recommendation: null,
+          severity: "MEDIUM",
+          evidenceJson: commerceEvidence,
+        },
+        "en",
+      ),
+    );
+    const text = JSON.stringify(templates);
+    for (const phrase of [
+      "SaaS",
+      "service definition",
+      "free and paid plans",
+      "free/paid",
+      "URL input",
+      "WebApplication",
+      "usage process and deliverables",
+    ]) {
+      expect(text.toLowerCase()).not.toContain(phrase.toLowerCase());
+    }
+    expect(text.toLowerCase()).toContain("brand and product");
+    expect(text).toContain("ordering and payment");
+    expect(text).toContain("shipping data");
+    expect(text).toContain("made-to-order cancellation");
+    expect(text).toContain("after-sales service");
+  });
+
 });

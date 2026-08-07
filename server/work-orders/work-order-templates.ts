@@ -33,7 +33,7 @@ interface RenderedImprovementTemplateInput {
   acceptanceCriteria: string[];
 }
 
-export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v4";
+export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v5-en-commerce";
 
 const templates: Record<string, WorkOrderTemplate> = {
   "STRUCT-H1-001": {
@@ -1214,6 +1214,143 @@ function ecommerceWorkOrderTemplate(
   }
 }
 
+
+function ecommerceWorkOrderTemplateEn(
+  ruleCode: string,
+  isRequired: boolean,
+): WorkOrderTemplate | null {
+  const make = (
+    requirement: string,
+    developerMessage: string,
+    criteria: Array<[string, string]>,
+  ): WorkOrderTemplate => ({
+    requirement,
+    developerMessage,
+    acceptanceCriteria: criteria.map(([code, label]) => ({
+      code,
+      label,
+      required: true,
+    })),
+    isRequired,
+  });
+
+  switch (ruleCode) {
+    case "ACCESS-LLMS-TXT-001":
+      return make(
+        "Provide /llms.txt at the site root with links to key e-commerce pages.",
+        "Serve /llms.txt publicly with a 2xx response. Include a concise brand and product-category summary plus Markdown links to product categories, brand information, stores, shipping, exchanges, returns, refunds, custom orders, after-sales service, privacy, terms, FAQs, and contact pages. Include only verified public information.",
+        [
+          ["LLMS-01", "The root /llms.txt returns a public 2xx response without authentication."],
+          ["LLMS-02", "It includes a brand and product-category summary and links to key product and policy pages."],
+          ["LLMS-03", "Shipping, returns, custom-order, after-sales service, FAQ, and contact links match real public URLs."],
+          ["LLMS-04", "It contains no private information or unverified claims."],
+        ],
+      );
+    case "STRUCT-H1-001":
+      return make(
+        "Provide exactly one H1 in the initial HTML and visible page that identifies the brand and main product categories.",
+        "Write one representative H1 that naturally includes the brand and primary product category. A full SSR/SSG migration is not required when meaningful initial HTML already exists; the same H1 meaning must be present in the server response and visible page.",
+        [
+          ["H1-01", "The initial HTML contains exactly one H1 identifying the brand and main product category."],
+          ["H1-02", "The visible H1 and initial HTML H1 communicate the same meaning."],
+          ["H1-03", "The heading is visible to users and is not hidden text."],
+        ],
+      );
+    case "CONTENT-HEADINGS-001":
+      return make(
+        "Use H2 headings for the brand, main product categories, materials and production, purchasing, shipping, after-sales service, and policies.",
+        "Under the H1, create real H2 sections for the brand, main product categories, materials and craftsmanship, ordering or made-to-order purchasing, shipping, exchanges, returns, refunds, warranty, after-sales service, and FAQs. Do not introduce SSR/SSG solely for this item when the initial body is already sufficient.",
+        [
+          ["HEADINGS-01", "A logical H1/H2 hierarchy is present in the initial HTML."],
+          ["HEADINGS-02", "H2 headings match real e-commerce sections on the page."],
+          ["HEADINGS-03", "No empty or purely decorative headings are used."],
+        ],
+      );
+    case "STRUCT-LINKS-001":
+      return make(
+        "Provide standard initial-HTML links to product categories, brand information, stores, shipping and return policies, after-sales service, and FAQs.",
+        "Use standard anchor elements with href attributes, not only JavaScript click handlers, for product categories, brand information, stores, made-to-order guidance, shipping, exchanges, returns, refunds, privacy, terms, after-sales service, and FAQs.",
+        [
+          ["LINKS-01", "Key e-commerce paths are available as href links in the initial HTML."],
+          ["LINKS-02", "Template variables and malformed URLs are not exposed as links."],
+          ["LINKS-03", "Link text clearly describes each destination."],
+        ],
+      );
+    case "CONTENT-CORE-DEFINITION-001":
+      return make(
+        "Explain the brand identity, main product categories, materials, production methods, selectable options, warranty, and after-sales service in the visible page and initial HTML.",
+        "On the landing and brand pages, publish official copy explaining what the brand is, what products it makes and sells, its main product categories, materials, production methods, selectable options, warranty, and after-sales service. The same facts must be visible to users and available in the initial HTML.",
+        [
+          ["CORE-DEFINITION-01", "The page clearly explains the brand and products sold."],
+          ["CORE-DEFINITION-02", "Product categories, materials, production methods, and options match actual offerings."],
+          ["CORE-DEFINITION-03", "Warranty and after-sales service coverage can be confirmed."],
+        ],
+      );
+    case "CONTENT-AUDIENCE-USECASE-001":
+      return make(
+        "Explain target customers, purchase purposes, product-selection criteria by use, and recommended customers for each main product category.",
+        "Describe which customers and purchase purposes each product suits. Add truthful selection guidance for gifts, events, daily use, and style preferences, along with recommended customers for each main product category.",
+        [
+          ["AUDIENCE-USECASE-01", "Target customers and purchase purposes are described specifically."],
+          ["AUDIENCE-USECASE-02", "Selection situations for gifts, events, daily use, or style can be understood."],
+          ["AUDIENCE-USECASE-03", "Recommendations and selection criteria are presented without exaggeration."],
+        ],
+      );
+    case "CONTENT-WORKFLOW-OUTCOME-001":
+      return make(
+        "Explain the 3-5 step process from product discovery through ordering, payment, shipping or made-to-order production, delivery, and after-sales service.",
+        "Describe the real purchase flow in order: product review, stock and option selection, ordering and payment, shipping or made-to-order production, delivery, warranty, and after-sales service. Also state selectable materials, colors, sizes, options, and expected shipping or production time.",
+        [
+          ["WORKFLOW-OUTCOME-01", "The actual process from product discovery to delivery and after-sales service is shown in 3-5 steps."],
+          ["WORKFLOW-OUTCOME-02", "Customers can confirm materials, colors, sizes, options, and expected shipping or production time."],
+          ["WORKFLOW-OUTCOME-03", "The described process matches the actual ordering, payment, shipping, or made-to-order process."],
+        ],
+      );
+    case "CONTENT-PRICING-TERMS-001":
+      return make(
+        "Show product prices, stock or order availability, shipping fees, made-to-order surcharges, payment terms, and cancellation and refund conditions.",
+        "Present actual product prices, stock and order availability, shipping fees, made-to-order surcharges, payment terms, exchange and refund rules, and made-to-order cancellation conditions in a table or FAQ.",
+        [
+          ["PRICING-TERMS-01", "Product prices and stock, sold-out, or made-to-order status can be confirmed."],
+          ["PRICING-TERMS-02", "Shipping fees, surcharges, payment methods, and payment terms can be confirmed."],
+          ["PRICING-TERMS-03", "Exchange, refund, and made-to-order cancellation conditions match the actual policy."],
+        ],
+      );
+    case "CONTENT-DATA-POLICY-001":
+      return make(
+        "Explain how account, order, payment, shipping, and custom-order request data is processed, retained, and deleted.",
+        "Publish official information explaining how customer account data, purchaser information, payment information, shipping addresses, and custom-order request details are collected, used, retained, and deleted. Provide the privacy policy and terms as standard links with href attributes.",
+        [
+          ["DATA-POLICY-01", "Personal, order, payment, and shipping data handling is clearly explained."],
+          ["DATA-POLICY-02", "Retention and deletion rules for personal and order information can be confirmed."],
+          ["DATA-POLICY-03", "The privacy policy and terms are available through standard href links."],
+        ],
+      );
+    case "CONTENT-DIFFERENTIATION-PROOF-001":
+      return make(
+        "Provide factual product and brand differentiation plus evidence of production quality and customer trust.",
+        "Publish verifiable evidence such as differences from comparable brands and ordinary products, representative products and production examples, materials and grades, production processes, artisan credentials, awards, stores, after-sales service, and real customer reviews or purchase cases.",
+        [
+          ["DIFFERENTIATION-PROOF-01", "Product and brand differentiation is explained with comparable facts."],
+          ["DIFFERENTIATION-PROOF-02", "At least one specific product, production, material, or process example is provided."],
+          ["DIFFERENTIATION-PROOF-03", "Sources for public trust evidence such as credentials, awards, stores, after-sales service, or reviews can be confirmed."],
+        ],
+      );
+    case "CONTENT-TRANSACTION-POLICY-001":
+      return make(
+        "Explain shipping, exchange, return, refund, made-to-order change and cancellation, and after-sales service policies in the visible page and initial HTML.",
+        "Clearly state shipping methods and timeframes, shipping fees, exchange, return and refund rules, cancellation deadlines, limits on changing or cancelling made-to-order products, defective or incorrect shipment handling, and after-sales service procedures and costs.",
+        [
+          ["TRANSACTION-POLICY-01", "Shipping methods, timeframes, and fees can be confirmed."],
+          ["TRANSACTION-POLICY-02", "Exchange, return, refund, cancellation, and made-to-order change limits can be confirmed."],
+          ["TRANSACTION-POLICY-03", "Defective or incorrect shipment handling and after-sales service procedures and costs can be confirmed."],
+        ],
+      );
+    default:
+      return null;
+  }
+}
+
 function contextualizeTemplate(
   template: WorkOrderTemplate,
   finding: FindingTemplateInput,
@@ -1224,10 +1361,11 @@ function contextualizeTemplate(
     ? evidence.siteArchetype
     : null;
   const isCommerce = archetype === "ECOMMERCE";
-  const exactCommerceTemplate =
-    locale === "ko" && isCommerce
-      ? ecommerceWorkOrderTemplate(finding.ruleCode, template.isRequired)
-      : null;
+  const exactCommerceTemplate = isCommerce
+    ? locale === "en"
+      ? ecommerceWorkOrderTemplateEn(finding.ruleCode, template.isRequired)
+      : ecommerceWorkOrderTemplate(finding.ruleCode, template.isRequired)
+    : null;
 
   if (exactCommerceTemplate) {
     return exactCommerceTemplate;
@@ -1307,6 +1445,20 @@ export function buildWorkOrderTemplate(
   finding: FindingTemplateInput,
   locale: WorkOrderTemplateLocale = "ko",
 ): WorkOrderTemplate {
+  const evidence = evidenceRecord(finding.evidenceJson);
+  const isCommerce = evidence?.siteArchetype === "ECOMMERCE";
+  if (isCommerce) {
+    const isRequired =
+      finding.severity === "CRITICAL" ||
+      finding.severity === "HIGH" ||
+      finding.severity === "MEDIUM";
+    const commerceTemplate =
+      locale === "en"
+        ? ecommerceWorkOrderTemplateEn(finding.ruleCode, isRequired)
+        : ecommerceWorkOrderTemplate(finding.ruleCode, isRequired);
+    if (commerceTemplate) return commerceTemplate;
+  }
+
   const defined =
     locale === "en"
       ? templatesEn[finding.ruleCode]

@@ -7,6 +7,7 @@ import {
   scanResultPdfFontHash,
   scanResultRenderedDomComparison,
   SCAN_RESULT_PDF_RENDERER_VERSION,
+  translatePdfContentReadinessText,
 } from "./scan-result-pdf";
 import type { PublicScanResult } from "./scan-result-service";
 
@@ -270,7 +271,7 @@ describe("scan result PDF", () => {
     expect(plans[0]?.developerInstructions.join(" ")).toContain("상품 카테고리");
     expect(plans[0]?.acceptanceCriteria.join(" ")).toContain("브랜드·대표 제품군");
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.08-user-facing-evidence-v14",
+      "2026.08-en-commerce-consistency-v15",
     );
   });
 
@@ -302,4 +303,46 @@ describe("scan result PDF", () => {
     expect(scanResultPdfFontHash()).toMatch(/^[a-f0-9]{64}$/);
     expect(scanResultPdfFontHash()).toBe(scanResultPdfFontHash());
   });
+
+  it("renders an English diagnostic PDF", async () => {
+    const englishResult: PublicScanResult = {
+      ...sampleResult,
+      site: { ...sampleResult.site, name: "Example Store", primaryLocale: "en" },
+      scan: { ...sampleResult.scan, locale: "en" },
+      findings: sampleResult.findings.map((finding, index) =>
+        index === 0
+          ? {
+              ...finding,
+              evidence: {
+                ...(finding.evidence as Record<string, unknown>),
+                siteArchetype: "ECOMMERCE",
+                conversionIntent: "DIRECT_PAYMENT",
+              },
+            }
+          : finding,
+      ),
+    };
+    const result = await renderScanResultPdf(englishResult);
+    const source = result.toString("latin1");
+    expect(result.subarray(0, 5).toString("ascii")).toBe("%PDF-");
+    expect(result.length).toBeGreaterThan(10_000);
+    expect(source.match(/\/Type\s*\/Page\b/g)?.length ?? 0).toBeGreaterThanOrEqual(8);
+  }, 45_000);
+
+  it("uses e-commerce language in English diagnostic guidance", () => {
+    const comparison = scanResultRenderedDomComparison(sampleResult);
+    const plans = buildRenderedDomImprovementPlans(comparison, "en", "ECOMMERCE");
+    const text = JSON.stringify(plans);
+    expect(text).toContain("full SSR/SSG migration is not required");
+    expect(text).toContain("standard anchor links");
+    expect(text).not.toContain("서비스 정의");
+    expect(text).not.toContain("요금제");
+    expect(
+      translatePdfContentReadinessText("브랜드·상품 정의와 핵심 가치", "en"),
+    ).toBe("Brand and product definition and core value");
+    expect(
+      translatePdfContentReadinessText("상품 가격·배송비·추가 제작비는 어떻게 되나요?", "en"),
+    ).toContain("product prices");
+  });
+
 });

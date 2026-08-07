@@ -109,6 +109,20 @@ const SEVERITY_LABELS_EN: Record<string, string> = {
 };
 
 const WORK_ORDER_FINDING_DESCRIPTION_EN: Record<string, string> = {
+  "AI가 이 사이트가 무엇을 제공하는지 답하기 위한 브랜드·상품 정의가 부족합니다.":
+    "The site lacks a clear brand and product definition for AI answers.",
+  "AI가 어떤 고객과 구매 목적에 적합한 상품인지 답하기 위한 구매 대상·상품 선택 기준이 부족합니다.":
+    "The site lacks target-customer, purchase-purpose, and product-selection guidance for AI answers.",
+  "AI가 상품 확인부터 주문·배송 또는 맞춤 제작까지 답하기 위한 단계별 설명이 부족합니다.":
+    "The site lacks a clear process for product review, ordering, shipping, or made-to-order production.",
+  "AI가 상품 가격과 구매 범위를 답하기 위한 상품 가격·재고·주문 가능 정보가 부족합니다.":
+    "The site lacks product price, stock, and order-availability information.",
+  "AI가 개인정보·주문정보 처리와 보안 관련 질문에 답하기 위한 개인정보·주문정보 처리 설명이 부족합니다.":
+    "The site lacks information about personal, order, payment, and shipping data handling.",
+  "AI가 상품을 비교·추천할 때 사용할 상품 차별점과 브랜드 신뢰 근거가 부족합니다.":
+    "The site lacks product differentiation and verifiable brand-trust evidence for AI comparison and recommendation.",
+  "배송·교환·반품·환불·주문제작 변경 및 취소·A/S 정책 정보가 부족합니다.":
+    "The site lacks shipping, exchange, return, refund, made-to-order change and cancellation, and after-sales service policies.",
   "초기 HTML에서 유효한 JSON-LD 구조화 데이터를 찾지 못했습니다.":
     "No valid JSON-LD structured data was found in the initial HTML.",
   "유효한 JSON-LD 구조화 데이터를 확인하지 못했습니다.":
@@ -1162,33 +1176,50 @@ function writeExecutionPlanPage(
       );
     }
 
-    const structuredDataEpic = relevantEpics.find(
+    for (const structuredDataEpic of relevantEpics.filter(
       (epic) => epic.priority === "P1" || epic.priority === "P3",
-    );
-    if (structuredDataEpic && !isEnglish) {
-      structuredDataEpic.body = [
-        "Organization·Brand·WebSite를 기본 개체로 연결하고 상품 페이지에는 Product·Offer를 적용합니다.",
-        "오프라인 매장이 있으면 Store 또는 LocalBusiness를 사용하고 BreadcrumbList와 필요한 경우 FAQPage를 추가합니다.",
-        "전자상거래형 기본 권고에서는 WebApplication을 사용하지 않으며 가격·재고·판매 상태를 실제 화면과 일치시킵니다.",
-      ];
+    )) {
+      structuredDataEpic.body = isEnglish
+        ? [
+            "Connect Organization, Brand, and WebSite as the core entities, and use Product and Offer on product pages.",
+            "Use Store or LocalBusiness for physical stores, BreadcrumbList for navigation, and FAQPage only when matching FAQs are visible on the page.",
+            "Do not use WebApplication as the default e-commerce type. Keep price, currency, availability, and seller information consistent with the visible page.",
+          ]
+        : [
+            "Organization·Brand·WebSite를 기본 개체로 연결하고 상품 페이지에는 Product·Offer를 적용합니다.",
+            "오프라인 매장이 있으면 Store 또는 LocalBusiness를 사용하고 BreadcrumbList와 필요한 경우 FAQPage를 추가합니다.",
+            "전자상거래형 기본 권고에서는 WebApplication을 사용하지 않으며 가격·재고·판매 상태를 실제 화면과 일치시킵니다.",
+          ];
     }
 
     const contentEpic = relevantEpics.find((epic) => epic.priority === "P2");
-    if (contentEpic && !isEnglish) {
-      contentEpic.body = [
-        "브랜드 정체성, 대표 제품군, 사용 소재, 제작 방식, 고객이 선택할 수 있는 제품·옵션을 명확히 설명합니다.",
-        "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작, 수령 후 품질보증·A/S 흐름을 안내합니다.",
-        "상품별 판매가격, 재고·품절·주문제작 여부, 배송비, 추가 제작비, 결제 방법, 교환·환불 및 주문제작 취소 조건을 표시합니다.",
-      ];
+    if (contentEpic) {
+      contentEpic.body = isEnglish
+        ? [
+            "Explain the brand identity, main product categories, materials, production methods, and selectable products and options.",
+            "Describe product review, stock and option selection, ordering and payment, shipping or made-to-order production, delivery, warranty, and after-sales service.",
+            "Show product prices, stock or made-to-order status, shipping fees, surcharges, payment methods, exchanges, refunds, and made-to-order cancellation conditions.",
+          ]
+        : [
+            "브랜드 정체성, 대표 제품군, 사용 소재, 제작 방식, 고객이 선택할 수 있는 제품·옵션을 명확히 설명합니다.",
+            "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작, 수령 후 품질보증·A/S 흐름을 안내합니다.",
+            "상품별 판매가격, 재고·품절·주문제작 여부, 배송비, 추가 제작비, 결제 방법, 교환·환불 및 주문제작 취소 조건을 표시합니다.",
+          ];
     }
 
     const policyEpic = relevantEpics.find((epic) => epic.priority === "P4");
-    if (policyEpic && !isEnglish) {
-      policyEpic.body = [
-        "회원·주문·결제·배송·맞춤 제작 요청정보의 수집·이용·보관·파기 기준과 정책 링크를 확인합니다.",
-        "배송 방법·기간·배송비, 교환·반품·환불, 주문제작 변경·취소 제한, 불량·오배송 처리 기준을 안내합니다.",
-        "제품·브랜드 차별점, 제작 근거, 장인·수상·매장·A/S·고객 후기 중 검증 가능한 신뢰 근거를 제공합니다.",
-      ];
+    if (policyEpic) {
+      policyEpic.body = isEnglish
+        ? [
+            "Verify collection, use, retention, deletion, and policy links for account, order, payment, shipping, and custom-order request information.",
+            "Explain shipping methods, timeframes and fees; exchanges, returns and refunds; made-to-order change or cancellation limits; and defective or incorrect shipment handling.",
+            "Provide verifiable evidence of product and brand differentiation, production quality, artisan credentials, awards, stores, after-sales service, or customer reviews.",
+          ]
+        : [
+            "회원·주문·결제·배송·맞춤 제작 요청정보의 수집·이용·보관·파기 기준과 정책 링크를 확인합니다.",
+            "배송 방법·기간·배송비, 교환·반품·환불, 주문제작 변경·취소 제한, 불량·오배송 처리 기준을 안내합니다.",
+            "제품·브랜드 차별점, 제작 근거, 장인·수상·매장·A/S·고객 후기 중 검증 가능한 신뢰 근거를 제공합니다.",
+          ];
     }
   }
 
@@ -1228,7 +1259,9 @@ function writeExecutionPlanPage(
     document,
     isEnglish ? "Re-diagnostic principles" : "재진단 원칙",
     isEnglish
-      ? "After deploying the selected work, start the next Site AI Score diagnostic against the same production URL before treating the listed items as complete. If possible, also ask ChatGPT, Perplexity, and Claude real service-description questions to manually confirm that AI systems describe the service without distortion. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
+      ? isCommerce
+        ? "After deploying the selected work, run the next Site AI Score diagnostic against the same production URL. If possible, ask ChatGPT, Perplexity, and Claude real product and brand recommendation questions and confirm that product categories, purchase terms, shipping, returns, and after-sales service are described accurately. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
+        : "After deploying the selected work, start the next Site AI Score diagnostic against the same production URL before treating the listed items as complete. If possible, also ask ChatGPT, Perplexity, and Claude real site-description questions to confirm that the site is described accurately. The 800-character and 75% values are internal reference criteria and do not guarantee AI search visibility or recommendation results."
       : isCommerce
         ? "실제 선택된 작업을 운영 URL에 배포한 뒤 같은 URL로 다음 차수 Site AI Score 진단을 실행하여 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 상품·브랜드 추천 질문을 던져 AI가 제품군·구매 조건·배송·A/S를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다."
         : "실제 선택된 작업을 운영 URL에 배포한 뒤 같은 URL로 다음 차수 Site AI Score 진단을 실행하여 완료 여부를 판단해 주세요. 가능하면 ChatGPT·Perplexity·Claude 등에 실제 서비스 설명 질문을 던져 AI가 서비스를 왜곡 없이 설명하는지 수동 확인해 주세요. 800자와 75%는 내부 참고 기준이며 AI 검색 노출이나 추천 결과를 보장하지 않습니다.",

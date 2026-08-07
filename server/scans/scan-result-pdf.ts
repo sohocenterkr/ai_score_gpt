@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-user-facing-evidence-v14";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-en-commerce-consistency-v15";
 
 let cachedFontHash: string | undefined;
 
@@ -377,6 +377,40 @@ function translatePdfUnderstandingText(
 }
 
 const PDF_CONTENT_READINESS_TEXT_EN: Record<string, string> = {
+  "브랜드·상품 정의와 핵심 가치": "Brand and product definition and core value",
+  "구매 대상과 상품 선택 상황": "Target customers and product-selection situations",
+  "상품 탐색·주문·배송·A/S 절차": "Product discovery, ordering, shipping, and after-sales service process",
+  "제품·옵션·배송 지원 범위와 제한 사항": "Product, option, and shipping scope and limitations",
+  "상품 가격·주문정보 처리·운영 주체": "Product prices, order-data handling, and operator information",
+  "호미가 어떤 상품을 제작·판매하나요?": "What products does Hormiga make and sell?",
+  "제품은 어떤 소재와 제작 특징을 가지고 있나요?": "What materials and production characteristics do the products have?",
+  "고객은 어떤 제품과 맞춤 제작 옵션을 선택할 수 있나요?": "Which products and made-to-order options can customers select?",
+  "어떤 고객에게 적합한 제품인가요?": "Which customers are these products suitable for?",
+  "선물·행사·일상 등 어떤 목적으로 선택할 수 있나요?": "For which purposes, such as gifts, events, or daily use, can customers select them?",
+  "대표적인 상품 선택 상황은 무엇인가요?": "What are representative product-selection situations?",
+  "상품을 어떤 순서로 선택하고 주문하나요?": "How do customers select and order products?",
+  "재고·소재·색상·크기·맞춤 제작 옵션은 어떻게 확인하나요?": "How can customers check stock, materials, colors, sizes, and made-to-order options?",
+  "배송 또는 맞춤 제작 기간과 수령 후 A/S는 어떻게 되나요?": "What are the shipping or production timeframes and after-sales service terms?",
+  "어떤 소재·색상·크기·맞춤 제작 옵션을 지원하나요?": "Which materials, colors, sizes, and made-to-order options are supported?",
+  "온라인 주문·매장 상담·배송 지원 범위는 무엇인가요?": "What is the scope of online ordering, store consultation, and shipping support?",
+  "상품 가격·배송비·추가 제작비는 어떻게 되나요?": "What are the product prices, shipping fees, and made-to-order surcharges?",
+  "주문자·결제·배송정보는 어떻게 처리되나요?": "How is purchaser, payment, and shipping information handled?",
+  "호미가 브랜드와 대표 상품": "Hormiga brand and main products",
+  "대표 제품군과 제작·판매 가치": "Main product categories and production value",
+  "고객이 선택할 수 있는 제품과 옵션": "Products and options customers can select",
+  "이런 고객과 용도에 추천합니다": "Recommended customers and uses",
+  "대표 상품 선택 상황": "Representative product-selection situations",
+  "사용 목적·선물·행사·스타일별 상품 선택": "Product selection by use, gift, event, or style",
+  "구매·주문제작·배송·교환·A/S 방법": "Purchasing, made-to-order, shipping, exchange, and after-sales service",
+  "상품 탐색·옵션 선택·주문·배송 단계": "Product discovery, option selection, ordering, and shipping steps",
+  "수령 제품·품질보증·A/S": "Delivered products, warranty, and after-sales service",
+  "제품·옵션·배송 지원 범위": "Product, option, and shipping support scope",
+  "주문·상담·배송 방식": "Ordering, consultation, and shipping methods",
+  "상품 가격과 이용 범위": "Product prices and purchase scope",
+  "개인정보·주문·결제·배송정보 처리": "Personal, order, payment, and shipping data handling",
+  "실제로 판매하는 제품·소재·옵션과 제공 조건만 사용해 2~4문장으로 작성하고 확인되지 않은 기능은 넣지 마세요.": "Write 2-4 sentences using only actual products, materials, options, and sales terms. Do not add unverified claims.",
+  "상품 확인, 재고·옵션 선택, 주문·결제, 배송 또는 맞춤 제작, 수령 후 A/S처럼 실제 이용 흐름을 3~5단계 순서 목록으로 구현하고 핵심 단계는 초기 HTML에서도 읽히게 해 주세요.": "Present the real process in 3-5 ordered steps: product review, stock and option selection, ordering and payment, shipping or made-to-order production, delivery, and after-sales service. Make the key steps readable in the initial HTML.",
+  "개인정보·주문·결제·배송정보 처리 방식": "Personal, order, payment, and shipping data handling",
   "800자와 75% 포함 비율은 Site AI Score가 기본 설명량과 렌더링 의존도를 비교하기 위해 사용하는 내부 참고 기준입니다. 모든 검색엔진이나 AI 서비스의 공통 공식 기준은 아니며, 핵심 목표는 글자 수 자체가 아니라 AI가 서비스의 정의·대상·이용 절차·요금·데이터 처리·FAQ를 정확히 인식하고 인용할 수 있게 하는 것입니다.":
     "The 800-character and 75% coverage values are internal Site AI Score reference criteria used to compare basic explanation volume and rendering dependency. They are not official universal standards for all search engines or AI services. The main goal is not the character count itself, but helping AI accurately recognize and cite the service definition, target users, usage process, pricing, data handling, and FAQs.",
   "위 항목은 현재 QUICK 증거에서 확인하지 못했거나 추가 검토가 필요한 후보입니다. 실제로 없다고 단정하지 않으며, 운영자가 사실관계를 확인한 뒤 사용자에게도 보이는 내용으로 작성해야 합니다.":
@@ -452,7 +486,7 @@ const PDF_CONTENT_READINESS_TEXT_EN: Record<string, string> = {
   "문의 및 지원": "Contact and support",
 };
 
-function translatePdfContentReadinessText(
+export function translatePdfContentReadinessText(
   value: string,
   locale: "ko" | "en",
 ): string {
@@ -480,7 +514,15 @@ function translatePdfContentReadinessText(
       /^(.+) 서비스는 무엇을 제공하나요\?$/g,
       "What does the $1 service provide?",
     )
-    .replace(/^(.+) 서비스란\?$/g, "What is the $1 service?");
+    .replace(/^(.+)는 어떤 상품을 제작·판매하나요\?$/g, "What products does $1 make and sell?")
+    .replace(/^(.+) 서비스란\?$/g, "What is the $1 service?")
+    .replace(/자동분류 사이트 유형은 전자상거래·상품판매형이며 분류 신뢰도는 높음입니다\./g, "The site was automatically classified as e-commerce / product sales with high confidence.")
+    .replace(/브랜드·상품 정의/g, "brand and product definition")
+    .replace(/구매 대상/g, "target customers")
+    .replace(/상품 선택 상황/g, "product-selection situations")
+    .replace(/상품 가격/g, "product prices")
+    .replace(/재고/g, "stock")
+    .replace(/주문·결제·배송정보 처리/g, "order, payment, and shipping data handling");
 }
 
 function translatePdfContentReadinessList(
@@ -1217,31 +1259,58 @@ export function buildRenderedDomImprovementPlans(
                 : "렌더링 후에만 추가되는 중요 내부 링크를 href가 있는 표준 a 링크로 초기 HTML에 포함해 주세요.",
               "기존 디자인·본문·사용자 기능을 제거하거나 비활성화하지 마세요.",
             ]
-        : [
-            isCommerce
-              ? "초기 HTML에서 " + ecommerceSummary + "을 이해할 수 있도록 실제 사용자 화면과 같은 내용을 보완해 주세요."
-              : "초기 HTML에서 사이트의 핵심 제공 내용·대상·이용 방법·정책을 이해할 수 있도록 실제 사용자 화면과 같은 내용을 보완해 주세요.",
-            "주요 내부 링크는 JavaScript 클릭 핸들러만 쓰지 말고 href가 있는 표준 a 링크로 제공해 주세요.",
-            "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하도록 하되 숨김 텍스트를 사용하지 마세요.",
-            "기존 디자인과 사용자 기능을 제거하거나 비활성화하지 마세요.",
-          ],
-      acceptanceCriteria: linkOnly
-        ? [
-            "초기 HTML 본문 포함 비율 " + bodyCoverageText + " 이상이 유지됩니다.",
-            isCommerce
-              ? "초기 HTML만 확인해도 " + ecommerceSummary + "을 이해할 수 있습니다."
-              : "초기 HTML만 확인해도 사이트의 핵심 내용과 정책 요약을 이해할 수 있습니다.",
-            "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
-            "기존 화면 디자인과 주요 사용자 기능이 정상 동작합니다.",
-          ]
-        : [
-            "초기 HTML 본문이 200자 이상이며 렌더링 DOM 본문의 75% 이상을 포함합니다.",
-            isCommerce
-              ? "초기 HTML만 확인해도 " + ecommerceSummary + "을 이해할 수 있습니다."
-              : "초기 HTML만 확인해도 사이트의 핵심 제공 내용·대상·이용 방법·정책을 이해할 수 있습니다.",
-            "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
-            "기존 화면 디자인과 주요 사용자 기능이 정상 동작합니다.",
-          ],
+        : isEnglish
+          ? [
+              isCommerce
+                ? "Make the brand, main product categories, target customers, product prices, stock, ordering, shipping, after-sales service, and policy summary readable in the initial HTML."
+                : "Make the site's main offering, audience, process, and policies readable in the initial HTML.",
+              "Provide important internal paths as standard anchor links with href attributes, not only JavaScript click handlers.",
+              "Keep at least 75% of rendered body content in the initial HTML without hidden text.",
+              "Preserve the existing design and user-facing functions.",
+            ]
+          : [
+              isCommerce
+                ? "초기 HTML에서 " + ecommerceSummary + "을 이해할 수 있도록 실제 사용자 화면과 같은 내용을 보완해 주세요."
+                : "초기 HTML에서 사이트의 핵심 제공 내용·대상·이용 방법·정책을 이해할 수 있도록 실제 사용자 화면과 같은 내용을 보완해 주세요.",
+              "주요 내부 링크는 JavaScript 클릭 핸들러만 쓰지 말고 href가 있는 표준 a 링크로 제공해 주세요.",
+              "초기 HTML 본문이 렌더링 DOM 본문의 75% 이상을 포함하도록 하되 숨김 텍스트를 사용하지 마세요.",
+              "기존 디자인과 사용자 기능을 제거하거나 비활성화하지 마세요.",
+            ],
+      acceptanceCriteria: isEnglish
+        ? linkOnly
+          ? [
+              "Initial HTML body coverage remains at or above " + bodyCoverageText + ".",
+              isCommerce
+                ? "The initial HTML explains the brand, main product categories, target customers, product prices, stock, ordering, shipping, after-sales service, and policy summary."
+                : "The initial HTML explains the site's core content and policy summary.",
+              "Important internal links exist in the initial HTML and the rendered-DOM difference is within the allowed range.",
+              "The existing design and major user-facing functions continue to work.",
+            ]
+          : [
+              "The initial HTML body contains at least 200 characters and at least 75% of the rendered body.",
+              isCommerce
+                ? "The initial HTML explains the brand, main product categories, target customers, product prices, stock, ordering, shipping, after-sales service, and policy summary."
+                : "The initial HTML explains the site's main offering, audience, process, and policies.",
+              "Important internal links exist in the initial HTML and the rendered-DOM difference is within the allowed range.",
+              "The existing design and major user-facing functions continue to work.",
+            ]
+        : linkOnly
+          ? [
+              "초기 HTML 본문 포함 비율 " + bodyCoverageText + " 이상이 유지됩니다.",
+              isCommerce
+                ? "초기 HTML만 확인해도 " + ecommerceSummary + "을 이해할 수 있습니다."
+                : "초기 HTML만 확인해도 사이트의 핵심 내용과 정책 요약을 이해할 수 있습니다.",
+              "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
+              "기존 화면 디자인과 주요 사용자 기능이 정상 동작합니다.",
+            ]
+          : [
+              "초기 HTML 본문이 200자 이상이며 렌더링 DOM 본문의 75% 이상을 포함합니다.",
+              isCommerce
+                ? "초기 HTML만 확인해도 " + ecommerceSummary + "을 이해할 수 있습니다."
+                : "초기 HTML만 확인해도 사이트의 핵심 제공 내용·대상·이용 방법·정책을 이해할 수 있습니다.",
+              "중요한 내부 링크가 초기 HTML에 존재하고 렌더링 DOM과의 차이가 허용 범위입니다.",
+              "기존 화면 디자인과 주요 사용자 기능이 정상 동작합니다.",
+            ],
     });
   }
 
@@ -1298,27 +1367,52 @@ export function buildRenderedDomImprovementPlans(
           : ""
       }`,
       meaning: isEnglish
-        ? "Some AI search systems use the initially received information, while others may use the fully rendered screen. If these values differ, the same page can be understood differently, increasing the risk that AI explains the service name, features, pricing, or data handling incorrectly."
+        ? isCommerce
+          ? "Some AI search systems use the initial response while others use the rendered page. If they differ, AI may misstate the brand, products, prices, stock, shipping, returns, or data-handling policies."
+          : "Some AI search systems use the initial response while others use the rendered page. If they differ, the same page can be understood inconsistently."
         : "AI 검색 시스템에 따라 처음 받은 정보를 사용하기도 하고 화면 완성 후의 정보를 사용하기도 합니다. 값이 다르면 같은 페이지를 서로 다르게 이해할 수 있으며, B2B 서비스에서는 AI가 서비스명·기능·요금·데이터 처리 방식을 잘못 설명할 위험이 커집니다.",
       change: isEnglish
-        ? "Exact character-by-character equality is not required, but important facts and meanings such as page topic, service name, core features, pricing, data handling, and operator information should match before and after rendering."
+        ? isCommerce
+          ? "Exact character equality is not required, but the brand, product categories, prices, stock, shipping, returns, operator information, and data-handling facts must remain consistent before and after rendering."
+          : "Exact character equality is not required, but the page topic, main offering, policies, and operator information must remain consistent before and after rendering."
         : "글자 하나까지 완전히 같을 필요는 없지만 페이지 주제, 서비스명, 핵심 기능, 가격·요금, 개인정보·자료 처리 방식, 운영 주체처럼 중요한 사실과 의미는 처음과 나중이 일치하도록 맞춥니다.",
-      developerInstructions: [
-        "초기 HTML과 렌더링 DOM의 title, meta description, H1, JSON-LD 값을 비교해 주세요.",
-        "클라이언트 실행 후 올바른 초기 값을 오래되거나 다른 값으로 덮어쓰는 코드를 수정해 주세요.",
-        "WebApplication, Organization, WebSite, FAQPage 등 JSON-LD의 이름·URL·설명·FAQ 답변이 실제 화면 정보와 일치하도록 유지해 주세요.",
-        "중복되거나 충돌하는 메타데이터 선언은 하나의 정확한 값으로 정리해 주세요.",
-        "렌더링 DOM에 H1이 2개 이상이면 페이지 대표 제목 하나만 H1으로 유지하고 나머지는 일반 텍스트나 H2로 변경해 주세요.",
-        "요금, 보안, 개인정보, 지원 범위처럼 구매 검토에 영향을 주는 정보는 화면 본문·메타데이터·JSON-LD가 서로 다른 의미로 말하지 않게 점검해 주세요.",
-      ],
-      acceptanceCriteria: [
-        "초기 HTML과 화면 완성 후의 페이지 제목과 설명이 같은 주제와 의미를 전달합니다.",
-        "대표 제목(H1)은 렌더링 DOM에 정확히 1개이며 초기 HTML과 같은 핵심 주제를 전달합니다.",
-        "대표 제목과 구조화 정보의 핵심 사실이 실제 화면 내용과 일치합니다.",
-        "FAQPage JSON-LD를 추가한 경우 실제 화면 FAQ와 질문·답변이 일치합니다.",
-        "서로 충돌하거나 오래된 메타데이터가 남아 있지 않습니다.",
-        "이번 차수 진단에서 렌더링 전후 핵심정보 불일치가 사라졌음이 확인됩니다.",
-      ],
+      developerInstructions: isEnglish
+        ? [
+            "Compare title, meta description, H1, and JSON-LD between the initial HTML and rendered DOM.",
+            "Fix client-side code that overwrites correct initial values with outdated or conflicting values.",
+            isCommerce
+              ? "Keep Organization, Brand, WebSite, Product, Offer, Store or LocalBusiness, BreadcrumbList, and visible FAQ information consistent with the page."
+              : "Keep structured-data names, URLs, descriptions, and visible FAQ information consistent with the page.",
+            "Keep one representative H1 and consolidate duplicate or conflicting metadata.",
+            isCommerce
+              ? "Ensure product prices, stock, shipping, returns, privacy, and after-sales service mean the same thing in page content, metadata, and structured data."
+              : "Ensure important policy and operator facts mean the same thing in page content, metadata, and structured data.",
+          ]
+        : [
+            "초기 HTML과 렌더링 DOM의 title, meta description, H1, JSON-LD 값을 비교해 주세요.",
+            "클라이언트 실행 후 올바른 초기 값을 오래되거나 다른 값으로 덮어쓰는 코드를 수정해 주세요.",
+            "WebApplication, Organization, WebSite, FAQPage 등 JSON-LD의 이름·URL·설명·FAQ 답변이 실제 화면 정보와 일치하도록 유지해 주세요.",
+            "중복되거나 충돌하는 메타데이터 선언은 하나의 정확한 값으로 정리해 주세요.",
+            "렌더링 DOM에 H1이 2개 이상이면 페이지 대표 제목 하나만 H1으로 유지하고 나머지는 일반 텍스트나 H2로 변경해 주세요.",
+            "요금, 보안, 개인정보, 지원 범위처럼 구매 검토에 영향을 주는 정보는 화면 본문·메타데이터·JSON-LD가 서로 다른 의미로 말하지 않게 점검해 주세요.",
+          ],
+      acceptanceCriteria: isEnglish
+        ? [
+            "The initial and rendered page titles and descriptions communicate the same topic and meaning.",
+            "The rendered DOM contains exactly one representative H1 with the same core topic as the initial HTML.",
+            "Core heading and structured-data facts match the visible page.",
+            "If FAQPage is used, its questions and answers match the visible FAQ.",
+            "No conflicting or outdated metadata remains.",
+            "The next diagnostic confirms that the rendering inconsistency is resolved.",
+          ]
+        : [
+            "초기 HTML과 화면 완성 후의 페이지 제목과 설명이 같은 주제와 의미를 전달합니다.",
+            "대표 제목(H1)은 렌더링 DOM에 정확히 1개이며 초기 HTML과 같은 핵심 주제를 전달합니다.",
+            "대표 제목과 구조화 정보의 핵심 사실이 실제 화면 내용과 일치합니다.",
+            "FAQPage JSON-LD를 추가한 경우 실제 화면 FAQ와 질문·답변이 일치합니다.",
+            "서로 충돌하거나 오래된 메타데이터가 남아 있지 않습니다.",
+            "이번 차수 진단에서 렌더링 전후 핵심정보 불일치가 사라졌음이 확인됩니다.",
+          ],
     });
   }
 
@@ -1355,22 +1449,46 @@ export function buildRenderedDomImprovementPlans(
         ? "Users can understand the page by looking through the rendered screen, but some AI search crawlers judge the topic mainly from the title, description, and body text delivered in the initial response."
         : "사람은 화면을 둘러보며 내용을 이해할 수 있지만, 일부 AI 검색 봇은 처음 전달된 제목·설명·본문을 중심으로 사이트의 주제를 판단합니다.",
       change: isEnglish
-        ? "Add core introduction and key information so the initial page response explains who the site is for, what it provides, how it is used, and where pricing, data handling, and FAQ information can be found."
+        ? isCommerce
+          ? "Add visible brand and product information so the initial response explains the product categories, target customers, ordering and shipping process, prices, stock, returns, after-sales service, data handling, and FAQs."
+          : "Add visible core information so the initial response explains the site's main offering, audience, process, policies, and FAQs."
         : "페이지를 처음 불러왔을 때도 사이트가 누구를 위한 곳이며 무엇을 제공하는지, 어떤 절차로 이용하는지, 요금·데이터 처리·FAQ는 어디서 확인할 수 있는지 알 수 있도록 핵심 소개와 주요 정보를 보완합니다.",
-      developerInstructions: [
-        "페이지별로 고유하고 구체적인 title과 meta description을 초기 HTML에 제공해 주세요.",
-        "페이지의 주제를 설명하는 명확한 H1과 핵심 본문을 초기 HTML에 포함해 주세요.",
-        "핵심 본문에는 서비스 정의와 핵심 가치, 이용 대상과 대표 활용 사례, 3~5단계 이용 절차, 요금·데이터 처리 요약, FAQ 또는 도움말 경로를 포함해 주세요.",
-        "중요한 콘텐츠 페이지, 요금제, 개인정보처리방침, 이용약관, 도움말·문의 페이지로 이동하는 일반 HTML 링크를 제공해 주세요.",
-        "화면에 없는 내용을 검색 노출만을 위해 숨겨 넣지 말고 실제 사용자에게 보이는 정보와 일치시켜 주세요.",
-      ],
-      acceptanceCriteria: [
-        "초기 HTML만 확인해도 페이지의 주제와 주요 서비스가 이해됩니다.",
-        "title, meta description, H1과 핵심 본문의 의미가 서로 일관됩니다.",
-        "서비스 정의, 대상 고객, 이용 절차, 요금·데이터 처리 요약, FAQ 또는 도움말 경로가 사용자 화면과 초기 HTML에서 함께 확인됩니다.",
-        "사용자에게 보이는 내용과 AI에 제공되는 핵심 정보가 일치합니다.",
-        "이번 차수 진단에서 이전에 누락된 초기 HTML 핵심 항목이 보완되었음이 확인됩니다.",
-      ],
+      developerInstructions: isEnglish
+        ? [
+            "Provide a unique and specific title and meta description for each page in the initial HTML.",
+            "Include one clear H1 and visible core body content that explain the page topic.",
+            isCommerce
+              ? "Include the brand and product definition, main product categories, target customers, ordering and shipping process, prices, stock, returns, after-sales service, data handling, and FAQ paths in the initial HTML."
+              : "Include the main offering, audience, process, policy summary, and FAQ paths in the initial HTML.",
+            isCommerce
+              ? "Provide standard links to product categories, prices, privacy, terms, shipping and return policies, after-sales service, FAQs, and contact pages."
+              : "Provide standard links to important content, policy, FAQ, and contact pages.",
+            "Do not add hidden AI-only content; keep it consistent with what users can see.",
+          ]
+        : [
+            "페이지별로 고유하고 구체적인 title과 meta description을 초기 HTML에 제공해 주세요.",
+            "페이지의 주제를 설명하는 명확한 H1과 핵심 본문을 초기 HTML에 포함해 주세요.",
+            "핵심 본문에는 서비스 정의와 핵심 가치, 이용 대상과 대표 활용 사례, 3~5단계 이용 절차, 요금·데이터 처리 요약, FAQ 또는 도움말 경로를 포함해 주세요.",
+            "중요한 콘텐츠 페이지, 요금제, 개인정보처리방침, 이용약관, 도움말·문의 페이지로 이동하는 일반 HTML 링크를 제공해 주세요.",
+            "화면에 없는 내용을 검색 노출만을 위해 숨겨 넣지 말고 실제 사용자에게 보이는 정보와 일치시켜 주세요.",
+          ],
+      acceptanceCriteria: isEnglish
+        ? [
+            "The page topic and main offering can be understood from the initial HTML alone.",
+            "The title, meta description, H1, and core body content are semantically consistent.",
+            isCommerce
+              ? "The visible page and initial HTML both provide the brand and product definition, target customers, purchase process, prices, stock, policy summary, and FAQ or help paths."
+              : "The visible page and initial HTML both provide the main offering, audience, process, policy summary, and FAQ or help paths.",
+            "The information visible to users matches the core information provided to AI.",
+            "The next diagnostic confirms that the missing initial-HTML items were added.",
+          ]
+        : [
+            "초기 HTML만 확인해도 페이지의 주제와 주요 서비스가 이해됩니다.",
+            "title, meta description, H1과 핵심 본문의 의미가 서로 일관됩니다.",
+            "서비스 정의, 대상 고객, 이용 절차, 요금·데이터 처리 요약, FAQ 또는 도움말 경로가 사용자 화면과 초기 HTML에서 함께 확인됩니다.",
+            "사용자에게 보이는 내용과 AI에 제공되는 핵심 정보가 일치합니다.",
+            "이번 차수 진단에서 이전에 누락된 초기 HTML 핵심 항목이 보완되었음이 확인됩니다.",
+          ],
     });
   }
 
