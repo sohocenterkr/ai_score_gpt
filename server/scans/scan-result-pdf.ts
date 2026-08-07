@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-ecommerce-templates-v11";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-evidence-groups-v12";
 
 let cachedFontHash: string | undefined;
 
@@ -1857,31 +1857,58 @@ function writeUnderstanding(
     }
   }
 
+  const partiallyConfirmedInformation = result.missingInformation.filter(
+    (item) =>
+      item.evidenceLevel === "BODY" ||
+      item.evidenceLevel === "HINT" ||
+      item.evidenceLevel === "RENDERED",
+  );
+  const notFoundInformation = result.missingInformation.filter(
+    (item) => !partiallyConfirmedInformation.includes(item),
+  );
+
+  if (partiallyConfirmedInformation.length > 0) {
+    document.moveDown(0.6);
+    writeSectionTitle(
+      document,
+      result.scan.locale === "en"
+        ? "Partially confirmed information that needs improvement"
+        : "일부 단서를 확인했지만 보완이 필요한 정보",
+    );
+    for (const item of partiallyConfirmedInformation) {
+      ensureSpace(document, 25);
+      setText(document, 8.8, "#B45309").text(
+        `${cleanText(item.ruleCode)} / ${cleanText(
+          translatePdfFindingTitle(item.title, result.scan.locale),
+        )}`,
+        { width: contentWidth(document), lineGap: 2 },
+      );
+      document.moveDown(0.35);
+    }
+  }
+
   document.moveDown(0.6);
   writeSectionTitle(
     document,
     result.scan.locale === "en"
-      ? "Missing or unconfirmed information"
-      : "찾지 못했거나 확인하지 못한 정보",
+      ? "Information not found in the current evidence"
+      : "현재 증거에서 찾지 못한 정보",
   );
 
-  if (result.missingInformation.length === 0) {
+  if (notFoundInformation.length === 0) {
     setText(document, 9, COLORS.pass).text(
       result.scan.locale === "en"
-        ? "No missing items were found in the current weighted rules."
-        : "현재 가중 규칙에서 누락된 항목이 없습니다.",
+        ? "No completely missing items were found in the current weighted rules."
+        : "현재 가중 규칙에서 완전히 누락된 항목이 없습니다.",
     );
   } else {
-    for (const item of result.missingInformation) {
+    for (const item of notFoundInformation) {
       ensureSpace(document, 25);
       setText(document, 8.8, COLORS.fail).text(
         `${cleanText(item.ruleCode)} / ${cleanText(
           translatePdfFindingTitle(item.title, result.scan.locale),
         )}`,
-        {
-          width: contentWidth(document),
-          lineGap: 2,
-        },
+        { width: contentWidth(document), lineGap: 2 },
       );
       document.moveDown(0.35);
     }

@@ -26,6 +26,7 @@ import {
 import {
   buildRenderedImprovementWorkOrderTemplate,
   buildWorkOrderTemplate,
+  WORK_ORDER_OUTPUT_TEMPLATE_VERSION,
   type AcceptanceCriterion,
 } from "./work-order-templates";
 
@@ -198,6 +199,7 @@ export interface PublicWorkOrder {
   version: number;
   status: WorkOrderStatus;
   rulesVersion: string;
+  outputTemplateVersion?: string;
   scoreBefore: number | null;
   gradeBefore: string | null;
   expectedScoreMin: number;
@@ -353,6 +355,26 @@ function acceptanceCriteria(value: Prisma.JsonValue): AcceptanceCriterion[] {
   });
 }
 
+function isEcommerceWorkOrderFinding(finding: WorkOrderRecord["items"][number]["finding"]): boolean {
+  const evidence = finding?.evidenceJson;
+  return Boolean(
+    evidence &&
+      typeof evidence === "object" &&
+      !Array.isArray(evidence) &&
+      (evidence as Record<string, unknown>).siteArchetype === "ECOMMERCE",
+  );
+}
+
+function currentFindingDescription(
+  finding: NonNullable<WorkOrderRecord["items"][number]["finding"]>,
+): string {
+  if (!isEcommerceWorkOrderFinding(finding)) return finding.description;
+  if (finding.ruleCode === "CONTENT-TRANSACTION-POLICY-001") {
+    return "배송·교환·반품·환불·주문제작 변경 및 취소·A/S 정책 정보가 부족합니다.";
+  }
+  return finding.description;
+}
+
 function publicWorkOrder(
   record: WorkOrderRecord,
   versionHistory: PublicWorkOrderVersionHistoryEntry[] = [],
@@ -364,6 +386,7 @@ function publicWorkOrder(
     version: record.version,
     status: record.status,
     rulesVersion: record.rulesVersion,
+    outputTemplateVersion: WORK_ORDER_OUTPUT_TEMPLATE_VERSION,
     scoreBefore: record.scoreBefore,
     gradeBefore: record.gradeBefore,
     expectedScoreMin: record.expectedScoreMin,
@@ -395,31 +418,49 @@ function publicWorkOrder(
           name: record.agencyOrganization.name,
         }
       : null,
-    items: record.items.map((item) => ({
-      id: item.id,
-      findingId: item.findingId,
-      itemCode: item.itemCode,
-      targetUrl: item.targetUrl,
-      title: item.title,
-      requirement: item.requirement,
-      developerMessage: item.developerMessage,
-      acceptanceCriteria: acceptanceCriteria(item.acceptanceCriteriaJson),
-      isRequired: item.isRequired,
-      weight: item.weight,
-      status: item.status,
-      finding: item.finding
-        ? {
-            ruleCode: item.finding.ruleCode,
-            category: item.finding.category,
-            summaryGroup: getRuleSummaryGroup(item.finding.ruleCode),
-            severity: item.finding.severity,
-            status: item.finding.status,
-            description: item.finding.description,
-            evidence: item.finding.evidenceJson,
-            recommendation: item.finding.recommendation,
-          }
-        : null,
-    })),
+    items: record.items.map((item) => {
+      const currentTemplate = item.finding
+        ? buildWorkOrderTemplate(
+            {
+              ruleCode: item.finding.ruleCode,
+              title: item.title,
+              description: item.finding.description,
+              recommendation: item.finding.recommendation,
+              severity: item.finding.severity,
+              evidenceJson: item.finding.evidenceJson,
+            },
+            "ko",
+          )
+        : null;
+
+      return {
+        id: item.id,
+        findingId: item.findingId,
+        itemCode: item.itemCode,
+        targetUrl: item.targetUrl,
+        title: item.title,
+        requirement: currentTemplate?.requirement ?? item.requirement,
+        developerMessage: currentTemplate?.developerMessage ?? item.developerMessage,
+        acceptanceCriteria:
+          currentTemplate?.acceptanceCriteria ??
+          acceptanceCriteria(item.acceptanceCriteriaJson),
+        isRequired: currentTemplate?.isRequired ?? item.isRequired,
+        weight: item.weight,
+        status: item.status,
+        finding: item.finding
+          ? {
+              ruleCode: item.finding.ruleCode,
+              category: item.finding.category,
+              summaryGroup: getRuleSummaryGroup(item.finding.ruleCode),
+              severity: item.finding.severity,
+              status: item.finding.status,
+              description: currentFindingDescription(item.finding),
+              evidence: item.finding.evidenceJson,
+              recommendation: item.finding.recommendation,
+            }
+          : null,
+      };
+    }),
     extraVerification: {
       required: record.version >= 3,
       available: record.version < 3 || record.paidEntitlements.length > 0,
@@ -668,6 +709,7 @@ function toCsv(workOrder: PublicWorkOrder): string {
     "상태",
     "사이트",
     "규칙 버전",
+    "출력 템플릿 버전",
     "항목 코드",
     "대상 URL",
     "제목",
@@ -684,6 +726,7 @@ function toCsv(workOrder: PublicWorkOrder): string {
     workOrder.status,
     workOrder.site.name,
     workOrder.rulesVersion,
+    workOrder.outputTemplateVersion ?? WORK_ORDER_OUTPUT_TEMPLATE_VERSION,
     item.itemCode,
     item.targetUrl,
     item.title,

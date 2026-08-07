@@ -569,6 +569,53 @@ function writeCriteria(
   document.moveDown(0.4);
 }
 
+const WORK_ORDER_EVIDENCE_KEYS = [
+  "siteArchetype",
+  "conversionIntent",
+  "classificationConfidence",
+  "classificationSources",
+  "ignoredClassificationSources",
+  "classificationConflict",
+  "contentEvidenceLevel",
+  "scoreRatio",
+  "detectedSignals",
+  "missingSignals",
+  "initialEvidence",
+  "renderedEvidence",
+  "renderedStatus",
+  "renderedErrorCode",
+  "accessOutcome",
+  "statusCode",
+  "finalUrl",
+  "validCount",
+  "types",
+  "sameAsCount",
+  "contactPointCount",
+  "h1Count",
+  "h1",
+  "h2Count",
+  "canonicalUrl",
+] as const;
+
+function compactWorkOrderEvidence(value: unknown, isEnglish: boolean): unknown {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+  const record = value as Record<string, unknown>;
+  const compact: Record<string, unknown> = {};
+  for (const key of WORK_ORDER_EVIDENCE_KEYS) {
+    if (record[key] !== undefined) compact[key] = record[key];
+  }
+  if (Object.keys(compact).length === 0) {
+    for (const [key, item] of Object.entries(record).slice(0, 12)) compact[key] = item;
+  }
+  const omitted = Object.keys(record).length - Object.keys(compact).length;
+  if (omitted > 0) {
+    compact.evidenceNote = isEnglish
+      ? `${omitted} additional fields are available in the diagnostic report.`
+      : `추가 증거 ${omitted}개 필드는 진단 보고서에서 확인할 수 있습니다.`;
+  }
+  return compact;
+}
+
 function evidenceText(value: unknown, isEnglish = false): string {
   if (value === null || value === undefined) {
     return isEnglish
@@ -577,7 +624,7 @@ function evidenceText(value: unknown, isEnglish = false): string {
   }
 
   try {
-    return cleanText(JSON.stringify(value, null, 2));
+    return cleanText(JSON.stringify(compactWorkOrderEvidence(value, isEnglish), null, 2));
   } catch {
     return cleanText(value);
   }
@@ -763,6 +810,16 @@ function writeCover(
   );
   writeLabelValue(
     document,
+    isEnglish ? "Output template version" : "출력 템플릿 버전",
+    workOrder.outputTemplateVersion ?? "current",
+  );
+  writeLabelValue(
+    document,
+    isEnglish ? "Source scan ID" : "원본 Scan ID",
+    workOrder.initialScan.id,
+  );
+  writeLabelValue(
+    document,
     isEnglish ? "Issued at (KST)" : "발급 시각(KST)",
     formatKST(workOrder.issuedAt, isEnglish),
   );
@@ -880,8 +937,8 @@ function writeExecutionPlanPage(
         ? "The work bundles below are an implementation guide for fixing items that share the same root cause together, not for hiding or removing scoring items."
         : "아래 작업 묶음은 점수 항목을 숨기거나 제거하는 것이 아니라, 같은 원인에서 나온 항목을 한 번에 구현하도록 정리한 실행 가이드입니다.",
       isEnglish
-        ? "The next diagnostic and scoring follow the detailed items later in this document. Developers should implement the P0 to P4 bundles in order, then review the detailed completion criteria for each linked item."
-        : "다음 차수 진단과 점수 계산은 뒤쪽 상세 항목 기준으로 진행되며, 개발자는 P0~P4 묶음을 순서대로 구현한 뒤 각 연결 항목의 상세 완료 기준을 확인하면 됩니다.",
+        ? "The next diagnostic and scoring follow the detailed items later in this document. Implement the displayed bundles in sequence, then review the detailed completion criteria for each linked item."
+        : "다음 차수 진단과 점수 계산은 뒤쪽 상세 항목 기준으로 진행되며, 개발자는 표시된 작업 묶음을 순서대로 구현한 뒤 각 연결 항목의 상세 완료 기준을 확인하면 됩니다.",
     ].join("\n\n"),
     {
       width: contentWidth(document),
@@ -1107,6 +1164,10 @@ function writeExecutionPlanPage(
       ];
     }
   }
+
+  relevantEpics.forEach((epic, index) => {
+    epic.priority = `P${index}`;
+  });
 
   relevantEpics.forEach((epic) => {
     setBold(document, 9.3, COLORS.primaryDark).text(

@@ -122,6 +122,7 @@ describe("commerce work order wording", () => {
       "서비스 차별점",
       "예약·문의 전환형",
       "정보 제공형",
+      "사이트 전환 구조에 맞는 결제·예약·문의 정책",
     ];
 
     const templates = ruleCodes.map((ruleCode) =>

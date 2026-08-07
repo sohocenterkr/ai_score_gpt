@@ -33,6 +33,8 @@ interface RenderedImprovementTemplateInput {
   acceptanceCriteria: string[];
 }
 
+export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v3";
+
 const templates: Record<string, WorkOrderTemplate> = {
   "STRUCT-H1-001": {
     requirement:

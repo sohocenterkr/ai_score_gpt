@@ -116,6 +116,8 @@ describe("ecommerce content readiness", () => {
     expect(text).not.toContain("추가 비용를");
     expect(text).not.toContain("맞춤 제작 순서을");
     expect(text).not.toContain("지원 범위과");
+    expect(text).not.toContain("사용자 자료 처리");
+    expect(text).toContain("개인정보·주문·결제·배송정보 처리");
     expect(text).not.toContain("고객은 어떤 제품군과 옵션");
   });
 });

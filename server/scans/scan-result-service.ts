@@ -90,6 +90,7 @@ export interface PublicScanResult {
     ruleCode: string;
     summaryGroup: SummaryGroup;
     title: string;
+    evidenceLevel?: string | null;
   }>;
   primaryIssues: PublicScanResultFinding[];
   pages: PublicScanResultPage[];
@@ -434,11 +435,15 @@ function buildPublicScanResult(result: {
           (finding.status === "FAIL" || finding.status === "BLOCKED") &&
           !isPendingFinding(finding),
       )
-      .map((finding) => ({
-        ruleCode: finding.ruleCode,
-        summaryGroup: getRuleSummaryGroup(finding.ruleCode),
-        title: finding.title,
-      })),
+      .map((finding) => {
+        const level = evidenceRecord(finding.evidence).contentEvidenceLevel;
+        return {
+          ruleCode: finding.ruleCode,
+          summaryGroup: getRuleSummaryGroup(finding.ruleCode),
+          title: finding.title,
+          evidenceLevel: typeof level === "string" ? level : null,
+        };
+      }),
     primaryIssues,
     pages: result.pages.map(publicPage),
     findings,
