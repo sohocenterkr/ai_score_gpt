@@ -272,7 +272,7 @@ describe("scan result PDF", () => {
     expect(plans[0]?.developerInstructions.join(" ")).toContain("상품 카테고리");
     expect(plans[0]?.acceptanceCriteria.join(" ")).toContain("브랜드·대표 제품군");
     expect(SCAN_RESULT_PDF_RENDERER_VERSION).toBe(
-      "2026.08-en-complete-system-text-v17",
+      "2026.08-en-final-language-layout-v18",
     );
   });
 
@@ -368,6 +368,15 @@ describe("scan result PDF", () => {
         "en",
       ),
     ).not.toMatch(/[가-힣]/);
+  });
+
+  it("uses neutral English for the operator and inquiry question", () => {
+    expect(
+      translatePdfContentReadinessText(
+        "누가 운영하고 어디로 문의하나요?",
+        "en",
+      ),
+    ).toBe("Who operates the site and where can customers make inquiries?");
   });
 
 });

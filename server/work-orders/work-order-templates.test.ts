@@ -218,6 +218,11 @@ describe("commerce work order wording", () => {
       "URL input",
       "WebApplication",
       "usage process and deliverables",
+      "initial HTML SSR/SSG work",
+      "service overview",
+      "target users",
+      "usage flow",
+      "pricing/security",
     ]) {
       expect(text.toLowerCase()).not.toContain(phrase.toLowerCase());
     }
@@ -226,6 +231,25 @@ describe("commerce work order wording", () => {
     expect(text).toContain("shipping data");
     expect(text).toContain("made-to-order cancellation");
     expect(text).toContain("after-sales service");
+    expect(text).toContain("product-selection criteria");
+    expect(text).toContain("Do not introduce SSR/SSG solely for this item");
+
+    const genericHeading = buildWorkOrderTemplate(
+      {
+        ruleCode: "CONTENT-HEADINGS-001",
+        title: "Heading hierarchy",
+        description: "The heading hierarchy needs improvement.",
+        recommendation: null,
+        severity: "MEDIUM",
+      },
+      "en",
+    );
+    const genericHeadingText = JSON.stringify(genericHeading);
+    expect(genericHeadingText).toContain("initial HTML structure improvements");
+    expect(genericHeadingText).toContain("product-selection criteria");
+    expect(genericHeadingText).toContain(
+      "does not require a new SSR/SSG migration",
+    );
   });
 
 });

@@ -21,7 +21,7 @@ function isPendingFinding(finding: PublicScanResultFinding): boolean {
 
 const FONT_REGULAR_NAME = "SiteAiScoreReportRegular";
 const FONT_BOLD_NAME = "SiteAiScoreReportSemiBold";
-export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-en-complete-system-text-v17";
+export const SCAN_RESULT_PDF_RENDERER_VERSION = "2026.08-en-final-language-layout-v18";
 
 let cachedFontHash: string | undefined;
 
@@ -529,7 +529,7 @@ const PDF_CONTENT_READINESS_TEXT_EN: Record<string, string> = {
     "What is included in the free and paid plans?",
   "입력 자료는 어떻게 처리되나요?": "How is submitted data handled?",
   "누가 운영하고 어디로 문의하나요?":
-    "Who operates the service and where can users ask questions?",
+    "Who operates the site and where can customers make inquiries?",
   "처음 사용하는 사람이 자주 묻는 질문은 무엇인가요?":
     "What questions do first-time users commonly ask?",
   "예외 상황은 어떻게 처리하나요?": "How are exceptions handled?",
@@ -2308,10 +2308,10 @@ function writeContentReadiness(
             ).join(" / ")}`
           : `AI가 답하기 어려울 수 있는 질문: ${topic.questions.join(" / ")}`,
         result.scan.locale === "en"
-          ? `Suggested direction: ${translatePdfContentReadinessList(
+          ? `Suggested direction: Consider adding content for ${translatePdfContentReadinessList(
               topic.suggestedSections,
               result.scan.locale,
-            ).join(" · ")} content may need to be added.`
+            ).join(" · ")}.`
           : `개선 방향: ${topic.suggestedSections.join(" · ")} 같은 콘텐츠 보강이 필요합니다.`,
         "",
       ].join("\n\n"),

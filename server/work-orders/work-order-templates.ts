@@ -33,7 +33,7 @@ interface RenderedImprovementTemplateInput {
   acceptanceCriteria: string[];
 }
 
-export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v7-en-complete";
+export const WORK_ORDER_OUTPUT_TEMPLATE_VERSION = "2026.08-current-output-v8-en-final-layout";
 
 const templates: Record<string, WorkOrderTemplate> = {
   "STRUCT-H1-001": {
@@ -698,9 +698,9 @@ const templatesEn: Partial<Record<string, WorkOrderTemplate>> = {
   },
   "CONTENT-HEADINGS-001": {
     requirement:
-      "Build the H1/H2 heading hierarchy together with the P0 initial HTML SSR/SSG work.",
+      "Build a clear H1/H2 heading hierarchy as part of the P0 initial HTML structure improvements. The initial HTML body is already sufficient, so this item does not require a new SSR/SSG migration.",
     developerMessage:
-      "Do not only add an H1. Divide the main sections, such as service overview, target users, usage flow, pricing/security, and FAQ, into H2 sections so the heading hierarchy is visible in the initial HTML. The heading structure should match the actual user-facing page sections.",
+      "Do not only add an H1. Divide the main sections into H2 headings for the brand and main product categories; target customers and product-selection criteria; ordering, shipping, made-to-order production, and after-sales service; prices, stock, and purchase terms; policies; and FAQs. Keep the same hierarchy in the user-facing page and initial HTML.",
     acceptanceCriteria: [
       {
         code: "HEADINGS-01",

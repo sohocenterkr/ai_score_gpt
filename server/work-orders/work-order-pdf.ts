@@ -1477,6 +1477,12 @@ function writeItemPage(
   const x = document.page.margins.left;
   const width = contentWidth(document);
 
+  // PDFKit can retain the previous page cursor after addPage(). Reset both
+  // coordinates so long evidence on the prior page cannot push the next item
+  // heading outside the printable area.
+  document.x = x;
+  document.y = document.page.margins.top;
+
   setBold(document, 8.2, COLORS.primary).text(
     isEnglish
       ? `Work item ${index + 1} / ${workOrder.items.length}`
