@@ -32,8 +32,6 @@ const kindLabels: Record<AiQuestionKind, string> = {
   CUSTOM: "운영자 직접 질문",
 };
 
-const kinds = Object.keys(kindLabels) as AiQuestionKind[];
-
 const scanStatusLabels = {
   QUEUED: "대기 중",
   RUNNING: "검사 중",
@@ -465,12 +463,20 @@ export function DeepDiagnosticSetupPage() {
         </nav>
 
         <div className="deep-setup-notice" role="note">
-          <strong>이 페이지에서 정답지와 시험문제를 준비합니다.</strong>
+          <strong>정밀진단(DEEP)은 실제로 ChatGPT에게 우리 사이트에 대해 질문을 던져보고, 답변이 맞는지 확인하는 기능입니다.</strong>
           <p>
-            ① 정확한 사이트 정보 입력 → ② AI에게 물어볼 질문 확인 →
-            ③ 정밀진단 시작 → ④ 실제 웹 답변·인용·정확도 결과 확인
-            순서로 진행합니다. QUICK 기술 점수와 AI 답변 성과점수는
-            별도로 표시됩니다.
+            사이트 화면에 어떤 글이 써 있는지 검사하는 QUICK(간편진단)과는 다릅니다.
+            이 페이지에서는 &quot;진짜 정답이 뭔지&quot;를 먼저 알려주고(STEP 1),
+            ChatGPT에게 실제로 물어볼 질문을 확인한 뒤(STEP 2 — 기본 질문 6개가
+            이미 준비되어 있어 특별히 손댈 필요는 없습니다), 정밀진단을 시작하면
+            ChatGPT가 실제로 뭐라고 답했는지, 그 답이 STEP 1에 적은 정답과
+            맞는지 결과로 보여줍니다.
+          </p>
+          <p>
+            STEP 1에서 &quot;핵심&quot;이라고 표시된 항목만 채우면 시작할 수
+            있습니다. &quot;선택&quot;이라고 표시된 항목은 비워둬도 되고,
+            해당 사항이 없으면(예: 판매하는 상품이 없음) 그대로
+            &quot;해당 없음&quot;이라고 적어도 됩니다.
           </p>
         </div>
 
@@ -605,6 +611,12 @@ export function DeepDiagnosticSetupPage() {
               <p className="eyebrow">STEP 1</p>
               <h2>AI 답변과 비교할 정확한 사이트 정보</h2>
               <p>
+                여기 적은 내용이 &quot;ChatGPT 답변이 맞았는지 틀렸는지&quot;를
+                판정하는 정답 기준이 됩니다. &quot;핵심&quot; 항목만 채우면
+                정밀진단을 시작할 수 있고, &quot;선택&quot; 항목은 해당 사항이
+                없으면 비워두거나 &quot;해당 없음&quot;이라고 적어도 됩니다.
+              </p>
+              <p>
                 {savedFactCount}/{setup.factDefinitions.length}개 항목에
                 정보가 입력되어 있습니다.
               </p>
@@ -690,8 +702,12 @@ export function DeepDiagnosticSetupPage() {
               <p className="eyebrow">STEP 2</p>
               <h2>AI에게 실제로 물어볼 질문</h2>
               <p>
-                기본 질문을 실제 서비스에 맞게 수정하고 운영자 질문을
-                추가할 수 있습니다.
+                ChatGPT에게 실제로 던질 질문 6개가 아래에 이미 준비되어
+                있습니다. 대부분은 그대로 두고 진단을 시작해도 됩니다.
+                문구가 우리 서비스와 안 맞으면 직접 고쳐서 &quot;수정
+                저장&quot;을 누르면 되고, 특별히 더 물어보고 싶은 게
+                있을 때만 아래 &quot;운영자 질문 추가&quot;를 사용하면
+                됩니다 — 둘 다 선택사항입니다.
               </p>
             </div>
             <div className="deep-heading-actions">
@@ -838,27 +854,6 @@ function QuestionFields({
 
   return (
     <div className="deep-question-fields">
-      <label htmlFor={`${prefix}-kind`}>
-        질문 유형
-        <select
-          id={`${prefix}-kind`}
-          value={draft.kind}
-          disabled={disabled}
-          onChange={(event) =>
-            onChange({
-              ...draft,
-              kind: event.target.value as AiQuestionKind,
-            })
-          }
-        >
-          {kinds.map((kind) => (
-            <option value={kind} key={kind}>
-              {kindLabels[kind]}
-            </option>
-          ))}
-        </select>
-      </label>
-
       <label htmlFor={`${prefix}-question`}>
         실제로 AI에 물어볼 질문
         <textarea
