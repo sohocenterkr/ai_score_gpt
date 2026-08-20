@@ -621,6 +621,13 @@ export function WorkOrderPage() {
                     <h3>{item.title}</h3>
                   </div>
                   <div className="work-order-item-badges">
+                    {item.itemCode.startsWith("AI-") ? (
+                      <span className="work-order-item-badge-geo">
+                        {isEnglish
+                          ? "ChatGPT-tested (GEO)"
+                          : "ChatGPT 실측 기반(GEO)"}
+                      </span>
+                    ) : null}
                     <span>
                       {item.finding
                         ? item.isRequired
@@ -645,6 +652,19 @@ export function WorkOrderPage() {
                     </span>
                   </div>
                 </header>
+
+                {item.itemCode.startsWith("AI-") ? (
+                  <p className="work-order-ai-answer-note">
+                    {isEnglish
+                      ? "This item is not verified automatically. "
+                      : "이 항목은 자동으로 재검증되지 않습니다. "}
+                    <Link to={`/${locale}/sites/${workOrder.site.id}/deep-diagnostic`}>
+                      {isEnglish
+                        ? "Re-run the DEEP diagnostic to confirm the result yourself."
+                        : "정밀진단(DEEP)을 다시 실행해 직접 확인해 주세요."}
+                    </Link>
+                  </p>
+                ) : null}
 
                 <dl className="work-order-item-meta">
                   <div>

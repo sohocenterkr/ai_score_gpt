@@ -233,6 +233,18 @@ function evaluateRenderedItem(
   message: string;
   evidence: Record<string, unknown>;
 } {
+  if (itemCode.startsWith("AI-")) {
+    return {
+      status: "BLOCKED",
+      message:
+        "이 항목은 ChatGPT 실측(GEO) 결과 기반입니다. 사이트의 정밀진단(DEEP) 페이지에서 진단을 다시 실행해 직접 확인해 주세요.",
+      evidence: {
+        itemCode,
+        evaluationType: "AI_ANSWER_IMPROVEMENT",
+      },
+    };
+  }
+
   const comparison = renderedComparison(verificationFindings);
 
   if (comparison.status !== "SUCCESS") {

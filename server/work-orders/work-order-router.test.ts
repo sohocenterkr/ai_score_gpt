@@ -175,6 +175,7 @@ describe("work order router", () => {
       scanId: "scan-1",
       findingIds: [],
       renderedImprovementCodes: ["RENDERED-ADDED-CONTENT"],
+      aiAnswerImprovementCodes: [],
       locale: "ko",
     });
   });

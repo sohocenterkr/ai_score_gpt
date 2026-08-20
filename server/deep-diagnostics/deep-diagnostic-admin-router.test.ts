@@ -83,6 +83,7 @@ const setup: PublicDeepDiagnosticSetup = {
     latestScan: null,
     summary: null,
     runs: [],
+    aiAnswerImprovementPlans: [],
   },
 };
 

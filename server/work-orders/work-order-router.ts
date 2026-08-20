@@ -14,6 +14,7 @@ import {
 import { renderWorkOrderPdf, workOrderPdfFilename } from "./work-order-pdf";
 import { createSafeHttpFetcher } from "../scans/http-fetcher";
 import { runQueuedScanById } from "../scans/scan-worker";
+import { AI_ANSWER_IMPROVEMENT_PLAN_CODES } from "./ai-answer-improvement-plans";
 import {
   WorkOrderServiceError,
   type WorkOrderService,
@@ -24,6 +25,8 @@ const renderedImprovementCodeSchema = z.enum([
   "RENDERED-INCONSISTENT-INFORMATION",
   "INITIAL-HTML-MISSING-CORE",
 ]);
+
+const aiAnswerImprovementCodeSchema = z.enum(AI_ANSWER_IMPROVEMENT_PLAN_CODES);
 
 const verificationSchema = z.object({
   submittedUrl: z.string().trim().min(1).max(2_048),
@@ -37,11 +40,17 @@ const createSchema = z
       .array(renderedImprovementCodeSchema)
       .max(3)
       .default([]),
+    aiAnswerImprovementCodes: z
+      .array(aiAnswerImprovementCodeSchema)
+      .max(AI_ANSWER_IMPROVEMENT_PLAN_CODES.length)
+      .default([]),
     locale: z.enum(["ko", "en"]).default("ko"),
   })
   .superRefine((value, context) => {
     const total =
-      value.findingIds.length + value.renderedImprovementCodes.length;
+      value.findingIds.length +
+      value.renderedImprovementCodes.length +
+      value.aiAnswerImprovementCodes.length;
 
     if (total < 1) {
       context.addIssue({

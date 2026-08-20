@@ -227,4 +227,43 @@ describe("verification evaluator", () => {
     expect(result.status).toBe("PASSED");
     expect(result.itemResults[0]?.status).toBe("PASS");
   });
+
+  it("ChatGPT 실측(AI-*) 개선항목은 자동 판정 대신 수동 확인 안내로 남는다", () => {
+    const result = evaluateVerification({
+      items: [
+        item({
+          itemCode: "AI-SERVICE-IDENTIFICATION",
+          finding: null,
+          isRequired: false,
+          acceptanceCriteriaJson: [
+            {
+              code: "AI-SVC-01",
+              label: "초기 HTML에 브랜드명과 서비스 정의가 함께 노출된다.",
+              required: true,
+            },
+          ],
+        }),
+      ],
+      initialFindings: [],
+      verificationFindings: [
+        {
+          ruleCode: "ENV-MEASUREMENT-001",
+          status: "PASS",
+          evidence: {
+            renderedDom: {
+              status: "SUCCESS",
+              initialHtml: { textLength: 1_000, links: { internal: 8 } },
+              renderedDom: { textLength: 1_000, links: { internal: 8 } },
+            },
+          },
+        },
+      ],
+      submittedUrl: "https://example.com/",
+      scanTargetUrl: "https://example.com/",
+    });
+
+    expect(result.itemResults[0]?.status).toBe("BLOCKED");
+    expect(result.itemResults[0]?.nextItemStatus).toBe("REVIEW_REQUIRED");
+    expect(result.itemResults[0]?.message).toContain("정밀진단(DEEP)");
+  });
 });

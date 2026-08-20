@@ -1005,6 +1005,10 @@ export function buildRenderedImprovementWorkOrderTemplate(
     "RENDERED-ADDED-CONTENT": "JS-CONTENT",
     "RENDERED-INCONSISTENT-INFORMATION": "JS-CONSISTENCY",
     "INITIAL-HTML-MISSING-CORE": "INITIAL-HTML",
+    "AI-SERVICE-IDENTIFICATION": "AI-SVC",
+    "AI-DOMAIN-CITATION": "AI-CITE",
+    "AI-FACT-CORRECTION": "AI-FACT",
+    "AI-MISSING-CORE-INFO": "AI-INFO",
   };
   const prefix =
     prefixByCode[plan.code] ??

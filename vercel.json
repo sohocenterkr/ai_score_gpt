@@ -68,5 +68,10 @@
       "destination": "/index.html"
     }
   ],
-  "installCommand": "npm ci --no-audit --no-fund"
+  "installCommand": "npm ci --no-audit --no-fund",
+  "git": {
+    "deploymentEnabled": {
+      "main": false
+    }
+  }
 }

@@ -318,6 +318,32 @@ const WORK_ORDER_RENDERED_TEXT_EN: Record<string, string> = {
     "The service definition, target customers, representative use cases, usage process, and pricing/data handling summary can be understood from the initial HTML alone.",
   "이번 차수 진단에서 초기 HTML 본문·링크 포함 비율이 기준을 충족합니다.":
     "The current diagnostic confirms that initial HTML body and link coverage meet the criteria.",
+  "페이지 제목·H1·첫 문단에 브랜드명과 서비스 정의를 함께 표시":
+    "Show the brand name together with the service definition in the page title, H1, and first paragraph.",
+  "소개·기능·요금·문의 페이지에서 동일한 브랜드 표기 사용":
+    "Use the same brand naming consistently across the intro, features, pricing, and contact pages.",
+  "다른 서비스와 구분되는 고유 기능과 제공하지 않는 기능 명시":
+    "State unique features and features you do NOT provide, to reduce confusion with similar services.",
+  "핵심 답변을 초기 HTML의 읽을 수 있는 본문으로 제공":
+    "Provide key answer content as readable text in the initial HTML, not only after client-side rendering.",
+  "소개·FAQ·요금·개인정보 처리 내용을 독립 URL로 공개":
+    "Publish intro, FAQ, pricing, and privacy-policy content on independent URLs.",
+  "페이지별 제목과 설명을 질문에 바로 답하는 문장으로 작성":
+    "Write each page's title and description as sentences that directly answer likely questions.",
+  "실제 제공 기능과 제공하지 않는 기능을 같은 페이지에서 구분":
+    "Clearly separate features actually provided from features not provided on the same page.",
+  "자동 게시·가격·운영 주체처럼 오인하기 쉬운 항목 명시":
+    "Clarify items that are easy to misunderstand, such as automation, pricing, or the operating entity.",
+  "오래된 외부 소개 글과 검색 노출 문구 최신화":
+    "Update outdated third-party descriptions and search-exposed copy where possible.",
+  "이용 대상과 이용 절차를 짧은 문답 형태로 추가":
+    "Add short question-and-answer style content covering target audience and usage steps.",
+  "주요 기능·지원 환경·요금·문의 방법을 쉽게 찾도록 구성":
+    "Make key features, supported environment, pricing, and contact information easy to find.",
+  "모호한 홍보 문구 대신 검증 가능한 사실 문장 사용":
+    "Use verifiable factual sentences instead of vague marketing copy.",
+  "이 항목은 자동으로 재검증되지 않습니다. 사이트의 정밀진단(DEEP, ChatGPT 실측) 페이지에서 진단을 다시 실행해 직접 결과를 확인해 주세요.":
+    "This item is not verified automatically. Re-run the DEEP diagnostic (ChatGPT-based) on the site's precision diagnostic page to confirm the result yourself.",
 };
 
 function workOrderRenderedText(value: string, isEnglish: boolean): string {
@@ -443,6 +469,10 @@ const WORK_ORDER_ITEM_TITLES_EN_BY_CODE: Record<string, string> = {
   "RENDERED-ADDED-CONTENT": "Expose important rendered-only content and links in the initial HTML",
   "RENDERED-INCONSISTENT-INFORMATION": "Align initial and rendered information",
   "INITIAL-HTML-MISSING-CORE": "Add missing core information to the initial HTML",
+  "AI-SERVICE-IDENTIFICATION": "Make the brand and service identity clearer to AI",
+  "AI-DOMAIN-CITATION": "Strengthen why AI would cite the official site as its source",
+  "AI-FACT-CORRECTION": "Correct information AI is describing incorrectly",
+  "AI-MISSING-CORE-INFO": "Add core information AI's answers are missing",
 };
 
 export function localizedWorkOrderForPdf(

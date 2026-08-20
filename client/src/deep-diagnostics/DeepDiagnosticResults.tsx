@@ -556,7 +556,7 @@ export function DeepDiagnosticResults({
     >
       <div className="deep-section-heading">
         <div>
-          <p className="eyebrow">DEEP RESULT</p>
+          <p className="eyebrow">DEEP RESULT · GEO 실측 진단 (ChatGPT 기준)</p>
           <h2>AI 웹 답변 정밀진단 결과</h2>
           <p>
             실제 웹 검색 답변, 공식 사이트 인용, 등록 기준정보와의

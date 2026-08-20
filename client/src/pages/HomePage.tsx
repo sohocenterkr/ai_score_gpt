@@ -383,7 +383,7 @@ export function HomePage() {
       <section className="hero-section full-bleed-section">
         <div className="content-container hero-grid">
           <div className="hero-content">
-            <p className="eyebrow">AEO WEBSITE DIAGNOSTICS</p>
+            <p className="eyebrow">AEO + GEO AI SEARCH DIAGNOSTICS</p>
             <h1>
               {isEnglish
                 ? "See how well AI can understand your website."

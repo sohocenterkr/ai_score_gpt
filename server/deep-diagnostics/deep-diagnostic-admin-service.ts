@@ -16,6 +16,8 @@ import {
   answerExplicitlyDoesNotIdentifyTarget,
 } from "./deep-answer-trust";
 import { CURRENT_RULES_VERSION } from "../scans/scoring";
+import type { RenderedDomImprovementPlan } from "../scans/scan-result-pdf";
+import { buildAiAnswerImprovementPlans } from "../work-orders/ai-answer-improvement-plans";
 
 export const SITE_FACT_KEYS = [
   "service_definition",
@@ -352,6 +354,7 @@ export interface PublicDeepDiagnosticExecution {
   latestScan: PublicDeepDiagnosticScan | null;
   summary: PublicDeepAnswerSummary | null;
   runs: PublicDeepAnswerRun[];
+  aiAnswerImprovementPlans: RenderedDomImprovementPlan[];
 }
 
 export interface PublicDeepDiagnosticSetup {
@@ -919,6 +922,7 @@ async function executionState(
   siteId: string,
   facts: readonly SiteFact[],
   questions: readonly PublicAiQuestion[],
+  locale: "ko" | "en" = "ko",
 ): Promise<PublicDeepDiagnosticExecution> {
   const prisma = getDatabase();
   const requiredKeys = SITE_FACT_DEFINITIONS
@@ -1058,39 +1062,7 @@ async function executionState(
   const currentPerformance =
     calculateAnswerPerformance(latestRunMetrics);
 
-  return {
-    apiConfigured: Boolean(env.OPENAI_API_KEY),
-    provider: "OPENAI",
-    model: env.OPENAI_WEB_SEARCH_MODEL,
-    evaluationModel: env.OPENAI_EVALUATION_MODEL,
-    runsPerQuestion: env.DEEP_DIAGNOSTIC_RUNS_PER_QUESTION,
-    maxQuestions: env.DEEP_DIAGNOSTIC_MAX_QUESTIONS,
-    activeQuestionCount: activeQuestions.length,
-    plannedAnswerRuns:
-      activeQuestions.length *
-      env.DEEP_DIAGNOSTIC_RUNS_PER_QUESTION,
-    plannedApiCalls:
-      activeQuestions.length *
-      env.DEEP_DIAGNOSTIC_RUNS_PER_QUESTION *
-      2,
-    requiredFactCount: requiredKeys.length,
-    savedRequiredFactCount:
-      requiredKeys.length - missingRequiredFacts.length,
-    canStart: blockers.length === 0,
-    blockers,
-    latestScan: latest
-      ? {
-          id: latest.id,
-          status: latest.status,
-          score: latest.score,
-          grade: latest.grade,
-          errorCode: latest.errorCode,
-          createdAt: latest.createdAt.toISOString(),
-          startedAt: latest.startedAt?.toISOString() ?? null,
-          completedAt: latest.completedAt?.toISOString() ?? null,
-        }
-      : null,
-    summary: latest?.aiAnswerSummary
+  const summary: PublicDeepAnswerSummary | null = latest?.aiAnswerSummary
       ? {
           provider: latest.aiAnswerSummary.provider,
           model: latest.aiAnswerSummary.model,
@@ -1127,8 +1099,8 @@ async function executionState(
           serviceIdentificationRate:
             currentPerformance.serviceIdentificationRate,
         }
-      : null,
-    runs:
+      : null;
+  const runs: PublicDeepAnswerRun[] =
       latest?.aiAnswerRuns.map((run) => ({
         id: run.id,
         questionCode: run.questionCode,
@@ -1201,7 +1173,45 @@ async function executionState(
         errorCode: run.errorCode,
         errorMessage: run.errorMessage,
         completedAt: run.completedAt?.toISOString() ?? null,
-      })) ?? [],
+      })) ?? [];
+
+  return {
+    apiConfigured: Boolean(env.OPENAI_API_KEY),
+    provider: "OPENAI",
+    model: env.OPENAI_WEB_SEARCH_MODEL,
+    evaluationModel: env.OPENAI_EVALUATION_MODEL,
+    runsPerQuestion: env.DEEP_DIAGNOSTIC_RUNS_PER_QUESTION,
+    maxQuestions: env.DEEP_DIAGNOSTIC_MAX_QUESTIONS,
+    activeQuestionCount: activeQuestions.length,
+    plannedAnswerRuns:
+      activeQuestions.length *
+      env.DEEP_DIAGNOSTIC_RUNS_PER_QUESTION,
+    plannedApiCalls:
+      activeQuestions.length *
+      env.DEEP_DIAGNOSTIC_RUNS_PER_QUESTION *
+      2,
+    requiredFactCount: requiredKeys.length,
+    savedRequiredFactCount:
+      requiredKeys.length - missingRequiredFacts.length,
+    canStart: blockers.length === 0,
+    blockers,
+    latestScan: latest
+      ? {
+          id: latest.id,
+          status: latest.status,
+          score: latest.score,
+          grade: latest.grade,
+          errorCode: latest.errorCode,
+          createdAt: latest.createdAt.toISOString(),
+          startedAt: latest.startedAt?.toISOString() ?? null,
+          completedAt: latest.completedAt?.toISOString() ?? null,
+        }
+      : null,
+    summary,
+    runs,
+    aiAnswerImprovementPlans: summary
+      ? buildAiAnswerImprovementPlans(summary, runs, locale)
+      : [],
   };
 }
 
@@ -1234,6 +1244,7 @@ export function createPrismaDeepDiagnosticAdminService(): DeepDiagnosticAdminSer
           siteId,
           facts,
           questions,
+          site.primaryLocale === "en" ? "en" : "ko",
         ),
       };
     },

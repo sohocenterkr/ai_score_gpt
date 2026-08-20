@@ -20,6 +20,10 @@ import {
   WorkOrderApiError,
 } from "../work-orders/work-order-api";
 import "../work-orders.css";
+import {
+  getDeepDiagnosticSetup,
+  type AiAnswerImprovementPlan,
+} from "../deep-diagnostics/deep-diagnostic-api";
 
 const statusLabels: Record<ScanResultFinding["status"], string> = {
   PASS: "통과",
@@ -971,6 +975,15 @@ export function ScanResultPage() {
     selectedRenderedImprovementCodes,
     setSelectedRenderedImprovementCodes,
   ] = useState<string[]>([]);
+  const [aiAnswerImprovementPlans, setAiAnswerImprovementPlans] = useState<
+    AiAnswerImprovementPlan[]
+  >([]);
+  const [deepDiagnosticCompleted, setDeepDiagnosticCompleted] =
+    useState(false);
+  const [
+    selectedAiAnswerImprovementCodes,
+    setSelectedAiAnswerImprovementCodes,
+  ] = useState<string[]>([]);
   const [siteProgress, setSiteProgress] = useState<
     SiteProgress | null | undefined
   >(undefined);
@@ -1062,6 +1075,36 @@ export function ScanResultPage() {
       .catch(() => {
         if (!cancelled) {
           setSiteProgress(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [result?.site.id]);
+
+  useEffect(() => {
+    if (!result?.site.id) {
+      setAiAnswerImprovementPlans([]);
+      setDeepDiagnosticCompleted(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    void getDeepDiagnosticSetup(result.site.id)
+      .then((setup) => {
+        if (cancelled) return;
+        setDeepDiagnosticCompleted(setup.execution.summary !== null);
+        setAiAnswerImprovementPlans(setup.execution.aiAnswerImprovementPlans);
+        setSelectedAiAnswerImprovementCodes(
+          setup.execution.aiAnswerImprovementPlans.map((plan) => plan.code),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDeepDiagnosticCompleted(false);
+          setAiAnswerImprovementPlans([]);
         }
       });
 
@@ -1236,6 +1279,7 @@ export function ScanResultPage() {
               scanId: result.scan.id,
               findingIds: selectedFindingIds,
               renderedImprovementCodes: selectedRenderedImprovementCodes,
+              aiAnswerImprovementCodes: selectedAiAnswerImprovementCodes,
               locale: isEnglish ? "en" : "ko",
             })
           : await reviseWorkOrderRequest(previousWorkOrderId as string);
@@ -1346,7 +1390,9 @@ export function ScanResultPage() {
     [renderedDomComparison],
   );
   const selectedWorkOrderItemCount =
-    selectedFindingIds.length + selectedRenderedImprovementCodes.length;
+    selectedFindingIds.length +
+    selectedRenderedImprovementCodes.length +
+    selectedAiAnswerImprovementCodes.length;
 
   if (loading) {
     return (
@@ -1453,7 +1499,7 @@ export function ScanResultPage() {
       <div className="content-container scan-result-content">
         <header className="scan-result-header">
           <div>
-            <p className="eyebrow">SCAN RESULT</p>
+            <p className="eyebrow">SCAN RESULT · AEO 진단</p>
             <h1>
               {result.site.name}{" "}
               {isVerificationScan || canAccessPaidOutputs
@@ -2244,6 +2290,58 @@ export function ScanResultPage() {
                     : "개선 전후 비교를 위한 재진단 기준 안내"}
                 </li>
               </ul>
+            </div>
+            <div
+              className="work-order-selection scan-paid-product-card"
+              role="note"
+            >
+              <strong>
+                {isEnglish
+                  ? "ChatGPT-tested Improvement Items (GEO)"
+                  : "ChatGPT 실측 개선항목 (GEO)"}
+              </strong>
+              {deepDiagnosticCompleted ? (
+                aiAnswerImprovementPlans.length > 0 ? (
+                  <>
+                    <p>
+                      {isEnglish
+                        ? "Based on the site's DEEP diagnostic (real ChatGPT web-search answers), the following items will also be included in the work order."
+                        : "사이트의 정밀진단(DEEP, 실제 ChatGPT 웹 검색 답변) 결과를 바탕으로 아래 항목도 작업지시서에 함께 포함됩니다."}
+                    </p>
+                    <ul className="scan-paid-feature-list">
+                      {aiAnswerImprovementPlans.map((plan) => (
+                        <li key={plan.code}>{plan.title}</li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p>
+                    {isEnglish
+                      ? "The latest DEEP diagnostic found no additional ChatGPT-visibility issues to fix."
+                      : "가장 최근 정밀진단(DEEP) 결과에서는 추가로 고칠 ChatGPT 노출 관련 항목이 없습니다."}
+                  </p>
+                )
+              ) : (
+                <p>
+                  {isEnglish ? (
+                    <>
+                      Run the DEEP diagnostic first so that ChatGPT-tested
+                      improvement items can also be included in this work
+                      order.{" "}
+                    </>
+                  ) : (
+                    <>
+                      정밀진단(DEEP)을 먼저 실행하면 ChatGPT 실측 기반
+                      개선항목도 이 작업지시서에 함께 포함할 수 있습니다.{" "}
+                    </>
+                  )}
+                  <Link to={`/${locale}/sites/${result.site.id}/deep-diagnostic`}>
+                    {isEnglish
+                      ? "Go to DEEP diagnostic"
+                      : "정밀진단(DEEP) 실행하러 가기"}
+                  </Link>
+                </p>
+              )}
             </div>
             {!isVerificationScan && !canAccessPaidOutputs ? (
               <div

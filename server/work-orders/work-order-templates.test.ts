@@ -71,6 +71,19 @@ describe("work order templates", () => {
     expect(template.acceptanceCriteria[0]?.code).toBe("JS-CONTENT-01");
   });
 
+  it("ChatGPT 실측(AI 답변) 개선안에도 전용 완료 기준 코드를 만든다", () => {
+    const template = buildRenderedImprovementWorkOrderTemplate({
+      code: "AI-SERVICE-IDENTIFICATION",
+      currentState: "ChatGPT 실측 답변 중 대상 서비스를 정확히 식별한 비율이 50%에 그쳤습니다.",
+      meaning: "AI가 이름이 비슷한 다른 서비스로 오인했을 수 있습니다.",
+      change: "브랜드명과 서비스 정의를 함께 명시해야 합니다.",
+      developerInstructions: ["페이지 제목·H1·첫 문단에 브랜드명과 서비스 정의를 함께 표시"],
+      acceptanceCriteria: ["초기 HTML에 브랜드명과 서비스 정의가 함께 노출된다."],
+    });
+
+    expect(template.acceptanceCriteria[0]?.code).toBe("AI-SVC-01");
+  });
+
   it("알 수 없는 규칙에도 일반 완료 기준을 만든다", () => {
     const template = buildWorkOrderTemplate({
       ruleCode: "CUSTOM-RULE-001",

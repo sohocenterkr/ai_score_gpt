@@ -142,6 +142,16 @@ export interface DeepAnswerRun {
   completedAt: string | null;
 }
 
+export interface AiAnswerImprovementPlan {
+  code: string;
+  title: string;
+  currentState: string;
+  meaning: string;
+  change: string;
+  developerInstructions: string[];
+  acceptanceCriteria: string[];
+}
+
 export interface DeepDiagnosticExecution {
   apiConfigured: boolean;
   provider: "OPENAI";
@@ -159,6 +169,7 @@ export interface DeepDiagnosticExecution {
   latestScan: DeepDiagnosticScan | null;
   summary: DeepAnswerSummary | null;
   runs: DeepAnswerRun[];
+  aiAnswerImprovementPlans: AiAnswerImprovementPlan[];
 }
 
 export interface DeepDiagnosticSetup {

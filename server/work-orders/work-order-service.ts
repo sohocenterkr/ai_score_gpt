@@ -8,10 +8,15 @@ import {
 } from "@prisma/client";
 import type { PublicUser } from "../auth/auth-service";
 import { getDatabase } from "../db";
+import { createPrismaDeepDiagnosticAdminService } from "../deep-diagnostics/deep-diagnostic-admin-service";
 import {
   buildRenderedDomImprovementPlans,
   scanResultRenderedDomComparison,
 } from "../scans/scan-result-pdf";
+import {
+  AI_ANSWER_IMPROVEMENT_PLAN_CODES,
+  buildAiAnswerImprovementPlans,
+} from "./ai-answer-improvement-plans";
 import {
   getRuleDefinition,
   getRuleSummaryGroup,
@@ -42,6 +47,10 @@ const WORK_ORDER_ITEM_TITLES_EN: Record<string, string> = {
   "META-OG-001": "Add Open Graph title and description",
   "STRUCT-JSONLD-001": "Add valid Schema.org JSON-LD",
   "STRUCT-JSONLD-TYPES-001": "Specify appropriate Schema.org @type values",
+  "AI-SERVICE-IDENTIFICATION": "Make the brand and service identity clearer to AI",
+  "AI-DOMAIN-CITATION": "Strengthen why AI would cite the official site as its source",
+  "AI-FACT-CORRECTION": "Correct information AI is describing incorrectly",
+  "AI-MISSING-CORE-INFO": "Add core information AI's answers are missing",
 };
 
 function workOrderItemTitle(
@@ -266,6 +275,7 @@ export interface CreateWorkOrderInput {
   scanId: string;
   findingIds: string[];
   renderedImprovementCodes: string[];
+  aiAnswerImprovementCodes: string[];
   locale?: "ko" | "en";
 }
 
@@ -821,6 +831,8 @@ async function accessibleRecord(
 export function createPrismaWorkOrderService(
   resolver?: DnsResolver,
 ): WorkOrderService {
+  const deepDiagnosticAdminService = createPrismaDeepDiagnosticAdminService();
+
   return {
     async listWorkOrders(user) {
       const prisma = getDatabase();
@@ -878,12 +890,19 @@ export function createPrismaWorkOrderService(
       const renderedImprovementCodes = [
         ...new Set(input.renderedImprovementCodes),
       ];
-      const selectedCount = findingIds.length + renderedImprovementCodes.length;
+      const aiAnswerImprovementCodes = [
+        ...new Set(input.aiAnswerImprovementCodes ?? []),
+      ];
+      const selectedCount =
+        findingIds.length +
+        renderedImprovementCodes.length +
+        aiAnswerImprovementCodes.length;
 
       if (
         selectedCount === 0 ||
         selectedCount > 50 ||
-        renderedImprovementCodes.length > 3
+        renderedImprovementCodes.length > 3 ||
+        aiAnswerImprovementCodes.length > AI_ANSWER_IMPROVEMENT_PLAN_CODES.length
       ) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_FINDINGS",
@@ -973,7 +992,12 @@ export function createPrismaWorkOrderService(
         ...new Set([...findingIds, ...autoIncludedFindingIds]),
       ];
 
-      if (effectiveFindingIds.length + renderedImprovementCodes.length > 50) {
+      if (
+        effectiveFindingIds.length +
+          renderedImprovementCodes.length +
+          aiAnswerImprovementCodes.length >
+        50
+      ) {
         throw new WorkOrderServiceError(
           "WORK_ORDER_INVALID_FINDINGS",
           "작업지시서 대상 항목은 최대 50개입니다.",
@@ -1090,7 +1114,68 @@ export function createPrismaWorkOrderService(
           weight: 0,
         };
       });
-      const itemInputs = [...findingItemInputs, ...renderedItemInputs];
+
+      let aiAnswerItemInputs: typeof renderedItemInputs = [];
+
+      if (aiAnswerImprovementCodes.length > 0) {
+        const deepSetup = await deepDiagnosticAdminService.getSetup(
+          user,
+          scan.siteId,
+        );
+
+        if (!deepSetup.execution.summary) {
+          throw new WorkOrderServiceError(
+            "WORK_ORDER_INVALID_FINDINGS",
+            "ChatGPT 실측 개선항목을 포함하려면 먼저 정밀진단(DEEP)을 완료해야 합니다.",
+            400,
+          );
+        }
+
+        const availableAiAnswerPlans = new Map(
+          buildAiAnswerImprovementPlans(
+            deepSetup.execution.summary,
+            deepSetup.execution.runs,
+            input.locale ?? "ko",
+          ).map((plan) => [plan.code, plan]),
+        );
+
+        aiAnswerItemInputs = aiAnswerImprovementCodes.map((code) => {
+          const plan = availableAiAnswerPlans.get(code);
+
+          if (!plan) {
+            throw new WorkOrderServiceError(
+              "WORK_ORDER_INVALID_FINDINGS",
+              "선택한 ChatGPT 실측 개선항목이 현재 정밀진단 결과와 일치하지 않습니다.",
+              400,
+            );
+          }
+
+          const template = buildRenderedImprovementWorkOrderTemplate(
+            plan,
+            input.locale ?? "ko",
+            { siteArchetype: renderedSiteArchetype },
+          );
+
+          return {
+            findingId: null,
+            itemCode: plan.code,
+            targetUrl: scan.site.finalUrl ?? scan.site.baseUrl,
+            title: plan.title,
+            requirement: template.requirement,
+            developerMessage: template.developerMessage,
+            acceptanceCriteriaJson:
+              template.acceptanceCriteria as unknown as Prisma.InputJsonValue,
+            isRequired: template.isRequired,
+            weight: 0,
+          };
+        });
+      }
+
+      const itemInputs = [
+        ...findingItemInputs,
+        ...renderedItemInputs,
+        ...aiAnswerItemInputs,
+      ];
 
       const totalWeight = itemInputs.reduce(
         (total, item) => total + item.weight,
