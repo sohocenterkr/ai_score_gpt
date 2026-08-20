@@ -65,6 +65,7 @@ const setup: PublicDeepDiagnosticSetup = {
   },
   factDefinitions: [],
   facts: [fact],
+  factDrafts: [],
   questions: [question],
   execution: {
     apiConfigured: false,

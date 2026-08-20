@@ -18,6 +18,7 @@ import {
 import { CURRENT_RULES_VERSION } from "../scans/scoring";
 import type { RenderedDomImprovementPlan } from "../scans/scan-result-pdf";
 import { buildAiAnswerImprovementPlans } from "../work-orders/ai-answer-improvement-plans";
+import { buildSiteFactDrafts } from "./site-fact-drafts";
 
 export const SITE_FACT_KEYS = [
   "service_definition",
@@ -357,10 +358,16 @@ export interface PublicDeepDiagnosticExecution {
   aiAnswerImprovementPlans: RenderedDomImprovementPlan[];
 }
 
+export interface PublicSiteFactDraft {
+  factKey: SiteFactKey;
+  value: string;
+}
+
 export interface PublicDeepDiagnosticSetup {
   site: AccessibleSite;
   factDefinitions: readonly SiteFactDefinition[];
   facts: PublicSiteFact[];
+  factDrafts: PublicSiteFactDraft[];
   questions: PublicAiQuestion[];
   execution: PublicDeepDiagnosticExecution;
 }
@@ -1222,7 +1229,7 @@ export function createPrismaDeepDiagnosticAdminService(): DeepDiagnosticAdminSer
       const site = await findAccessibleSite(user.id, siteId);
       await ensureDefaultsForSite(site);
 
-      const [facts, questions] = await Promise.all([
+      const [facts, questions, latestQuickScan] = await Promise.all([
         prisma.siteFact.findMany({
           where: {
             siteId,
@@ -1233,12 +1240,41 @@ export function createPrismaDeepDiagnosticAdminService(): DeepDiagnosticAdminSer
           orderBy: { createdAt: "asc" },
         }),
         listQuestions(siteId),
+        prisma.scan.findFirst({
+          where: {
+            siteId,
+            type: "QUICK",
+            status: { in: ["COMPLETED", "PARTIAL"] },
+          },
+          orderBy: { createdAt: "desc" },
+          select: {
+            findings: {
+              select: { ruleCode: true, evidenceJson: true },
+            },
+          },
+        }),
       ]);
+
+      const savedFactKeys = new Set(facts.map((fact) => fact.factKey));
+      const factDrafts = Object.entries(
+        buildSiteFactDrafts(
+          (latestQuickScan?.findings ?? []).map((finding) => ({
+            ruleCode: finding.ruleCode,
+            evidence: finding.evidenceJson,
+          })),
+        ),
+      )
+        .filter(([factKey]) => !savedFactKeys.has(factKey))
+        .map(([factKey, value]) => ({
+          factKey: factKey as SiteFactKey,
+          value,
+        }));
 
       return {
         site,
         factDefinitions: SITE_FACT_DEFINITIONS,
         facts: facts.map(publicFact),
+        factDrafts,
         questions,
         execution: await executionState(
           siteId,

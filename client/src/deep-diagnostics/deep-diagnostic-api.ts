@@ -172,6 +172,11 @@ export interface DeepDiagnosticExecution {
   aiAnswerImprovementPlans: AiAnswerImprovementPlan[];
 }
 
+export interface SiteFactDraft {
+  factKey: SiteFactKey;
+  value: string;
+}
+
 export interface DeepDiagnosticSetup {
   site: {
     id: string;
@@ -182,6 +187,7 @@ export interface DeepDiagnosticSetup {
   };
   factDefinitions: SiteFactDefinition[];
   facts: DeepDiagnosticFact[];
+  factDrafts: SiteFactDraft[];
   questions: DeepDiagnosticQuestion[];
   execution: DeepDiagnosticExecution;
 }

@@ -64,6 +64,8 @@ function factMap(setup: DeepDiagnosticSetup): Record<string, string> {
     setup.factDefinitions.map((definition) => [
       definition.key,
       setup.facts.find((fact) => fact.factKey === definition.key)?.value ??
+        setup.factDrafts.find((draft) => draft.factKey === definition.key)
+          ?.value ??
         "",
     ]),
   );
@@ -616,6 +618,11 @@ export function DeepDiagnosticSetupPage() {
                   (fact) => fact.factKey === definition.key,
                 ),
               );
+              const isDraft =
+                !saved &&
+                setup.factDrafts.some(
+                  (draft) => draft.factKey === definition.key,
+                );
               const working =
                 workingKey === `fact-${definition.key}`;
 
@@ -626,9 +633,17 @@ export function DeepDiagnosticSetupPage() {
                       <h3>{definition.label}</h3>
                       <p>{definition.help}</p>
                     </div>
-                    <span>
+                    <span
+                      className={
+                        isDraft ? "deep-fact-status-draft" : undefined
+                      }
+                    >
                       {definition.important ? "핵심" : "선택"} ·{" "}
-                      {saved ? "저장됨" : "미입력"}
+                      {saved
+                        ? "저장됨"
+                        : isDraft
+                          ? "AI 초안 (확인 후 저장)"
+                          : "미입력"}
                     </span>
                   </div>
                   <textarea
